@@ -77,3 +77,5 @@ export class ApiClient {
 
 export const apiClient = new ApiClient()
 
+// Alias for consistency
+export const api = apiClient

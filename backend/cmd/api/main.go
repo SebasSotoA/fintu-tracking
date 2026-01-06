@@ -91,6 +91,25 @@ func main() {
 	protected.Get("/portfolio/holdings", handlers.GetHoldings)
 	protected.Get("/portfolio/performance", handlers.GetPerformance)
 
+	// Broker endpoints
+	protected.Get("/brokers", handlers.GetBrokers)
+	protected.Post("/brokers", handlers.CreateBroker)
+	protected.Get("/brokers/:id", handlers.GetBroker)
+	protected.Put("/brokers/:id", handlers.UpdateBroker)
+	protected.Delete("/brokers/:id", handlers.DeleteBroker)
+
+	// Analytics endpoints
+	protected.Get("/analytics/fee-attribution", handlers.GetFeeAttribution)
+	protected.Get("/analytics/fee-breakdown", handlers.GetFeeBreakdown)
+	protected.Get("/analytics/fee-impact", handlers.GetFeeImpact)
+	protected.Get("/analytics/fee-efficiency", handlers.GetFeeEfficiency)
+	protected.Get("/analytics/return-attribution", handlers.GetReturnAttribution)
+	protected.Get("/analytics/fx-impact", handlers.GetFXImpact)
+	protected.Get("/analytics/performance-time-series", handlers.GetPerformanceTimeSeries)
+	protected.Get("/analytics/net-worth", handlers.GetNetWorth)
+	protected.Get("/analytics/cash-reconciliation", handlers.GetCashReconciliation)
+	protected.Post("/analytics/portfolio-snapshot", handlers.CreatePortfolioSnapshot)
+
 	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {

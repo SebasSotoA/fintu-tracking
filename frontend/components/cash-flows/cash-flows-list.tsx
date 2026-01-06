@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Pencil, Trash2 } from "lucide-react"
+import { Pencil, Trash2, ExternalLinkIcon, LinkIcon } from "lucide-react"
 import { formatCurrency, format } from "@/lib/decimal"
 import { useState } from "react"
 import { EditCashFlowDialog } from "./edit-cash-flow-dialog"
 import { DeleteCashFlowDialog } from "./delete-cash-flow-dialog"
+import Link from "next/link"
 
 interface CashFlowsListProps {
   cashFlows: CashFlow[]
@@ -53,10 +54,11 @@ export function CashFlowsList({ cashFlows: initialCashFlows }: CashFlowsListProp
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Fee Type</TableHead>
                 <TableHead>Currency</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="text-right">FX Rate</TableHead>
                 <TableHead className="text-right">USD Amount</TableHead>
+                <TableHead>Attribution</TableHead>
                 <TableHead>Notes</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -67,10 +69,19 @@ export function CashFlowsList({ cashFlows: initialCashFlows }: CashFlowsListProp
                   <TableCell>{new Date(cf.date).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Badge
-                      variant={cf.type === "deposit" ? "default" : cf.type === "withdrawal" ? "secondary" : "outline"}
+                      variant={cf.type === "deposit" ? "default" : cf.type === "withdrawal" ? "secondary" : "destructive"}
                     >
                       {cf.type}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {cf.fee_type ? (
+                      <Badge variant="outline" className="capitalize">
+                        {cf.fee_type}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{cf.currency}</Badge>
@@ -78,11 +89,28 @@ export function CashFlowsList({ cashFlows: initialCashFlows }: CashFlowsListProp
                   <TableCell className="text-right font-mono">
                     {formatCurrency(cf.amount, cf.currency as "USD" | "COP")}
                   </TableCell>
-                  <TableCell className="text-right font-mono">{cf.fx_rate ? format(cf.fx_rate, 2) : "-"}</TableCell>
                   <TableCell className="text-right font-mono font-semibold">
                     {formatCurrency(cf.usd_amount, "USD")}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{cf.notes || "-"}</TableCell>
+                  <TableCell>
+                    {cf.related_trade_id ? (
+                      <Link href={`/trades?highlight=${cf.related_trade_id}`}>
+                        <Button variant="ghost" size="sm" className="h-auto py-1 px-2">
+                          <LinkIcon className="h-3 w-3 mr-1" />
+                          <span className="text-xs">
+                            {cf.related_type === "trade" ? "Trade" : cf.related_type}
+                          </span>
+                        </Button>
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">
+                        {cf.related_type === "standalone" ? "Standalone" : "-"}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm max-w-xs truncate">
+                    {cf.notes || "-"}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-2">
                       <Button variant="ghost" size="sm" onClick={() => setEditingCashFlow(cf)}>

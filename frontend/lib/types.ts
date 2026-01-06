@@ -17,6 +17,10 @@ export interface CashFlow {
   fx_rate: string | null
   usd_amount: string
   notes: string | null
+  broker_id: string | null
+  fee_type: "deposit" | "trading" | "closing" | "maintenance" | "other" | "withdrawal" | null
+  related_trade_id: string | null
+  related_type: "trade" | "deposit" | "withdrawal" | "standalone" | null
   created_at: string
   updated_at: string
 }
@@ -26,11 +30,17 @@ export interface Trade {
   user_id: string
   date: string
   ticker: string
-  asset_type: "stock" | "etf"
+  asset_type: "stock" | "etf" | "crypto"
   side: "buy" | "sell"
   quantity: string
   price: string
   fee: string
+  broker_id: string | null
+  deposit_fee: string
+  trading_fee: string
+  closing_fee: string
+  total_fees: string
+  transaction_fx_rate: string | null
   total: string
   notes: string | null
   created_at: string

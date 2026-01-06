@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AppNav } from "@/components/layout/app-nav"
+import { NetWorthCard } from "@/components/dashboard/net-worth-card"
 import { PortfolioSummary } from "@/components/dashboard/portfolio-summary"
 import { HoldingsTable } from "@/components/dashboard/holdings-table"
 import { getHoldings } from "@/lib/api/server-portfolio"
@@ -51,12 +52,13 @@ export default async function DashboardPage() {
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Your portfolio at a glance</p>
         </div>
-        <PortfolioSummary
-          holdings={holdings}
-          cashFlows={cashFlows}
-          latestFxRate={latestFxRate}
-        />
-        <div className="mt-8">
+        <div className="space-y-6">
+          <NetWorthCard />
+          <PortfolioSummary
+            holdings={holdings}
+            cashFlows={cashFlows}
+            latestFxRate={latestFxRate}
+          />
           <HoldingsTable holdings={holdings} />
         </div>
       </div>

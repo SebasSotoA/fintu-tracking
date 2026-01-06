@@ -76,9 +76,12 @@ func CreateTrade(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid price format"})
 	}
 
-	fee, err := decimal.NewFromString(req.Fee)
-	if err != nil {
-		fee = decimal.Zero
+	fee := decimal.Zero
+	if req.Fee != nil {
+		parsedFee, err := decimal.NewFromString(*req.Fee)
+		if err == nil {
+			fee = parsedFee
+		}
 	}
 
 	date, err := time.Parse("2006-01-02", req.Date)
@@ -97,10 +100,15 @@ func CreateTrade(c fiber.Ctx) error {
 		RETURNING id, user_id, date, ticker, asset_type, side, quantity, price, fee, total, notes, created_at, updated_at
 	`
 
+	feeStr := "0"
+	if req.Fee != nil {
+		feeStr = *req.Fee
+	}
+
 	var trade models.Trade
 	err = database.GetPool().QueryRow(context.Background(), query,
 		id, userID, date, req.Ticker, req.AssetType, req.Side, 
-		req.Quantity, req.Price, req.Fee, total.String(), req.Notes).
+		req.Quantity, req.Price, feeStr, total.String(), req.Notes).
 		Scan(&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType, 
 			&trade.Side, &trade.Quantity, &trade.Price, &trade.Fee, &trade.Total, 
 			&trade.Notes, &trade.CreatedAt, &trade.UpdatedAt)

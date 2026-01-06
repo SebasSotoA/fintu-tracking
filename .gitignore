@@ -98,3 +98,6 @@ backend/tmp/
 *.db
 *.sqlite
 *.sqlite3
+
+#Cursor
+.cursor/

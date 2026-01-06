@@ -41,15 +41,15 @@
 
 /* Custom dark theme for finance app with specified colors */
 .dark {
-  /* Dark background #0b1219 */
-  --background: oklch(0.08 0 0);
+  /* Dark background #121212 */
+  --background: oklch(0.106 0 0);
   --foreground: oklch(0.985 0 0);
 
   /* Cards slightly lighter than background */
-  --card: oklch(0.12 0 0);
+  --card: oklch(0.14 0 0);
   --card-foreground: oklch(0.985 0 0);
 
-  --popover: oklch(0.12 0 0);
+  --popover: oklch(0.14 0 0);
   --popover-foreground: oklch(0.985 0 0);
 
   /* Primary green #1c413d */
@@ -80,7 +80,7 @@
   --chart-4: oklch(0.7 0.08 160);
   --chart-5: oklch(0.4 0.06 190);
 
-  --sidebar: oklch(0.1 0 0);
+  --sidebar: oklch(0.12 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.28 0.05 175);
   --sidebar-primary-foreground: oklch(0.985 0 0);
