@@ -66,22 +66,34 @@ export function PerformanceCharts({ cashFlows, fxRates }: PerformanceChartsProps
     <div className="grid gap-6 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle>Cumulative Cash Flow (USD)</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Cumulative Cash Flow (USD)</CardTitle>
         </CardHeader>
         <CardContent>
           {cumulativeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={cumulativeData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="date" className="text-xs" />
-                <YAxis className="text-xs" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.1} />
+                <XAxis 
+                  dataKey="date" 
+                  className="text-xs text-muted-foreground" 
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeOpacity={0.3}
+                />
+                <YAxis 
+                  className="text-xs text-muted-foreground" 
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeOpacity={0.3}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
+                    border: "1px solid hsl(var(--primary) / 0.2)",
+                    borderRadius: "0.5rem",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
+                  labelStyle={{ color: "hsl(var(--foreground))", fontWeight: "600" }}
                 />
-                <Line type="monotone" dataKey="cumulative" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="cumulative" stroke="hsl(var(--primary))" strokeWidth={3} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -92,22 +104,34 @@ export function PerformanceCharts({ cashFlows, fxRates }: PerformanceChartsProps
 
       <Card>
         <CardHeader>
-          <CardTitle>FX Rate History (COP/USD)</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">FX Rate History (COP/USD)</CardTitle>
         </CardHeader>
         <CardContent>
           {fxData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={fxData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="date" className="text-xs" />
-                <YAxis className="text-xs" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.1} />
+                <XAxis 
+                  dataKey="date" 
+                  className="text-xs text-muted-foreground" 
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeOpacity={0.3}
+                />
+                <YAxis 
+                  className="text-xs text-muted-foreground" 
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeOpacity={0.3}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
+                    border: "1px solid hsl(var(--primary) / 0.2)",
+                    borderRadius: "0.5rem",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
+                  labelStyle={{ color: "hsl(var(--foreground))", fontWeight: "600" }}
                 />
-                <Line type="monotone" dataKey="rate" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="rate" stroke="hsl(var(--chart-2))" strokeWidth={3} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -119,21 +143,43 @@ export function PerformanceCharts({ cashFlows, fxRates }: PerformanceChartsProps
       {feesData.length > 0 && (
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Fees by Month (USD)</CardTitle>
+            <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Fees by Month (USD)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={feesData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="month" className="text-xs" />
-                <YAxis className="text-xs" />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.1} />
+                <XAxis 
+                  dataKey="month" 
+                  className="text-xs text-muted-foreground" 
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeOpacity={0.3}
+                />
+                <YAxis 
+                  className="text-xs text-muted-foreground" 
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeOpacity={0.3}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
+                    border: "1px solid hsl(var(--primary) / 0.2)",
+                    borderRadius: "0.5rem",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
+                  labelStyle={{ color: "hsl(var(--foreground))", fontWeight: "600" }}
                 />
-                <Bar dataKey="fees" fill="hsl(var(--destructive))" />
+                <Bar 
+                  dataKey="fees" 
+                  fill="url(#feesGradient)" 
+                  radius={[8, 8, 0, 0]}
+                />
+                <defs>
+                  <linearGradient id="feesGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.8} />
+                  </linearGradient>
+                </defs>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

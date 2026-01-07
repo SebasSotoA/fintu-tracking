@@ -35,12 +35,29 @@ export function AddTradeDialog() {
     fee: "0",
     notes: "",
   })
+  
+  const [feeType, setFeeType] = useState<"fixed" | "percentage">("fixed")
+  const [feePercentage, setFeePercentage] = useState("")
+
+  const calculateFeeAmount = () => {
+    if (!formData.quantity || !formData.price) return "0"
+    if (feeType === "fixed") {
+      return formData.fee || "0"
+    }
+    // Calculate fee from percentage
+    if (!feePercentage) return "0"
+    const quantity = new Decimal(formData.quantity)
+    const price = new Decimal(formData.price)
+    const percentage = new Decimal(feePercentage)
+    const subtotal = quantity.mul(price)
+    return subtotal.mul(percentage).div(100).toString()
+  }
 
   const calculateTotal = () => {
     if (!formData.quantity || !formData.price) return "0"
     const quantity = new Decimal(formData.quantity)
     const price = new Decimal(formData.price)
-    const fee = new Decimal(formData.fee || 0)
+    const fee = new Decimal(calculateFeeAmount())
     const subtotal = quantity.mul(price)
     return formData.side === "buy" ? subtotal.add(fee).toString() : subtotal.sub(fee).toString()
   }
@@ -58,7 +75,7 @@ export function AddTradeDialog() {
         side: formData.side,
         quantity: formData.quantity,
         price: formData.price,
-        fee: formData.fee,
+        fee: calculateFeeAmount(),
         notes: formData.notes || null,
       })
 
@@ -73,6 +90,8 @@ export function AddTradeDialog() {
         fee: "0",
         notes: "",
       })
+      setFeeType("fixed")
+      setFeePercentage("")
       window.location.reload()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create trade")
@@ -177,16 +196,42 @@ export function AddTradeDialog() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="fee">Fee (USD)</Label>
-              <Input
-                id="fee"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.fee}
-                onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
-              />
+              <Label htmlFor="fee-type">Fee Type</Label>
+              <Select value={feeType} onValueChange={(value: "fixed" | "percentage") => setFeeType(value)}>
+                <SelectTrigger id="fee-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">USD</SelectItem>
+                  <SelectItem value="percentage">%</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="fee">
+              {feeType === "fixed" ? "Fee Amount (USD)" : "Fee Percentage (%)"}
+            </Label>
+            <Input
+              id="fee"
+              type="number"
+              step={feeType === "fixed" ? "0.01" : "0.01"}
+              placeholder={feeType === "fixed" ? "0.00" : "0.25"}
+              value={feeType === "fixed" ? formData.fee : feePercentage}
+              onChange={(e) => {
+                if (feeType === "fixed") {
+                  setFormData({ ...formData, fee: e.target.value })
+                } else {
+                  setFeePercentage(e.target.value)
+                }
+              }}
+            />
+            {feeType === "percentage" && feePercentage && formData.quantity && formData.price && (
+              <p className="text-sm text-muted-foreground">
+                = ${new Decimal(calculateFeeAmount()).toFixed(2)} USD
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

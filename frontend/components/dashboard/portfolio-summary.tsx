@@ -47,14 +47,14 @@ export function PortfolioSummary({ holdings, cashFlows, latestFxRate }: Portfoli
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
+      <Card variant="kpi">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Portfolio Value (USD)</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Portfolio Value (USD)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold font-mono">{formatCurrency(totalMarketValueUSD.toString(), "USD")}</div>
+          <div className="text-3xl md:text-4xl font-bold font-mono tracking-tight">{formatCurrency(totalMarketValueUSD.toString(), "USD")}</div>
           {totalMarketValueCOP && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-2">
               {formatCurrency(totalMarketValueCOP.toString(), "COP")}
             </p>
           )}
@@ -63,30 +63,30 @@ export function PortfolioSummary({ holdings, cashFlows, latestFxRate }: Portfoli
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Total Invested (USD)</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total Invested (USD)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold font-mono">{formatCurrency(netInvestedUSD.toString(), "USD")}</div>
-          <p className="text-sm text-muted-foreground mt-1">Deposits: {formatCurrency(deposits.toString(), "USD")}</p>
+          <div className="text-xl md:text-2xl font-semibold font-mono">{formatCurrency(netInvestedUSD.toString(), "USD")}</div>
+          <p className="text-sm text-muted-foreground mt-2">Deposits: {formatCurrency(deposits.toString(), "USD")}</p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card variant="kpi">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Total P/L (USD)</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total P/L (USD)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2">
-            <div className={`text-2xl font-bold font-mono ${totalPL.gte(0) ? "text-primary" : "text-destructive"}`}>
+            <div className={`text-3xl md:text-4xl font-bold font-mono tracking-tight ${totalPL.gte(0) ? "text-primary" : "text-destructive"}`}>
               {formatCurrency(totalPL.toString(), "USD")}
             </div>
             {totalPL.gte(0) ? (
-              <TrendingUp className="h-5 w-5 text-primary" />
+              <TrendingUp className="h-6 w-6 text-primary" />
             ) : (
-              <TrendingDown className="h-5 w-5 text-destructive" />
+              <TrendingDown className="h-6 w-6 text-destructive" />
             )}
           </div>
-          <p className={`text-sm mt-1 ${totalPL.gte(0) ? "text-primary" : "text-destructive"}`}>
+          <p className={`text-base font-semibold mt-2 ${totalPL.gte(0) ? "text-primary" : "text-destructive"}`}>
             {totalPLPercent.toFixed(2)}%
           </p>
         </CardContent>
@@ -94,11 +94,11 @@ export function PortfolioSummary({ holdings, cashFlows, latestFxRate }: Portfoli
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Total Fees (USD)</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total Fees (USD)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold font-mono">{formatCurrency(fees.toString(), "USD")}</div>
-          {fxRate && <p className="text-sm text-muted-foreground mt-1">Rate: {fxRate.toFixed(2)} COP/USD</p>}
+          <div className="text-xl md:text-2xl font-semibold font-mono">{formatCurrency(fees.toString(), "USD")}</div>
+          {fxRate && <p className="text-sm text-muted-foreground mt-2">Rate: {fxRate.toFixed(2)} COP/USD</p>}
         </CardContent>
       </Card>
     </div>

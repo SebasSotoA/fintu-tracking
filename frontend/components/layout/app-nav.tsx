@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,8 +32,15 @@ export function AppNav() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="text-lg font-semibold">
-              Portfolio Tracker
+            <Link href="/dashboard" className="flex items-center transition-opacity hover:opacity-80">
+              <Image 
+                src="/fintu-logo.svg" 
+                alt="Fintu" 
+                width={114}
+                height={28}
+                className="h-7 w-auto"
+                priority
+              />
             </Link>
             <div className="hidden md:flex items-center gap-2">
               {navItems.map((item) => {

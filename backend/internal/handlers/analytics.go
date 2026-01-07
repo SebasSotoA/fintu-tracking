@@ -6,7 +6,7 @@ import (
 
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/services"
-	
+
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -164,7 +164,7 @@ func CreatePortfolioSnapshot(c fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)
 
 	analyticsService := services.NewAnalyticsService(database.GetPool())
-	
+
 	// Get current net worth summary
 	netWorth, err := analyticsService.GetNetWorthSummary(c.Context(), userID)
 	if err != nil {
@@ -202,14 +202,14 @@ func CreatePortfolioSnapshot(c fiber.Ctx) error {
 			total_fx_impact_usd = EXCLUDED.total_fx_impact_usd,
 			holdings = EXCLUDED.holdings
 		RETURNING id
-	`, 
-		userID, 
+	`,
+		userID,
 		now.Format("2006-01-02"),
 		netWorth.NetWorth,
 		netWorth.TotalInvested,
 		netWorth.CashBalance,
 		totalFees,
-		"0", // FX impact placeholder
+		"0",  // FX impact placeholder
 		"[]", // Holdings JSON placeholder
 	).Scan(&snapshotID)
 

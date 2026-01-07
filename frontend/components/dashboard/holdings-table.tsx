@@ -35,7 +35,7 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Current Holdings</CardTitle>
+        <CardTitle className="text-base">Current Holdings</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>

@@ -149,14 +149,14 @@ func AuthMiddleware() fiber.Handler {
 			})
 		}
 
-		// Extract user ID from claims
-		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			if sub, ok := claims["sub"].(string); ok {
-				// Store user ID in context for handlers to use
-				c.Locals("userID", sub)
-				return c.Next()
-			}
+	// Extract user ID from claims
+	if claims, ok := token.Claims.(jwt.MapClaims); ok {
+		if sub, ok := claims["sub"].(string); ok {
+			// Store user ID in context for handlers to use
+			c.Locals("user_id", sub)
+			return c.Next()
 		}
+	}
 
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid token claims",
@@ -166,6 +166,6 @@ func AuthMiddleware() fiber.Handler {
 
 // GetUserID retrieves the user ID from the context
 func GetUserID(c fiber.Ctx) string {
-	userID, _ := c.Locals("userID").(string)
+	userID, _ := c.Locals("user_id").(string)
 	return userID
 }

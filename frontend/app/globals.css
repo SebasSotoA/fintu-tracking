@@ -49,11 +49,16 @@
   --card: oklch(0.14 0 0);
   --card-foreground: oklch(0.985 0 0);
 
+  /* Elevated KPI cards - lighter for prominence */
+  --card-kpi: oklch(0.15 0 0);
+
   --popover: oklch(0.14 0 0);
   --popover-foreground: oklch(0.985 0 0);
 
-  /* Primary green #1c413d */
-  --primary: oklch(0.28 0.05 175);
+  /* Primary deep teal #043127 - refined brand color */
+  --primary: oklch(0.19 0.04 170);
+  --primary-hover: oklch(0.25 0.045 170);
+  --primary-active: oklch(0.22 0.042 170);
   --primary-foreground: oklch(0.985 0 0);
 
   --secondary: oklch(0.18 0 0);
@@ -71,10 +76,10 @@
 
   --border: oklch(0.18 0 0);
   --input: oklch(0.18 0 0);
-  --ring: oklch(0.28 0.05 175);
+  --ring: oklch(0.19 0.04 170);
 
-  /* Charts with green accent */
-  --chart-1: oklch(0.28 0.05 175);
+  /* Charts with new primary teal accent */
+  --chart-1: oklch(0.19 0.04 170);
   --chart-2: oklch(0.6 0.12 180);
   --chart-3: oklch(0.5 0.1 200);
   --chart-4: oklch(0.7 0.08 160);
@@ -82,12 +87,12 @@
 
   --sidebar: oklch(0.12 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.28 0.05 175);
+  --sidebar-primary: oklch(0.19 0.04 170);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.18 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.18 0 0);
-  --sidebar-ring: oklch(0.28 0.05 175);
+  --sidebar-ring: oklch(0.19 0.04 170);
 }
 
 @theme inline {
@@ -97,9 +102,12 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-card-kpi: var(--card-kpi);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);

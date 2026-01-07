@@ -83,53 +83,53 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-      <Card>
+      <Card variant="kpi">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">XIRR (USD)</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">XIRR (USD)</CardTitle>
         </CardHeader>
         <CardContent>
           <div
-            className={`text-3xl font-bold font-mono ${new Decimal(xirrUSD).gte(0) ? "text-primary" : "text-destructive"}`}
+            className={`text-3xl md:text-4xl font-bold font-mono tracking-tight ${new Decimal(xirrUSD).gte(0) ? "text-primary" : "text-destructive"}`}
           >
             {new Decimal(xirrUSD).toFixed(2)}%
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Annualized return</p>
+          <p className="text-sm text-muted-foreground mt-2">Annualized return</p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Total Invested</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total Invested</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold font-mono">{formatCurrency(deposits.toString(), "USD")}</div>
+          <div className="text-xl md:text-2xl font-semibold font-mono">{formatCurrency(deposits.toString(), "USD")}</div>
           {depositsInCOP && (
-            <p className="text-sm text-muted-foreground mt-1">{formatCurrency(depositsInCOP.toString(), "COP")}</p>
+            <p className="text-sm text-muted-foreground mt-2">{formatCurrency(depositsInCOP.toString(), "COP")}</p>
           )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card variant="kpi">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Portfolio Value</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Portfolio Value</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold font-mono">{formatCurrency(portfolioValueUSD.toString(), "USD")}</div>
+          <div className="text-3xl md:text-4xl font-bold font-mono tracking-tight">{formatCurrency(portfolioValueUSD.toString(), "USD")}</div>
           {portfolioValueCOP && (
-            <p className="text-sm text-muted-foreground mt-1">{formatCurrency(portfolioValueCOP.toString(), "COP")}</p>
+            <p className="text-sm text-muted-foreground mt-2">{formatCurrency(portfolioValueCOP.toString(), "COP")}</p>
           )}
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Total Fees</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total Fees</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold font-mono text-destructive">
+          <div className="text-xl md:text-2xl font-semibold font-mono text-destructive">
             {formatCurrency(totalFeesUSD.toString(), "USD")}
           </div>
-          <p className="text-sm text-muted-foreground mt-1">Trading: {formatCurrency(tradeFees.toString(), "USD")}</p>
+          <p className="text-sm text-muted-foreground mt-2">Trading: {formatCurrency(tradeFees.toString(), "USD")}</p>
         </CardContent>
       </Card>
     </div>

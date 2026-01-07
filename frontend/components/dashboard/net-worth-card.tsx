@@ -29,8 +29,7 @@ export function NetWorthCard() {
   const { data: netWorth, isLoading, error } = useQuery<NetWorthData>({
     queryKey: ["net-worth"],
     queryFn: async () => {
-      const response = await api.get("/analytics/net-worth");
-      return response.data;
+      return api.get<NetWorthData>("/api/analytics/net-worth");
     },
     refetchInterval: 60000, // Refresh every minute
   });
@@ -91,7 +90,7 @@ export function NetWorthCard() {
   };
 
   return (
-    <Card className="col-span-full">
+    <Card variant="kpi" className="col-span-full">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -105,7 +104,7 @@ export function NetWorthCard() {
         {/* Main Net Worth Display */}
         <div className="space-y-2">
           <div className="flex items-baseline gap-3">
-            <h2 className="text-4xl font-bold tracking-tight">
+            <h2 className="text-4xl md:text-5xl font-bold font-mono tracking-tight">
               {formatCurrency(netWorthValue)}
             </h2>
             <Badge variant={isPositive ? "default" : "destructive"} className="text-base px-3 py-1">
@@ -119,7 +118,7 @@ export function NetWorthCard() {
               </span>
             </Badge>
           </div>
-          <div className="flex gap-6 text-sm text-muted-foreground">
+          <div className="flex gap-6 text-sm text-muted-foreground font-mono">
             <span>Holdings: {formatCurrency(holdings)}</span>
             <span>•</span>
             <span>Cash: {formatCurrency(cash)}</span>
@@ -131,30 +130,30 @@ export function NetWorthCard() {
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Total Invested</p>
-            <p className="text-2xl font-semibold">{formatCurrency(totalInvested)}</p>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total Invested</p>
+            <p className="text-xl md:text-2xl font-semibold font-mono">{formatCurrency(totalInvested)}</p>
           </div>
 
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Total Fees</p>
-            <p className="text-2xl font-semibold text-destructive">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total Fees</p>
+            <p className="text-xl md:text-2xl font-semibold font-mono text-destructive">
               {formatCurrency(totalFees)}
             </p>
           </div>
 
           <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Net Return</p>
-            <p className={`text-2xl font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}>
+            <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Net Return</p>
+            <p className={`text-xl md:text-2xl font-semibold font-mono ${isPositive ? "text-primary" : "text-destructive"}`}>
               {formatPercent(gainLossPct)}
             </p>
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center gap-1">
-              <p className="text-sm text-muted-foreground">Real Return (XIRR)</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">XIRR</p>
               <TrendingUpIcon className="h-3 w-3 text-muted-foreground" />
             </div>
-            <p className={`text-2xl font-semibold ${xirr.greaterThanOrEqualTo(0) ? "text-green-600" : "text-red-600"}`}>
+            <p className={`text-xl md:text-2xl font-semibold font-mono ${xirr.greaterThanOrEqualTo(0) ? "text-primary" : "text-destructive"}`}>
               {formatPercent(xirr)}
             </p>
           </div>
@@ -164,14 +163,14 @@ export function NetWorthCard() {
         {totalFees.greaterThan(0) && (
           <>
             <Separator />
-            <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-start gap-3 p-4 bg-muted/50 rounded-lg border border-border/50">
               <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium">Fee Impact on Performance</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm font-semibold">Fee Impact on Performance</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   You've paid {formatCurrency(totalFees)} in fees, which is{" "}
                   {formatPercent(totalFees.div(totalInvested.plus(0.01)).mul(100))} of your total invested capital.
                   {totalFees.div(totalInvested).mul(100).greaterThan(2) && (
-                    <span className="text-destructive font-medium">
+                    <span className="text-destructive font-semibold">
                       {" "}Consider reviewing your trading strategy to minimize fees.
                     </span>
                   )}
@@ -186,7 +185,7 @@ export function NetWorthCard() {
           <>
             <Separator />
             <div className="space-y-3">
-              <p className="text-sm font-medium">Asset Allocation</p>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Asset Allocation</p>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {Object.entries(netWorth.breakdown.by_asset_type).map(([assetType, value]) => {
                   const assetValue = new Decimal(value);
@@ -197,11 +196,11 @@ export function NetWorthCard() {
                   return (
                     <div
                       key={assetType}
-                      className="flex flex-col gap-1 p-3 bg-muted/30 rounded-lg"
+                      className="flex flex-col gap-1 p-3 bg-muted/30 rounded-lg border border-transparent hover:border-primary/20 hover:bg-muted/50 transition-all duration-200 cursor-pointer"
                     >
-                      <p className="text-xs text-muted-foreground capitalize">{assetType}</p>
-                      <p className="text-lg font-semibold">{formatCurrency(assetValue)}</p>
-                      <p className="text-xs text-muted-foreground">{formatPercent(percentage)}</p>
+                      <p className="text-xs text-muted-foreground capitalize font-medium">{assetType}</p>
+                      <p className="text-lg font-semibold font-mono">{formatCurrency(assetValue)}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{formatPercent(percentage)}</p>
                     </div>
                   );
                 })}
@@ -213,4 +212,5 @@ export function NetWorthCard() {
     </Card>
   );
 }
+
 
