@@ -26,6 +26,9 @@ func main() {
 	}
 	defer database.Close()
 
+	// Wire DB pool into the exchange rate service singleton
+	handlers.InitExchangeRateService()
+
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c fiber.Ctx, err error) error {
@@ -41,12 +44,12 @@ func main() {
 
 	// Middleware
 	app.Use(logger.New())
+	allowedOrigins := []string{"http://localhost:3000", "http://localhost:3001"}
+	if feURL := os.Getenv("FRONTEND_URL"); feURL != "" {
+		allowedOrigins = append(allowedOrigins, feURL)
+	}
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: []string{
-			"http://localhost:3000",
-			"http://localhost:3001",
-			os.Getenv("FRONTEND_URL"),
-		},
+		AllowOrigins: allowedOrigins,
 		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 	}))
@@ -66,6 +69,7 @@ func main() {
 	protected := api.Group("", middleware.AuthMiddleware())
 
 	// FX Rates endpoints
+	protected.Get("/fx-rates/current", handlers.GetCurrentRate)
 	protected.Get("/fx-rates", handlers.ListFxRates)
 	protected.Post("/fx-rates", handlers.CreateFxRate)
 	protected.Put("/fx-rates/:id", handlers.UpdateFxRate)

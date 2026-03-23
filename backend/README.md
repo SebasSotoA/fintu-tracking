@@ -33,6 +33,7 @@ air
 - `SUPABASE_JWT_SECRET`: JWT secret from Supabase project settings
 - `PORT`: Port to run the server on (default: 8080)
 - `FRONTEND_URL`: Frontend URL for CORS (default: http://localhost:3000)
+- `EXCHANGERATE_API_KEY`: API key from [ExchangeRate-API](https://www.exchangerate-api.com/) used for automatic USD/COP rate fetching
 
 ## API Endpoints
 
