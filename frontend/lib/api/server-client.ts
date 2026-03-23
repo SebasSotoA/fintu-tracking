@@ -1,3 +1,4 @@
+import { cache } from "react"
 import { createClient } from "@/lib/supabase/server"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
@@ -6,13 +7,16 @@ export interface ApiError {
   error: string
 }
 
-async function getAuthToken(): Promise<string | null> {
+const getAuthToken = cache(async (): Promise<string | null> => {
   const supabase = await createClient()
+  // Verify the token is genuinely valid with Supabase before using it
+  const { error } = await supabase.auth.getUser()
+  if (error) return null
   const {
     data: { session },
   } = await supabase.auth.getSession()
   return session?.access_token || null
-}
+})
 
 async function serverRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = await getAuthToken()
@@ -30,7 +34,7 @@ async function serverRequest<T>(endpoint: string, options: RequestInit = {}): Pr
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
-    cache: "no-store", // Disable caching for dynamic data
+    next: { revalidate: 30 },
   })
 
   if (!response.ok) {
