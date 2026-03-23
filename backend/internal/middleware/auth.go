@@ -17,16 +17,19 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var publicKeyCache *ecdsa.PublicKey
+// publicKeyCache holds all keys from the JWKS indexed by kid
+var publicKeyCache map[string]*ecdsa.PublicKey
 var publicKeyCacheTime time.Time
 
 // JWK represents a JSON Web Key
 type JWK struct {
+	Kid string `json:"kid"`
 	Kty string `json:"kty"`
 	Crv string `json:"crv"`
 	X   string `json:"x"`
 	Y   string `json:"y"`
 	Alg string `json:"alg"`
+	Use string `json:"use"`
 }
 
 // JWKS represents a set of JSON Web Keys
@@ -34,73 +37,100 @@ type JWKS struct {
 	Keys []JWK `json:"keys"`
 }
 
-// getSupabasePublicKey fetches and caches the Supabase public key
-func getSupabasePublicKey() (*ecdsa.PublicKey, error) {
-	// Return cached key if it's less than 1 hour old
-	if publicKeyCache != nil && time.Since(publicKeyCacheTime) < time.Hour {
-		return publicKeyCache, nil
+// getSupabasePublicKey fetches and caches all JWKS keys, returning the one matching kid.
+// If kid is empty, the first key is returned for backwards compatibility.
+func getSupabasePublicKey(kid string) (*ecdsa.PublicKey, error) {
+	// Refresh cache if empty or older than 1 hour
+	if publicKeyCache == nil || time.Since(publicKeyCacheTime) >= time.Hour {
+		if err := refreshJWKSCache(); err != nil {
+			// If refresh fails but we have a stale cache, keep using it
+			if publicKeyCache == nil {
+				return nil, err
+			}
+		}
 	}
 
+	if kid != "" {
+		if key, ok := publicKeyCache[kid]; ok {
+			return key, nil
+		}
+		// kid not found in cache — force a refresh and try once more
+		if err := refreshJWKSCache(); err != nil {
+			return nil, fmt.Errorf("failed to refresh JWKS after unknown kid %q: %w", kid, err)
+		}
+		if key, ok := publicKeyCache[kid]; ok {
+			return key, nil
+		}
+		return nil, fmt.Errorf("no JWKS key found for kid %q", kid)
+	}
+
+	// Fallback: return any key (first inserted)
+	for _, key := range publicKeyCache {
+		return key, nil
+	}
+	return nil, fmt.Errorf("JWKS cache is empty")
+}
+
+// refreshJWKSCache fetches the JWKS from Supabase and rebuilds the cache.
+func refreshJWKSCache() error {
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	if supabaseURL == "" {
-		return nil, fmt.Errorf("SUPABASE_URL not set")
+		return fmt.Errorf("SUPABASE_URL not set")
 	}
 
-	// FIX: Add /auth/v1/ to the JWKS URL
 	jwksURL := supabaseURL + "/auth/v1/.well-known/jwks.json"
-	
+
 	resp, err := http.Get(jwksURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch JWKS: %w", err)
+		return fmt.Errorf("failed to fetch JWKS from %s: %w", jwksURL, err)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("JWKS endpoint returned status %d", resp.StatusCode)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read JWKS response: %w", err)
+		return fmt.Errorf("failed to read JWKS response: %w", err)
 	}
 
 	var jwks JWKS
 	if err := json.Unmarshal(body, &jwks); err != nil {
-		return nil, fmt.Errorf("failed to parse JWKS: %w", err)
+		return fmt.Errorf("failed to parse JWKS: %w", err)
 	}
 
 	if len(jwks.Keys) == 0 {
-		return nil, fmt.Errorf("no keys found in JWKS")
+		return fmt.Errorf("no keys found in JWKS response")
 	}
 
-	// Use the first ES256 key
-	jwk := jwks.Keys[0]
-	
-	// Decode X and Y coordinates
-	xBytes, err := base64.RawURLEncoding.DecodeString(jwk.X)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode X coordinate: %w", err)
-	}
-	
-	yBytes, err := base64.RawURLEncoding.DecodeString(jwk.Y)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode Y coordinate: %w", err)
+	newCache := make(map[string]*ecdsa.PublicKey, len(jwks.Keys))
+	for _, jwk := range jwks.Keys {
+		xBytes, err := base64.RawURLEncoding.DecodeString(jwk.X)
+		if err != nil {
+			return fmt.Errorf("failed to decode X for kid %q: %w", jwk.Kid, err)
+		}
+		yBytes, err := base64.RawURLEncoding.DecodeString(jwk.Y)
+		if err != nil {
+			return fmt.Errorf("failed to decode Y for kid %q: %w", jwk.Kid, err)
+		}
+
+		pubKey := &ecdsa.PublicKey{
+			Curve: elliptic.P256(),
+			X:     new(big.Int).SetBytes(xBytes),
+			Y:     new(big.Int).SetBytes(yBytes),
+		}
+		newCache[jwk.Kid] = pubKey
 	}
 
-	// Create the public key with P-256 curve
-	pubKey := &ecdsa.PublicKey{
-		Curve: elliptic.P256(),
-		X:     new(big.Int).SetBytes(xBytes),
-		Y:     new(big.Int).SetBytes(yBytes),
-	}
-	
-	// Cache the key
-	publicKeyCache = pubKey
+	publicKeyCache = newCache
 	publicKeyCacheTime = time.Now()
-
-	return pubKey, nil
+	return nil
 }
 
 // AuthMiddleware validates Supabase JWT tokens (supports both HS256 and ES256)
 func AuthMiddleware() fiber.Handler {
 	return func(c fiber.Ctx) error {
-		// Get the authorization header
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -108,7 +138,6 @@ func AuthMiddleware() fiber.Handler {
 			})
 		}
 
-		// Extract the token from "Bearer <token>"
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -118,26 +147,24 @@ func AuthMiddleware() fiber.Handler {
 
 		tokenString := parts[1]
 
-		// Parse and validate the JWT token
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Check signing method
 			switch token.Method.(type) {
 			case *jwt.SigningMethodHMAC:
-				// HS256 - use legacy secret
 				secret := os.Getenv("SUPABASE_JWT_SECRET")
 				if secret == "" {
 					return nil, fmt.Errorf("SUPABASE_JWT_SECRET not set")
 				}
 				return []byte(secret), nil
-				
+
 			case *jwt.SigningMethodECDSA:
-				// ES256 - use public key from JWKS
-				pubKey, err := getSupabasePublicKey()
+				// Extract kid from token header for correct key selection
+				kid, _ := token.Header["kid"].(string)
+				pubKey, err := getSupabasePublicKey(kid)
 				if err != nil {
 					return nil, fmt.Errorf("failed to get public key: %w", err)
 				}
 				return pubKey, nil
-				
+
 			default:
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
@@ -149,14 +176,12 @@ func AuthMiddleware() fiber.Handler {
 			})
 		}
 
-	// Extract user ID from claims
-	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		if sub, ok := claims["sub"].(string); ok {
-			// Store user ID in context for handlers to use
-			c.Locals("user_id", sub)
-			return c.Next()
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			if sub, ok := claims["sub"].(string); ok {
+				c.Locals("user_id", sub)
+				return c.Next()
+			}
 		}
-	}
 
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid token claims",
