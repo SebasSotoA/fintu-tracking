@@ -67,7 +67,7 @@ GOVET := $(GO) vet
 AIR := air
 
 # Frontend tools
-NPM := npm
+NPM := pnpm
 
 # =============================================================================
 # Build Flags
