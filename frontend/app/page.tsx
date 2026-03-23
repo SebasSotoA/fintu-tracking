@@ -2,16 +2,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { TrendingUp, DollarSign, PieChart, BarChart3 } from "lucide-react"
+import { LandingNav } from "@/components/layout/landing-nav"
 
 export default function HomePage() {
   return (
     <div className="min-h-screen">
+      <LandingNav />
+
       {/* Hero Section */}
-      <section className="container mx-auto px-6 py-20">
+      <section id="about" className="container mx-auto px-6 py-20">
         <div className="flex flex-col items-center text-center space-y-8">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-balance">
             Track Your USD Investments
-            <span className="block text-primary">with COP Precision</span>
+            <span className="block text-primary">with Precision</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl text-pretty">
             Built for LATAM retail investors. Accurately account for FX rates, fees, and real performance across
@@ -29,7 +32,7 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="container mx-auto px-6 py-16">
+      <section id="features" className="container mx-auto px-6 py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
             <CardContent className="pt-6">
