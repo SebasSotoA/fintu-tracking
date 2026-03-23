@@ -20,9 +20,7 @@ interface TradesListProps {
 export function TradesList({ trades: initialTrades }: TradesListProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  // Ensure trades is a valid array
-  const safeTrades = initialTrades || []
-  const [trades, setTrades] = useState(safeTrades)
+  const trades = initialTrades || []
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null)
   const [deletingTrade, setDeletingTrade] = useState<Trade | null>(null)
 
@@ -74,10 +72,10 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
                   <TableCell>{new Date(trade.date).toLocaleDateString()}</TableCell>
                   <TableCell className="font-mono font-semibold">{trade.ticker}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{trade.asset_type}</Badge>
+                    <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={trade.side === "buy" ? "default" : "secondary"}>{trade.side}</Badge>
+                    <Badge variant={trade.side === "buy" ? "default" : "secondary"}>{trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono">{format(trade.quantity, 4)}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(trade.price, "USD")}</TableCell>

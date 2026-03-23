@@ -1,6 +1,9 @@
 import { cache } from "react"
 import { createClient } from "@/lib/supabase/server"
 
+if (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === "production") {
+  throw new Error("Missing required environment variable: NEXT_PUBLIC_API_URL")
+}
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
 export interface ApiError {
@@ -34,7 +37,7 @@ async function serverRequest<T>(endpoint: string, options: RequestInit = {}): Pr
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
     headers,
-    next: { revalidate: 30 },
+    cache: "no-store",
   })
 
   if (!response.ok) {

@@ -9,7 +9,7 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Fintu — Portfolio Tracker",
+  title: "Fintu",
   description: "Track your USD investments with precision. Built for LATAM retail investors.",
   generator: "v0.app",
   icons: {

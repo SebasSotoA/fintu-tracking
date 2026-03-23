@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/client"
 
+if (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === "production") {
+  throw new Error("Missing required environment variable: NEXT_PUBLIC_API_URL")
+}
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
 export interface ApiError {

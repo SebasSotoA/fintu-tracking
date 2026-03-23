@@ -29,9 +29,9 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
     ticker: trade.ticker,
     asset_type: trade.asset_type,
     side: trade.side,
-    quantity: trade.quantity,
-    price: trade.price,
-    fee: trade.fee,
+    quantity: new Decimal(trade.quantity).toString(),
+    price: new Decimal(trade.price).toString(),
+    fee: new Decimal(trade.fee).toString(),
     notes: trade.notes || "",
   })
 
@@ -58,7 +58,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
     const price = new Decimal(formData.price)
     const fee = new Decimal(calculateFeeAmount())
     const subtotal = quantity.mul(price)
-    return formData.side === "buy" ? subtotal.add(fee).toString() : subtotal.sub(fee).toString()
+    return formData.side === "buy" ? subtotal.add(fee).toFixed(2) : subtotal.sub(fee).toFixed(2)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

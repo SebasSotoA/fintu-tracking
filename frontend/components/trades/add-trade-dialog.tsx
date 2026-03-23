@@ -63,7 +63,7 @@ export function AddTradeDialog() {
     const price = new Decimal(formData.price)
     const fee = new Decimal(calculateFeeAmount())
     const subtotal = quantity.mul(price)
-    return formData.side === "buy" ? subtotal.add(fee).toString() : subtotal.sub(fee).toString()
+    return formData.side === "buy" ? subtotal.add(fee).toFixed(2) : subtotal.sub(fee).toFixed(2)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
