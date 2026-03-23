@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AppNav } from "@/components/layout/app-nav"
 
+export const dynamic = "force-dynamic"
+
 export default async function AppLayout({
   children,
 }: {
