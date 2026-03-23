@@ -44,7 +44,7 @@ func ListFxRates(c fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	var fxRates []models.FxRate
+	fxRates := make([]models.FxRate, 0)
 	for rows.Next() {
 		var rate models.FxRate
 		if err := rows.Scan(&rate.ID, &rate.UserID, &rate.Date, &rate.Rate, &rate.Source, &rate.CreatedAt); err != nil {

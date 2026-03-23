@@ -32,7 +32,7 @@ func ListTrades(c fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	var trades []models.Trade
+	trades := make([]models.Trade, 0)
 	for rows.Next() {
 		var trade models.Trade
 		if err := rows.Scan(&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType, 

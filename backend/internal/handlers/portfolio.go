@@ -31,7 +31,7 @@ func GetHoldings(c fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	var trades []models.Trade
+	trades := make([]models.Trade, 0)
 	for rows.Next() {
 		var trade models.Trade
 		if err := rows.Scan(&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType,
@@ -105,7 +105,7 @@ func ListMarketPrices(c fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	var prices []models.MarketPrice
+	prices := make([]models.MarketPrice, 0)
 	for rows.Next() {
 		var price models.MarketPrice
 		if err := rows.Scan(&price.Ticker, &price.Price, &price.Currency, &price.UpdatedAt); err != nil {
