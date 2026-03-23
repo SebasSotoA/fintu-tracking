@@ -4,6 +4,8 @@ import type React from "react"
 
 import type { FxRate } from "@/lib/types"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -24,6 +26,8 @@ interface FxRateManagerProps {
 }
 
 export function FxRateManager({ recentRates }: FxRateManagerProps) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
   // Ensure recentRates is a valid array
   const safeRecentRates = recentRates || []
   const [open, setOpen] = useState(false)
@@ -52,7 +56,8 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
         date: new Date().toISOString().split("T")[0],
         rate: "",
       })
-      window.location.reload()
+      router.refresh()
+      queryClient.invalidateQueries({ queryKey: ["net-worth"] })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create FX rate")
     } finally {

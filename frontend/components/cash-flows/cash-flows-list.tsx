@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Pencil, Trash2, ExternalLinkIcon, LinkIcon } from "lucide-react"
 import { formatCurrency, format } from "@/lib/decimal"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { EditCashFlowDialog } from "./edit-cash-flow-dialog"
 import { DeleteCashFlowDialog } from "./delete-cash-flow-dialog"
 import Link from "next/link"
@@ -17,6 +19,8 @@ interface CashFlowsListProps {
 }
 
 export function CashFlowsList({ cashFlows: initialCashFlows }: CashFlowsListProps) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
   // Ensure cash flows is a valid array
   const safeCashFlows = initialCashFlows || []
   const [cashFlows] = useState(safeCashFlows)
@@ -24,11 +28,13 @@ export function CashFlowsList({ cashFlows: initialCashFlows }: CashFlowsListProp
   const [deletingCashFlow, setDeletingCashFlow] = useState<CashFlow | null>(null)
 
   const handleUpdated = () => {
-    window.location.reload()
+    router.refresh()
+    queryClient.invalidateQueries({ queryKey: ["net-worth"] })
   }
 
   const handleDeleted = () => {
-    window.location.reload()
+    router.refresh()
+    queryClient.invalidateQueries({ queryKey: ["net-worth"] })
   }
 
   if (cashFlows.length === 0) {

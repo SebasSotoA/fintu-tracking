@@ -32,12 +32,12 @@ interface FeeBreakdown {
 }
 
 export function FeeAttributionChart() {
-  const { data: feeBreakdown, isLoading } = useQuery<FeeBreakdown>({
+  const { data: feeBreakdown, isLoading, error } = useQuery<FeeBreakdown>({
     queryKey: ["fee-breakdown"],
     queryFn: async () => {
-      const response = await api.get("/analytics/fee-breakdown");
-      return response.data;
+      return api.get<FeeBreakdown>("/api/analytics/fee-breakdown");
     },
+    retry: false,
   });
 
   if (isLoading) {
@@ -54,8 +54,22 @@ export function FeeAttributionChart() {
     );
   }
 
-  if (!feeBreakdown) {
-    return null;
+  if (error || !feeBreakdown) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingDownIcon className="h-5 w-5 text-muted-foreground" />
+            Fee Attribution Breakdown
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+          <DollarSignIcon className="h-10 w-10 mb-3 opacity-40" />
+          <p className="font-medium">No fee data yet</p>
+          <p className="text-sm mt-1">Record trades with fees to see your fee breakdown.</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   const totalFees = new Decimal(feeBreakdown.total_fees || "0");

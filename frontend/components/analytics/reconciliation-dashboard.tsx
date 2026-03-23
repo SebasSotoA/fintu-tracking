@@ -42,8 +42,7 @@ export function ReconciliationDashboard() {
   const { data: report, isLoading, refetch } = useQuery<ReconciliationReport>({
     queryKey: ["cash-reconciliation"],
     queryFn: async () => {
-      const response = await api.get("/analytics/cash-reconciliation");
-      return response.data;
+      return api.get<ReconciliationReport>("/api/analytics/cash-reconciliation");
     },
   });
 

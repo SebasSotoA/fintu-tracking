@@ -36,12 +36,12 @@ interface ReturnAttributionData {
 }
 
 export function ReturnAttribution() {
-  const { data: attribution, isLoading } = useQuery<ReturnAttributionData>({
+  const { data: attribution, isLoading, error } = useQuery<ReturnAttributionData>({
     queryKey: ["return-attribution"],
     queryFn: async () => {
-      const response = await api.get("/analytics/return-attribution");
-      return response.data;
+      return api.get<ReturnAttributionData>("/api/analytics/return-attribution");
     },
+    retry: false,
   });
 
   if (isLoading) {
@@ -58,8 +58,22 @@ export function ReturnAttribution() {
     );
   }
 
-  if (!attribution) {
-    return null;
+  if (error || !attribution) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUpIcon className="h-5 w-5 text-muted-foreground" />
+            Return Attribution Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+          <AlertCircleIcon className="h-10 w-10 mb-3 opacity-40" />
+          <p className="font-medium">No attribution data yet</p>
+          <p className="text-sm mt-1">Add trades and cash flows to see your return breakdown.</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   const startingCapital = new Decimal(attribution.starting_capital || "0");
@@ -154,7 +168,7 @@ export function ReturnAttribution() {
           {data.type !== "start" && data.type !== "end" && (
             <p className="text-base font-bold" style={{ color: data.color }}>
               {data.value >= 0 ? "+" : ""}
-              {formatCurrency(Math.abs(data.value))}
+              {formatCurrency(String(Math.abs(data.value)))}
             </p>
           )}
           <p className="text-xs text-muted-foreground mt-1">

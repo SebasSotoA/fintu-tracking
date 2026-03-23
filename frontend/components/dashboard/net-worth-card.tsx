@@ -8,30 +8,21 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api/client";
 import Decimal from "decimal.js";
+import type { NetWorthData } from "@/lib/types";
 
-interface NetWorthData {
-  holdings_value: string;
-  cash_balance: string;
-  net_worth: string;
-  total_invested: string;
-  total_fees: string;
-  total_gain_loss: string;
-  total_gain_loss_pct: string;
-  xirr: string;
-  breakdown: {
-    by_asset_type: Record<string, string>;
-    by_ticker: Record<string, string>;
-    by_broker: Record<string, string>;
-  };
+interface NetWorthCardProps {
+  initialData?: NetWorthData | null;
 }
 
-export function NetWorthCard() {
+export function NetWorthCard({ initialData }: NetWorthCardProps = {}) {
   const { data: netWorth, isLoading, error } = useQuery<NetWorthData>({
     queryKey: ["net-worth"],
     queryFn: async () => {
       return api.get<NetWorthData>("/api/analytics/net-worth");
     },
-    refetchInterval: 60000, // Refresh every minute
+    initialData: initialData ?? undefined,
+    staleTime: 60_000,
+    refetchInterval: 60000,
   });
 
   if (isLoading) {

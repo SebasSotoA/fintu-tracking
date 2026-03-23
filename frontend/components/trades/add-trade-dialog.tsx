@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,6 +23,8 @@ import { Decimal } from "@/lib/decimal"
 import { createTrade } from "@/lib/api/trades"
 
 export function AddTradeDialog() {
+  const router = useRouter()
+  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -92,7 +96,8 @@ export function AddTradeDialog() {
       })
       setFeeType("fixed")
       setFeePercentage("")
-      window.location.reload()
+      router.refresh()
+      queryClient.invalidateQueries({ queryKey: ["net-worth"] })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create trade")
     } finally {

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Pencil, Trash2 } from "lucide-react"
 import { formatCurrency, format } from "@/lib/decimal"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { EditTradeDialog } from "./edit-trade-dialog"
 import { DeleteTradeDialog } from "./delete-trade-dialog"
 
@@ -16,6 +18,8 @@ interface TradesListProps {
 }
 
 export function TradesList({ trades: initialTrades }: TradesListProps) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
   // Ensure trades is a valid array
   const safeTrades = initialTrades || []
   const [trades, setTrades] = useState(safeTrades)
@@ -23,11 +27,13 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
   const [deletingTrade, setDeletingTrade] = useState<Trade | null>(null)
 
   const handleTradeUpdated = () => {
-    window.location.reload()
+    router.refresh()
+    queryClient.invalidateQueries({ queryKey: ["net-worth"] })
   }
 
   const handleTradeDeleted = () => {
-    window.location.reload()
+    router.refresh()
+    queryClient.invalidateQueries({ queryKey: ["net-worth"] })
   }
 
   if (trades.length === 0) {

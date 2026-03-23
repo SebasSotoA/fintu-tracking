@@ -1,5 +1,5 @@
 import { serverGet } from "./server-client"
-import type { Holding, MarketPrice } from "@/lib/types"
+import type { Holding, MarketPrice, NetWorthData } from "@/lib/types"
 
 export interface PerformanceMetrics {
   totalInvested: string
@@ -23,5 +23,9 @@ export async function listMarketPrices(): Promise<MarketPrice[]> {
 
 export async function getMarketPrice(ticker: string): Promise<MarketPrice> {
   return serverGet<MarketPrice>(`/api/market-prices/${ticker}`)
+}
+
+export async function getNetWorth(): Promise<NetWorthData> {
+  return serverGet<NetWorthData>("/api/analytics/net-worth")
 }
 

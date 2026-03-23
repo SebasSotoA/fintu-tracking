@@ -63,3 +63,19 @@ export interface Holding {
   unrealizedPL: string
   unrealizedPLPercent: string
 }
+
+export interface NetWorthData {
+  holdings_value: string
+  cash_balance: string
+  net_worth: string
+  total_invested: string
+  total_fees: string
+  total_gain_loss: string
+  total_gain_loss_pct: string
+  xirr: string
+  breakdown: {
+    by_asset_type: Record<string, string>
+    by_ticker: Record<string, string>
+    by_broker: Record<string, string>
+  }
+}
