@@ -8,6 +8,10 @@ export interface CreateCashFlowData {
   amount: string
   fx_rate?: string | null
   notes?: string | null
+  broker_id?: string | null
+  fee_type?: "deposit" | "trading" | "closing" | "maintenance" | "other" | "withdrawal" | null
+  related_trade_id?: string | null
+  related_type?: "trade" | "deposit" | "withdrawal" | "standalone" | null
 }
 
 export interface UpdateCashFlowData {
@@ -17,6 +21,10 @@ export interface UpdateCashFlowData {
   amount?: string
   fx_rate?: string | null
   notes?: string | null
+  broker_id?: string | null
+  fee_type?: "deposit" | "trading" | "closing" | "maintenance" | "other" | "withdrawal" | null
+  related_trade_id?: string | null
+  related_type?: "trade" | "deposit" | "withdrawal" | "standalone" | null
 }
 
 export async function listCashFlows(): Promise<CashFlow[]> {

@@ -21,7 +21,7 @@ func ListCashFlows(c fiber.Ctx) error {
 	}
 
 	query := `
-		SELECT id, user_id, date, type, currency, amount, fx_rate, usd_amount, notes, created_at, updated_at
+		SELECT id, user_id, date, type, currency, amount, fx_rate, usd_amount, notes, broker_id, fee_type, related_trade_id, related_type, created_at, updated_at
 		FROM cash_flows
 		WHERE user_id = $1
 		ORDER BY date DESC
@@ -33,10 +33,10 @@ func ListCashFlows(c fiber.Ctx) error {
 	}
 	defer rows.Close()
 
-	var cashFlows []models.CashFlow
+	cashFlows := make([]models.CashFlow, 0)
 	for rows.Next() {
 		var cf models.CashFlow
-		if err := rows.Scan(&cf.ID, &cf.UserID, &cf.Date, &cf.Type, &cf.Currency, &cf.Amount, &cf.FxRate, &cf.UsdAmount, &cf.Notes, &cf.CreatedAt, &cf.UpdatedAt); err != nil {
+		if err := rows.Scan(&cf.ID, &cf.UserID, &cf.Date, &cf.Type, &cf.Currency, &cf.Amount, &cf.FxRate, &cf.UsdAmount, &cf.Notes, &cf.BrokerID, &cf.FeeType, &cf.RelatedTradeID, &cf.RelatedType, &cf.CreatedAt, &cf.UpdatedAt); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		cashFlows = append(cashFlows, cf)
@@ -97,9 +97,9 @@ func CreateCashFlow(c fiber.Ctx) error {
 	id := uuid.New().String()
 
 	query := `
-		INSERT INTO cash_flows (id, user_id, date, type, currency, amount, fx_rate, usd_amount, notes)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, user_id, date, type, currency, amount, fx_rate, usd_amount, notes, created_at, updated_at
+		INSERT INTO cash_flows (id, user_id, date, type, currency, amount, fx_rate, usd_amount, notes, broker_id, fee_type, related_trade_id, related_type)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		RETURNING id, user_id, date, type, currency, amount, fx_rate, usd_amount, notes, broker_id, fee_type, related_trade_id, related_type, created_at, updated_at
 	`
 
 	var cashFlow models.CashFlow
@@ -109,10 +109,13 @@ func CreateCashFlow(c fiber.Ctx) error {
 		fxRateStr = &s
 	}
 
-	err = database.GetPool().QueryRow(context.Background(), query, 
-		id, userID, date, req.Type, req.Currency, req.Amount, fxRateStr, usdAmount.String(), req.Notes).
-		Scan(&cashFlow.ID, &cashFlow.UserID, &cashFlow.Date, &cashFlow.Type, &cashFlow.Currency, 
-			&cashFlow.Amount, &cashFlow.FxRate, &cashFlow.UsdAmount, &cashFlow.Notes, &cashFlow.CreatedAt, &cashFlow.UpdatedAt)
+	err = database.GetPool().QueryRow(context.Background(), query,
+		id, userID, date, req.Type, req.Currency, req.Amount, fxRateStr, usdAmount.String(), req.Notes,
+		req.BrokerID, req.FeeType, req.RelatedTradeID, req.RelatedType).
+		Scan(&cashFlow.ID, &cashFlow.UserID, &cashFlow.Date, &cashFlow.Type, &cashFlow.Currency,
+			&cashFlow.Amount, &cashFlow.FxRate, &cashFlow.UsdAmount, &cashFlow.Notes,
+			&cashFlow.BrokerID, &cashFlow.FeeType, &cashFlow.RelatedTradeID, &cashFlow.RelatedType,
+			&cashFlow.CreatedAt, &cashFlow.UpdatedAt)
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -136,9 +139,10 @@ func UpdateCashFlow(c fiber.Ctx) error {
 
 	// Get existing cash flow to have base values
 	var existingCF models.CashFlow
-	query := `SELECT date, type, currency, amount, fx_rate FROM cash_flows WHERE id = $1 AND user_id = $2`
+	query := `SELECT date, type, currency, amount, fx_rate, broker_id, fee_type, related_trade_id, related_type FROM cash_flows WHERE id = $1 AND user_id = $2`
 	err := database.GetPool().QueryRow(context.Background(), query, id, userID).
-		Scan(&existingCF.Date, &existingCF.Type, &existingCF.Currency, &existingCF.Amount, &existingCF.FxRate)
+		Scan(&existingCF.Date, &existingCF.Type, &existingCF.Currency, &existingCF.Amount, &existingCF.FxRate,
+			&existingCF.BrokerID, &existingCF.FeeType, &existingCF.RelatedTradeID, &existingCF.RelatedType)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Cash flow not found"})
 	}
@@ -159,6 +163,18 @@ func UpdateCashFlow(c fiber.Ctx) error {
 	if req.FxRate != nil {
 		existingCF.FxRate = req.FxRate
 	}
+	if req.BrokerID != nil {
+		existingCF.BrokerID = req.BrokerID
+	}
+	if req.FeeType != nil {
+		existingCF.FeeType = req.FeeType
+	}
+	if req.RelatedTradeID != nil {
+		existingCF.RelatedTradeID = req.RelatedTradeID
+	}
+	if req.RelatedType != nil {
+		existingCF.RelatedType = req.RelatedType
+	}
 
 	// Recalculate USD amount
 	amount, _ := decimal.NewFromString(existingCF.Amount)
@@ -175,13 +191,16 @@ func UpdateCashFlow(c fiber.Ctx) error {
 
 	updateQuery := `
 		UPDATE cash_flows 
-		SET date = $1, type = $2, currency = $3, amount = $4, fx_rate = $5, usd_amount = $6, notes = $7, updated_at = NOW()
-		WHERE id = $8 AND user_id = $9
+		SET date = $1, type = $2, currency = $3, amount = $4, fx_rate = $5, usd_amount = $6, notes = $7,
+			broker_id = $8, fee_type = $9, related_trade_id = $10, related_type = $11, updated_at = NOW()
+		WHERE id = $12 AND user_id = $13
 	`
 
 	result, err := database.GetPool().Exec(context.Background(), updateQuery,
-		existingCF.Date, existingCF.Type, existingCF.Currency, existingCF.Amount, 
-		existingCF.FxRate, usdAmount.String(), req.Notes, id, userID)
+		existingCF.Date, existingCF.Type, existingCF.Currency, existingCF.Amount,
+		existingCF.FxRate, usdAmount.String(), req.Notes,
+		existingCF.BrokerID, existingCF.FeeType, existingCF.RelatedTradeID, existingCF.RelatedType,
+		id, userID)
 
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})

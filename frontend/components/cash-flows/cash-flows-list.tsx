@@ -16,14 +16,13 @@ import Link from "next/link"
 
 interface CashFlowsListProps {
   cashFlows: CashFlow[]
+  highlightId?: string
 }
 
-export function CashFlowsList({ cashFlows: initialCashFlows }: CashFlowsListProps) {
+export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: CashFlowsListProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  // Ensure cash flows is a valid array
-  const safeCashFlows = initialCashFlows || []
-  const [cashFlows] = useState(safeCashFlows)
+  const cashFlows = initialCashFlows || []
   const [editingCashFlow, setEditingCashFlow] = useState<CashFlow | null>(null)
   const [deletingCashFlow, setDeletingCashFlow] = useState<CashFlow | null>(null)
 
@@ -71,7 +70,10 @@ export function CashFlowsList({ cashFlows: initialCashFlows }: CashFlowsListProp
             </TableHeader>
             <TableBody>
               {cashFlows.map((cf) => (
-                <TableRow key={cf.id}>
+                <TableRow
+                  key={cf.id}
+                  className={cf.id === highlightId ? "bg-amber-50 dark:bg-amber-950/20 ring-1 ring-inset ring-amber-400" : undefined}
+                >
                   <TableCell>{new Date(cf.date).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Badge

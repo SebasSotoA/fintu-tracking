@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import { CashFlowsList } from "@/components/cash-flows/cash-flows-list"
 import { AddCashFlowDialog } from "@/components/cash-flows/add-cash-flow-dialog"
 import { FxRateManager } from "@/components/cash-flows/fx-rate-manager"
+import { ReconciliationDashboard } from "@/components/analytics/reconciliation-dashboard"
 import { listCashFlows } from "@/lib/api/server-cash-flows"
 import { listFxRates } from "@/lib/api/server-fx-rates"
 import type { CashFlow, FxRate } from "@/lib/types"
@@ -9,9 +10,11 @@ import type { CashFlow, FxRate } from "@/lib/types"
 async function CashFlowsContent({
   cashFlowsPromise,
   fxRatesPromise,
+  highlightId,
 }: {
   cashFlowsPromise: Promise<CashFlow[]>
   fxRatesPromise: Promise<FxRate[]>
+  highlightId?: string
 }) {
   const [cashFlows, fxRates] = await Promise.all([cashFlowsPromise, fxRatesPromise])
   const recentFxRates = fxRates.slice(0, 10)
@@ -20,12 +23,17 @@ async function CashFlowsContent({
       <div className="flex justify-end mb-4">
         <FxRateManager recentRates={recentFxRates} />
       </div>
-      <CashFlowsList cashFlows={cashFlows} />
+      <CashFlowsList cashFlows={cashFlows} highlightId={highlightId} />
     </>
   )
 }
 
-export default function CashFlowsPage() {
+export default async function CashFlowsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ highlight?: string }>
+}) {
+  const { highlight } = await searchParams
   const cashFlowsPromise = listCashFlows().catch(() => [])
   const fxRatesPromise = listFxRates().catch(() => [])
 
@@ -42,8 +50,12 @@ export default function CashFlowsPage() {
         <CashFlowsContent
           cashFlowsPromise={cashFlowsPromise}
           fxRatesPromise={fxRatesPromise}
+          highlightId={highlight}
         />
       </Suspense>
+      <div className="mt-8">
+        <ReconciliationDashboard />
+      </div>
     </>
   )
 }
