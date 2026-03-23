@@ -34,13 +34,13 @@ func (s *FeeService) CalculateFeeAttribution(ctx context.Context, userID string,
 			t.ticker,
 			t.date,
 			t.side,
-			COALESCE(t.deposit_fee, 0) as deposit_fee,
-			COALESCE(t.trading_fee, 0) as trading_fee,
-			COALESCE(t.closing_fee, 0) as closing_fee,
-			t.total_fees,
+			0::numeric as deposit_fee,
+			COALESCE(t.fee, 0) as trading_fee,
+			0::numeric as closing_fee,
+			COALESCE(t.fee, 0) as total_fees,
 			t.quantity * t.price as trade_value,
 			CASE 
-				WHEN t.quantity * t.price > 0 THEN (t.total_fees / (t.quantity * t.price) * 100)
+				WHEN t.quantity * t.price > 0 THEN (COALESCE(t.fee, 0) / NULLIF(t.quantity * t.price, 0) * 100)
 				ELSE 0
 			END as fee_impact_pct,
 			ARRAY_AGG(cf.id) FILTER (WHERE cf.id IS NOT NULL) as cash_flow_ids
@@ -65,7 +65,7 @@ func (s *FeeService) CalculateFeeAttribution(ctx context.Context, userID string,
 		}
 	}
 
-	query += " GROUP BY t.id, t.ticker, t.date, t.side, t.deposit_fee, t.trading_fee, t.closing_fee, t.total_fees, t.quantity, t.price"
+	query += " GROUP BY t.id, t.ticker, t.date, t.side, t.fee, t.quantity, t.price"
 	query += " ORDER BY t.date DESC, t.ticker"
 
 	rows, err := s.pool.Query(ctx, query, args...)
@@ -229,7 +229,7 @@ func (s *FeeService) GetFeeImpactOnReturn(ctx context.Context, userID, ticker st
 		SELECT 
 			SUM(CASE WHEN side = 'buy' THEN quantity ELSE -quantity END) as net_quantity,
 			SUM(CASE WHEN side = 'buy' THEN (quantity * price) ELSE 0 END) as total_cost,
-			SUM(total_fees) as total_fees,
+			SUM(COALESCE(fee, 0)) as total_fees,
 			COUNT(*) as trade_count
 		FROM trades
 		WHERE user_id = $1 AND ticker = $2
@@ -281,9 +281,9 @@ func (s *FeeService) ReconcileCashFlowFees(ctx context.Context, userID string) (
 	// Get total fees from trades
 	var totalTradeFees string
 	err := s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(total_fees), 0)
+		SELECT COALESCE(SUM(COALESCE(fee, 0)), 0)
 		FROM trades
-		WHERE user_id = $1 AND total_fees > 0
+		WHERE user_id = $1 AND COALESCE(fee, 0) > 0
 	`, userID).Scan(&totalTradeFees)
 	if err != nil {
 		return report, fmt.Errorf("failed to get total trade fees: %w", err)
@@ -313,7 +313,7 @@ func (s *FeeService) ReconcileCashFlowFees(ctx context.Context, userID string) (
 		SELECT t.id
 		FROM trades t
 		WHERE t.user_id = $1 
-		  AND t.total_fees > 0
+		  AND COALESCE(t.fee, 0) > 0
 		  AND NOT EXISTS (
 			SELECT 1 FROM cash_flows cf 
 			WHERE cf.related_trade_id = t.id AND cf.type = 'fee'
@@ -363,13 +363,13 @@ func (s *FeeService) ReconcileCashFlowFees(ctx context.Context, userID string) (
 			t.id,
 			t.ticker,
 			t.date,
-			t.total_fees,
+			COALESCE(t.fee, 0) as total_fees,
 			COALESCE(SUM(cf.usd_amount), 0) as cash_flow_fees
 		FROM trades t
 		LEFT JOIN cash_flows cf ON cf.related_trade_id = t.id AND cf.type = 'fee'
-		WHERE t.user_id = $1 AND t.total_fees > 0
-		GROUP BY t.id, t.ticker, t.date, t.total_fees
-		HAVING t.total_fees != COALESCE(SUM(cf.usd_amount), 0)
+		WHERE t.user_id = $1 AND COALESCE(t.fee, 0) > 0
+		GROUP BY t.id, t.ticker, t.date, t.fee
+		HAVING COALESCE(t.fee, 0) != COALESCE(SUM(cf.usd_amount), 0)
 	`, userID)
 	if err != nil {
 		return report, fmt.Errorf("failed to check discrepancies: %w", err)
@@ -412,13 +412,13 @@ func (s *FeeService) GetFeeEfficiency(ctx context.Context, userID string, groupB
 			SELECT 
 				ticker,
 				COUNT(*) as trade_count,
-				SUM(total_fees) as total_fees,
+				SUM(COALESCE(fee, 0)) as total_fees,
 				SUM(quantity * price) as total_value,
-				AVG(total_fees / NULLIF(quantity * price, 0) * 100) as avg_fee_pct
+				AVG(COALESCE(fee, 0) / NULLIF(quantity * price, 0) * 100) as avg_fee_pct
 			FROM trades
-			WHERE user_id = $1 AND total_fees > 0
+			WHERE user_id = $1 AND COALESCE(fee, 0) > 0
 			GROUP BY ticker
-			ORDER BY total_fees DESC
+			ORDER BY SUM(COALESCE(fee, 0)) DESC
 		`
 
 		rows, err := s.pool.Query(ctx, query, userID)

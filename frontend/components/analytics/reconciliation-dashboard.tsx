@@ -44,6 +44,7 @@ export function ReconciliationDashboard() {
     queryFn: async () => {
       return api.get<ReconciliationReport>("/api/analytics/cash-reconciliation");
     },
+    retry: false,
   });
 
   if (isLoading) {
