@@ -37,12 +37,27 @@ function parsePositiveDecimal(raw: string): Decimal | null {
   }
 }
 
+/** Digits and at most one "." so letters/symbols cannot appear in the field. */
+function sanitizeDecimalInput(raw: string): string {
+  let out = ""
+  let dotSeen = false
+  for (const ch of raw) {
+    if (ch >= "0" && ch <= "9") out += ch
+    else if (ch === "." && !dotSeen) {
+      out += ch
+      dotSeen = true
+    }
+  }
+  return out
+}
+
+/** Conversion display: COP and USD both use 2 decimal places. */
 function formatCopAmount(d: Decimal): string {
-  return d.toFixed(0)
+  return d.toFixed(2)
 }
 
 function formatUsdAmount(d: Decimal): string {
-  return d.toFixed(6).replace(/\.?0+$/, "") || "0"
+  return d.toFixed(2)
 }
 
 interface FxRateManagerProps {
@@ -75,7 +90,6 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
 
   const latest = safeRecentRates[0]
   const canonical = latest ? Number(latest.rate) : 0
-  const inverseUsdPerCop = canonical > 0 ? 1 / canonical : 0
 
   useEffect(() => {
     if (!latest?.rate || canonical <= 0) return
@@ -91,7 +105,8 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
     }
   }, [direction, latest?.id, latest?.rate, canonical])
 
-  const handleConvertUsdChange = (value: string) => {
+  const handleConvertUsdChange = (raw: string) => {
+    const value = sanitizeDecimalInput(raw)
     setConvertUsd(value)
     setConvertLastEdited("usd")
     const parsed = parsePositiveDecimal(value)
@@ -104,7 +119,8 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
     }
   }
 
-  const handleConvertCopChange = (value: string) => {
+  const handleConvertCopChange = (raw: string) => {
+    const value = sanitizeDecimalInput(raw)
     setConvertCop(value)
     setConvertLastEdited("cop")
     const parsed = parsePositiveDecimal(value)
@@ -169,29 +185,6 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
       setIsLoading(false)
     }
   }
-
-  const heroPrimary =
-    !latest || canonical <= 0
-      ? null
-      : direction === "USD_TO_COP"
-        ? `1 USD = ${canonical.toLocaleString(undefined, { maximumFractionDigits: 2 })} COP`
-        : `1 COP = ${inverseUsdPerCop.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
-
-  const heroSecondary =
-    !latest || canonical <= 0
-      ? null
-      : direction === "USD_TO_COP"
-        ? `1 COP = ${inverseUsdPerCop.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
-        : `1 USD = ${canonical.toLocaleString(undefined, { maximumFractionDigits: 2 })} COP`
-
-  const lastUpdated =
-    latest?.date != null
-      ? new Date(latest.date).toLocaleDateString(undefined, {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })
-      : null
 
   const addRateForm = (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -308,14 +301,13 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
                 <span className="text-xs text-muted-foreground">USD</span>
               </div>
 
-              <div className="flex justify-center md:px-1">
+              <div className="flex justify-center md:px-1" aria-hidden="true">
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="h-12 w-12 shrink-0 rounded-full ring-2 ring-primary/30 shadow-sm"
-                  onClick={handleSwapDirection}
-                  title="Swap conversion direction"
+                  tabIndex={-1}
+                  className="pointer-events-none h-12 w-12 shrink-0 rounded-full ring-2 ring-primary/30 shadow-sm"
                 >
                   <ArrowLeftRight className="h-5 w-5 text-primary" />
                 </Button>
@@ -335,12 +327,6 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
                 />
                 <span className="text-xs text-muted-foreground">COP</span>
               </div>
-            </div>
-
-            <div className="mb-4 text-center">
-              <p className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{heroPrimary}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{heroSecondary}</p>
-              {lastUpdated && <p className="mt-2 text-xs text-muted-foreground">Last updated {lastUpdated}</p>}
             </div>
 
             <FxRateSparkline rates={safeRecentRates} />
