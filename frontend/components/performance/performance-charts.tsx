@@ -72,28 +72,28 @@ export function PerformanceCharts({ cashFlows, fxRates }: PerformanceChartsProps
           {cumulativeData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={cumulativeData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.1} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--muted-foreground)" strokeOpacity={0.1} />
                 <XAxis 
                   dataKey="date" 
                   className="text-xs text-muted-foreground" 
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeOpacity={0.3}
                 />
                 <YAxis 
                   className="text-xs text-muted-foreground" 
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeOpacity={0.3}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--primary) / 0.2)",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid color-mix(in oklch, var(--primary) 20%, transparent)",
                     borderRadius: "0.5rem",
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
-                  labelStyle={{ color: "hsl(var(--foreground))", fontWeight: "600" }}
+                  labelStyle={{ color: "var(--foreground)", fontWeight: "600" }}
                 />
-                <Line type="monotone" dataKey="cumulative" stroke="hsl(var(--primary))" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="cumulative" stroke="var(--primary)" strokeWidth={3} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -110,28 +110,28 @@ export function PerformanceCharts({ cashFlows, fxRates }: PerformanceChartsProps
           {fxData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={fxData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.1} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--muted-foreground)" strokeOpacity={0.1} />
                 <XAxis 
                   dataKey="date" 
                   className="text-xs text-muted-foreground" 
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeOpacity={0.3}
                 />
                 <YAxis 
                   className="text-xs text-muted-foreground" 
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeOpacity={0.3}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--primary) / 0.2)",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid color-mix(in oklch, var(--primary) 20%, transparent)",
                     borderRadius: "0.5rem",
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
-                  labelStyle={{ color: "hsl(var(--foreground))", fontWeight: "600" }}
+                  labelStyle={{ color: "var(--foreground)", fontWeight: "600" }}
                 />
-                <Line type="monotone" dataKey="rate" stroke="hsl(var(--chart-2))" strokeWidth={3} dot={false} />
+                <Line type="monotone" dataKey="rate" stroke="var(--chart-2)" strokeWidth={3} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           ) : (
@@ -148,26 +148,26 @@ export function PerformanceCharts({ cashFlows, fxRates }: PerformanceChartsProps
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={feesData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" strokeOpacity={0.1} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--muted-foreground)" strokeOpacity={0.1} />
                 <XAxis 
                   dataKey="month" 
                   className="text-xs text-muted-foreground" 
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeOpacity={0.3}
                 />
                 <YAxis 
                   className="text-xs text-muted-foreground" 
-                  stroke="hsl(var(--muted-foreground))"
+                  stroke="var(--muted-foreground)"
                   strokeOpacity={0.3}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--primary) / 0.2)",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid color-mix(in oklch, var(--primary) 20%, transparent)",
                     borderRadius: "0.5rem",
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                   }}
-                  labelStyle={{ color: "hsl(var(--foreground))", fontWeight: "600" }}
+                  labelStyle={{ color: "var(--foreground)", fontWeight: "600" }}
                 />
                 <Bar 
                   dataKey="fees" 
@@ -176,8 +176,8 @@ export function PerformanceCharts({ cashFlows, fxRates }: PerformanceChartsProps
                 />
                 <defs>
                   <linearGradient id="feesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={1} />
-                    <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.8} />
+                    <stop offset="0%" stopColor="var(--destructive)" stopOpacity={1} />
+                    <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0.8} />
                   </linearGradient>
                 </defs>
               </BarChart>
