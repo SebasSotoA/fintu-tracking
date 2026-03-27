@@ -3,7 +3,8 @@
 import type React from "react"
 
 import type { FxRate } from "@/lib/types"
-import { useState } from "react"
+import { Decimal } from "@/lib/decimal"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
@@ -21,6 +22,28 @@ import { createFxRate, fetchCurrentRate } from "@/lib/api/fx-rates"
 import { FxRateSparkline } from "@/components/cash-flows/fx-rate-sparkline"
 
 type Direction = "USD_TO_COP" | "COP_TO_USD"
+
+type ConvertLastEdited = "usd" | "cop"
+
+function parsePositiveDecimal(raw: string): Decimal | null {
+  const t = raw.trim()
+  if (t === "" || t === ".") return null
+  try {
+    const d = new Decimal(t)
+    if (!d.isFinite() || d.lte(0)) return null
+    return d
+  } catch {
+    return null
+  }
+}
+
+function formatCopAmount(d: Decimal): string {
+  return d.toFixed(0)
+}
+
+function formatUsdAmount(d: Decimal): string {
+  return d.toFixed(6).replace(/\.?0+$/, "") || "0"
+}
 
 interface FxRateManagerProps {
   recentRates: FxRate[]
@@ -41,6 +64,10 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
     rate: "",
   })
 
+  const [convertUsd, setConvertUsd] = useState("1")
+  const [convertCop, setConvertCop] = useState("")
+  const [convertLastEdited, setConvertLastEdited] = useState<ConvertLastEdited>("usd")
+
   const isInverse = direction === "COP_TO_USD"
   const rateLabel = isInverse ? "Rate (USD per 1 COP)" : "Rate (COP per 1 USD)"
   const ratePlaceholder = isInverse ? "0.000239" : "4185"
@@ -49,6 +76,46 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
   const latest = safeRecentRates[0]
   const canonical = latest ? Number(latest.rate) : 0
   const inverseUsdPerCop = canonical > 0 ? 1 / canonical : 0
+
+  useEffect(() => {
+    if (!latest?.rate || canonical <= 0) return
+    const rate = new Decimal(latest.rate)
+    if (direction === "USD_TO_COP") {
+      setConvertUsd("1")
+      setConvertCop(formatCopAmount(new Decimal(1).mul(rate)))
+      setConvertLastEdited("usd")
+    } else {
+      setConvertUsd(formatUsdAmount(new Decimal(1).div(rate)))
+      setConvertCop("1")
+      setConvertLastEdited("cop")
+    }
+  }, [direction, latest?.id, latest?.rate, canonical])
+
+  const handleConvertUsdChange = (value: string) => {
+    setConvertUsd(value)
+    setConvertLastEdited("usd")
+    const parsed = parsePositiveDecimal(value)
+    if (!latest?.rate) return
+    const rate = new Decimal(latest.rate)
+    if (parsed) {
+      setConvertCop(formatCopAmount(parsed.mul(rate)))
+    } else if (value.trim() === "") {
+      setConvertCop("")
+    }
+  }
+
+  const handleConvertCopChange = (value: string) => {
+    setConvertCop(value)
+    setConvertLastEdited("cop")
+    const parsed = parsePositiveDecimal(value)
+    if (!latest?.rate) return
+    const rate = new Decimal(latest.rate)
+    if (parsed) {
+      setConvertUsd(formatUsdAmount(parsed.div(rate)))
+    } else if (value.trim() === "") {
+      setConvertUsd("")
+    }
+  }
 
   const handleSwapDirection = () => {
     setDirection((prev) => (prev === "USD_TO_COP" ? "COP_TO_USD" : "USD_TO_COP"))
@@ -228,9 +295,16 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
             <div className="mb-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center">
               <div className="flex min-h-[5.5rem] flex-1 flex-col justify-center rounded-xl border border-border bg-surface-container p-4">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">US Dollar</span>
-                <span className="mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground">
-                  {direction === "USD_TO_COP" ? "1" : inverseUsdPerCop.toFixed(6)}
-                </span>
+                <input
+                  id="fx-card-usd"
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  aria-label="Amount in USD"
+                  className="mt-1 w-full cursor-text border-0 bg-transparent p-0 font-mono text-2xl font-semibold tabular-nums text-foreground outline-none focus:outline-none focus-visible:outline-none"
+                  value={convertUsd}
+                  onChange={(e) => handleConvertUsdChange(e.target.value)}
+                />
                 <span className="text-xs text-muted-foreground">USD</span>
               </div>
 
@@ -249,11 +323,16 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
 
               <div className="flex min-h-[5.5rem] flex-1 flex-col justify-center rounded-xl border border-border bg-surface-container p-4">
                 <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Colombian Peso</span>
-                <span className="mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground">
-                  {direction === "USD_TO_COP"
-                    ? canonical.toLocaleString(undefined, { maximumFractionDigits: 2 })
-                    : "1"}
-                </span>
+                <input
+                  id="fx-card-cop"
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  aria-label="Amount in COP"
+                  className="mt-1 w-full cursor-text border-0 bg-transparent p-0 font-mono text-2xl font-semibold tabular-nums text-foreground outline-none focus:outline-none focus-visible:outline-none"
+                  value={convertCop}
+                  onChange={(e) => handleConvertCopChange(e.target.value)}
+                />
                 <span className="text-xs text-muted-foreground">COP</span>
               </div>
             </div>
