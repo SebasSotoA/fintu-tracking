@@ -17,10 +17,10 @@ async function CashFlowsContent({
   highlightId?: string
 }) {
   const [cashFlows, fxRates] = await Promise.all([cashFlowsPromise, fxRatesPromise])
-  const recentFxRates = fxRates.slice(0, 10)
+  const recentFxRates = fxRates.slice(0, Math.min(fxRates.length, 90))
   return (
     <>
-      <div className="flex justify-end mb-4">
+      <div className="mb-6">
         <FxRateManager recentRates={recentFxRates} />
       </div>
       <CashFlowsList cashFlows={cashFlows} highlightId={highlightId} />
