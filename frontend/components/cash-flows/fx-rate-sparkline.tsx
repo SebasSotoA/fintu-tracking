@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useId } from "react"
 import type { FxRate } from "@/lib/types"
@@ -6,6 +6,36 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 
 interface FxRateSparklineProps {
   rates: FxRate[]
+}
+
+/** Recharts passes index + coordinates for each point; only render last (newest) point. */
+function CurrentRateDot(
+  props: { cx?: number; cy?: number; index?: number },
+  lastIndex: number,
+) {
+  const { cx, cy, index } = props
+  if (cx == null || cy == null || index == null || index !== lastIndex) {
+    return <g />
+  }
+
+  return (
+    <g aria-hidden="true">
+      <circle cx={cx} cy={cy} r={4} fill="var(--primary)" fillOpacity={0.3}>
+        <animate attributeName="r" values="4;7;4" dur="2.2s" repeatCount="indefinite" />
+        <animate attributeName="fill-opacity" values="0.38;0.12;0.38" dur="2.2s" repeatCount="indefinite" />
+      </circle>
+      <circle
+        cx={cx}
+        cy={cy}
+        r={3}
+        fill="var(--primary)"
+        className="drop-shadow-[0_0_4px_var(--primary)]"
+      >
+        <animate attributeName="opacity" values="1;0.82;1" dur="1.8s" repeatCount="indefinite" />
+      </circle>
+      <circle cx={cx} cy={cy} r={1.5} fill="var(--background)" />
+    </g>
+  )
 }
 
 export function FxRateSparkline({ rates }: FxRateSparklineProps) {
@@ -17,6 +47,7 @@ export function FxRateSparkline({ rates }: FxRateSparklineProps) {
       rate: Number(r.rate),
     }))
 
+  const lastIndex = Math.max(0, data.length - 1)
   const gradId = useId().replace(/:/g, "")
 
   if (data.length === 0) {
@@ -28,9 +59,9 @@ export function FxRateSparkline({ rates }: FxRateSparklineProps) {
   }
 
   return (
-    <div className="h-[140px] w-full">
+    <div className="h-[140px] w-full [&_.recharts-wrapper]:overflow-visible [&_.recharts-surface]:overflow-visible [&_svg]:overflow-visible">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 10, right: 14, left: -16, bottom: 0 }}>
           <defs>
             <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.22} />
@@ -71,8 +102,8 @@ export function FxRateSparkline({ rates }: FxRateSparklineProps) {
             stroke="var(--chart-1)"
             strokeWidth={2}
             fill={`url(#${gradId})`}
-            dot={false}
-            activeDot={{ r: 3, fill: "var(--primary)" }}
+            dot={(dotProps) => CurrentRateDot(dotProps, lastIndex)}
+            activeDot={false}
           />
         </AreaChart>
       </ResponsiveContainer>
