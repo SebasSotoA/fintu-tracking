@@ -25,11 +25,11 @@ export function calculateHoldings(trades: Trade[]): Map<string, Holding> {
 
     for (const trade of sortedTrades) {
       const quantity = new Decimal(trade.quantity)
-      const total = new Decimal(trade.total)
+      const pureCost = new Decimal(trade.price).mul(quantity)
 
       if (trade.side === "buy") {
         totalQuantity = totalQuantity.add(quantity)
-        totalCost = totalCost.add(total)
+        totalCost = totalCost.add(pureCost)
       } else {
         // Sell - reduce quantity and cost proportionally
         if (totalQuantity.gt(0)) {

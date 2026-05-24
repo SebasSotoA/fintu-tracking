@@ -27,9 +27,19 @@ export function format(value: string | number, decimals = 2): string {
 }
 
 export function formatCurrency(value: string | number, currency: "USD" | "COP"): string {
-  const formatted = format(value, currency === "COP" ? 0 : 2)
-  if (currency === "USD") {
-    return `$${formatted}`
-  }
-  return `$${formatted} COP`
+  const num = new Decimal(value).toNumber()
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: currency === "COP" ? 0 : 2,
+    maximumFractionDigits: currency === "COP" ? 0 : 2,
+  }).format(num)
+  return currency === "USD" ? `$${formatted}` : `$${formatted} COP`
+}
+
+/** Numeric amount for tables that already have a separate currency column. */
+export function formatAmountPlain(value: string | number, currency: "USD" | "COP"): string {
+  const num = new Decimal(value).toNumber()
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: currency === "COP" ? 0 : 2,
+    maximumFractionDigits: currency === "COP" ? 0 : 2,
+  }).format(num)
 }

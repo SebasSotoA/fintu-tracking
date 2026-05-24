@@ -37,13 +37,20 @@ export function PortfolioSummary({ holdings, cashFlows, latestFxRate }: Portfoli
     .reduce((sum, cf) => sum.add(new Decimal(cf.usd_amount)), new Decimal(0))
 
   const netInvestedUSD = deposits.sub(withdrawals)
-  const totalPL = totalMarketValueUSD.sub(netInvestedUSD)
-  const totalPLPercent = netInvestedUSD.gt(0) ? totalPL.div(netInvestedUSD).mul(100) : new Decimal(0)
+
+  const totalPL = safeHoldings.reduce(
+    (sum, h) => sum.add(new Decimal(h.unrealizedPL || 0)),
+    new Decimal(0),
+  )
+  const totalCostBasis = safeHoldings.reduce(
+    (sum, h) => sum.add(new Decimal(h.totalInvested || 0)),
+    new Decimal(0),
+  )
+  const totalPLPercent = totalCostBasis.gt(0) ? totalPL.div(totalCostBasis).mul(100) : new Decimal(0)
 
   // Convert to COP if FX rate available
   const fxRate = latestFxRate ? new Decimal(latestFxRate) : null
   const totalMarketValueCOP = fxRate ? totalMarketValueUSD.mul(fxRate) : null
-  const totalPLCOP = fxRate ? totalPL.mul(fxRate) : null
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -98,7 +105,16 @@ export function PortfolioSummary({ holdings, cashFlows, latestFxRate }: Portfoli
         </CardHeader>
         <CardContent>
           <div className="text-xl md:text-2xl font-semibold font-mono">{formatCurrency(fees.toString(), "USD")}</div>
-          {fxRate && <p className="text-sm text-muted-foreground mt-2">Rate: {fxRate.toFixed(2)} COP/USD</p>}
+          {fxRate && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Rate:{" "}
+              {new Intl.NumberFormat("en-US", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(fxRate.toNumber())}{" "}
+              COP/USD
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

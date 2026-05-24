@@ -29,11 +29,12 @@ func CalculateHoldings(trades []models.Trade) map[string]models.Holding {
 
 		for _, trade := range tickerTrades {
 			quantity, _ := decimal.NewFromString(trade.Quantity)
-			total, _ := decimal.NewFromString(trade.Total)
+			price, _ := decimal.NewFromString(trade.Price)
+			pureCost := quantity.Mul(price)
 
 			if trade.Side == "buy" {
 				totalQuantity = totalQuantity.Add(quantity)
-				totalCost = totalCost.Add(total)
+				totalCost = totalCost.Add(pureCost)
 			} else {
 				// Sell - reduce quantity and cost proportionally
 				if totalQuantity.GreaterThan(decimal.Zero) {
