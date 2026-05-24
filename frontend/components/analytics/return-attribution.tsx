@@ -82,8 +82,8 @@ export function ReturnAttribution() {
   const fxImpact = new Decimal(attribution.fx_impact || "0");
   const netPosition = new Decimal(attribution.net_position || "0");
 
-  const formatCurrency = (value: Decimal | string): string => {
-    const num = typeof value === "string" ? parseFloat(value) : value.toNumber();
+  const formatCurrency = (value: Decimal | string | number): string => {
+    const num = new Decimal(value).toNumber()
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",

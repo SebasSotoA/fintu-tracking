@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +14,12 @@ import {
   XCircleIcon,
   RefreshCwIcon,
   ExternalLinkIcon,
+  Link2OffIcon,
 } from "lucide-react";
 import { api } from "@/lib/api/client";
 import Decimal from "decimal.js";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface ReconciliationIssue {
   trade_id: string;
@@ -35,8 +38,16 @@ interface ReconciliationReport {
   difference: string;
   missing_links: string[];
   orphaned_cash_flows: string[];
+  unlinked_cash_flows?: string[];
   discrepancies: ReconciliationIssue[];
 }
+
+const statTileClass =
+  "rounded-xl border border-border bg-surface-container p-4";
+const statLabelClass =
+  "text-xs font-medium uppercase tracking-wide text-muted-foreground";
+const statValueClass =
+  "mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground";
 
 export function ReconciliationDashboard() {
   const { data: report, isLoading, refetch } = useQuery<ReconciliationReport>({
@@ -71,6 +82,15 @@ export function ReconciliationDashboard() {
   const totalTradeFees = new Decimal(report.total_trade_fees || "0");
   const totalCashFlowFees = new Decimal(report.total_cash_flow_fees || "0");
   const difference = new Decimal(report.difference || "0");
+  const hasTotalsMismatch = difference.abs().greaterThanOrEqualTo(0.01);
+
+  const unlinked = report.unlinked_cash_flows ?? [];
+
+  const issueCount =
+    report.missing_links.length +
+    report.orphaned_cash_flows.length +
+    unlinked.length +
+    report.discrepancies.length;
 
   const formatCurrency = (value: string | Decimal): string => {
     const num = typeof value === "string" ? parseFloat(value) : value.toNumber();
@@ -82,10 +102,17 @@ export function ReconciliationDashboard() {
     }).format(num);
   };
 
-  const issueCount =
-    report.missing_links.length +
-    report.orphaned_cash_flows.length +
-    report.discrepancies.length;
+  const alertTitle = report.is_reconciled
+    ? "All Systems Healthy"
+    : issueCount > 0
+      ? `${issueCount} Issue${issueCount !== 1 ? "s" : ""} Found`
+      : "Fee Totals Don't Match";
+
+  const alertDescription = report.is_reconciled
+    ? "All trade fees have corresponding cash flow entries. Your data is fully reconciled."
+    : issueCount > 0
+      ? "Some discrepancies were detected between trades and cash flows. Review the details below."
+      : "Trade fee totals and cash flow fee totals differ, but no specific row-level issues were listed. Check unlinked fee entries in Cash Flow History.";
 
   return (
     <Card>
@@ -94,9 +121,9 @@ export function ReconciliationDashboard() {
           <div>
             <CardTitle className="flex items-center gap-2">
               {report.is_reconciled ? (
-                <CheckCircle2Icon className="h-5 w-5 text-green-600" />
+                <CheckCircle2Icon className="h-5 w-5 text-primary" />
               ) : (
-                <AlertTriangleIcon className="h-5 w-5 text-amber-600" />
+                <AlertTriangleIcon className="h-5 w-5 text-destructive" />
               )}
               Data Health & Reconciliation
             </CardTitle>
@@ -111,157 +138,166 @@ export function ReconciliationDashboard() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Overall Status */}
         <div>
           {report.is_reconciled ? (
-            <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
-              <CheckCircle2Icon className="h-4 w-4 text-green-600" />
-              <AlertTitle className="text-green-900 dark:text-green-100">
-                All Systems Healthy
-              </AlertTitle>
-              <AlertDescription className="text-green-700 dark:text-green-300">
-                All trade fees have corresponding cash flow entries. Your data is fully
-                reconciled.
-              </AlertDescription>
+            <Alert className="border-border bg-surface-container">
+              <CheckCircle2Icon className="h-4 w-4 text-primary" />
+              <AlertTitle>{alertTitle}</AlertTitle>
+              <AlertDescription>{alertDescription}</AlertDescription>
             </Alert>
           ) : (
-            <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
-              <AlertTriangleIcon className="h-4 w-4 text-amber-600" />
-              <AlertTitle className="text-amber-900 dark:text-amber-100">
-                {issueCount} Issue{issueCount !== 1 ? "s" : ""} Found
-              </AlertTitle>
-              <AlertDescription className="text-amber-700 dark:text-amber-300">
-                Some discrepancies were detected between trades and cash flows. Review the
-                details below.
-              </AlertDescription>
+            <Alert
+              className={cn(
+                "border-border bg-surface-container",
+                hasTotalsMismatch && "ring-1 ring-destructive/30",
+              )}
+            >
+              <AlertTriangleIcon className="h-4 w-4 text-destructive" />
+              <AlertTitle>{alertTitle}</AlertTitle>
+              <AlertDescription>{alertDescription}</AlertDescription>
             </Alert>
           )}
         </div>
 
         <Separator />
 
-        {/* Fee Totals Comparison */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Fee Totals Comparison
-          </h3>
+          <h3 className={statLabelClass}>Fee Totals Comparison</h3>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Trade Fees</p>
-              <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                {formatCurrency(totalTradeFees)}
-              </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">From trades table</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className={statTileClass}>
+              <p className={statLabelClass}>Trade Fees</p>
+              <p className={statValueClass}>{formatCurrency(totalTradeFees)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">From trades table</p>
             </div>
 
-            <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-              <p className="text-xs text-green-600 dark:text-green-400 mb-1">Cash Flow Fees</p>
-              <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                {formatCurrency(totalCashFlowFees)}
-              </p>
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1">From cash_flows table</p>
+            <div className={statTileClass}>
+              <p className={statLabelClass}>Cash Flow Fees</p>
+              <p className={statValueClass}>{formatCurrency(totalCashFlowFees)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">From cash_flows table</p>
             </div>
 
-            <div className="p-4 bg-muted/50 rounded-lg border">
-              <p className="text-xs text-muted-foreground mb-1">Difference</p>
+            <div
+              className={cn(
+                statTileClass,
+                hasTotalsMismatch && "ring-1 ring-destructive/30",
+              )}
+            >
+              <p className={statLabelClass}>Difference</p>
               <p
-                className={`text-2xl font-bold ${
-                  difference.abs().lessThan(0.01)
-                    ? "text-green-600"
-                    : "text-amber-600"
-                }`}
+                className={cn(
+                  statValueClass,
+                  hasTotalsMismatch ? "text-destructive" : "text-primary",
+                )}
               >
-                {difference.greaterThanOrEqualTo(0) ? "+" : ""}
+                {difference.greaterThanOrEqualTo(0) ? "+" : "−"}
                 {formatCurrency(difference.abs())}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {difference.abs().lessThan(0.01) ? "Perfect match!" : "Needs attention"}
+              <p className="mt-1 text-xs text-muted-foreground">
+                {hasTotalsMismatch ? "Needs attention" : "Perfect match"}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Issues Breakdown */}
         {!report.is_reconciled && (
           <>
             <Separator />
 
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                Issues Detected
-              </h3>
+              <h3 className={statLabelClass}>Issues Detected</h3>
 
-              {/* Missing Links */}
+              {issueCount === 0 && hasTotalsMismatch && (
+                <div className="rounded-xl border border-border bg-surface-container-high p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangleIcon className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
+                    <div>
+                      <h4 className="font-medium mb-1">Totals mismatch</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Fee rows in Cash Flow History may not match trade fee totals. Look for
+                        trade-related fees without a linked trade, or re-save trades that include
+                        deposit, trading, or closing fees.
+                      </p>
+                      <Link href="/cash-flows" className="mt-3 inline-block">
+                        <Button variant="outline" size="sm">
+                          Open Cash Flow History
+                          <ExternalLinkIcon className="h-3 w-3 ml-1" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {report.missing_links.length > 0 && (
-                <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800">
-                  <div className="flex items-start gap-3">
-                    <XCircleIcon className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-red-900 dark:text-red-100 mb-1">
-                        Missing Cash Flow Links
-                      </h4>
-                      <p className="text-sm text-red-700 dark:text-red-300 mb-3">
-                        {report.missing_links.length} trade{report.missing_links.length !== 1 ? "s" : ""} with fees but no
-                        corresponding cash flow entries
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {report.missing_links.slice(0, 5).map((tradeId) => (
-                          <Link key={tradeId} href={`/trades?highlight=${tradeId}`}>
-                            <Button variant="outline" size="sm" className="h-auto py-1 px-2">
-                              <ExternalLinkIcon className="h-3 w-3 mr-1" />
-                              <span className="text-xs font-mono">{tradeId.slice(0, 8)}...</span>
-                            </Button>
-                          </Link>
-                        ))}
-                        {report.missing_links.length > 5 && (
-                          <Badge variant="secondary">+{report.missing_links.length - 5} more</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <IssueCard
+                  icon={<XCircleIcon className="h-5 w-5 text-destructive" />}
+                  title="Missing Cash Flow Links"
+                  description={`${report.missing_links.length} trade${report.missing_links.length !== 1 ? "s" : ""} with fees but no corresponding cash flow entries`}
+                >
+                  {report.missing_links.slice(0, 5).map((tradeId) => (
+                    <Link key={tradeId} href={`/trades?highlight=${tradeId}`}>
+                      <Button variant="outline" size="sm" className="h-auto py-1 px-2">
+                        <ExternalLinkIcon className="h-3 w-3 mr-1" />
+                        <span className="text-xs font-mono">{tradeId.slice(0, 8)}...</span>
+                      </Button>
+                    </Link>
+                  ))}
+                  {report.missing_links.length > 5 && (
+                    <Badge variant="secondary">+{report.missing_links.length - 5} more</Badge>
+                  )}
+                </IssueCard>
               )}
 
-              {/* Orphaned Cash Flows */}
               {report.orphaned_cash_flows.length > 0 && (
-                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangleIcon className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <h4 className="font-medium text-amber-900 dark:text-amber-100 mb-1">
-                        Orphaned Cash Flows
-                      </h4>
-                      <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                        {report.orphaned_cash_flows.length} cash flow{report.orphaned_cash_flows.length !== 1 ? "s" : ""}{" "}
-                        linked to non-existent trades
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {report.orphaned_cash_flows.slice(0, 5).map((cfId) => (
-                          <Link key={cfId} href={`/cash-flows?highlight=${cfId}`}>
-                            <Button variant="outline" size="sm" className="h-auto py-1 px-2">
-                              <ExternalLinkIcon className="h-3 w-3 mr-1" />
-                              <span className="text-xs font-mono">{cfId.slice(0, 8)}...</span>
-                            </Button>
-                          </Link>
-                        ))}
-                        {report.orphaned_cash_flows.length > 5 && (
-                          <Badge variant="secondary">+{report.orphaned_cash_flows.length - 5} more</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <IssueCard
+                  icon={<AlertTriangleIcon className="h-5 w-5 text-destructive" />}
+                  title="Orphaned Cash Flows"
+                  description={`${report.orphaned_cash_flows.length} cash flow${report.orphaned_cash_flows.length !== 1 ? "s" : ""} linked to non-existent trades`}
+                >
+                  {report.orphaned_cash_flows.slice(0, 5).map((cfId) => (
+                    <Link key={cfId} href={`/cash-flows?highlight=${cfId}`}>
+                      <Button variant="outline" size="sm" className="h-auto py-1 px-2">
+                        <ExternalLinkIcon className="h-3 w-3 mr-1" />
+                        <span className="text-xs font-mono">{cfId.slice(0, 8)}...</span>
+                      </Button>
+                    </Link>
+                  ))}
+                  {report.orphaned_cash_flows.length > 5 && (
+                    <Badge variant="secondary">
+                      +{report.orphaned_cash_flows.length - 5} more
+                    </Badge>
+                  )}
+                </IssueCard>
               )}
 
-              {/* Discrepancies */}
+              {unlinked.length > 0 && (
+                <IssueCard
+                  icon={<Link2OffIcon className="h-5 w-5 text-destructive" />}
+                  title="Unlinked Trade Fees"
+                  description={`${unlinked.length} trade fee cash flow${unlinked.length !== 1 ? "s" : ""} not linked to any trade`}
+                >
+                  {unlinked.slice(0, 5).map((cfId) => (
+                    <Link key={cfId} href={`/cash-flows?highlight=${cfId}`}>
+                      <Button variant="outline" size="sm" className="h-auto py-1 px-2">
+                        <ExternalLinkIcon className="h-3 w-3 mr-1" />
+                        <span className="text-xs font-mono">{cfId.slice(0, 8)}...</span>
+                      </Button>
+                    </Link>
+                  ))}
+                  {unlinked.length > 5 && (
+                    <Badge variant="secondary">+{unlinked.length - 5} more</Badge>
+                  )}
+                </IssueCard>
+              )}
+
               {report.discrepancies.length > 0 && (
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Fee Amount Discrepancies</h4>
                   {report.discrepancies.map((issue) => (
                     <div
                       key={issue.trade_id}
-                      className="p-3 bg-muted/50 rounded-lg border flex items-start justify-between"
+                      className="rounded-xl border border-border bg-surface-container-high p-3 flex items-start justify-between"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -274,7 +310,7 @@ export function ReconciliationDashboard() {
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-xs text-muted-foreground mb-1">Difference</p>
-                        <p className="text-sm font-bold text-destructive">
+                        <p className="text-sm font-bold font-mono tabular-nums text-destructive">
                           {formatCurrency(issue.difference)}
                         </p>
                       </div>
@@ -286,7 +322,6 @@ export function ReconciliationDashboard() {
           </>
         )}
 
-        {/* Actions */}
         <Separator />
 
         <div className="flex gap-3">
@@ -309,3 +344,27 @@ export function ReconciliationDashboard() {
   );
 }
 
+function IssueCard({
+  icon,
+  title,
+  description,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-surface-container-high p-4">
+      <div className="flex items-start gap-3">
+        <span className="shrink-0 mt-0.5">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium mb-1">{title}</h4>
+          <p className="text-sm text-muted-foreground mb-3">{description}</p>
+          <div className="flex flex-wrap gap-2">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}

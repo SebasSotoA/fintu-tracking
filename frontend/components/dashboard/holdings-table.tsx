@@ -5,27 +5,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, format } from "@/lib/decimal"
 import { Decimal } from "@/lib/decimal"
+import { RefreshPricesButton } from "@/components/dashboard/refresh-prices-button"
 
 interface HoldingsTableProps {
   holdings: Holding[]
 }
 
 export function HoldingsTable({ holdings }: HoldingsTableProps) {
-  // Ensure holdings is a valid array
   const safeHoldings = holdings || []
 
   if (safeHoldings.length === 0) {
     return (
       <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base">Current Holdings</CardTitle>
+          <RefreshPricesButton />
+        </CardHeader>
         <CardContent className="flex flex-col items-center justify-center py-12">
-          <p className="text-muted-foreground mb-4">No holdings yet</p>
-          <p className="text-sm text-muted-foreground">Add trades to start building your portfolio</p>
+          <p className="text-muted-foreground mb-2">No holdings yet</p>
+          <p className="text-sm text-muted-foreground text-center max-w-sm mb-4">
+            Add trades to build your portfolio, then use Refresh Prices to load market values.
+          </p>
         </CardContent>
       </Card>
     )
   }
 
-  // Sort by market value descending
   const sortedHoldings = [...safeHoldings].sort((a, b) => {
     const aValue = new Decimal(a.marketValue || 0)
     const bValue = new Decimal(b.marketValue || 0)
@@ -34,8 +39,9 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">Current Holdings</CardTitle>
+        <RefreshPricesButton />
       </CardHeader>
       <CardContent>
         <Table>

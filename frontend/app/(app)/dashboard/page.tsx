@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import { NetWorthCard } from "@/components/dashboard/net-worth-card"
 import { PortfolioSummary } from "@/components/dashboard/portfolio-summary"
 import { HoldingsTable } from "@/components/dashboard/holdings-table"
+import { RefreshPricesButton } from "@/components/dashboard/refresh-prices-button"
 import { getHoldings, getNetWorth } from "@/lib/api/server-portfolio"
 import { listCashFlows } from "@/lib/api/server-cash-flows"
 import { listFxRates } from "@/lib/api/server-fx-rates"
@@ -42,9 +43,12 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Your portfolio at a glance</p>
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Your portfolio at a glance</p>
+        </div>
+        <RefreshPricesButton className="shrink-0" />
       </div>
       <div className="space-y-6">
         <Suspense fallback={<div className="h-36 bg-muted rounded-lg animate-pulse" />}>

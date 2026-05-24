@@ -25,3 +25,13 @@ export async function getMarketPrice(ticker: string): Promise<MarketPrice> {
   return apiClient.get<MarketPrice>(`/api/market-prices/${ticker}`)
 }
 
+export interface RefreshResult {
+  updated: number
+  tickers: string[]
+  errors: string[]
+}
+
+export async function refreshMarketPrices(): Promise<RefreshResult> {
+  return apiClient.post<RefreshResult>("/api/market-prices/refresh", {})
+}
+
