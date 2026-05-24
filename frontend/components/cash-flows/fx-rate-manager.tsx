@@ -1,13 +1,14 @@
 "use client"
 
 import type { FxRate } from "@/lib/types"
+import type { FxRateChartPoint } from "@/lib/api/fx-rates"
 import { Decimal } from "@/lib/decimal"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftRight, RefreshCw } from "lucide-react"
-import { fetchCurrentRate } from "@/lib/api/fx-rates"
+import { fetchCurrentRate, getFxRateChart } from "@/lib/api/fx-rates"
 import { FxRateSparkline } from "@/components/cash-flows/fx-rate-sparkline"
 
 type ConvertLastEdited = "usd" | "cop"
@@ -55,6 +56,7 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
   const safeRecentRates = recentRates || []
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [chartPoints, setChartPoints] = useState<FxRateChartPoint[]>([])
 
   const [convertUsd, setConvertUsd] = useState("1")
   const [convertCop, setConvertCop] = useState("")
@@ -63,11 +65,25 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
   const latest = safeRecentRates[0]
   const canonical = latest ? Number(latest.rate) : 0
 
+  const loadChart = useCallback(async () => {
+    try {
+      const points = await getFxRateChart(30)
+      setChartPoints(points)
+    } catch {
+      setChartPoints([])
+    }
+  }, [])
+
+  useEffect(() => {
+    void loadChart()
+  }, [loadChart])
+
   const handleRefreshRate = async () => {
     setIsRefreshing(true)
     setError(null)
     try {
       await fetchCurrentRate()
+      await loadChart()
       router.refresh()
       queryClient.invalidateQueries({ queryKey: ["net-worth"] })
     } catch (err) {
@@ -118,14 +134,6 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">USD / COP</h2>
-          <p className="text-sm text-muted-foreground">
-            Live rate from Twelve Data · refreshed daily
-          </p>
-          {latest && canonical > 0 && (
-            <p className="mt-1 font-mono text-sm text-muted-foreground">
-              1 USD = {new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(canonical)} COP
-            </p>
-          )}
         </div>
         <Button
           type="button"
@@ -142,16 +150,17 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
-      {!latest || canonical <= 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-surface-container p-8 text-center">
+      {(!latest || canonical <= 0) && (
+        <div className="mb-6 rounded-xl border border-dashed border-border bg-surface-container p-8 text-center">
           <p className="mb-4 text-muted-foreground">No exchange rate on file yet.</p>
           <Button type="button" variant="secondary" disabled={isRefreshing} onClick={handleRefreshRate}>
             {isRefreshing ? "Fetching rate…" : "Fetch rate"}
           </Button>
         </div>
-      ) : (
-        <>
-          <div className="mb-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center">
+      )}
+
+      {latest && canonical > 0 && (
+        <div className="mb-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center">
             <div className="flex min-h-[5.5rem] flex-1 flex-col justify-center rounded-xl border border-border bg-surface-container p-4">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">US Dollar</span>
               <input
@@ -194,10 +203,9 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
               <span className="text-xs text-muted-foreground">COP</span>
             </div>
           </div>
-
-          <FxRateSparkline rates={safeRecentRates} />
-        </>
       )}
+
+      <FxRateSparkline points={chartPoints} />
     </div>
   )
 }

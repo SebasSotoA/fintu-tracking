@@ -26,6 +26,11 @@ export interface FetchCurrentRateParams {
   to?: string
 }
 
+export interface FxRateChartPoint {
+  date: string
+  rate: string
+}
+
 export async function listFxRates(): Promise<FxRate[]> {
   return apiClient.get<FxRate[]>("/api/fx-rates")
 }
@@ -55,5 +60,9 @@ export async function fetchCurrentRate(params?: FetchCurrentRateParams): Promise
   if (params?.to) query.set("to", params.to)
   const qs = query.toString()
   return apiClient.get<CurrentRateResponse>(`/api/fx-rates/current${qs ? `?${qs}` : ""}`)
+}
+
+export async function getFxRateChart(days = 30): Promise<FxRateChartPoint[]> {
+  return apiClient.get<FxRateChartPoint[]>(`/api/fx-rates/chart?days=${days}`)
 }
 
