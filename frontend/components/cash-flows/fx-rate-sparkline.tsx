@@ -15,11 +15,11 @@ function CurrentRateDot(
 ) {
   const { cx, cy, index } = props
   if (cx == null || cy == null || index == null || index !== lastIndex) {
-    return <g />
+    return <g key={index} />
   }
 
   return (
-    <g aria-hidden="true">
+    <g key={index} aria-hidden="true">
       <circle cx={cx} cy={cy} r={4} fill="var(--primary)" fillOpacity={0.3}>
         <animate attributeName="r" values="4;7;4" dur="2.2s" repeatCount="indefinite" />
         <animate attributeName="fill-opacity" values="0.38;0.12;0.38" dur="2.2s" repeatCount="indefinite" />
@@ -53,7 +53,7 @@ export function FxRateSparkline({ rates }: FxRateSparklineProps) {
   if (data.length === 0) {
     return (
       <div className="flex h-[140px] items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-        Add a rate to see COP/USD history
+        Fetch a rate to see COP/USD history
       </div>
     )
   }
