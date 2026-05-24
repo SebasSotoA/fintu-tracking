@@ -34,6 +34,7 @@ air
 - `PORT`: Port to run the server on (default: 8080)
 - `FRONTEND_URL`: Frontend URL for CORS (default: http://localhost:3000)
 - `EXCHANGERATE_API_KEY`: API key from [ExchangeRate-API](https://www.exchangerate-api.com/) used for automatic USD/COP rate fetching
+- `TWELVE_DATA_API_KEY`: API key from [Twelve Data](https://twelvedata.com/) used to refresh stock/ETF market prices via the `/quote` endpoint
 
 ## API Endpoints
 

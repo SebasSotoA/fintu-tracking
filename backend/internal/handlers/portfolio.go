@@ -5,10 +5,50 @@ import (
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/services"
 	"fintu-tracking-backend/internal/utils"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 )
+
+var twelveDataSvc = services.NewTwelveDataService(nil)
+
+// InitTwelveDataService wires the DB pool into the Twelve Data service singleton.
+func InitTwelveDataService() {
+	twelveDataSvc = services.NewTwelveDataService(database.GetPool())
+}
+
+// RefreshMarketPrices fetches live quotes for held tickers and updates market_prices.
+func RefreshMarketPrices(c fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	result, err := twelveDataSvc.RefreshMarketPrices(context.Background(), userID)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "rate limit") {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error":   err.Error(),
+				"updated": result.Updated,
+				"tickers": result.Tickers,
+				"errors":  result.Errors,
+			})
+		}
+		if strings.Contains(err.Error(), "TWELVE_DATA_API_KEY") {
+			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   err.Error(),
+			"updated": result.Updated,
+			"tickers": result.Tickers,
+			"errors":  result.Errors,
+		})
+	}
+
+	return c.JSON(result)
+}
 
 // GetHoldings calculates and returns current holdings
 func GetHoldings(c fiber.Ctx) error {
@@ -17,9 +57,10 @@ func GetHoldings(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
-	// Fetch all trades
 	query := `
-		SELECT id, user_id, date, ticker, asset_type, side, quantity, price, fee, total, notes, created_at, updated_at
+		SELECT id, user_id, date, ticker, asset_type, side, quantity, price, fee,
+			COALESCE(deposit_fee, 0), COALESCE(trading_fee, 0), COALESCE(closing_fee, 0),
+			COALESCE(total_fees, 0), total, notes, created_at, updated_at
 		FROM trades
 		WHERE user_id = $1
 		ORDER BY date ASC
@@ -33,10 +74,8 @@ func GetHoldings(c fiber.Ctx) error {
 
 	trades := make([]models.Trade, 0)
 	for rows.Next() {
-		var trade models.Trade
-		if err := rows.Scan(&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType,
-			&trade.Side, &trade.Quantity, &trade.Price, &trade.Fee, &trade.Total, &trade.Notes,
-			&trade.CreatedAt, &trade.UpdatedAt); err != nil {
+		trade, err := scanTradeRow(rows)
+		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		trades = append(trades, trade)

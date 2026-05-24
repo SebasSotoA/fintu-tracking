@@ -26,8 +26,9 @@ func main() {
 	}
 	defer database.Close()
 
-	// Wire DB pool into the exchange rate service singleton
+	// Wire DB pool into service singletons
 	handlers.InitExchangeRateService()
+	handlers.InitTwelveDataService()
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -87,20 +88,14 @@ func main() {
 	protected.Put("/trades/:id", handlers.UpdateTrade)
 	protected.Delete("/trades/:id", handlers.DeleteTrade)
 
-	// Market Prices endpoints (read-only for authenticated users)
+	// Market Prices endpoints
 	protected.Get("/market-prices", handlers.ListMarketPrices)
 	protected.Get("/market-prices/:ticker", handlers.GetMarketPrice)
+	protected.Post("/market-prices/refresh", handlers.RefreshMarketPrices)
 
 	// Portfolio endpoints
 	protected.Get("/portfolio/holdings", handlers.GetHoldings)
 	protected.Get("/portfolio/performance", handlers.GetPerformance)
-
-	// Broker endpoints
-	protected.Get("/brokers", handlers.GetBrokers)
-	protected.Post("/brokers", handlers.CreateBroker)
-	protected.Get("/brokers/:id", handlers.GetBroker)
-	protected.Put("/brokers/:id", handlers.UpdateBroker)
-	protected.Delete("/brokers/:id", handlers.DeleteBroker)
 
 	// Analytics endpoints
 	protected.Get("/analytics/fee-attribution", handlers.GetFeeAttribution)
