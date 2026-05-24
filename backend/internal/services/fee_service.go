@@ -152,7 +152,6 @@ func (s *FeeService) GetTotalFeesByType(ctx context.Context, userID string, date
 		MaintenanceFees: "0",
 		OtherFees:       "0",
 		TotalFees:       "0",
-		FeesByBroker:    make(map[string]string),
 		FeesByMonth:     make(map[string]string),
 	}
 
@@ -182,43 +181,6 @@ func (s *FeeService) GetTotalFeesByType(ctx context.Context, userID string, date
 	}
 
 	breakdown.TotalFees = totalFees.String()
-
-	// Get fees by broker
-	brokerQuery := `
-		SELECT 
-			COALESCE(b.name, 'Unspecified') as broker_name,
-			SUM(cf.usd_amount) as total
-		FROM cash_flows cf
-		LEFT JOIN brokers b ON cf.broker_id = b.id
-		WHERE cf.user_id = $1 AND cf.type = 'fee'
-	`
-
-	if dateRange != nil {
-		brokerArgs := []interface{}{userID}
-		argCount := 1
-		if dateRange.StartDate != nil {
-			argCount++
-			brokerQuery += fmt.Sprintf(" AND cf.date >= $%d", argCount)
-			brokerArgs = append(brokerArgs, *dateRange.StartDate)
-		}
-		if dateRange.EndDate != nil {
-			argCount++
-			brokerQuery += fmt.Sprintf(" AND cf.date <= $%d", argCount)
-			brokerArgs = append(brokerArgs, *dateRange.EndDate)
-		}
-		brokerQuery += " GROUP BY b.name"
-		
-		brokerRows, err := s.pool.Query(ctx, brokerQuery, brokerArgs...)
-		if err == nil {
-			defer brokerRows.Close()
-			for brokerRows.Next() {
-				var brokerName, amount string
-				if err := brokerRows.Scan(&brokerName, &amount); err == nil {
-					breakdown.FeesByBroker[brokerName] = amount
-				}
-			}
-		}
-	}
 
 	return breakdown, rows.Err()
 }
@@ -275,15 +237,16 @@ func (s *FeeService) ReconcileCashFlowFees(ctx context.Context, userID string) (
 		IsReconciled:      true,
 		MissingLinks:      []string{},
 		OrphanedCashFlows: []string{},
+		UnlinkedCashFlows: []string{},
 		Discrepancies:     []models.ReconciliationIssue{},
 	}
 
-	// Get total fees from trades
+	// Get total fees from trades (dual-track: deposit + trading + closing via total_fees)
 	var totalTradeFees string
 	err := s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(COALESCE(fee, 0)), 0)
+		SELECT COALESCE(SUM(total_fees), 0)
 		FROM trades
-		WHERE user_id = $1 AND COALESCE(fee, 0) > 0
+		WHERE user_id = $1
 	`, userID).Scan(&totalTradeFees)
 	if err != nil {
 		return report, fmt.Errorf("failed to get total trade fees: %w", err)
@@ -313,10 +276,12 @@ func (s *FeeService) ReconcileCashFlowFees(ctx context.Context, userID string) (
 		SELECT t.id
 		FROM trades t
 		WHERE t.user_id = $1 
-		  AND COALESCE(t.fee, 0) > 0
+		  AND t.total_fees > 0
 		  AND NOT EXISTS (
 			SELECT 1 FROM cash_flows cf 
-			WHERE cf.related_trade_id = t.id AND cf.type = 'fee'
+			WHERE cf.related_trade_id = t.id
+			  AND cf.type = 'fee'
+			  AND cf.related_type = 'trade'
 		  )
 	`, userID)
 	if err != nil {
@@ -357,19 +322,43 @@ func (s *FeeService) ReconcileCashFlowFees(ctx context.Context, userID string) (
 		}
 	}
 
+	// Trade fee cash flows detached from a trade (e.g. after ON DELETE SET NULL)
+	unlinkedRows, err := s.pool.Query(ctx, `
+		SELECT cf.id
+		FROM cash_flows cf
+		WHERE cf.user_id = $1
+		  AND cf.type = 'fee'
+		  AND cf.related_type = 'trade'
+		  AND cf.related_trade_id IS NULL
+	`, userID)
+	if err != nil {
+		return report, fmt.Errorf("failed to check unlinked cash flows: %w", err)
+	}
+	defer unlinkedRows.Close()
+
+	for unlinkedRows.Next() {
+		var cfID string
+		if err := unlinkedRows.Scan(&cfID); err == nil {
+			report.UnlinkedCashFlows = append(report.UnlinkedCashFlows, cfID)
+			report.IsReconciled = false
+		}
+	}
+
 	// Check for discrepancies in individual trades
 	discRows, err := s.pool.Query(ctx, `
 		SELECT 
 			t.id,
 			t.ticker,
 			t.date,
-			COALESCE(t.fee, 0) as total_fees,
+			t.total_fees,
 			COALESCE(SUM(cf.usd_amount), 0) as cash_flow_fees
 		FROM trades t
-		LEFT JOIN cash_flows cf ON cf.related_trade_id = t.id AND cf.type = 'fee'
-		WHERE t.user_id = $1 AND COALESCE(t.fee, 0) > 0
-		GROUP BY t.id, t.ticker, t.date, t.fee
-		HAVING COALESCE(t.fee, 0) != COALESCE(SUM(cf.usd_amount), 0)
+		LEFT JOIN cash_flows cf ON cf.related_trade_id = t.id
+		  AND cf.type = 'fee'
+		  AND cf.related_type = 'trade'
+		WHERE t.user_id = $1 AND t.total_fees > 0
+		GROUP BY t.id, t.ticker, t.date, t.total_fees
+		HAVING t.total_fees != COALESCE(SUM(cf.usd_amount), 0)
 	`, userID)
 	if err != nil {
 		return report, fmt.Errorf("failed to check discrepancies: %w", err)
@@ -394,12 +383,16 @@ func (s *FeeService) ReconcileCashFlowFees(ctx context.Context, userID string) (
 		}
 	}
 
-	// If any issues found, not reconciled
-	if !difference.IsZero() && difference.Abs().GreaterThan(decimal.NewFromFloat(0.01)) {
+	if feeTotalsMismatch(difference) {
 		report.IsReconciled = false
 	}
 
 	return report, nil
+}
+
+// feeTotalsMismatch reports whether aggregate trade vs cash-flow fee totals differ beyond tolerance.
+func feeTotalsMismatch(difference decimal.Decimal) bool {
+	return !difference.IsZero() && difference.Abs().GreaterThan(decimal.NewFromFloat(0.01))
 }
 
 // GetFeeEfficiency calculates fee efficiency metrics by ticker or period

@@ -436,7 +436,6 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 		Breakdown: models.NetWorthBreakdown{
 			ByAssetType: make(map[string]string),
 			ByTicker:    make(map[string]string),
-			ByBroker:    make(map[string]string),
 			TopHoldings: []models.Holding{},
 		},
 	}

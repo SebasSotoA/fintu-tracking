@@ -6,6 +6,7 @@ import (
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
+	"strconv"
 	"strings"
 	"time"
 
@@ -188,6 +189,30 @@ func DeleteFxRate(c fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"message": "FX rate deleted successfully"})
+}
+
+// GetFxRateChart returns daily USD/COP closes from Twelve Data for charting.
+func GetFxRateChart(c fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	days := 30
+	if raw := strings.TrimSpace(c.Query("days")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			days = parsed
+		}
+	}
+
+	points, err := exchangeRateSvc.FetchDailyHistory(c.Context(), days)
+	if err != nil {
+		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	return c.JSON(points)
 }
 
 // GetCurrentRate returns the current exchange rate between two currencies.

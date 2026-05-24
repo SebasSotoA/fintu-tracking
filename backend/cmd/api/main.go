@@ -71,6 +71,7 @@ func main() {
 
 	// FX Rates endpoints
 	protected.Get("/fx-rates/current", handlers.GetCurrentRate)
+	protected.Get("/fx-rates/chart", handlers.GetFxRateChart)
 	protected.Get("/fx-rates", handlers.ListFxRates)
 	protected.Post("/fx-rates", handlers.CreateFxRate)
 	protected.Put("/fx-rates/:id", handlers.UpdateFxRate)
