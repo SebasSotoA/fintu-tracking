@@ -3,7 +3,7 @@
 import type React from "react"
 
 import type { Trade } from "@/lib/types"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,18 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Decimal } from "@/lib/decimal"
+import { cn } from "@/lib/utils"
 import { updateTrade } from "@/lib/api/trades"
+import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
+import { toDateInputValue } from "@/lib/date-utils"
+import {
+  buildTradePayload,
+  calculateTradeTotal,
+  tradeClosingFeeForForm,
+  type TradeFormValues,
+  validateSellQuantity,
+} from "@/lib/trades/trade-form-utils"
+import { showToast } from "@/lib/toast"
 
 interface EditTradeDialogProps {
   trade: Trade
@@ -20,45 +31,45 @@ interface EditTradeDialogProps {
   onSuccess: () => void
 }
 
-export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTradeDialogProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const [formData, setFormData] = useState({
-    date: trade.date,
+function tradeToFormValues(trade: Trade): TradeFormValues {
+  return {
+    date: toDateInputValue(trade.date),
     ticker: trade.ticker,
-    asset_type: trade.asset_type,
+    asset_type: trade.asset_type === "etf" ? "etf" : "stock",
     side: trade.side,
     quantity: new Decimal(trade.quantity).toString(),
     price: new Decimal(trade.price).toString(),
-    fee: new Decimal(trade.fee).toString(),
+    closing_fee: tradeClosingFeeForForm(trade),
     notes: trade.notes || "",
-  })
-
-  const [feeType, setFeeType] = useState<"fixed" | "percentage">("fixed")
-  const [feePercentage, setFeePercentage] = useState("")
-
-  const calculateFeeAmount = () => {
-    if (!formData.quantity || !formData.price) return "0"
-    if (feeType === "fixed") {
-      return formData.fee || "0"
-    }
-    // Calculate fee from percentage
-    if (!feePercentage) return "0"
-    const quantity = new Decimal(formData.quantity)
-    const price = new Decimal(formData.price)
-    const percentage = new Decimal(feePercentage)
-    const subtotal = quantity.mul(price)
-    return subtotal.mul(percentage).div(100).toString()
   }
+}
 
-  const calculateTotal = () => {
-    if (!formData.quantity || !formData.price) return "0"
-    const quantity = new Decimal(formData.quantity)
-    const price = new Decimal(formData.price)
-    const fee = new Decimal(calculateFeeAmount())
-    const subtotal = quantity.mul(price)
-    return formData.side === "buy" ? subtotal.add(fee).toFixed(2) : subtotal.sub(fee).toFixed(2)
+export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTradeDialogProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [priceWarning, setPriceWarning] = useState<string | null>(null)
+  const [formData, setFormData] = useState<TradeFormValues>(() => tradeToFormValues(trade))
+
+  useEffect(() => {
+    if (open) {
+      setFormData(tradeToFormValues(trade))
+      setPriceWarning(null)
+      setError(null)
+    }
+  }, [open, trade])
+
+  const handleTickerBlur = async () => {
+    const ticker = formData.ticker.trim().toUpperCase()
+    if (!ticker) {
+      setPriceWarning(null)
+      return
+    }
+    try {
+      await getMarketPrice(ticker)
+      setPriceWarning(null)
+    } catch {
+      setPriceWarning("No cached price yet — use Refresh Prices on the dashboard after saving.")
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,21 +78,28 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
     setError(null)
 
     try {
-      await updateTrade(trade.id, {
-        date: formData.date,
-        ticker: formData.ticker.toUpperCase(),
-        asset_type: formData.asset_type as "stock" | "etf",
-        side: formData.side as "buy" | "sell",
-        quantity: formData.quantity,
-        price: formData.price,
-        fee: calculateFeeAmount(),
-        notes: formData.notes || null,
-      })
+      const holdings = await getHoldings()
+      const sellError = validateSellQuantity(
+        holdings,
+        formData.ticker,
+        formData.side,
+        formData.quantity,
+        trade,
+      )
+      if (sellError) {
+        setError(sellError)
+        return
+      }
 
+      await updateTrade(trade.id, buildTradePayload(formData))
+
+      showToast.success("Trade updated")
       onOpenChange(false)
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update trade")
+      showToast.error(
+        err instanceof Error ? err.message : "Failed to update trade",
+      )
     } finally {
       setIsLoading(false)
     }
@@ -89,12 +107,19 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="flex max-h-[90vh] flex-col gap-4 sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Edit Trade</DialogTitle>
           <DialogDescription>Update the trade details</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className={cn(
+            "space-y-4",
+            priceWarning &&
+              "scrollbar-minimal min-h-0 max-h-[min(65vh,36rem)] overflow-y-auto pr-1",
+          )}
+        >
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-date">Date</Label>
@@ -112,9 +137,14 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 id="edit-ticker"
                 placeholder="AAPL"
                 value={formData.ticker}
-                onChange={(e) => setFormData({ ...formData, ticker: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, ticker: e.target.value })
+                  setPriceWarning(null)
+                }}
+                onBlur={handleTickerBlur}
                 required
               />
+              {priceWarning && <p className="text-xs text-amber-600 dark:text-amber-500">{priceWarning}</p>}
             </div>
           </div>
 
@@ -151,7 +181,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-quantity">Quantity</Label>
               <Input
@@ -176,48 +206,27 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-fee-type">Fee Type</Label>
-              <Select value={feeType} onValueChange={(value: "fixed" | "percentage") => setFeeType(value)}>
-                <SelectTrigger id="edit-fee-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fixed">USD</SelectItem>
-                  <SelectItem value="percentage">%</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-fee">
-              {feeType === "fixed" ? "Fee Amount (USD)" : "Fee Percentage (%)"}
-            </Label>
+            <Label htmlFor="edit-closing_fee">Closing fee (USD)</Label>
             <Input
-              id="edit-fee"
+              id="edit-closing_fee"
               type="number"
-              step={feeType === "fixed" ? "0.01" : "0.01"}
-              placeholder={feeType === "fixed" ? "0.00" : "0.25"}
-              value={feeType === "fixed" ? formData.fee : feePercentage}
-              onChange={(e) => {
-                if (feeType === "fixed") {
-                  setFormData({ ...formData, fee: e.target.value })
-                } else {
-                  setFeePercentage(e.target.value)
-                }
-              }}
+              step="0.01"
+              min="0"
+              placeholder="0"
+              value={formData.closing_fee}
+              onChange={(e) => setFormData({ ...formData, closing_fee: e.target.value })}
             />
-            {feeType === "percentage" && feePercentage && formData.quantity && formData.price && (
-              <p className="text-sm text-muted-foreground">
-                = ${new Decimal(calculateFeeAmount()).toFixed(2)} USD
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              Hapi fee on this buy or sell. For COP→USD deposit fees, use Cash Flows.
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label>Total (USD)</Label>
-            <div className="text-2xl font-bold font-mono">${calculateTotal()}</div>
+            <div className="text-2xl font-bold font-mono">${calculateTradeTotal(formData)}</div>
           </div>
 
           <div className="space-y-2">

@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteCashFlow } from "@/lib/api/cash-flows"
+import { showToast } from "@/lib/toast"
 
 interface DeleteCashFlowDialogProps {
   cashFlow: CashFlow
@@ -21,18 +22,19 @@ interface DeleteCashFlowDialogProps {
 
 export function DeleteCashFlowDialog({ cashFlow, open, onOpenChange, onSuccess }: DeleteCashFlowDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const handleDelete = async () => {
     setIsLoading(true)
-    setError(null)
 
     try {
       await deleteCashFlow(cashFlow.id)
+      showToast.success("Cash flow deleted")
       onOpenChange(false)
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete cash flow")
+      showToast.error(
+        err instanceof Error ? err.message : "Failed to delete cash flow",
+      )
     } finally {
       setIsLoading(false)
     }
@@ -47,7 +49,6 @@ export function DeleteCashFlowDialog({ cashFlow, open, onOpenChange, onSuccess }
             Are you sure you want to delete this {cashFlow.type}? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
         <div className="flex gap-3 justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancel

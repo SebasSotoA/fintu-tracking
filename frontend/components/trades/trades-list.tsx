@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Pencil, Trash2 } from "lucide-react"
 import { formatCurrency, format } from "@/lib/decimal"
+import { formatCalendarDate } from "@/lib/date-utils"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
@@ -61,7 +62,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
                 <TableHead>Side</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
                 <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Fee</TableHead>
+                <TableHead className="text-right">Fees</TableHead>
                 <TableHead className="text-right">Total</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -69,7 +70,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
             <TableBody>
               {trades.map((trade) => (
                 <TableRow key={trade.id}>
-                  <TableCell>{new Date(trade.date).toLocaleDateString()}</TableCell>
+                  <TableCell>{formatCalendarDate(trade.date)}</TableCell>
                   <TableCell className="font-mono font-semibold">{trade.ticker}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
@@ -79,7 +80,9 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
                   </TableCell>
                   <TableCell className="text-right font-mono">{format(trade.quantity, 4)}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(trade.price, "USD")}</TableCell>
-                  <TableCell className="text-right font-mono">{formatCurrency(trade.fee, "USD")}</TableCell>
+                  <TableCell className="text-right font-mono">
+                    {formatCurrency(trade.total_fees || trade.fee, "USD")}
+                  </TableCell>
                   <TableCell className="text-right font-mono font-semibold">
                     {formatCurrency(trade.total, "USD")}
                   </TableCell>

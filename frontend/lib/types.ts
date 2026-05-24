@@ -17,9 +17,9 @@ export interface CashFlow {
   fx_rate: string | null
   usd_amount: string
   notes: string | null
-  broker_id: string | null
   fee_type: "deposit" | "trading" | "closing" | "maintenance" | "other" | "withdrawal" | null
   related_trade_id: string | null
+  related_cash_flow_id: string | null
   related_type: "trade" | "deposit" | "withdrawal" | "standalone" | null
   created_at: string
   updated_at: string
@@ -35,12 +35,10 @@ export interface Trade {
   quantity: string
   price: string
   fee: string
-  broker_id: string | null
   deposit_fee: string
   trading_fee: string
   closing_fee: string
   total_fees: string
-  transaction_fx_rate: string | null
   total: string
   notes: string | null
   created_at: string
@@ -76,6 +74,5 @@ export interface NetWorthData {
   breakdown: {
     by_asset_type: Record<string, string>
     by_ticker: Record<string, string>
-    by_broker: Record<string, string>
   }
 }

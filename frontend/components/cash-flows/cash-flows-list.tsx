@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Pencil, Trash2, ExternalLinkIcon, LinkIcon } from "lucide-react"
-import { formatCurrency, format } from "@/lib/decimal"
+import { formatCalendarDate } from "@/lib/date-utils"
+import { formatAmountPlain, formatCurrency } from "@/lib/decimal"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
@@ -74,7 +75,7 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
                   key={cf.id}
                   className={cf.id === highlightId ? "bg-amber-50 dark:bg-amber-950/20 ring-1 ring-inset ring-amber-400" : undefined}
                 >
-                  <TableCell>{new Date(cf.date).toLocaleDateString()}</TableCell>
+                  <TableCell>{formatCalendarDate(cf.date)}</TableCell>
                   <TableCell>
                     <Badge
                       variant={cf.type === "deposit" ? "default" : cf.type === "withdrawal" ? "secondary" : "destructive"}
@@ -95,19 +96,24 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
                     <Badge variant="outline">{cf.currency}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    {formatCurrency(cf.amount, cf.currency as "USD" | "COP")}
+                    {formatAmountPlain(cf.amount, cf.currency as "USD" | "COP")}
                   </TableCell>
                   <TableCell className="text-right font-mono font-semibold">
                     {formatCurrency(cf.usd_amount, "USD")}
                   </TableCell>
                   <TableCell>
-                    {cf.related_trade_id ? (
+                    {cf.related_type === "trade" && cf.related_trade_id ? (
                       <Link href={`/trades?highlight=${cf.related_trade_id}`}>
                         <Button variant="ghost" size="sm" className="h-auto py-1 px-2">
                           <LinkIcon className="h-3 w-3 mr-1" />
-                          <span className="text-xs">
-                            {cf.related_type === "trade" ? "Trade" : cf.related_type}
-                          </span>
+                          <span className="text-xs">Trade</span>
+                        </Button>
+                      </Link>
+                    ) : cf.related_cash_flow_id ? (
+                      <Link href={`/cash-flows?highlight=${cf.related_cash_flow_id}`}>
+                        <Button variant="ghost" size="sm" className="h-auto py-1 px-2">
+                          <LinkIcon className="h-3 w-3 mr-1" />
+                          <span className="text-xs capitalize">{cf.related_type ?? "Cash flow"}</span>
                         </Button>
                       </Link>
                     ) : (
@@ -139,6 +145,7 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
       {editingCashFlow && (
         <EditCashFlowDialog
           cashFlow={editingCashFlow}
+          cashFlows={cashFlows}
           open={!!editingCashFlow}
           onOpenChange={() => setEditingCashFlow(null)}
           onSuccess={handleUpdated}

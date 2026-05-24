@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { deleteTrade } from "@/lib/api/trades"
+import { showToast } from "@/lib/toast"
 
 interface DeleteTradeDialogProps {
   trade: Trade
@@ -21,18 +22,19 @@ interface DeleteTradeDialogProps {
 
 export function DeleteTradeDialog({ trade, open, onOpenChange, onSuccess }: DeleteTradeDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const handleDelete = async () => {
     setIsLoading(true)
-    setError(null)
 
     try {
       await deleteTrade(trade.id)
+      showToast.success("Trade deleted")
       onOpenChange(false)
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete trade")
+      showToast.error(
+        err instanceof Error ? err.message : "Failed to delete trade",
+      )
     } finally {
       setIsLoading(false)
     }
@@ -47,7 +49,6 @@ export function DeleteTradeDialog({ trade, open, onOpenChange, onSuccess }: Dele
             Are you sure you want to delete this trade for {trade.ticker}? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        {error && <p className="text-sm text-destructive">{error}</p>}
         <div className="flex gap-3 justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
             Cancel

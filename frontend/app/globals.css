@@ -180,4 +180,37 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .dark input[type="date"] {
+    color-scheme: dark;
+  }
+
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.9;
+  }
+}
+
+@layer utilities {
+  .scrollbar-minimal {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar-thumb:hover {
+    background-color: var(--muted-foreground);
+  }
 }
