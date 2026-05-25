@@ -11,7 +11,6 @@ import { formatAmountPlain, formatCurrency } from "@/lib/decimal"
 import {
   getDepositWithdrawalUsdDisplay,
   getFeeAttributionLabel,
-  getLinkedFeeUsdHint,
 } from "@/lib/cash-flows/cash-flows-list-display"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -77,8 +76,7 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
             <TableBody>
               {cashFlows.map((cf) => {
                 const isTransfer = cf.type === "deposit" || cf.type === "withdrawal"
-                const usdDisplay = isTransfer ? getDepositWithdrawalUsdDisplay(cashFlows, cf) : null
-                const feeUsdHint = cf.type === "fee" ? getLinkedFeeUsdHint(cashFlows, cf) : null
+                const transferUsd = isTransfer ? getDepositWithdrawalUsdDisplay(cashFlows, cf) : null
                 const feeAttributionLabel = cf.type === "fee" ? getFeeAttributionLabel(cashFlows, cf) : null
 
                 return (
@@ -109,24 +107,8 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
                   <TableCell className="text-right font-mono">
                     {formatAmountPlain(cf.amount, cf.currency as "USD" | "COP")}
                   </TableCell>
-                  <TableCell className="text-right">
-                    {usdDisplay ? (
-                      <div className="font-mono font-semibold">
-                        <div>{usdDisplay.primaryUsd}</div>
-                        {usdDisplay.breakdown ? (
-                          <div className="text-xs font-normal text-muted-foreground font-sans">
-                            {usdDisplay.breakdown}
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : (
-                      <div className="font-mono font-semibold">
-                        <div>{formatCurrency(cf.usd_amount, "USD")}</div>
-                        {feeUsdHint ? (
-                          <div className="text-xs font-normal text-muted-foreground font-sans">{feeUsdHint}</div>
-                        ) : null}
-                      </div>
-                    )}
+                  <TableCell className="text-right font-mono font-semibold">
+                    {transferUsd ?? formatCurrency(cf.usd_amount, "USD")}
                   </TableCell>
                   <TableCell>
                     {cf.related_type === "trade" && cf.related_trade_id ? (

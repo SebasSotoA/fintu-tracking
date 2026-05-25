@@ -199,6 +199,7 @@
 
   .scrollbar-minimal::-webkit-scrollbar {
     width: 6px;
+    height: 6px;
   }
 
   .scrollbar-minimal::-webkit-scrollbar-track {

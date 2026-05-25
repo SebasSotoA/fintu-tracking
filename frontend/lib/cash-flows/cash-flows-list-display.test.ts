@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { CashFlow } from "@/lib/types"
-import {
-  getDepositWithdrawalUsdDisplay,
-  getFeeAttributionLabel,
-  getLinkedFeeUsdHint,
-} from "./cash-flows-list-display"
+import { getDepositWithdrawalUsdDisplay, getFeeAttributionLabel } from "./cash-flows-list-display"
 
 function baseCashFlow(overrides: Partial<CashFlow>): CashFlow {
   return {
@@ -30,12 +26,10 @@ function baseCashFlow(overrides: Partial<CashFlow>): CashFlow {
 describe("getDepositWithdrawalUsdDisplay", () => {
   it("shows gross USD when no linked fee", () => {
     const deposit = baseCashFlow({ id: "dep-1", usd_amount: "100.00" })
-    const result = getDepositWithdrawalUsdDisplay([deposit], deposit)
-    expect(result.primaryUsd).toBe("$100.00")
-    expect(result.breakdown).toBeUndefined()
+    expect(getDepositWithdrawalUsdDisplay([deposit], deposit)).toBe("$100.00")
   })
 
-  it("shows net USD and gross/fee breakdown when linked fee exists", () => {
+  it("shows net USD when linked fee exists", () => {
     const deposit = baseCashFlow({ id: "dep-1", usd_amount: "395.99" })
     const fee = baseCashFlow({
       id: "fee-1",
@@ -45,33 +39,12 @@ describe("getDepositWithdrawalUsdDisplay", () => {
       related_cash_flow_id: "dep-1",
       related_type: "deposit",
     })
-    const result = getDepositWithdrawalUsdDisplay([deposit, fee], deposit)
-    expect(result.primaryUsd).toBe("$394.00")
-    expect(result.breakdown).toBe("Gross $395.99 · fee $1.99")
-  })
-})
-
-describe("getLinkedFeeUsdHint", () => {
-  it("returns parent gross hint for deposit-linked fee", () => {
-    const deposit = baseCashFlow({ id: "dep-1", usd_amount: "395.99" })
-    const fee = baseCashFlow({
-      id: "fee-1",
-      type: "fee",
-      usd_amount: "1.99",
-      fee_type: "deposit",
-      related_cash_flow_id: "dep-1",
-    })
-    expect(getLinkedFeeUsdHint([deposit, fee], fee)).toBe("of $395.99 deposit")
-  })
-
-  it("returns null when fee is not linked to a transfer", () => {
-    const fee = baseCashFlow({ id: "fee-1", type: "fee", usd_amount: "1.99" })
-    expect(getLinkedFeeUsdHint([fee], fee)).toBeNull()
+    expect(getDepositWithdrawalUsdDisplay([deposit, fee], deposit)).toBe("$394.00")
   })
 })
 
 describe("getFeeAttributionLabel", () => {
-  it("describes fee for parent deposit with parent date", () => {
+  it("describes fee for parent deposit without date in label", () => {
     const deposit = baseCashFlow({ id: "dep-1", date: "2026-06-01", type: "deposit" })
     const fee = baseCashFlow({
       id: "fee-1",
@@ -79,7 +52,7 @@ describe("getFeeAttributionLabel", () => {
       related_cash_flow_id: "dep-1",
       fee_type: "deposit",
     })
-    expect(getFeeAttributionLabel([deposit, fee], fee)).toBe("Fee for deposit · 6/1/2026")
+    expect(getFeeAttributionLabel([deposit, fee], fee)).toBe("Fee for deposit")
   })
 
   it("returns null for standalone fee", () => {
