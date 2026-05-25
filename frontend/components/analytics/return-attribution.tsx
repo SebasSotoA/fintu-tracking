@@ -9,7 +9,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   Cell,
 } from "recharts";
@@ -159,21 +158,37 @@ export function ReturnAttribution() {
     },
   ];
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  type AttributionTooltipRow = {
+    name: string
+    type: string
+    color: string
+    value?: number
+    displayValue?: number
+  }
+
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean
+    payload?: { payload: AttributionTooltipRow }[]
+  }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
         <div className="bg-background border border-border p-3 rounded-lg shadow-lg">
           <p className="font-semibold text-sm mb-1">{data.name.replace(/\n/g, " ")}</p>
-          {data.type !== "start" && data.type !== "end" && (
+          {data.type !== "start" && data.type !== "end" && data.value != null && (
             <p className="text-base font-bold" style={{ color: data.color }}>
               {data.value >= 0 ? "+" : ""}
               {formatCurrency(String(Math.abs(data.value)))}
             </p>
           )}
-          <p className="text-xs text-muted-foreground mt-1">
-            Total: {formatCurrency(data.displayValue)}
-          </p>
+          {data.displayValue != null && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Total: {formatCurrency(String(data.displayValue))}
+            </p>
+          )}
         </div>
       );
     }

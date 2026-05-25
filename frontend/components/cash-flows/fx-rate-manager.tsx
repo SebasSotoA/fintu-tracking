@@ -60,7 +60,7 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
 
   const [convertUsd, setConvertUsd] = useState("1")
   const [convertCop, setConvertCop] = useState("")
-  const [convertLastEdited, setConvertLastEdited] = useState<ConvertLastEdited>("usd")
+  const [, setConvertLastEdited] = useState<ConvertLastEdited>("usd")
 
   const latest = safeRecentRates[0]
   const canonical = latest ? Number(latest.rate) : 0

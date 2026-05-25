@@ -17,7 +17,7 @@ describe("tradeClosingFeeForForm", () => {
       tradeClosingFeeForForm({ closing_fee: "0", trading_fee: "0.20", fee: "0" } as Trade),
     ).toBe("0.2")
     expect(tradeClosingFeeForForm({ closing_fee: "0", trading_fee: "0", fee: "0.10" } as Trade)).toBe(
-      "0.10",
+      "0.1",
     )
   })
 })

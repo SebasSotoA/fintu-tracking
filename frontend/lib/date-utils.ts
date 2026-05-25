@@ -15,3 +15,21 @@ export function formatCalendarDate(
   const [y, m, d] = day.split("-").map(Number)
   return new Date(y, m - 1, d).toLocaleDateString(locale)
 }
+
+/** Chart/tooltip date label (e.g. "mon, may 24") without UTC day shift. */
+export function formatTooltipDate(dateKey: string): string {
+  const date = new Date(`${dateKey}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return dateKey
+
+  const now = new Date()
+  const msIn7Days = 7 * 24 * 60 * 60 * 1000
+  const isRecent = now.getTime() - date.getTime() <= msIn7Days
+
+  return date
+    .toLocaleDateString("en-US", {
+      ...(isRecent ? { weekday: "short" } : {}),
+      day: "numeric",
+      month: "short",
+    })
+    .toLowerCase()
+}

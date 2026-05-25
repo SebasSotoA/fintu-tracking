@@ -1,7 +1,10 @@
 "use client"
 
 import type { FxRateChartPoint } from "@/lib/api/fx-rates"
+import { formatTooltipDate } from "@/lib/date-utils"
 import { Decimal } from "@/lib/decimal"
+
+export { formatTooltipDate } from "@/lib/date-utils"
 import {
   Area,
   AreaChart,
@@ -75,23 +78,6 @@ function CurrentRateDot(
       <circle cx={cx} cy={cy} r={1.5} fill="var(--background)" />
     </g>
   )
-}
-
-export function formatTooltipDate(dateKey: string): string {
-  const date = new Date(`${dateKey}T12:00:00`)
-  if (Number.isNaN(date.getTime())) return dateKey
-
-  const now = new Date()
-  const msIn7Days = 7 * 24 * 60 * 60 * 1000
-  const isRecent = now.getTime() - date.getTime() <= msIn7Days
-
-  return date
-    .toLocaleDateString("en-US", {
-      ...(isRecent ? { weekday: "short" } : {}),
-      day: "numeric",
-      month: "short",
-    })
-    .toLowerCase()
 }
 
 function FxRateTooltip({

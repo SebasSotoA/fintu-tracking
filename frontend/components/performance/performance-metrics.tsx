@@ -36,10 +36,6 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
     .filter((cf) => cf.type === "deposit")
     .reduce((sum, cf) => sum.add(new Decimal(cf.usd_amount)), new Decimal(0))
 
-  const withdrawals = safeCashFlows
-    .filter((cf) => cf.type === "withdrawal")
-    .reduce((sum, cf) => sum.add(new Decimal(cf.usd_amount)), new Decimal(0))
-
   const totalFees = safeCashFlows
     .filter((cf) => cf.type === "fee")
     .reduce((sum, cf) => sum.add(new Decimal(cf.usd_amount)), new Decimal(0))

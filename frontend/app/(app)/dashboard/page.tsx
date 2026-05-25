@@ -6,11 +6,19 @@ import { RefreshPricesButton } from "@/components/dashboard/refresh-prices-butto
 import { getHoldings, getNetWorth } from "@/lib/api/server-portfolio"
 import { listCashFlows } from "@/lib/api/server-cash-flows"
 import { listFxRates } from "@/lib/api/server-fx-rates"
+import type { FxSnapshot } from "@/components/dashboard/net-worth-card"
 import type { Holding, CashFlow, FxRate } from "@/lib/types"
 
 async function NetWorthCardServer() {
-  const data = await getNetWorth().catch(() => null)
-  return <NetWorthCard initialData={data} />
+  const [data, fxRates] = await Promise.all([
+    getNetWorth().catch(() => null),
+    listFxRates().catch(() => []),
+  ])
+  const latest = fxRates.length > 0 ? fxRates[0] : null
+  const fxSnapshot: FxSnapshot | null = latest
+    ? { rate: latest.rate, date: latest.date }
+    : null
+  return <NetWorthCard initialData={data} fxSnapshot={fxSnapshot} />
 }
 
 async function DashboardData({

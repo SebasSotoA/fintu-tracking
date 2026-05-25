@@ -31,8 +31,8 @@ export function PerformanceContent() {
     <div className="space-y-6">
       <ReturnAttribution />
       <FeeAttributionChart />
-      <PerformanceCharts />
-      <PerformanceMetrics />
+      <PerformanceCharts cashFlows={[]} fxRates={[]} />
+      <PerformanceMetrics trades={[]} cashFlows={[]} fxRates={[]} marketPrices={[]} />
     </div>
   )
 }
