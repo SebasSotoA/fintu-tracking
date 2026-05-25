@@ -5,9 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Pencil, Trash2, ExternalLinkIcon, LinkIcon } from "lucide-react"
+import { Pencil, Trash2, LinkIcon } from "lucide-react"
 import { formatCalendarDate } from "@/lib/date-utils"
 import { formatAmountPlain, formatCurrency } from "@/lib/decimal"
+import {
+  getDepositWithdrawalUsdDisplay,
+  getFeeAttributionLabel,
+  getLinkedFeeUsdHint,
+} from "@/lib/cash-flows/cash-flows-list-display"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
@@ -70,7 +75,13 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cashFlows.map((cf) => (
+              {cashFlows.map((cf) => {
+                const isTransfer = cf.type === "deposit" || cf.type === "withdrawal"
+                const usdDisplay = isTransfer ? getDepositWithdrawalUsdDisplay(cashFlows, cf) : null
+                const feeUsdHint = cf.type === "fee" ? getLinkedFeeUsdHint(cashFlows, cf) : null
+                const feeAttributionLabel = cf.type === "fee" ? getFeeAttributionLabel(cashFlows, cf) : null
+
+                return (
                 <TableRow
                   key={cf.id}
                   className={cf.id === highlightId ? "bg-amber-50 dark:bg-amber-950/20 ring-1 ring-inset ring-amber-400" : undefined}
@@ -98,8 +109,24 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
                   <TableCell className="text-right font-mono">
                     {formatAmountPlain(cf.amount, cf.currency as "USD" | "COP")}
                   </TableCell>
-                  <TableCell className="text-right font-mono font-semibold">
-                    {formatCurrency(cf.usd_amount, "USD")}
+                  <TableCell className="text-right">
+                    {usdDisplay ? (
+                      <div className="font-mono font-semibold">
+                        <div>{usdDisplay.primaryUsd}</div>
+                        {usdDisplay.breakdown ? (
+                          <div className="text-xs font-normal text-muted-foreground font-sans">
+                            {usdDisplay.breakdown}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="font-mono font-semibold">
+                        <div>{formatCurrency(cf.usd_amount, "USD")}</div>
+                        {feeUsdHint ? (
+                          <div className="text-xs font-normal text-muted-foreground font-sans">{feeUsdHint}</div>
+                        ) : null}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     {cf.related_type === "trade" && cf.related_trade_id ? (
@@ -107,6 +134,13 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
                         <Button variant="ghost" size="sm" className="h-auto py-1 px-2">
                           <LinkIcon className="h-3 w-3 mr-1" />
                           <span className="text-xs">Trade</span>
+                        </Button>
+                      </Link>
+                    ) : feeAttributionLabel && cf.related_cash_flow_id ? (
+                      <Link href={`/cash-flows?highlight=${cf.related_cash_flow_id}`}>
+                        <Button variant="ghost" size="sm" className="h-auto py-1 px-2 text-left">
+                          <LinkIcon className="h-3 w-3 mr-1 shrink-0" />
+                          <span className="text-xs">{feeAttributionLabel}</span>
                         </Button>
                       </Link>
                     ) : cf.related_cash_flow_id ? (
@@ -136,7 +170,8 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>
