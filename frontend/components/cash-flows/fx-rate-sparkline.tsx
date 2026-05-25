@@ -29,13 +29,27 @@ function formatRate(value: number): string {
   }).format(value)
 }
 
+export function computeTicks(data: ChartPoint[], maxTicks = 6): string[] {
+  if (data.length <= maxTicks) return data.map((d) => d.dateKey)
+  const step = Math.floor((data.length - 1) / (maxTicks - 1))
+  const ticks = Array.from({ length: maxTicks - 1 }, (_, i) => data[i * step].dateKey)
+  ticks.push(data[data.length - 1].dateKey)
+  return ticks
+}
+
+export function formatAxisDateKey(dateKey: string): string {
+  const date = new Date(`${dateKey}T12:00:00`)
+  if (Number.isNaN(date.getTime())) return dateKey
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+}
+
 /** Recharts calls this per point; only the last (current) point gets the pulsing halo. */
 function CurrentRateDot(
   props: { cx?: number; cy?: number; index?: number },
   lastIndex: number,
 ) {
   const { cx, cy, index } = props
-  if (cx == null || cy == null || index == null) return null
+  if (cx == null || cy == null || index == null) return <g />
   if (index !== lastIndex) return <g key={index} />
 
   return (
@@ -63,7 +77,7 @@ function CurrentRateDot(
   )
 }
 
-function formatTooltipDate(dateKey: string): string {
+export function formatTooltipDate(dateKey: string): string {
   const date = new Date(`${dateKey}T12:00:00`)
   if (Number.isNaN(date.getTime())) return dateKey
 
@@ -72,7 +86,7 @@ function formatTooltipDate(dateKey: string): string {
   const isRecent = now.getTime() - date.getTime() <= msIn7Days
 
   return date
-    .toLocaleDateString(undefined, {
+    .toLocaleDateString("en-US", {
       ...(isRecent ? { weekday: "short" } : {}),
       day: "numeric",
       month: "short",
@@ -112,9 +126,7 @@ export function FxRateSparkline({ points }: FxRateSparklineProps) {
       const date = new Date(`${p.date}T12:00:00`)
       return {
         dateKey: p.date,
-        label: Number.isNaN(date.getTime())
-          ? p.date
-          : date.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+        label: Number.isNaN(date.getTime()) ? p.date : formatAxisDateKey(p.date),
         rate: rate.toNumber(),
       }
     })
@@ -135,18 +147,21 @@ export function FxRateSparkline({ points }: FxRateSparklineProps) {
   const padding = Math.max((max - min) * 0.15, 20)
   const currentRate = data[data.length - 1]?.rate
   const lastIndex = data.length - 1
+  const xTicks = computeTicks(data)
 
   return (
     <div className="h-[140px] w-full [&_.recharts-wrapper]:overflow-visible [&_.recharts-surface]:overflow-visible [&_svg]:overflow-visible">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 0 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 16 }}>
           <XAxis
-            dataKey="label"
+            dataKey="dateKey"
+            ticks={xTicks}
+            interval={0}
+            tickFormatter={formatAxisDateKey}
+            padding={{ right: 16 }}
             tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
             tickLine={false}
             axisLine={false}
-            interval="preserveStartEnd"
-            minTickGap={24}
           />
           <YAxis
             width={72}
@@ -174,6 +189,7 @@ export function FxRateSparkline({ points }: FxRateSparklineProps) {
             strokeWidth={2}
             fill="var(--primary)"
             fillOpacity={0.12}
+            isAnimationActive={false}
             dot={(dotProps) => CurrentRateDot(dotProps, lastIndex)}
             activeDot={false}
           />
