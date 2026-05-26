@@ -1,6 +1,8 @@
 "use client"
 
-import type { Trade, CashFlow, FxRate, MarketPrice } from "@/lib/types"
+import type { Trade, CashFlow, FxRate, MarketPrice, NetWorthData } from "@/lib/types"
+import { useQuery } from "@tanstack/react-query"
+import { api } from "@/lib/api/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Decimal } from "@/lib/decimal"
 import { formatCurrency } from "@/lib/decimal"
@@ -15,7 +17,12 @@ interface PerformanceMetricsProps {
 }
 
 export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }: PerformanceMetricsProps) {
-  // Ensure all arrays are valid
+  const { data: netWorth, isPending: isNetWorthPending } = useQuery<NetWorthData>({
+    queryKey: ["net-worth"],
+    queryFn: () => api.get<NetWorthData>("/api/analytics/net-worth"),
+    staleTime: 60_000,
+  })
+
   const safeTrades = trades || []
   const safeCashFlows = cashFlows || []
   const safeFxRates = fxRates || []
@@ -31,10 +38,7 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
     new Decimal(0),
   )
 
-  // Calculate cash flow totals
-  const deposits = safeCashFlows
-    .filter((cf) => cf.type === "deposit")
-    .reduce((sum, cf) => sum.add(new Decimal(cf.usd_amount)), new Decimal(0))
+  const totalInvestedUSD = new Decimal(netWorth?.total_invested ?? "0")
 
   const totalFees = safeCashFlows
     .filter((cf) => cf.type === "fee")
@@ -98,7 +102,11 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
           <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Total Invested</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-xl md:text-2xl font-semibold font-mono">{formatCurrency(deposits.toString(), "USD")}</div>
+          <div className="text-xl md:text-2xl font-semibold font-mono">
+            {isNetWorthPending
+              ? "—"
+              : formatCurrency(totalInvestedUSD.toString(), "USD")}
+          </div>
           {depositsInCOP && (
             <p className="text-sm text-muted-foreground mt-2">{formatCurrency(depositsInCOP.toString(), "COP")}</p>
           )}
