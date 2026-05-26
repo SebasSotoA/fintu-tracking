@@ -37,28 +37,22 @@ func (s *AnalyticsService) CalculateReturnAttribution(ctx context.Context, userI
 		NetReturnPct:        "0",
 	}
 
-	// Calculate total invested (deposits - withdrawals, excluding fees)
-	var totalDeposits, totalWithdrawals string
-	err := s.pool.QueryRow(ctx, `
-		SELECT 
-			COALESCE(SUM(CASE WHEN type = 'deposit' THEN usd_amount ELSE 0 END), 0) as deposits,
-			COALESCE(SUM(CASE WHEN type = 'withdrawal' THEN usd_amount ELSE 0 END), 0) as withdrawals
-		FROM cash_flows
-		WHERE user_id = $1
-	`, userID).Scan(&totalDeposits, &totalWithdrawals)
+	var startingCapitalStr string
+	err := s.pool.QueryRow(ctx, netInvestedSQL(), userID).Scan(&startingCapitalStr)
 	if err != nil {
 		return attribution, fmt.Errorf("failed to calculate total invested: %w", err)
 	}
 
-	deposits, _ := decimal.NewFromString(totalDeposits)
-	withdrawals, _ := decimal.NewFromString(totalWithdrawals)
-	startingCapital := deposits.Sub(withdrawals)
+	startingCapital, err := decimal.NewFromString(startingCapitalStr)
+	if err != nil {
+		return attribution, fmt.Errorf("parse starting capital: %w", err)
+	}
 	attribution.StartingCapital = startingCapital.String()
 
 	// Calculate fees by type
 	err = s.pool.QueryRow(ctx, `
 		SELECT 
-			COALESCE(SUM(CASE WHEN fee_type = 'deposit' THEN usd_amount ELSE 0 END), 0) as deposit_fees,
+			COALESCE(SUM(CASE WHEN fee_type = 'deposit' AND related_cash_flow_id IS NULL THEN usd_amount ELSE 0 END), 0) as deposit_fees,
 			COALESCE(SUM(CASE WHEN fee_type = 'trading' THEN usd_amount ELSE 0 END), 0) as trading_fees,
 			COALESCE(SUM(CASE WHEN fee_type = 'closing' THEN usd_amount ELSE 0 END), 0) as closing_fees,
 			COALESCE(SUM(usd_amount), 0) as total_fees
@@ -388,19 +382,8 @@ func (s *AnalyticsService) generatePerformancePoints(ctx context.Context, userID
 			NetReturnPct:      "0",
 		}
 
-		// Calculate invested capital up to this date
 		var invested string
-		s.pool.QueryRow(ctx, `
-			SELECT COALESCE(SUM(
-				CASE 
-					WHEN type = 'deposit' THEN usd_amount
-					WHEN type = 'withdrawal' THEN -usd_amount
-					ELSE 0
-				END
-			), 0)
-			FROM cash_flows
-			WHERE user_id = $1 AND date <= $2
-		`, userID, date).Scan(&invested)
+		s.pool.QueryRow(ctx, netInvestedSQLAsOfDate(), userID, date).Scan(&invested)
 		point.InvestedCapital = invested
 
 		// Calculate cumulative fees
@@ -552,19 +535,8 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 	netWorth := totalHoldingsValue.Add(cash)
 	summary.NetWorth = netWorth.String()
 
-	// Calculate total invested
 	var totalInvested string
-	s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(
-			CASE 
-				WHEN type = 'deposit' THEN usd_amount
-				WHEN type = 'withdrawal' THEN -usd_amount
-				ELSE 0
-			END
-		), 0)
-		FROM cash_flows
-		WHERE user_id = $1
-	`, userID).Scan(&totalInvested)
+	s.pool.QueryRow(ctx, netInvestedSQL(), userID).Scan(&totalInvested)
 	summary.TotalInvested = totalInvested
 
 	// Get total fees
