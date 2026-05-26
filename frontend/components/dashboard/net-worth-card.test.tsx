@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { NetWorthData } from "@/lib/types"
-import { NetWorthCard } from "./net-worth-card"
+import { METRIC_TOOLTIPS, NetWorthCard } from "./net-worth-card"
 
 const mockApiGet = vi.fn()
 
@@ -27,18 +27,13 @@ const baseNetWorth: NetWorthData = {
   },
 }
 
-function renderCard(
-  props: {
-    initialData?: NetWorthData | null
-    fxSnapshot?: { rate: string; date: string } | null
-  } = {},
-) {
+function renderCard(props: { initialData?: NetWorthData | null } = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   return render(
     <QueryClientProvider client={queryClient}>
-      <NetWorthCard initialData={props.initialData ?? baseNetWorth} fxSnapshot={props.fxSnapshot} />
+      <NetWorthCard initialData={props.initialData ?? baseNetWorth} />
     </QueryClientProvider>,
   )
 }
@@ -79,20 +74,10 @@ describe("NetWorthCard", () => {
     expect(portfolioSummary).toHaveTextContent("20.00%")
   })
 
-  it("shows COP conversion with FX rate and date when fxSnapshot is provided", () => {
-    renderCard({
-      fxSnapshot: { rate: "3674.00", date: "2025-05-24" },
-    })
-    const copLine = screen.getByText((_, element) => {
-      const text = element?.textContent ?? ""
-      return (
-        element?.tagName === "P" &&
-        text.includes("$44,088,000 COP") &&
-        text.includes("rate 3,674.00 COP/USD") &&
-        text.toLowerCase().includes("may 24")
-      )
-    })
-    expect(copLine).toBeInTheDocument()
+  it("does not show COP conversion line", () => {
+    renderCard()
+    expect(screen.queryByText(/COP\/USD/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/\$[\d,]+ COP/i)).not.toBeInTheDocument()
   })
 
   it("exposes tooltip triggers for key metrics", () => {
@@ -101,6 +86,12 @@ describe("NetWorthCard", () => {
     expect(screen.getByRole("button", { name: /about total gain\/loss/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /about portfolio value/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /about time-weighted return/i })).toBeInTheDocument()
+  })
+
+  it("documents total invested as net capital after linked transfer fees", () => {
+    expect(METRIC_TOOLTIPS.totalInvested).toBe(
+      "Capital that reached your portfolio: net deposits minus withdrawals, after linked transfer fees.",
+    )
   })
 
   it("shows loading skeleton layout while fetching", () => {

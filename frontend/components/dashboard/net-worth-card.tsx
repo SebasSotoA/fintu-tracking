@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import Decimal from "decimal.js";
 import { api } from "@/lib/api/client";
-import { formatCurrency as formatCurrencyLib } from "@/lib/decimal";
 import type { NetWorthData } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,19 +21,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { formatTooltipDate } from "@/lib/date-utils";
-
-export interface FxSnapshot {
-  rate: string;
-  date: string;
-}
 
 interface NetWorthCardProps {
   initialData?: NetWorthData | null;
-  fxSnapshot?: FxSnapshot | null;
 }
 
-const METRIC_TOOLTIPS = {
+export const METRIC_TOOLTIPS = {
   netWorth:
     "Total portfolio value: market value of all holdings plus uninvested cash (USD).",
   totalGainLoss:
@@ -45,7 +37,7 @@ const METRIC_TOOLTIPS = {
   portfolioValue:
     "Same as holdings value — current market value of all open positions.",
   totalInvested:
-    "Net deposits minus withdrawals in USD (does not include trading gains).",
+    "Capital that reached your portfolio: net deposits minus withdrawals, after linked transfer fees.",
   totalGainLossStat:
     "Net worth minus total invested — includes both position gains and cash not yet deployed.",
   totalFees: "Sum of all fee cash flows (deposits, trading, closing, etc.) in USD.",
@@ -110,14 +102,7 @@ function formatAssetTypeLabel(key: string): string {
   return key.replace(/_/g, " ").toUpperCase();
 }
 
-function formatFxRateDisplay(rate: string): string {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(new Decimal(rate).toNumber());
-}
-
-export function NetWorthCard({ initialData, fxSnapshot }: NetWorthCardProps): React.JSX.Element {
+export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Element {
   const { data: netWorth, isLoading, error } = useQuery<NetWorthData>({
     queryKey: ["net-worth"],
     queryFn: () => api.get<NetWorthData>("/api/analytics/net-worth"),
@@ -165,15 +150,6 @@ export function NetWorthCard({ initialData, fxSnapshot }: NetWorthCardProps): Re
   const xirr = new Decimal(netWorth.xirr || "0");
   const isPositive = gainLoss.greaterThanOrEqualTo(0);
 
-  const copLine =
-    fxSnapshot && netWorthValue.greaterThan(0)
-      ? {
-          cop: netWorthValue.mul(fxSnapshot.rate),
-          rateLabel: formatFxRateDisplay(fxSnapshot.rate),
-          dateLabel: formatTooltipDate(fxSnapshot.date),
-        }
-      : null;
-
   const feeDragPct = totalInvested.greaterThan(0)
     ? totalFees.div(totalInvested).mul(100)
     : new Decimal(0);
@@ -218,15 +194,6 @@ export function NetWorthCard({ initialData, fxSnapshot }: NetWorthCardProps): Re
               </TooltipContent>
             </Tooltip>
           </div>
-
-          {copLine && (
-            <p className="text-sm text-muted-foreground font-mono tabular-nums">
-              {formatCurrencyLib(copLine.cop.toString(), "COP")}{" "}
-              <span className="text-muted-foreground/80">
-                (rate {copLine.rateLabel} COP/USD · {copLine.dateLabel})
-              </span>
-            </p>
-          )}
 
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-mono tabular-nums">
             <span className="inline-flex items-center gap-1">
