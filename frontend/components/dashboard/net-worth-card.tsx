@@ -2,10 +2,11 @@
 
 import type React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownIcon, ArrowUpIcon, CircleHelp } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import Decimal from "decimal.js";
 import { api } from "@/lib/api/client";
 import type { NetWorthData } from "@/lib/types";
+import { MetricLabel, StatCell } from "@/components/analytics/metric-primitives";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -15,7 +16,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
 
 interface NetWorthCardProps {
   initialData?: NetWorthData | null;
@@ -43,38 +43,6 @@ export const METRIC_TOOLTIPS = {
   xirr: "Time-weighted return coming soon.",
   assetAllocation: "Share of holdings value by asset class (ETF, stock, crypto).",
 } as const;
-
-function MetricLabel({
-  label,
-  tooltip,
-  className,
-}: {
-  label: string;
-  tooltip: string;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex items-center gap-1", className)}>
-      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </span>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={`About ${label}`}
-          >
-            <CircleHelp className="size-3.5 shrink-0" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs text-pretty">
-          {tooltip}
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  );
-}
 
 function formatUsd(value: Decimal): string {
   return new Intl.NumberFormat("en-US", {
@@ -290,48 +258,5 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
           )}
       </CardContent>
     </Card>
-  );
-}
-
-function StatCell({
-  label,
-  tooltip,
-  value,
-  valueClassName,
-  subValue,
-  subTooltip,
-}: {
-  label: string;
-  tooltip: string;
-  value: string;
-  valueClassName?: string;
-  subValue?: string;
-  subTooltip?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <MetricLabel label={label} tooltip={tooltip} />
-      <p className={cn("text-xl font-semibold font-mono tabular-nums md:text-2xl", valueClassName)}>
-        {value}
-      </p>
-      {subValue && (
-        <p className="text-xs text-muted-foreground font-mono tabular-nums">
-          {subTooltip ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button type="button" className="underline decoration-dotted underline-offset-2">
-                  {subValue}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                {subTooltip}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            subValue
-          )}
-        </p>
-      )}
-    </div>
   );
 }
