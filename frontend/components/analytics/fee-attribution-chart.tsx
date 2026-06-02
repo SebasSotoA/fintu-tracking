@@ -258,8 +258,8 @@ export function FeeAttributionChart(): React.JSX.Element {
                   />
                   <ChartTooltip cursor={MUTED_CURSOR} content={<FeeTooltip />} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>
-                    {feeTypeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    {feeTypeData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Bar>
                 </BarChart>

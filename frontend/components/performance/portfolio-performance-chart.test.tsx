@@ -91,6 +91,15 @@ describe("PortfolioPerformanceChart", () => {
     expect(screen.queryByTestId("line-chart")).toBeNull()
   })
 
+  it("shows error state when fetch fails", async () => {
+    mockGetPerformanceTimeSeries.mockRejectedValue(new Error("Network error"))
+    renderChart()
+    await waitFor(() => {
+      expect(screen.getByText(/unable to load performance history/i)).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId("line-chart")).toBeNull()
+  })
+
   it("refetches when interval changes to quarter", async () => {
     const user = userEvent.setup()
     renderChart()

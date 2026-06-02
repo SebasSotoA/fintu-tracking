@@ -105,12 +105,19 @@ export function PortfolioPerformanceChart() {
 
   if (error) {
     return (
-      <Card className="border-destructive">
+      <Card>
         <CardHeader>
           <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
             Portfolio vs invested
           </CardTitle>
         </CardHeader>
+        <CardContent>
+          <div className="flex min-h-[320px] flex-col items-center justify-center text-muted-foreground">
+            <AlertCircleIcon className="mb-3 h-10 w-10 opacity-40" />
+            <p className="font-medium">Unable to load performance history</p>
+            <p className="mt-1 text-sm">Try refreshing the page or check back later.</p>
+          </div>
+        </CardContent>
       </Card>
     )
   }

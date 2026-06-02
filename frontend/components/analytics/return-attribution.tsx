@@ -285,8 +285,8 @@ export function ReturnAttribution(): React.JSX.Element {
               />
               <ChartTooltip cursor={MUTED_CURSOR} content={<WaterfallTooltip />} />
               <Bar dataKey="displayValue" radius={[6, 6, 0, 0]} maxBarSize={56}>
-                {waterfallData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                {waterfallData.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Bar>
             </ComposedChart>
