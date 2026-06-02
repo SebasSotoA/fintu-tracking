@@ -11,7 +11,6 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Separator } from "@/components/ui/separator";
 import { StatCell } from "@/components/analytics/metric-primitives";
 import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips";
 import {
@@ -255,60 +254,63 @@ export function ReturnAttribution(): React.JSX.Element {
           />
         </div>
 
-        <Separator />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+          <div className="flex flex-col lg:col-span-3">
+            <h3 className="mb-4 text-sm font-medium">Return Decomposition Waterfall</h3>
+            <ChartContainer
+              config={waterfallChartConfig}
+              className="h-[420px] min-h-[380px] w-full aspect-auto"
+            >
+              <ComposedChart data={waterfallData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--muted-foreground)"
+                  strokeOpacity={0.1}
+                />
+                <XAxis
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  tick={{ fontSize: 11 }}
+                  height={80}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  tick={{ fontSize: 12 }}
+                  stroke="var(--muted-foreground)"
+                  strokeOpacity={0.3}
+                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                />
+                <ChartTooltip cursor={MUTED_CURSOR} content={<WaterfallTooltip />} />
+                <Bar dataKey="displayValue" radius={[6, 6, 0, 0]} maxBarSize={56}>
+                  {waterfallData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Bar>
+              </ComposedChart>
+            </ChartContainer>
+          </div>
 
-        <div>
-          <h3 className="text-sm font-medium mb-4">Return Decomposition Waterfall</h3>
-          <ChartContainer config={waterfallChartConfig} className="h-[400px] w-full aspect-auto">
-            <ComposedChart data={waterfallData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="var(--muted-foreground)"
-                strokeOpacity={0.1}
-              />
-              <XAxis
-                dataKey="name"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tick={{ fontSize: 11 }}
-                height={80}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tick={{ fontSize: 12 }}
-                stroke="var(--muted-foreground)"
-                strokeOpacity={0.3}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-              />
-              <ChartTooltip cursor={MUTED_CURSOR} content={<WaterfallTooltip />} />
-              <Bar dataKey="displayValue" radius={[6, 6, 0, 0]} maxBarSize={56}>
-                {waterfallData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
+          <div className="flex flex-col lg:col-span-2">
+            <h3 className="mb-4 text-sm font-medium">Fee Impact Breakdown</h3>
+            <div className="flex flex-1 flex-col rounded-lg border border-border/50 bg-muted/30">
+              <div className="divide-y divide-border/50">
+                {feeRows.map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between px-3 py-2.5"
+                  >
+                    <span className="text-sm font-medium">{row.label}</span>
+                    <span className="text-sm font-bold font-mono tabular-nums text-destructive">
+                      {formatUsd(row.amount)}
+                    </span>
+                  </div>
                 ))}
-              </Bar>
-            </ComposedChart>
-          </ChartContainer>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium">Fee Impact Breakdown</h3>
-          <div className="grid gap-3">
-            {feeRows.map((row) => (
-              <div
-                key={row.label}
-                className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 p-3"
-              >
-                <span className="text-sm font-medium">{row.label}</span>
-                <span className="text-sm font-bold font-mono tabular-nums text-destructive">
-                  {formatUsd(row.amount)}
-                </span>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 

@@ -109,4 +109,51 @@ describe("ReturnAttribution", () => {
     const titleIcon = container.querySelector("svg.lucide-trending-up, svg.lucide-trending-down")
     expect(titleIcon).toHaveClass("text-muted-foreground")
   })
+
+  it("places waterfall and fee breakdown in a side-by-side grid at lg", async () => {
+    const { container } = renderAttribution()
+    await waitFor(() => {
+      expect(screen.getByTestId("composed-chart")).toBeInTheDocument()
+    })
+
+    const grid = container.querySelector(".lg\\:grid-cols-5")
+    expect(grid).toBeInTheDocument()
+    expect(grid).toHaveClass("grid-cols-1", "gap-6")
+
+    const waterfallCol = grid?.querySelector(".lg\\:col-span-3")
+    expect(waterfallCol).toBeInTheDocument()
+    expect(waterfallCol?.querySelector("[data-testid='composed-chart']")).toBeInTheDocument()
+
+    const feeCol = grid?.querySelector(".lg\\:col-span-2")
+    expect(feeCol).toBeInTheDocument()
+    expect(screen.getByText("Fee Impact Breakdown")).toBeInTheDocument()
+    expect(feeCol?.querySelector(".divide-y")).toBeInTheDocument()
+  })
+
+  it("renders fee impact rows in a single bordered panel", async () => {
+    const { container } = renderAttribution()
+    await waitFor(() => {
+      expect(screen.getByText("Deposit Fees")).toBeInTheDocument()
+    })
+
+    const feePanel = screen.getByText("Fee Impact Breakdown").closest("div")?.parentElement
+    const borderedPanel = feePanel?.querySelector(".rounded-lg.border")
+    expect(borderedPanel).toBeInTheDocument()
+    expect(borderedPanel?.querySelectorAll(".flex.justify-between").length).toBe(3)
+
+    const separateFeeCards = container.querySelectorAll(
+      ".grid.gap-3 > .rounded-lg.border",
+    )
+    expect(separateFeeCards.length).toBe(0)
+  })
+
+  it("uses taller waterfall chart height", async () => {
+    const { container } = renderAttribution()
+    await waitFor(() => {
+      expect(screen.getByTestId("composed-chart")).toBeInTheDocument()
+    })
+
+    const chartWrapper = container.querySelector(".h-\\[420px\\], .min-h-\\[380px\\]")
+    expect(chartWrapper).toBeInTheDocument()
+  })
 })

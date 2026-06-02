@@ -49,6 +49,8 @@ const monthlyChartConfig = {
   value: { label: "Monthly fees", color: "var(--chart-3)" },
 } satisfies ChartConfig;
 
+const CHART_HEIGHT_CLASS = "h-[340px]";
+
 function formatCurrency(value: string | number): string {
   const num = typeof value === "string" ? parseFloat(value) : value;
   return new Intl.NumberFormat("en-US", {
@@ -222,15 +224,18 @@ export function FeeAttributionChart(): React.JSX.Element {
       </CardHeader>
       <CardContent className="space-y-4">
         {feeTypeData.length > 0 ? (
-          <div
-            className={
-              hasMonthlyFees
-                ? "grid gap-6 md:grid-cols-2 md:items-start"
-                : "space-y-4"
-            }
-          >
-            <div className="space-y-4">
-              <ChartContainer config={feeTypeChartConfig} className="h-[320px] w-full aspect-auto">
+          <>
+            <div
+              className={
+                hasMonthlyFees
+                  ? "grid gap-6 md:grid-cols-2 md:items-stretch"
+                  : undefined
+              }
+            >
+              <ChartContainer
+                config={feeTypeChartConfig}
+                className={`${CHART_HEIGHT_CLASS} w-full aspect-auto`}
+              >
                 <BarChart data={feeTypeData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -265,80 +270,83 @@ export function FeeAttributionChart(): React.JSX.Element {
                 </BarChart>
               </ChartContainer>
 
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {feeTypeData.map((fee) => (
-                  <div
-                    key={fee.name}
-                    className="rounded-lg border border-border/50 bg-muted/30 p-3"
-                  >
-                    <div className="text-xs text-muted-foreground mb-1">{fee.name}</div>
-                    <div className="text-lg font-bold font-mono tabular-nums">
-                      {formatCurrency(fee.value)}
-                    </div>
-                    <Badge variant="outline" className="mt-1 text-xs">
-                      {fee.percentage}%
-                    </Badge>
+              {hasMonthlyFees && (
+                <>
+                  <Separator className="md:hidden" />
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Fees by month</h3>
+                    <ChartContainer
+                      config={monthlyChartConfig}
+                      className={`${CHART_HEIGHT_CLASS} w-full aspect-auto`}
+                    >
+                      <BarChart
+                        data={monthlyFeeData}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="var(--muted-foreground)"
+                          strokeOpacity={0.1}
+                        />
+                        <XAxis
+                          dataKey="name"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                          tick={{ fontSize: 12 }}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                          tick={{ fontSize: 12 }}
+                          stroke="var(--muted-foreground)"
+                          strokeOpacity={0.3}
+                          tickFormatter={(value) => `$${value.toLocaleString()}`}
+                        />
+                        <ChartTooltip
+                          cursor={MUTED_CURSOR}
+                          content={
+                            <ChartTooltipContent
+                              className={TOOLTIP_CLASS}
+                              formatter={(value) => (
+                                <span className="font-mono font-medium tabular-nums text-destructive">
+                                  {formatCurrency(Number(value))}
+                                </span>
+                              )}
+                            />
+                          }
+                        />
+                        <Bar
+                          dataKey="value"
+                          fill="var(--color-value)"
+                          radius={[6, 6, 0, 0]}
+                          maxBarSize={48}
+                        />
+                      </BarChart>
+                    </ChartContainer>
                   </div>
-                ))}
-              </div>
+                </>
+              )}
             </div>
 
-            {hasMonthlyFees && (
-              <>
-                <Separator className="md:hidden" />
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Fees by month</h3>
-                  <ChartContainer config={monthlyChartConfig} className="h-[320px] w-full aspect-auto">
-                    <BarChart
-                      data={monthlyFeeData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="var(--muted-foreground)"
-                        strokeOpacity={0.1}
-                      />
-                      <XAxis
-                        dataKey="name"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                        tick={{ fontSize: 12 }}
-                        stroke="var(--muted-foreground)"
-                        strokeOpacity={0.3}
-                        tickFormatter={(value) => `$${value.toLocaleString()}`}
-                      />
-                      <ChartTooltip
-                        cursor={MUTED_CURSOR}
-                        content={
-                          <ChartTooltipContent
-                            className={TOOLTIP_CLASS}
-                            formatter={(value) => (
-                              <span className="font-mono font-medium tabular-nums text-destructive">
-                                {formatCurrency(Number(value))}
-                              </span>
-                            )}
-                          />
-                        }
-                      />
-                      <Bar
-                        dataKey="value"
-                        fill="var(--color-value)"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                    </BarChart>
-                  </ChartContainer>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              {feeTypeData.map((fee) => (
+                <div
+                  key={fee.name}
+                  className="rounded-lg border border-border/50 bg-muted/30 p-3"
+                >
+                  <div className="text-xs text-muted-foreground mb-1">{fee.name}</div>
+                  <div className="text-lg font-bold font-mono tabular-nums">
+                    {formatCurrency(fee.value)}
+                  </div>
+                  <Badge variant="outline" className="mt-1 text-xs">
+                    {fee.percentage}%
+                  </Badge>
                 </div>
-              </>
-            )}
-          </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center h-[350px] text-muted-foreground">
             <DollarSignIcon className="h-12 w-12 mb-2 opacity-50" />

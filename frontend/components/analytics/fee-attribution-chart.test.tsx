@@ -83,4 +83,56 @@ describe("FeeAttributionChart", () => {
     expect(container.innerHTML).not.toContain("#ef4444")
     expect(container.innerHTML).not.toContain("bg-red-50")
   })
+
+  it("uses equal-height chart grid with items-stretch when monthly data exists", async () => {
+    mockApiGet.mockResolvedValue({
+      ...feeBreakdownFixture,
+      fees_by_month: { "2024-01": "40", "2024-02": "60" },
+    })
+    const { container } = renderFeeChart()
+    await waitFor(() => {
+      expect(screen.getByText("Fees by month")).toBeInTheDocument()
+    })
+
+    const chartGrid = container.querySelector(".md\\:grid-cols-2")
+    expect(chartGrid).toBeTruthy()
+    expect(chartGrid?.className).toContain("md:items-stretch")
+    expect(chartGrid?.className).not.toContain("md:items-start")
+
+    const chartContainers = container.querySelectorAll(".h-\\[340px\\]")
+    expect(chartContainers.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it("renders fee type summary tiles below the chart grid, not inside the left column", async () => {
+    mockApiGet.mockResolvedValue({
+      ...feeBreakdownFixture,
+      fees_by_month: { "2024-01": "40", "2024-02": "60" },
+    })
+    const { container } = renderFeeChart()
+    await waitFor(() => {
+      expect(screen.getByText("Deposit Fees")).toBeInTheDocument()
+    })
+
+    const chartGrid = container.querySelector(".md\\:grid-cols-2")
+    const depositTile = screen.getByText("Deposit Fees").closest(".rounded-lg")
+    expect(chartGrid).toBeTruthy()
+    expect(depositTile).toBeTruthy()
+    expect(chartGrid?.contains(depositTile)).toBe(false)
+  })
+
+  it("renders fee type summary tiles below single chart when no monthly data", async () => {
+    const { container } = renderFeeChart()
+    await waitFor(() => {
+      expect(screen.getByText("Deposit Fees")).toBeInTheDocument()
+    })
+
+    const chartGrid = container.querySelector(".md\\:grid-cols-2")
+    expect(chartGrid).toBeNull()
+
+    const depositTile = screen.getByText("Deposit Fees").closest(".rounded-lg")
+    const barCharts = screen.getAllByTestId("bar-chart")
+    expect(barCharts).toHaveLength(1)
+    expect(depositTile).toBeTruthy()
+    expect(barCharts[0].contains(depositTile)).toBe(false)
+  })
 })
