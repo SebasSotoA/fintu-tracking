@@ -230,3 +230,60 @@ func dec(s string) decimal.Decimal {
 	}
 	return d
 }
+
+func TestPortfolioNetWorth_Deposit400LinkedFee6BuyTrade(t *testing.T) {
+	t.Parallel()
+
+	flows := []cashFlowBalanceRow{
+		{Type: "deposit", USDAmount: dec("400")},
+		{Type: "fee", USDAmount: dec("6")},
+	}
+	trades := []tradeCashFlowRow{
+		{Side: "buy", Quantity: dec("2"), Price: dec("150"), Fee: dec("1")},
+	}
+
+	cashFlowsNet := sumCashFlowsBalance(flows)
+	tradeCosts := sumNetTradeCashFlow(trades)
+	holdingsAtMarket := dec("2").Mul(dec("150"))
+
+	cashAfterTrades := portfolioCashAfterTrades(cashFlowsNet, tradeCosts)
+	netPosition := portfolioNetWorth(holdingsAtMarket, cashAfterTrades)
+	netWorth := portfolioNetWorth(holdingsAtMarket, cashAfterTrades)
+
+	const roundingTolerance = "0.01"
+	tol, err := decimal.NewFromString(roundingTolerance)
+	if err != nil {
+		t.Fatalf("parse tolerance: %v", err)
+	}
+
+	diff := netPosition.Sub(netWorth).Abs()
+	if diff.GreaterThan(tol) {
+		t.Fatalf("net_position %s vs net_worth %s differ by %s (max %s)",
+			netPosition, netWorth, diff, roundingTolerance)
+	}
+
+	want := dec("393")
+	if netPosition.Sub(want).Abs().GreaterThan(tol) {
+		t.Fatalf("net_position = %s, want %s within %s", netPosition, want, roundingTolerance)
+	}
+
+	brokenNet := holdingsAtMarket.Add(cashFlowsNet)
+	if brokenNet.Sub(netPosition).Abs().LessThanOrEqual(tol) {
+		t.Fatalf("fixture would not detect double-count; broken=%s", brokenNet)
+	}
+
+}
+
+func TestPortfolioCashSQLFragments(t *testing.T) {
+	t.Parallel()
+
+	assertSQLFragments(t, cashFlowsBalanceSQL(), []string{
+		"type = 'deposit'",
+		"type = 'withdrawal'",
+		"type = 'fee'",
+	})
+	assertSQLFragments(t, netTradeCashFlowSQL(), []string{
+		"side = 'buy'",
+		"side = 'sell'",
+	})
+}

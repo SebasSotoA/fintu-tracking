@@ -118,28 +118,22 @@ func (s *AnalyticsService) CalculateReturnAttribution(ctx context.Context, userI
 		}
 	}
 
-	// Calculate available cash
-	var availableCash string
-	err = s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(
-			CASE 
-				WHEN type = 'deposit' THEN usd_amount
-				WHEN type = 'withdrawal' THEN -usd_amount
-				WHEN type = 'fee' THEN -usd_amount
-				ELSE 0
-			END
-		), 0)
-		FROM cash_flows
-		WHERE user_id = $1
-	`, userID).Scan(&availableCash)
+	var cashFlowsBalance string
+	err = s.pool.QueryRow(ctx, cashFlowsBalanceSQL(), userID).Scan(&cashFlowsBalance)
 	if err != nil {
-		availableCash = "0"
+		cashFlowsBalance = "0"
 	}
 
-	cash, _ := decimal.NewFromString(availableCash)
-	
-	// Calculate net position (holdings + cash)
-	netPosition := totalValue.Add(cash)
+	var tradeCosts string
+	if err := s.pool.QueryRow(ctx, netTradeCashFlowSQL(), userID).Scan(&tradeCosts); err != nil {
+		tradeCosts = "0"
+	}
+
+	cashFromFlows, _ := decimal.NewFromString(cashFlowsBalance)
+	costs, _ := decimal.NewFromString(tradeCosts)
+	cash := portfolioCashAfterTrades(cashFromFlows, costs)
+
+	netPosition := portfolioNetWorth(totalValue, cash)
 	attribution.NetPosition = netPosition.String()
 
 	// Calculate market gains (current value - cost basis)
@@ -163,16 +157,6 @@ func (s *AnalyticsService) CalculateReturnAttribution(ctx context.Context, userI
 	if !startingCapital.IsZero() {
 		netReturnPct := netReturn.Div(startingCapital).Mul(decimal.NewFromInt(100))
 		attribution.NetReturnPct = netReturnPct.String()
-	}
-
-	// FX impact calculation (placeholder - would need more complex logic)
-	// For now, we'll calculate as difference between net return and market gains - fees
-	fxImpact := netReturn.Sub(marketGains).Add(totalFees)
-	attribution.FXImpact = fxImpact.String()
-	
-	if !startingCapital.IsZero() {
-		fxImpactPct := fxImpact.Div(startingCapital).Mul(decimal.NewFromInt(100))
-		attribution.FXImpactPct = fxImpactPct.String()
 	}
 
 	return attribution, nil
@@ -486,47 +470,23 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 
 	summary.HoldingsValue = totalHoldingsValue.String()
 
-	// Calculate cash balance
-	var cashBalance string
-	err = s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(
-			CASE 
-				WHEN type = 'deposit' THEN usd_amount
-				WHEN type = 'withdrawal' THEN -usd_amount
-				WHEN type = 'fee' THEN -usd_amount
-				ELSE 0
-			END
-		), 0)
-		FROM cash_flows
-		WHERE user_id = $1
-	`, userID).Scan(&cashBalance)
+	var cashFlowsBalance string
+	err = s.pool.QueryRow(ctx, cashFlowsBalanceSQL(), userID).Scan(&cashFlowsBalance)
 	if err != nil {
-		cashBalance = "0"
+		cashFlowsBalance = "0"
 	}
 
-	cash, _ := decimal.NewFromString(cashBalance)
-	
-	// Subtract trade costs from cash
 	var tradeCosts string
-	s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(
-			CASE 
-				WHEN side = 'buy' THEN (quantity * price + COALESCE(fee, 0))
-				WHEN side = 'sell' THEN -(quantity * price - COALESCE(fee, 0))
-				ELSE 0
-			END
-		), 0)
-		FROM trades
-		WHERE user_id = $1
-	`, userID).Scan(&tradeCosts)
-	
-	costs, _ := decimal.NewFromString(tradeCosts)
-	cash = cash.Sub(costs)
-	
-	summary.CashBalance = cash.String()
+	if err := s.pool.QueryRow(ctx, netTradeCashFlowSQL(), userID).Scan(&tradeCosts); err != nil {
+		tradeCosts = "0"
+	}
 
-	// Calculate net worth (holdings + cash)
-	netWorth := totalHoldingsValue.Add(cash)
+	cashFromFlows, _ := decimal.NewFromString(cashFlowsBalance)
+	costs, _ := decimal.NewFromString(tradeCosts)
+	cash := portfolioCashAfterTrades(cashFromFlows, costs)
+
+	summary.CashBalance = cash.String()
+	netWorth := portfolioNetWorth(totalHoldingsValue, cash)
 	summary.NetWorth = netWorth.String()
 
 	var totalInvested string
@@ -542,7 +502,6 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 	`, userID).Scan(&allFees)
 	summary.TotalFees = allFees
 
-	// Calculate gain/loss
 	invested, _ := decimal.NewFromString(totalInvested)
 	gainLoss := netWorth.Sub(invested)
 	summary.TotalGainLoss = gainLoss.String()
