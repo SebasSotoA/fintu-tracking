@@ -2,7 +2,7 @@
 
 import type { CashFlow, FxRate } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Decimal } from "@/lib/decimal"
 
 interface PerformanceChartsProps {
@@ -41,26 +41,6 @@ export function PerformanceCharts({ cashFlows, fxRates }: PerformanceChartsProps
       date: new Date(fx.date).toLocaleDateString(),
       rate: Number(fx.rate),
     }))
-
-  // Prepare fees by month
-  const feesByMonth = safeCashFlows
-    .filter((cf) => cf.type === "fee")
-    .reduce(
-      (acc, cf) => {
-        const month = new Date(cf.date).toISOString().slice(0, 7)
-        if (!acc[month]) {
-          acc[month] = new Decimal(0)
-        }
-        acc[month] = acc[month].add(new Decimal(cf.usd_amount))
-        return acc
-      },
-      {} as Record<string, Decimal>,
-    )
-
-  const feesData = Object.entries(feesByMonth).map(([month, total]) => ({
-    month,
-    fees: Number(total.toString()),
-  }))
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -139,52 +119,6 @@ export function PerformanceCharts({ cashFlows, fxRates }: PerformanceChartsProps
           )}
         </CardContent>
       </Card>
-
-      {feesData.length > 0 && (
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Fees by Month (USD)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={feesData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--muted-foreground)" strokeOpacity={0.1} />
-                <XAxis 
-                  dataKey="month" 
-                  className="text-xs text-muted-foreground" 
-                  stroke="var(--muted-foreground)"
-                  strokeOpacity={0.3}
-                />
-                <YAxis 
-                  className="text-xs text-muted-foreground" 
-                  stroke="var(--muted-foreground)"
-                  strokeOpacity={0.3}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid color-mix(in oklch, var(--primary) 20%, transparent)",
-                    borderRadius: "0.5rem",
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                  }}
-                  labelStyle={{ color: "var(--foreground)", fontWeight: "600" }}
-                />
-                <Bar 
-                  dataKey="fees" 
-                  fill="url(#feesGradient)" 
-                  radius={[8, 8, 0, 0]}
-                />
-                <defs>
-                  <linearGradient id="feesGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--destructive)" stopOpacity={1} />
-                    <stop offset="100%" stopColor="var(--destructive)" stopOpacity={0.8} />
-                  </linearGradient>
-                </defs>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
