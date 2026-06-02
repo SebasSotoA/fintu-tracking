@@ -5,11 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  CheckCircle2Icon,
   AlertTriangleIcon,
   XCircleIcon,
   RefreshCwIcon,
@@ -58,24 +56,7 @@ export function ReconciliationDashboard() {
     retry: false,
   });
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-48 mt-2" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!report) {
+  if (isLoading || !report || report.is_reconciled) {
     return null;
   }
 
@@ -102,15 +83,13 @@ export function ReconciliationDashboard() {
     }).format(num);
   };
 
-  const alertTitle = report.is_reconciled
-    ? "All Systems Healthy"
-    : issueCount > 0
+  const alertTitle =
+    issueCount > 0
       ? `${issueCount} Issue${issueCount !== 1 ? "s" : ""} Found`
       : "Fee Totals Don't Match";
 
-  const alertDescription = report.is_reconciled
-    ? "All trade fees have corresponding cash flow entries. Your data is fully reconciled."
-    : issueCount > 0
+  const alertDescription =
+    issueCount > 0
       ? "Some discrepancies were detected between trades and cash flows. Review the details below."
       : "Trade fee totals and cash flow fee totals differ, but no specific row-level issues were listed. Check unlinked fee entries in Cash Flow History.";
 
@@ -120,11 +99,7 @@ export function ReconciliationDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              {report.is_reconciled ? (
-                <CheckCircle2Icon className="h-5 w-5 text-primary" />
-              ) : (
-                <AlertTriangleIcon className="h-5 w-5 text-destructive" />
-              )}
+              <AlertTriangleIcon className="h-5 w-5 text-destructive" />
               Data Health & Reconciliation
             </CardTitle>
             <CardDescription>
@@ -139,24 +114,16 @@ export function ReconciliationDashboard() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          {report.is_reconciled ? (
-            <Alert className="border-border bg-surface-container">
-              <CheckCircle2Icon className="h-4 w-4 text-primary" />
-              <AlertTitle>{alertTitle}</AlertTitle>
-              <AlertDescription>{alertDescription}</AlertDescription>
-            </Alert>
-          ) : (
-            <Alert
-              className={cn(
-                "border-border bg-surface-container",
-                hasTotalsMismatch && "ring-1 ring-destructive/30",
-              )}
-            >
-              <AlertTriangleIcon className="h-4 w-4 text-destructive" />
-              <AlertTitle>{alertTitle}</AlertTitle>
-              <AlertDescription>{alertDescription}</AlertDescription>
-            </Alert>
-          )}
+          <Alert
+            className={cn(
+              "border-border bg-surface-container",
+              hasTotalsMismatch && "ring-1 ring-destructive/30",
+            )}
+          >
+            <AlertTriangleIcon className="h-4 w-4 text-destructive" />
+            <AlertTitle>{alertTitle}</AlertTitle>
+            <AlertDescription>{alertDescription}</AlertDescription>
+          </Alert>
         </div>
 
         <Separator />
@@ -200,12 +167,11 @@ export function ReconciliationDashboard() {
           </div>
         </div>
 
-        {!report.is_reconciled && (
-          <>
-            <Separator />
+        <>
+          <Separator />
 
-            <div className="space-y-4">
-              <h3 className={statLabelClass}>Issues Detected</h3>
+          <div className="space-y-4">
+            <h3 className={statLabelClass}>Issues Detected</h3>
 
               {issueCount === 0 && hasTotalsMismatch && (
                 <div className="rounded-xl border border-border bg-surface-container-high p-4">
@@ -318,9 +284,8 @@ export function ReconciliationDashboard() {
                   ))}
                 </div>
               )}
-            </div>
-          </>
-        )}
+          </div>
+        </>
 
         <Separator />
 
@@ -330,14 +295,12 @@ export function ReconciliationDashboard() {
             Re-check Data
           </Button>
 
-          {!report.is_reconciled && (
-            <Link href="/trades">
-              <Button variant="default">
-                Go to Trades
-                <ExternalLinkIcon className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
-          )}
+          <Link href="/trades">
+            <Button variant="default">
+              Go to Trades
+              <ExternalLinkIcon className="h-4 w-4 ml-2" />
+            </Button>
+          </Link>
         </div>
       </CardContent>
     </Card>
