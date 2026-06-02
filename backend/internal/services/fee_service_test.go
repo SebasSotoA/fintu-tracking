@@ -2,6 +2,7 @@ package services
 
 import (
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 )
@@ -33,4 +34,39 @@ func TestFeeTotalsMismatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFeesByMonthSQLContainsMonthGrouping(t *testing.T) {
+	t.Parallel()
+
+	assertSQLFragments(t, feesByMonthSQL(), []string{
+		"type = 'fee'",
+		"to_char(date_trunc('month', date), 'YYYY-MM')",
+		"SUM(usd_amount)",
+	})
+}
+
+func TestFeesByMonthSQLWithDateRange(t *testing.T) {
+	t.Parallel()
+
+	start := mustParseDate(t, "2024-01-15")
+	end := mustParseDate(t, "2024-06-30")
+	query, _, _ := appendCashFlowFeeDateRange(feesByMonthSQL(), []interface{}{"user-1"}, 1, &DateRange{
+		StartDate: &start,
+		EndDate:   &end,
+	})
+
+	assertSQLFragments(t, query, []string{
+		"date >= $2",
+		"date <= $3",
+	})
+}
+
+func mustParseDate(t *testing.T, s string) time.Time {
+	t.Helper()
+	parsed, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		t.Fatalf("parse date %q: %v", s, err)
+	}
+	return parsed
 }

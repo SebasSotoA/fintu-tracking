@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
@@ -265,12 +264,11 @@ func (s *AnalyticsService) CalculateFXImpact(ctx context.Context, userID string)
 	return report, nil
 }
 
-// GetPerformanceTimeSeries returns portfolio performance over time
+// GetPerformanceTimeSeries returns portfolio performance over time.
+// Uses portfolio_snapshots when present; otherwise builds points from trades and cash flows.
+// interval buckets points as day (default), week, month, or year (last activity date per bucket).
 func (s *AnalyticsService) GetPerformanceTimeSeries(ctx context.Context, userID, interval string) ([]models.PerformancePoint, error) {
-	// Validate interval
-	if interval != "day" && interval != "week" && interval != "month" && interval != "year" {
-		interval = "day"
-	}
+	interval = normalizePerformanceInterval(interval)
 
 	// Use portfolio snapshots if available, otherwise calculate on the fly
 	query := `
@@ -329,80 +327,76 @@ func (s *AnalyticsService) GetPerformanceTimeSeries(ctx context.Context, userID,
 		points = append(points, point)
 	}
 
-	// If no snapshots, generate from transaction history
 	if len(points) == 0 {
 		points, err = s.generatePerformancePoints(ctx, userID, interval)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate performance points: %w", err)
 		}
+	} else {
+		points = aggregatePerformancePointsByInterval(points, interval)
 	}
 
 	return points, nil
 }
 
-// generatePerformancePoints creates performance timeline from transaction history
 func (s *AnalyticsService) generatePerformancePoints(ctx context.Context, userID, interval string) ([]models.PerformancePoint, error) {
-	// Get all relevant dates (trades and cash flows)
-	query := `
-		SELECT DISTINCT date
-		FROM (
-			SELECT date FROM trades WHERE user_id = $1
-			UNION
-			SELECT date FROM cash_flows WHERE user_id = $1
-		) dates
-		ORDER BY date ASC
-	`
-
-	rows, err := s.pool.Query(ctx, query, userID)
+	activity, err := s.loadPerformanceActivity(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	return computePerformancePointsFromActivity(activity, interval), nil
+}
 
-	var dates []time.Time
-	for rows.Next() {
-		var date time.Time
-		if err := rows.Scan(&date); err == nil {
-			dates = append(dates, date)
+func (s *AnalyticsService) loadPerformanceActivity(ctx context.Context, userID string) (performanceActivity, error) {
+	var activity performanceActivity
+
+	cfRows, err := s.pool.Query(ctx, `
+		SELECT date, type, usd_amount, related_cash_flow_id
+		FROM cash_flows
+		WHERE user_id = $1
+		ORDER BY date ASC
+	`, userID)
+	if err != nil {
+		return activity, fmt.Errorf("load cash flows: %w", err)
+	}
+	defer cfRows.Close()
+
+	for cfRows.Next() {
+		var cf performanceCashFlow
+		var relatedID *string
+		if err := cfRows.Scan(&cf.Date, &cf.Type, &cf.USDAmount, &relatedID); err != nil {
+			return activity, fmt.Errorf("scan cash flow: %w", err)
 		}
+		cf.RelatedCashFlowID = relatedID
+		activity.CashFlows = append(activity.CashFlows, cf)
+	}
+	if err := cfRows.Err(); err != nil {
+		return activity, fmt.Errorf("iterate cash flows: %w", err)
 	}
 
-	// For each date, calculate portfolio state
-	// This is simplified - in production would use more efficient calculations
-	points := []models.PerformancePoint{}
-	
-	for _, date := range dates {
-		point := models.PerformancePoint{
-			Date:              date,
-			PortfolioValue:    "0",
-			InvestedCapital:   "0",
-			CumulativeFees:    "0",
-			CumulativeFXImpact: "0",
-			NetReturn:         "0",
-			NetReturnPct:      "0",
+	trRows, err := s.pool.Query(ctx, `
+		SELECT date, side, ticker, quantity, price, COALESCE(fee, 0)
+		FROM trades
+		WHERE user_id = $1
+		ORDER BY date ASC
+	`, userID)
+	if err != nil {
+		return activity, fmt.Errorf("load trades: %w", err)
+	}
+	defer trRows.Close()
+
+	for trRows.Next() {
+		var tr performanceTrade
+		if err := trRows.Scan(&tr.Date, &tr.Side, &tr.Ticker, &tr.Quantity, &tr.Price, &tr.Fee); err != nil {
+			return activity, fmt.Errorf("scan trade: %w", err)
 		}
-
-		var invested string
-		s.pool.QueryRow(ctx, netInvestedSQLAsOfDate(), userID, date).Scan(&invested)
-		point.InvestedCapital = invested
-
-		// Calculate cumulative fees
-		var fees string
-		s.pool.QueryRow(ctx, `
-			SELECT COALESCE(SUM(usd_amount), 0)
-			FROM cash_flows
-			WHERE user_id = $1 AND type = 'fee' AND date <= $2
-		`, userID, date).Scan(&fees)
-		point.CumulativeFees = fees
-
-		// Portfolio value would require market prices at each date
-		// For now, simplified calculation
-		point.PortfolioValue = invested
-
-		points = append(points, point)
+		activity.Trades = append(activity.Trades, tr)
+	}
+	if err := trRows.Err(); err != nil {
+		return activity, fmt.Errorf("iterate trades: %w", err)
 	}
 
-	return points, nil
+	return activity, nil
 }
 
 // GetNetWorthSummary provides complete financial position

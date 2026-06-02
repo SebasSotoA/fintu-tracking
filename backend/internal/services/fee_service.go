@@ -123,19 +123,7 @@ func (s *FeeService) GetTotalFeesByType(ctx context.Context, userID string, date
 
 	args := []interface{}{userID}
 	argCount := 1
-
-	if dateRange != nil {
-		if dateRange.StartDate != nil {
-			argCount++
-			query += fmt.Sprintf(" AND date >= $%d", argCount)
-			args = append(args, *dateRange.StartDate)
-		}
-		if dateRange.EndDate != nil {
-			argCount++
-			query += fmt.Sprintf(" AND date <= $%d", argCount)
-			args = append(args, *dateRange.EndDate)
-		}
-	}
+	query, args, argCount = appendCashFlowFeeDateRange(query, args, argCount, dateRange)
 
 	query += " GROUP BY fee_type"
 
@@ -182,7 +170,61 @@ func (s *FeeService) GetTotalFeesByType(ctx context.Context, userID string, date
 
 	breakdown.TotalFees = totalFees.String()
 
+	if err := s.populateFeesByMonth(ctx, userID, dateRange, &breakdown); err != nil {
+		return breakdown, err
+	}
+
 	return breakdown, rows.Err()
+}
+
+func feesByMonthSQL() string {
+	return `
+		SELECT
+			to_char(date_trunc('month', date), 'YYYY-MM') as month_key,
+			SUM(usd_amount) as total
+		FROM cash_flows
+		WHERE user_id = $1 AND type = 'fee'
+	`
+}
+
+func appendCashFlowFeeDateRange(query string, args []interface{}, argCount int, dateRange *DateRange) (string, []interface{}, int) {
+	if dateRange == nil {
+		return query, args, argCount
+	}
+	if dateRange.StartDate != nil {
+		argCount++
+		query += fmt.Sprintf(" AND date >= $%d", argCount)
+		args = append(args, *dateRange.StartDate)
+	}
+	if dateRange.EndDate != nil {
+		argCount++
+		query += fmt.Sprintf(" AND date <= $%d", argCount)
+		args = append(args, *dateRange.EndDate)
+	}
+	return query, args, argCount
+}
+
+func (s *FeeService) populateFeesByMonth(ctx context.Context, userID string, dateRange *DateRange, breakdown *models.FeeBreakdown) error {
+	monthQuery := feesByMonthSQL()
+	monthArgs := []interface{}{userID}
+	monthQuery, monthArgs, _ = appendCashFlowFeeDateRange(monthQuery, monthArgs, 1, dateRange)
+	monthQuery += " GROUP BY date_trunc('month', date) ORDER BY date_trunc('month', date)"
+
+	monthRows, err := s.pool.Query(ctx, monthQuery, monthArgs...)
+	if err != nil {
+		return fmt.Errorf("failed to query fees by month: %w", err)
+	}
+	defer monthRows.Close()
+
+	for monthRows.Next() {
+		var monthKey, amount string
+		if err := monthRows.Scan(&monthKey, &amount); err != nil {
+			return fmt.Errorf("failed to scan fees by month: %w", err)
+		}
+		breakdown.FeesByMonth[monthKey] = amount
+	}
+
+	return monthRows.Err()
 }
 
 // GetFeeImpactOnReturn calculates how fees affected returns for a specific ticker
