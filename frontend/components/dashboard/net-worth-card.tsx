@@ -2,12 +2,7 @@
 
 import type React from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CircleHelp,
-  WalletIcon,
-} from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, CircleHelp } from "lucide-react";
 import Decimal from "decimal.js";
 import { api } from "@/lib/api/client";
 import type { NetWorthData } from "@/lib/types";
@@ -114,11 +109,7 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
   if (isLoading) {
     return (
       <Card variant="kpi" className="col-span-full">
-        <CardHeader>
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-48 mt-2" />
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-6">
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-12 w-full" />
@@ -156,17 +147,7 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
 
   return (
     <Card variant="kpi" className="col-span-full">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-2xl">Portfolio Net Worth</CardTitle>
-            <CardDescription>Single source of truth from portfolio analytics</CardDescription>
-          </div>
-          <WalletIcon className="size-8 shrink-0 text-muted-foreground" aria-hidden />
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 pt-6">
         <section className="space-y-2">
           <MetricLabel label="Net worth" tooltip={METRIC_TOOLTIPS.netWorth} />
           <div className="flex flex-wrap items-baseline gap-3">
@@ -289,7 +270,7 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
                     return (
                       <div
                         key={assetType}
-                        className="flex flex-col gap-1 rounded-lg border border-transparent bg-muted/30 p-3 transition-colors hover:border-primary/20 hover:bg-muted/50"
+                        className="flex flex-col gap-1"
                       >
                         <p className="text-xs font-medium text-muted-foreground">
                           {formatAssetTypeLabel(assetType)}

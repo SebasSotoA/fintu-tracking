@@ -10,19 +10,13 @@ async function NetWorthCardServer() {
 
 export default function DashboardPage() {
   return (
-    <>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Your portfolio at a glance</p>
-      </div>
-      <div className="space-y-6">
-        <Suspense fallback={<div className="h-36 bg-muted rounded-lg animate-pulse" />}>
-          <NetWorthCardServer />
-        </Suspense>
-        <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
-          <HoldingsTableServer />
-        </Suspense>
-      </div>
-    </>
+    <div className="space-y-6">
+      <Suspense fallback={<div className="h-36 bg-muted rounded-lg animate-pulse" />}>
+        <NetWorthCardServer />
+      </Suspense>
+      <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
+        <HoldingsTableServer />
+      </Suspense>
+    </div>
   )
 }

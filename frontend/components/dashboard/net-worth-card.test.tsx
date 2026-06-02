@@ -44,6 +44,13 @@ describe("NetWorthCard", () => {
     mockApiGet.mockResolvedValue(baseNetWorth)
   })
 
+  it("does not show redundant portfolio net worth card header", () => {
+    renderCard()
+    expect(screen.queryByText("Portfolio Net Worth")).not.toBeInTheDocument()
+    expect(screen.queryByText(/single source of truth/i)).not.toBeInTheDocument()
+    expect(screen.getByText("Net worth")).toBeInTheDocument()
+  })
+
   it("renders asset allocation labels in uppercase", () => {
     renderCard()
     expect(screen.getByText("ETF")).toBeInTheDocument()
