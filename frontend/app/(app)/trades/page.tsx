@@ -13,11 +13,7 @@ export default async function TradesPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Trades</h1>
-          <p className="text-muted-foreground">Track your buy and sell transactions</p>
-        </div>
+      <div className="flex justify-end mb-8">
         <AddTradeDialog />
       </div>
       <TradesList trades={trades} />

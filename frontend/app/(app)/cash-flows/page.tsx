@@ -39,11 +39,7 @@ export default async function CashFlowsPage({
 
   return (
     <>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Cash Flows</h1>
-          <p className="text-muted-foreground">Track deposits, withdrawals, and fees</p>
-        </div>
+      <div className="flex justify-end mb-8">
         <AddCashFlowDialog />
       </div>
       <Suspense fallback={<div className="h-96 bg-muted rounded-lg animate-pulse" />}>
