@@ -15,6 +15,9 @@ vi.mock("recharts", () => ({
   ComposedChart: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="composed-chart">{children}</div>
   ),
+  BarChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="bar-chart">{children}</div>
+  ),
   Bar: () => null,
   Line: () => null,
   XAxis: () => null,
@@ -25,6 +28,7 @@ vi.mock("recharts", () => ({
     <div data-testid="responsive-container">{children}</div>
   ),
   Cell: () => null,
+  Legend: () => null,
 }))
 
 const attributionFixture = {
@@ -66,7 +70,8 @@ describe("ReturnAttribution", () => {
     })
     expect(screen.getByRole("button", { name: /about market gains/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /about total fees/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /about net position/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /about net worth/i })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /about net position/i })).toBeNull()
 
     expect(container.querySelector(".text-green-600")).toBeNull()
     expect(container.querySelector(".text-red-600")).toBeNull()
@@ -77,6 +82,23 @@ describe("ReturnAttribution", () => {
 
     const totalFeesValue = screen.getByText(/-\$100\.00/).closest("p")
     expect(totalFeesValue).toHaveClass("text-destructive")
+  })
+
+  it("shows net worth summary matching API net_position", async () => {
+    renderAttribution()
+    await waitFor(() => {
+      expect(screen.getByText(/\$10,400\.00/)).toBeInTheDocument()
+    })
+    expect(screen.getByText("Net worth")).toBeInTheDocument()
+    expect(screen.queryByText("Net Position")).toBeNull()
+  })
+
+  it("omits FX from waterfall when fx_impact is below threshold", async () => {
+    renderAttribution()
+    await waitFor(() => {
+      expect(screen.getByTestId("composed-chart")).toBeInTheDocument()
+    })
+    expect(screen.queryByText(/fx impact/i)).toBeNull()
   })
 
   it("renders title icon with muted foreground", async () => {

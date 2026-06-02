@@ -3,6 +3,7 @@ export const PERFORMANCE_TOOLTIPS = {
   marketGains: "Change in holdings value from market moves, before fees and FX.",
   totalFeesImpact: "All deposit, trading, and closing fees reducing your position.",
   netPosition: "Ending portfolio value after gains, fees, and FX.",
+  netWorth: "Ending portfolio value (holdings + cash) after market gains and fees.",
   netReturnPct:
     "Total gain/loss including uninvested cash, as % of capital deployed (total invested).",
   feeDrag:
@@ -13,6 +14,4 @@ export const PERFORMANCE_TOOLTIPS = {
     "Historical portfolio value compared to cumulative invested capital over time.",
   feeEfficiency:
     "Average fee as % of trade notional per ticker — higher values mean more expensive trading.",
-  fxContext:
-    "Deposit-weighted FX context and rate history; approximate where backend data is limited.",
 } as const

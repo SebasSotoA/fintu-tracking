@@ -1,7 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import type { CashFlow, FxRate, NetWorthData } from "@/lib/types"
+import type { CashFlow, NetWorthData } from "@/lib/types"
 import { PerformanceHero } from "@/components/performance/performance-hero"
 
 const ChartSkeleton = () => (
@@ -40,14 +40,6 @@ const FeeEfficiencyTable = dynamic(
   { ssr: false, loading: ChartSkeleton },
 )
 
-const FxImpactCard = dynamic(
-  () =>
-    import("@/components/performance/fx-impact-card").then((m) => ({
-      default: m.FxImpactCard,
-    })),
-  { ssr: false, loading: ChartSkeleton },
-)
-
 const PerformanceCharts = dynamic(
   () =>
     import("@/components/performance/performance-charts").then((m) => ({
@@ -59,27 +51,20 @@ const PerformanceCharts = dynamic(
 export interface PerformanceContentProps {
   netWorth: NetWorthData | null
   cashFlows: CashFlow[]
-  fxRates: FxRate[]
 }
 
 export function PerformanceContent({
   netWorth,
   cashFlows,
-  fxRates,
 }: PerformanceContentProps) {
   return (
     <div className="space-y-6">
-      <PerformanceHero
-        initialNetWorth={netWorth}
-        cashFlows={cashFlows}
-        fxRates={fxRates}
-      />
+      <PerformanceHero initialNetWorth={netWorth} cashFlows={cashFlows} />
       <PortfolioPerformanceChart />
       <ReturnAttribution />
       <FeeAttributionChart />
       <FeeEfficiencyTable />
-      <FxImpactCard />
-      <PerformanceCharts cashFlows={cashFlows} fxRates={fxRates} />
+      <PerformanceCharts cashFlows={cashFlows} />
     </div>
   )
 }

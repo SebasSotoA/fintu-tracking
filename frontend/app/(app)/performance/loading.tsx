@@ -8,11 +8,7 @@ export default function PerformanceLoading() {
       <Skeleton className="h-64 w-full rounded-lg" />
       <Skeleton className="h-64 w-full rounded-lg" />
       <Skeleton className="h-48 w-full rounded-lg" />
-      <Skeleton className="h-48 w-full rounded-lg" />
-      <div className="grid gap-6 md:grid-cols-2">
-        <Skeleton className="h-64 w-full rounded-lg" />
-        <Skeleton className="h-64 w-full rounded-lg" />
-      </div>
+      <Skeleton className="h-64 w-full rounded-lg" />
     </div>
   )
 }

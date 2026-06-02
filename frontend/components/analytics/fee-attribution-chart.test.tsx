@@ -24,6 +24,7 @@ vi.mock("recharts", () => ({
     <div data-testid="responsive-container">{children}</div>
   ),
   Cell: () => null,
+  Legend: () => null,
 }))
 
 const feeBreakdownFixture = {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
-import type { CashFlow, FxRate, NetWorthData } from "@/lib/types"
+import type { CashFlow, NetWorthData } from "@/lib/types"
 import { PerformanceContent } from "./performance-content"
 
 vi.mock("next/dynamic", () => ({
@@ -18,9 +18,6 @@ vi.mock("next/dynamic", () => ({
       }
       if (name.includes("fee-efficiency-table")) {
         return <div data-testid="fee-efficiency-table" />
-      }
-      if (name.includes("fx-impact-card")) {
-        return <div data-testid="fx-impact-card" />
       }
       if (name.includes("performance-charts")) {
         return (
@@ -70,15 +67,6 @@ const cashFlow: CashFlow = {
   updated_at: "2024-01-01T00:00:00Z",
 }
 
-const fxRate: FxRate = {
-  id: "fx-1",
-  user_id: "u1",
-  rate: "4000",
-  date: "2024-01-01",
-  source: "manual",
-  created_at: "2024-01-01T00:00:00Z",
-}
-
 function sectionTestIds(container: HTMLElement): string[] {
   return Array.from(container.querySelectorAll("[data-testid]")).map(
     (el) => el.getAttribute("data-testid") ?? "",
@@ -88,11 +76,7 @@ function sectionTestIds(container: HTMLElement): string[] {
 describe("PerformanceContent", () => {
   it("passes server-fetched cash flows to hero and charts", () => {
     const { container } = render(
-      <PerformanceContent
-        netWorth={netWorth}
-        cashFlows={[cashFlow]}
-        fxRates={[fxRate]}
-      />,
+      <PerformanceContent netWorth={netWorth} cashFlows={[cashFlow]} />,
     )
     expect(screen.getByTestId("performance-hero")).toHaveTextContent("flows:1")
     expect(screen.getByTestId("performance-charts")).toHaveTextContent("flows:1")
@@ -102,14 +86,13 @@ describe("PerformanceContent", () => {
       "return-attribution",
       "fee-attribution-chart",
       "fee-efficiency-table",
-      "fx-impact-card",
       "performance-charts",
     ])
   })
 
   it("does not render legacy performance metrics grid", () => {
     render(
-      <PerformanceContent netWorth={netWorth} cashFlows={[]} fxRates={[]} />,
+      <PerformanceContent netWorth={netWorth} cashFlows={[]} />,
     )
     expect(screen.queryByText("XIRR (USD)")).not.toBeInTheDocument()
     expect(screen.queryByText("Portfolio Value")).not.toBeInTheDocument()

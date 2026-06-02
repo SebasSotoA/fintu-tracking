@@ -1,16 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, waitFor, within } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { CashFlow, NetWorthData } from "@/lib/types"
-import type { FxImpactReport } from "@/lib/api/analytics"
 import { PerformanceHero } from "./performance-hero"
 
 const mockGetNetWorth = vi.fn()
-const mockGetFxImpact = vi.fn()
 
 vi.mock("@/lib/api/analytics", () => ({
   getNetWorth: (...args: unknown[]) => mockGetNetWorth(...args),
-  getFxImpact: (...args: unknown[]) => mockGetFxImpact(...args),
 }))
 
 const baseNetWorth: NetWorthData = {
@@ -23,15 +20,6 @@ const baseNetWorth: NetWorthData = {
   total_gain_loss_pct: "20.00",
   xirr: "0",
   breakdown: { by_asset_type: {}, by_ticker: {} },
-}
-
-const fxImpactSample: FxImpactReport = {
-  avg_investment_rate: "4100.00",
-  current_rate: "4250.00",
-  rate_change_pct: "3.66",
-  fx_impact_usd: "0",
-  fx_impact_pct: "0",
-  impact_by_period: {},
 }
 
 const depositFlow: CashFlow = {
@@ -66,7 +54,6 @@ function renderHero(
       <PerformanceHero
         initialNetWorth={props.initialNetWorth ?? baseNetWorth}
         cashFlows={props.cashFlows ?? [depositFlow]}
-        fxRates={[]}
       />
     </QueryClientProvider>,
   )
@@ -76,7 +63,6 @@ describe("PerformanceHero", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockGetNetWorth.mockResolvedValue(baseNetWorth)
-    mockGetFxImpact.mockResolvedValue(fxImpactSample)
   })
 
   it("leads with net return percent, not net worth dollars", () => {
@@ -108,14 +94,13 @@ describe("PerformanceHero", () => {
     expect(within(twrCell as HTMLElement).getByText("—")).toBeInTheDocument()
   })
 
-  it("shows FX rate context one-liner without fake FX gain headline", async () => {
+  it("shows three stats in performance summary without FX context", () => {
     renderHero()
     const summary = screen.getByLabelText("Performance summary")
-    expect(within(summary).getByText("FX context")).toBeInTheDocument()
-    await waitFor(() => {
-      expect(within(summary).getByText(/4100\.00.*4250\.00/)).toBeInTheDocument()
-    })
-    expect(screen.queryByText(/FX gain/i)).not.toBeInTheDocument()
+    expect(within(summary).getByText("Time-weighted return")).toBeInTheDocument()
+    expect(within(summary).getByText("Fee drag")).toBeInTheDocument()
+    expect(within(summary).getByText("Since first deposit")).toBeInTheDocument()
+    expect(within(summary).queryByText("FX context")).not.toBeInTheDocument()
   })
 
   it("uses net-worth query with initialData from server", () => {

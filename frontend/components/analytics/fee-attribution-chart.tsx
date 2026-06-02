@@ -8,14 +8,18 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
   Cell,
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { api } from "@/lib/api/client";
 import type { FeeBreakdown } from "@/lib/api/analytics";
 import Decimal from "decimal.js";
@@ -29,6 +33,21 @@ const FEE_TYPE_COLORS = [
   "var(--chart-4)",
   "var(--chart-5)",
 ] as const;
+
+const TOOLTIP_CLASS =
+  "border-border bg-popover text-popover-foreground shadow-md";
+
+const MUTED_CURSOR = {
+  fill: "color-mix(in oklch, var(--muted) 35%, transparent)",
+};
+
+const feeTypeChartConfig = {
+  value: { label: "Fees", color: "var(--chart-3)" },
+} satisfies ChartConfig;
+
+const monthlyChartConfig = {
+  value: { label: "Monthly fees", color: "var(--chart-3)" },
+} satisfies ChartConfig;
 
 function formatCurrency(value: string | number): string {
   const num = typeof value === "string" ? parseFloat(value) : value;
@@ -45,6 +64,38 @@ function formatMonthLabel(monthKey: string): string {
   if (!year || !month) return monthKey;
   const date = new Date(Number(year), Number(month) - 1, 1);
   return date.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+}
+
+type FeeTooltipPayload = {
+  name: string;
+  value: number;
+  percentage?: string;
+};
+
+function FeeTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload: FeeTooltipPayload }[];
+}) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const data = payload[0].payload;
+
+  return (
+    <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-md">
+      <p className="font-medium">{data.name}</p>
+      <p className="font-mono font-medium tabular-nums text-destructive">
+        {formatCurrency(data.value)}
+      </p>
+      {data.percentage != null && (
+        <p className="text-muted-foreground">{data.percentage}% of total fees</p>
+      )}
+    </div>
+  );
 }
 
 export function FeeAttributionChart(): React.JSX.Element {
@@ -146,36 +197,6 @@ export function FeeAttributionChart(): React.JSX.Element {
       color: FEE_TYPE_COLORS[index % FEE_TYPE_COLORS.length],
     }));
 
-  const CustomTooltip = ({
-    active,
-    payload,
-  }: {
-    active?: boolean;
-    payload?: { payload: { name: string; value: number; percentage?: string } }[];
-  }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="rounded-lg border border-border bg-card p-3 text-card-foreground shadow-lg">
-          <p className="font-semibold text-sm">{data.name}</p>
-          <p className="text-lg font-bold text-destructive">{formatCurrency(data.value)}</p>
-          {data.percentage != null && (
-            <p className="text-xs text-muted-foreground">{data.percentage}% of total fees</p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const chartGrid = (
-    <CartesianGrid
-      strokeDasharray="3 3"
-      stroke="var(--muted-foreground)"
-      strokeOpacity={0.1}
-    />
-  );
-
   return (
     <Card>
       <CardHeader>
@@ -209,28 +230,40 @@ export function FeeAttributionChart(): React.JSX.Element {
             }
           >
             <div className="space-y-4">
-              <ResponsiveContainer width="100%" height={350}>
+              <ChartContainer config={feeTypeChartConfig} className="h-[320px] w-full aspect-auto">
                 <BarChart data={feeTypeData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  {chartGrid}
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--muted-foreground)"
+                    strokeOpacity={0.1}
+                  />
                   <XAxis
                     dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
                     tick={{ fontSize: 12 }}
                     angle={-15}
                     textAnchor="end"
                     height={80}
                   />
                   <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={8}
                     tick={{ fontSize: 12 }}
+                    stroke="var(--muted-foreground)"
+                    strokeOpacity={0.3}
                     tickFormatter={(value) => `$${value.toLocaleString()}`}
                   />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                  <ChartTooltip cursor={MUTED_CURSOR} content={<FeeTooltip />} />
+                  <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={48}>
                     {feeTypeData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
+              </ChartContainer>
 
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                 {feeTypeData.map((fee) => (
@@ -255,25 +288,53 @@ export function FeeAttributionChart(): React.JSX.Element {
                 <Separator className="md:hidden" />
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium">Fees by month</h3>
-                  <ResponsiveContainer width="100%" height={320}>
+                  <ChartContainer config={monthlyChartConfig} className="h-[320px] w-full aspect-auto">
                     <BarChart
                       data={monthlyFeeData}
                       margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                     >
-                      {chartGrid}
-                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                      <YAxis
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="var(--muted-foreground)"
+                        strokeOpacity={0.1}
+                      />
+                      <XAxis
+                        dataKey="name"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
                         tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        tick={{ fontSize: 12 }}
+                        stroke="var(--muted-foreground)"
+                        strokeOpacity={0.3}
                         tickFormatter={(value) => `$${value.toLocaleString()}`}
                       />
-                      <Tooltip content={<CustomTooltip />} />
+                      <ChartTooltip
+                        cursor={MUTED_CURSOR}
+                        content={
+                          <ChartTooltipContent
+                            className={TOOLTIP_CLASS}
+                            formatter={(value) => (
+                              <span className="font-mono font-medium tabular-nums text-destructive">
+                                {formatCurrency(Number(value))}
+                              </span>
+                            )}
+                          />
+                        }
+                      />
                       <Bar
                         dataKey="value"
-                        fill="hsl(var(--destructive))"
-                        radius={[8, 8, 0, 0]}
+                        fill="var(--color-value)"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={48}
                       />
                     </BarChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
                 </div>
               </>
             )}

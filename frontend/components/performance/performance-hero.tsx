@@ -4,8 +4,8 @@ import type React from "react"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react"
 import Decimal from "decimal.js"
-import { getFxImpact, getNetWorth, type FxImpactReport } from "@/lib/api/analytics"
-import type { CashFlow, FxRate, NetWorthData } from "@/lib/types"
+import { getNetWorth } from "@/lib/api/analytics"
+import type { CashFlow, NetWorthData } from "@/lib/types"
 import { MetricLabel, StatCell } from "@/components/analytics/metric-primitives"
 import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips"
 import { Badge } from "@/components/ui/badge"
@@ -21,7 +21,6 @@ import {
 export interface PerformanceHeroProps {
   initialNetWorth: NetWorthData | null
   cashFlows: CashFlow[]
-  fxRates: FxRate[]
 }
 
 function formatUsd(value: Decimal): string {
@@ -54,14 +53,6 @@ function formatPeriodLabel(cashFlows: CashFlow[]): string {
   })
 }
 
-function formatFxOneLiner(report: FxImpactReport | undefined): string {
-  if (!report) return "—"
-  const avg = new Decimal(report.avg_investment_rate || "0")
-  const current = new Decimal(report.current_rate || "0")
-  if (avg.isZero() && current.isZero()) return "—"
-  return `${avg.toFixed(2)} → ${current.toFixed(2)} COP/USD`
-}
-
 export function PerformanceHero({
   initialNetWorth,
   cashFlows,
@@ -70,12 +61,6 @@ export function PerformanceHero({
     queryKey: ["net-worth"],
     queryFn: () => getNetWorth(),
     initialData: initialNetWorth ?? undefined,
-    staleTime: 60_000,
-  })
-
-  const { data: fxImpact } = useQuery({
-    queryKey: ["fx-impact"],
-    queryFn: () => getFxImpact(),
     staleTime: 60_000,
   })
 
@@ -163,7 +148,7 @@ export function PerformanceHero({
 
         <section
           aria-label="Performance summary"
-          className="grid grid-cols-2 gap-4 rounded-lg border border-border/50 bg-muted/30 p-4 md:grid-cols-4"
+          className="grid grid-cols-2 gap-4 rounded-lg border border-border/50 bg-muted/30 p-4 md:grid-cols-3"
         >
           <StatCell
             label="Time-weighted return"
@@ -188,12 +173,6 @@ export function PerformanceHero({
             tooltip="Date of your earliest recorded deposit in this portfolio."
             value={formatPeriodLabel(cashFlows)}
             valueClassName="text-foreground text-base md:text-lg font-medium font-sans"
-          />
-          <StatCell
-            label="FX context"
-            tooltip={PERFORMANCE_TOOLTIPS.fxContext}
-            value={formatFxOneLiner(fxImpact)}
-            valueClassName="text-foreground text-base md:text-lg font-medium font-mono"
           />
         </section>
       </CardContent>

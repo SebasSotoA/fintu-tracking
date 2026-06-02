@@ -9,9 +9,7 @@ import {
   type PerformanceInterval,
   type PerformancePoint,
 } from "@/lib/api/analytics"
-import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips"
-import { MetricLabel } from "@/components/analytics/metric-primitives"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
@@ -32,13 +30,16 @@ const INTERVAL_OPTIONS: { value: PerformanceInterval; label: string }[] = [
 const chartConfig = {
   portfolio_value: {
     label: "Portfolio value",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
   invested_capital: {
     label: "Invested capital",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
 } satisfies ChartConfig
+
+const TOOLTIP_CLASS =
+  "border-border bg-popover text-popover-foreground shadow-md"
 
 function formatChartDate(date: string): string {
   const parsed = new Date(date)
@@ -53,6 +54,28 @@ function toChartData(points: PerformancePoint[]) {
     portfolio_value: new Decimal(point.portfolio_value || "0").toNumber(),
     invested_capital: new Decimal(point.invested_capital || "0").toNumber(),
   }))
+}
+
+function ChartHeaderLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+      <span className="flex items-center gap-1.5">
+        <span
+          className="h-2 w-2 shrink-0 rounded-[2px]"
+          style={{ backgroundColor: "var(--chart-1)" }}
+          aria-hidden
+        />
+        Portfolio value
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span
+          className="h-2 w-2 shrink-0 rounded-[2px] border border-dashed border-[var(--chart-2)] bg-transparent"
+          aria-hidden
+        />
+        Invested capital
+      </span>
+    </div>
+  )
 }
 
 export function PortfolioPerformanceChart() {
@@ -72,7 +95,6 @@ export function PortfolioPerformanceChart() {
       <Card>
         <CardHeader>
           <Skeleton className="h-6 w-64" />
-          <Skeleton className="h-4 w-96 mt-2" />
         </CardHeader>
         <CardContent>
           <Skeleton className="h-[320px] w-full" />
@@ -85,8 +107,9 @@ export function PortfolioPerformanceChart() {
     return (
       <Card className="border-destructive">
         <CardHeader>
-          <CardTitle>Portfolio value vs invested</CardTitle>
-          <CardDescription>Couldn&apos;t load performance history.</CardDescription>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+            Portfolio vs invested
+          </CardTitle>
         </CardHeader>
       </Card>
     )
@@ -96,15 +119,12 @@ export function PortfolioPerformanceChart() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
+      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-            Portfolio value vs invested
+            Portfolio vs invested
           </CardTitle>
-          <CardDescription>
-            Historical path of holdings + cash vs capital deployed.
-          </CardDescription>
-          <MetricLabel label="Portfolio vs invested" tooltip={PERFORMANCE_TOOLTIPS.portfolioVsInvested} />
+          <ChartHeaderLegend />
         </div>
         <ToggleGroup
           type="single"
@@ -158,12 +178,13 @@ export function PortfolioPerformanceChart() {
               <ChartTooltip
                 content={
                   <ChartTooltipContent
+                    className={TOOLTIP_CLASS}
                     labelFormatter={(_, payload) => {
                       const item = payload?.[0]?.payload as { label?: string } | undefined
                       return item?.label ?? ""
                     }}
                     formatter={(value) => (
-                      <span className="font-mono tabular-nums">
+                      <span className="font-mono font-medium tabular-nums text-foreground">
                         {formatCurrency(String(value), "USD")}
                       </span>
                     )}

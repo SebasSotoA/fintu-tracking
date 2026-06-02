@@ -74,9 +74,12 @@ describe("PortfolioPerformanceChart", () => {
   it("renders chart when points exist", async () => {
     renderChart()
     await waitFor(() => {
-      expect(screen.getByText("Portfolio value vs invested")).toBeInTheDocument()
+      expect(screen.getByText("Portfolio vs invested")).toBeInTheDocument()
     })
+    expect(screen.queryByText(/historical path of holdings/i)).toBeNull()
     expect(screen.getByTestId("line-chart")).toBeInTheDocument()
+    expect(screen.getByText("Portfolio value")).toBeInTheDocument()
+    expect(screen.getByText("Invested capital")).toBeInTheDocument()
   })
 
   it("shows empty state when API returns no points", async () => {

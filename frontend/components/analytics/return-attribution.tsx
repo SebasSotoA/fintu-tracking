@@ -4,19 +4,21 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ComposedChart,
   Bar,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
   Cell,
 } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { StatCell } from "@/components/analytics/metric-primitives";
 import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips";
+import {
+  ChartContainer,
+  ChartTooltip,
+  type ChartConfig,
+} from "@/components/ui/chart";
 import { api } from "@/lib/api/client";
 import type { ReturnAttribution as ReturnAttributionData } from "@/lib/api/analytics";
 import Decimal from "decimal.js";
@@ -25,9 +27,131 @@ import type React from "react";
 
 const CHART_GAIN = "var(--chart-1)";
 const CHART_START = "var(--chart-2)";
-const CHART_FEE_A = "var(--chart-3)";
-const CHART_FEE_B = "var(--chart-4)";
+const CHART_FEE = "var(--chart-3)";
 const CHART_LOSS = "var(--destructive)";
+const FX_IMPACT_THRESHOLD = new Decimal(0.01);
+
+const waterfallChartConfig = {
+  displayValue: { label: "Value", color: "var(--chart-1)" },
+} satisfies ChartConfig;
+
+const MUTED_CURSOR = {
+  fill: "color-mix(in oklch, var(--muted) 35%, transparent)",
+};
+
+type WaterfallStep = {
+  name: string;
+  value: number;
+  displayValue: number;
+  type: "start" | "gain" | "loss" | "end";
+  color: string;
+};
+
+function formatUsd(value: Decimal | string | number): string {
+  const num = new Decimal(value).toNumber();
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num);
+}
+
+function formatPercent(value: string): string {
+  return new Decimal(value).toFixed(2) + "%";
+}
+
+function buildWaterfallSteps(
+  startingCapital: Decimal,
+  marketGains: Decimal,
+  totalFeesImpact: Decimal,
+  fxImpact: Decimal,
+  netWorth: Decimal,
+): WaterfallStep[] {
+  const afterMarket = startingCapital.plus(marketGains);
+  const afterFees = afterMarket.minus(totalFeesImpact);
+  const showFx = fxImpact.abs().greaterThanOrEqualTo(FX_IMPACT_THRESHOLD);
+
+  const steps: WaterfallStep[] = [
+    {
+      name: "Starting\nCapital",
+      value: startingCapital.toNumber(),
+      displayValue: startingCapital.toNumber(),
+      type: "start",
+      color: CHART_START,
+    },
+    {
+      name: "Market\nGains",
+      value: marketGains.toNumber(),
+      displayValue: afterMarket.toNumber(),
+      type: marketGains.greaterThanOrEqualTo(0) ? "gain" : "loss",
+      color: marketGains.greaterThanOrEqualTo(0) ? CHART_GAIN : CHART_LOSS,
+    },
+    {
+      name: "Fees",
+      value: -totalFeesImpact.toNumber(),
+      displayValue: afterFees.toNumber(),
+      type: "loss",
+      color: CHART_FEE,
+    },
+  ];
+
+  if (showFx) {
+    steps.push({
+      name: "FX\nImpact",
+      value: fxImpact.toNumber(),
+      displayValue: netWorth.toNumber(),
+      type: fxImpact.greaterThanOrEqualTo(0) ? "gain" : "loss",
+      color: fxImpact.greaterThanOrEqualTo(0) ? CHART_GAIN : CHART_LOSS,
+    });
+  }
+
+  steps.push({
+    name: "Net\nworth",
+    value: netWorth.toNumber(),
+    displayValue: netWorth.toNumber(),
+    type: "end",
+    color: netWorth.greaterThanOrEqualTo(startingCapital) ? CHART_GAIN : CHART_LOSS,
+  });
+
+  return steps;
+}
+
+type AttributionTooltipRow = WaterfallStep;
+
+function WaterfallTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload: AttributionTooltipRow }[];
+}) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  const data = payload[0].payload;
+  const label = data.name.replace(/\n/g, " ");
+
+  return (
+    <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-md">
+      <p className="font-medium">{label}</p>
+      {data.type !== "start" && data.type !== "end" && (
+        <p
+          className={`font-mono font-medium tabular-nums ${
+            data.value >= 0 ? "text-primary" : "text-destructive"
+          }`}
+        >
+          {data.value >= 0 ? "+" : ""}
+          {formatUsd(Math.abs(data.value))}
+        </p>
+      )}
+      <p className="font-mono tabular-nums text-muted-foreground">
+        Running: {formatUsd(data.displayValue)}
+      </p>
+    </div>
+  );
+}
 
 export function ReturnAttribution(): React.JSX.Element {
   const { data: attribution, isLoading, error } = useQuery<ReturnAttributionData>({
@@ -43,7 +167,6 @@ export function ReturnAttribution(): React.JSX.Element {
       <Card>
         <CardHeader>
           <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-48 mt-2" />
         </CardHeader>
         <CardContent>
           <Skeleton className="h-[500px] w-full" />
@@ -74,117 +197,15 @@ export function ReturnAttribution(): React.JSX.Element {
   const marketGains = new Decimal(attribution.market_gains || "0");
   const totalFeesImpact = new Decimal(attribution.total_fees_impact || "0");
   const fxImpact = new Decimal(attribution.fx_impact || "0");
-  const netPosition = new Decimal(attribution.net_position || "0");
+  const netWorth = new Decimal(attribution.net_position || "0");
 
-  const formatCurrency = (value: Decimal | string | number): string => {
-    const num = new Decimal(value).toNumber();
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(num);
-  };
-
-  const formatPercent = (value: string): string => {
-    return new Decimal(value).toFixed(2) + "%";
-  };
-
-  const waterfallData = [
-    {
-      name: "Starting\nCapital",
-      value: startingCapital.toNumber(),
-      displayValue: startingCapital.toNumber(),
-      type: "start",
-      color: CHART_START,
-    },
-    {
-      name: "Market\nGains",
-      value: marketGains.toNumber(),
-      displayValue: startingCapital.plus(marketGains).toNumber(),
-      type: marketGains.greaterThanOrEqualTo(0) ? "gain" : "loss",
-      color: marketGains.greaterThanOrEqualTo(0) ? CHART_GAIN : CHART_LOSS,
-    },
-    {
-      name: "Deposit\nFees",
-      value: -new Decimal(attribution.deposit_fees_impact || "0").toNumber(),
-      displayValue: startingCapital
-        .plus(marketGains)
-        .minus(new Decimal(attribution.deposit_fees_impact || "0"))
-        .toNumber(),
-      type: "loss",
-      color: CHART_LOSS,
-    },
-    {
-      name: "Trading\nFees",
-      value: -new Decimal(attribution.trading_fees_impact || "0").toNumber(),
-      displayValue: startingCapital
-        .plus(marketGains)
-        .minus(new Decimal(attribution.deposit_fees_impact || "0"))
-        .minus(new Decimal(attribution.trading_fees_impact || "0"))
-        .toNumber(),
-      type: "loss",
-      color: CHART_FEE_A,
-    },
-    {
-      name: "Closing\nFees",
-      value: -new Decimal(attribution.closing_fees_impact || "0").toNumber(),
-      displayValue: startingCapital.plus(marketGains).minus(totalFeesImpact).toNumber(),
-      type: "loss",
-      color: CHART_FEE_B,
-    },
-    {
-      name: "FX\nImpact",
-      value: fxImpact.toNumber(),
-      displayValue: netPosition.toNumber(),
-      type: fxImpact.greaterThanOrEqualTo(0) ? "gain" : "loss",
-      color: fxImpact.greaterThanOrEqualTo(0) ? CHART_GAIN : CHART_LOSS,
-    },
-    {
-      name: "Net\nPosition",
-      value: netPosition.toNumber(),
-      displayValue: netPosition.toNumber(),
-      type: "end",
-      color: netPosition.greaterThanOrEqualTo(startingCapital) ? CHART_GAIN : CHART_LOSS,
-    },
-  ];
-
-  type AttributionTooltipRow = {
-    name: string;
-    type: string;
-    color: string;
-    value?: number;
-    displayValue?: number;
-  };
-
-  const CustomTooltip = ({
-    active,
-    payload,
-  }: {
-    active?: boolean;
-    payload?: { payload: AttributionTooltipRow }[];
-  }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="rounded-lg border border-border bg-card p-3 text-card-foreground shadow-lg">
-          <p className="font-semibold text-sm mb-1">{data.name.replace(/\n/g, " ")}</p>
-          {data.type !== "start" && data.type !== "end" && data.value != null && (
-            <p className="text-base font-bold" style={{ color: data.color }}>
-              {data.value >= 0 ? "+" : ""}
-              {formatCurrency(String(Math.abs(data.value)))}
-            </p>
-          )}
-          {data.displayValue != null && (
-            <p className="text-xs text-muted-foreground mt-1">
-              Total: {formatCurrency(String(data.displayValue))}
-            </p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
+  const waterfallData = buildWaterfallSteps(
+    startingCapital,
+    marketGains,
+    totalFeesImpact,
+    fxImpact,
+    netWorth,
+  );
 
   const netReturnPct = new Decimal(attribution.net_return_pct || "0");
   const isPositiveReturn = netReturnPct.greaterThanOrEqualTo(0);
@@ -199,17 +220,10 @@ export function ReturnAttribution(): React.JSX.Element {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUpIcon className="h-5 w-5 text-muted-foreground" />
-              Return Attribution Analysis
-            </CardTitle>
-            <CardDescription>
-              Breakdown of your portfolio returns showing impact of fees and FX
-            </CardDescription>
-          </div>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUpIcon className="h-5 w-5 text-muted-foreground" />
+          Return Attribution Analysis
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div
@@ -219,24 +233,24 @@ export function ReturnAttribution(): React.JSX.Element {
           <StatCell
             label="Starting Capital"
             tooltip={PERFORMANCE_TOOLTIPS.startingCapital}
-            value={formatCurrency(startingCapital)}
+            value={formatUsd(startingCapital)}
           />
           <StatCell
             label="Market Gains"
             tooltip={PERFORMANCE_TOOLTIPS.marketGains}
-            value={`${isPositiveMarketGains ? "+" : ""}${formatCurrency(marketGains)} (${formatPercent(attribution.market_gains_pct)})`}
+            value={`${isPositiveMarketGains ? "+" : ""}${formatUsd(marketGains)} (${formatPercent(attribution.market_gains_pct)})`}
             valueClassName={isPositiveMarketGains ? "text-primary" : "text-destructive"}
           />
           <StatCell
             label="Total Fees"
             tooltip={PERFORMANCE_TOOLTIPS.totalFeesImpact}
-            value={`-${formatCurrency(totalFeesImpact)} (${formatPercent(attribution.total_fees_impact_pct)})`}
+            value={`-${formatUsd(totalFeesImpact)} (${formatPercent(attribution.total_fees_impact_pct)})`}
             valueClassName="text-destructive"
           />
           <StatCell
-            label="Net Position"
-            tooltip={PERFORMANCE_TOOLTIPS.netPosition}
-            value={`${formatCurrency(netPosition)} (${formatPercent(attribution.net_return_pct)})`}
+            label="Net worth"
+            tooltip={PERFORMANCE_TOOLTIPS.netWorth}
+            value={`${formatUsd(netWorth)} (${formatPercent(attribution.net_return_pct)})`}
             valueClassName={isPositiveReturn ? "text-primary" : "text-destructive"}
           />
         </div>
@@ -245,7 +259,7 @@ export function ReturnAttribution(): React.JSX.Element {
 
         <div>
           <h3 className="text-sm font-medium mb-4">Return Decomposition Waterfall</h3>
-          <ResponsiveContainer width="100%" height={400}>
+          <ChartContainer config={waterfallChartConfig} className="h-[400px] w-full aspect-auto">
             <ComposedChart data={waterfallData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -254,30 +268,29 @@ export function ReturnAttribution(): React.JSX.Element {
               />
               <XAxis
                 dataKey="name"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
                 tick={{ fontSize: 11 }}
-                angle={0}
-                textAnchor="middle"
                 height={80}
               />
               <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
                 tick={{ fontSize: 12 }}
+                stroke="var(--muted-foreground)"
+                strokeOpacity={0.3}
                 tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="displayValue" radius={[8, 8, 0, 0]}>
+              <ChartTooltip cursor={MUTED_CURSOR} content={<WaterfallTooltip />} />
+              <Bar dataKey="displayValue" radius={[6, 6, 0, 0]} maxBarSize={56}>
                 {waterfallData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Bar>
-              <Line
-                type="monotone"
-                dataKey="displayValue"
-                stroke="var(--muted-foreground)"
-                strokeWidth={2}
-                dot={{ r: 4, fill: "var(--muted-foreground)" }}
-              />
             </ComposedChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </div>
 
         <Separator />
@@ -292,7 +305,7 @@ export function ReturnAttribution(): React.JSX.Element {
               >
                 <span className="text-sm font-medium">{row.label}</span>
                 <span className="text-sm font-bold font-mono tabular-nums text-destructive">
-                  {formatCurrency(row.amount)}
+                  {formatUsd(row.amount)}
                 </span>
               </div>
             ))}
