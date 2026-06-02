@@ -5,6 +5,7 @@ import { formatTooltipDate } from "@/lib/date-utils"
 import { Decimal } from "@/lib/decimal"
 
 export { formatTooltipDate } from "@/lib/date-utils"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Area,
   AreaChart,
@@ -17,6 +18,7 @@ import {
 
 interface FxRateSparklineProps {
   points: FxRateChartPoint[]
+  isLoading?: boolean
 }
 
 type ChartPoint = {
@@ -104,7 +106,19 @@ function FxRateTooltip({
   )
 }
 
-export function FxRateSparkline({ points }: FxRateSparklineProps) {
+export function FxRateSparkline({ points, isLoading = false }: FxRateSparklineProps) {
+  if (isLoading) {
+    return (
+      <div
+        className="flex h-[140px] items-center justify-center rounded-xl border border-border/50 bg-muted/20"
+        aria-busy="true"
+        aria-label="Loading exchange rate chart"
+      >
+        <Spinner className="size-5 text-muted-foreground" />
+      </div>
+    )
+  }
+
   const data = (points || [])
     .map((p) => {
       const rate = new Decimal(p.rate)
