@@ -165,11 +165,11 @@ func TestDepositFeeAttributionAmount(t *testing.T) {
 			want:      "10",
 		},
 		{
-			name:              "linked deposit fee excluded from attribution",
+			name:              "linked deposit fee included in attribution display",
 			feeType:           "deposit",
 			usdAmount:         "6",
 			relatedCashFlowID: &linkedID,
-			want:              "0",
+			want:              "6",
 		},
 		{
 			name:      "trading fee not counted as deposit fee attribution",

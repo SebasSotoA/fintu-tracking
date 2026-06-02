@@ -50,8 +50,11 @@ func sumNetInvested(flows []netInvestedFlow) decimal.Decimal {
 	return total
 }
 
-func depositFeeAttributionAmount(feeType string, usdAmount decimal.Decimal, relatedCashFlowID *string) decimal.Decimal {
-	if feeType == "deposit" && relatedCashFlowID == nil {
+// depositFeeAttributionAmount is the deposit-fee slice shown in return attribution.
+// Includes linked transfer fees so totals match /api/analytics/fee-breakdown.
+// Linked fees are still subtracted in netInvestedContribution to avoid double-counting capital.
+func depositFeeAttributionAmount(feeType string, usdAmount decimal.Decimal, _ *string) decimal.Decimal {
+	if feeType == "deposit" {
 		return usdAmount
 	}
 	return decimal.Zero

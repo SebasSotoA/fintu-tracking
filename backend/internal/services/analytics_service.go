@@ -51,7 +51,7 @@ func (s *AnalyticsService) CalculateReturnAttribution(ctx context.Context, userI
 	// Calculate fees by type
 	err = s.pool.QueryRow(ctx, `
 		SELECT 
-			COALESCE(SUM(CASE WHEN fee_type = 'deposit' AND related_cash_flow_id IS NULL THEN usd_amount ELSE 0 END), 0) as deposit_fees,
+			COALESCE(SUM(CASE WHEN fee_type = 'deposit' THEN usd_amount ELSE 0 END), 0) as deposit_fees,
 			COALESCE(SUM(CASE WHEN fee_type = 'trading' THEN usd_amount ELSE 0 END), 0) as trading_fees,
 			COALESCE(SUM(CASE WHEN fee_type = 'closing' THEN usd_amount ELSE 0 END), 0) as closing_fees,
 			COALESCE(SUM(usd_amount), 0) as total_fees
