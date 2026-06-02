@@ -239,7 +239,7 @@ func TestPortfolioNetWorth_Deposit400LinkedFee6BuyTrade(t *testing.T) {
 		{Type: "fee", USDAmount: dec("6")},
 	}
 	trades := []tradeCashFlowRow{
-		{Side: "buy", Quantity: dec("2"), Price: dec("150"), Fee: dec("1")},
+		{Side: "buy", Quantity: dec("2"), Price: dec("150"), TotalFees: dec("1")},
 	}
 
 	cashFlowsNet := sumCashFlowsBalance(flows)
@@ -285,5 +285,42 @@ func TestPortfolioCashSQLFragments(t *testing.T) {
 	assertSQLFragments(t, netTradeCashFlowSQL(), []string{
 		"side = 'buy'",
 		"side = 'sell'",
+		"COALESCE(total_fees, 0)",
 	})
+}
+
+func TestReturnAttributionHoldingsSQLUsesTotalFees(t *testing.T) {
+	t.Parallel()
+
+	sql := returnAttributionHoldingsSQL()
+	assertSQLFragments(t, sql, []string{
+		"COALESCE(t.total_fees, 0)",
+	})
+	if strings.Contains(sql, "t.fee") {
+		t.Errorf("holdings SQL must not reference legacy t.fee:\n%s", sql)
+	}
+}
+
+func TestNetWorthHoldingsSQLUsesTotalFees(t *testing.T) {
+	t.Parallel()
+
+	sql := netWorthHoldingsSQL()
+	assertSQLFragments(t, sql, []string{
+		"COALESCE(t.total_fees, 0)",
+	})
+	if strings.Contains(sql, "t.fee") {
+		t.Errorf("net worth holdings SQL must not reference legacy t.fee:\n%s", sql)
+	}
+}
+
+func TestPerformanceTradeLoadSQLUsesTotalFees(t *testing.T) {
+	t.Parallel()
+
+	sql := performanceTradeLoadSQL()
+	assertSQLFragments(t, sql, []string{
+		"COALESCE(total_fees, 0)",
+	})
+	if strings.Contains(sql, " fee") && strings.Contains(sql, "COALESCE(fee") {
+		t.Errorf("performance load SQL must not use legacy fee column:\n%s", sql)
+	}
 }

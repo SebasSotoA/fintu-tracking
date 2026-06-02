@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import Decimal from "decimal.js";
 import { api } from "@/lib/api/client";
+import { queryKeys } from "@/lib/api/query-keys";
 import type { NetWorthData } from "@/lib/types";
 import { MetricLabel, StatCell } from "@/components/analytics/metric-primitives";
 import { Badge } from "@/components/ui/badge";
@@ -40,7 +41,7 @@ export const METRIC_TOOLTIPS = {
     "Total gain/loss including uninvested cash, as % of all deposits (withdrawals reduce the base).",
   feeDrag:
     "Total fees paid as % of capital deployed (total invested).",
-  xirr: "Time-weighted return coming soon.",
+  xirr: "Money-weighted return (XIRR) from deposits, withdrawals, and current net worth.",
   assetAllocation: "Share of holdings value by asset class (ETF, stock, crypto).",
 } as const;
 
@@ -67,7 +68,7 @@ function formatAssetTypeLabel(key: string): string {
 
 export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Element {
   const { data: netWorth, isLoading, error } = useQuery<NetWorthData>({
-    queryKey: ["net-worth"],
+    queryKey: queryKeys.netWorth(),
     queryFn: () => api.get<NetWorthData>("/api/analytics/net-worth"),
     initialData: initialData ?? undefined,
     staleTime: 60_000,

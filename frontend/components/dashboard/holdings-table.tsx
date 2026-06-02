@@ -1,6 +1,7 @@
 "use client"
 
 import type { Holding } from "@/lib/types"
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, format } from "@/lib/decimal"
@@ -63,7 +64,14 @@ export function HoldingsTable({ holdings }: HoldingsTableProps) {
 
               return (
                 <TableRow key={holding.ticker}>
-                  <TableCell className="font-mono font-semibold">{holding.ticker}</TableCell>
+                  <TableCell className="font-mono font-semibold">
+                    <Link
+                      href={`/trades?ticker=${encodeURIComponent(holding.ticker)}`}
+                      className="hover:underline"
+                    >
+                      {holding.ticker}
+                    </Link>
+                  </TableCell>
                   <TableCell className="text-right font-mono">{format(holding.quantity, 4)}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(holding.avgCost, "USD")}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(holding.totalInvested, "USD")}</TableCell>

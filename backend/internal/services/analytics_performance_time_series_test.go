@@ -31,7 +31,7 @@ func fixtureUserPerformanceActivity() performanceActivity {
 				Ticker:   "AAPL",
 				Quantity: dec("2"),
 				Price:    dec("150"),
-				Fee:      dec("1"),
+				TotalFees: dec("1"),
 			},
 		},
 	}
@@ -116,6 +116,44 @@ func TestFinalizePerformancePoint(t *testing.T) {
 	}
 	if point.NetReturnPct != "10" {
 		t.Errorf("NetReturnPct = %s, want 10", point.NetReturnPct)
+	}
+}
+
+func TestComputePerformancePoints_GranularFeesOnly(t *testing.T) {
+	t.Parallel()
+
+	activity := performanceActivity{
+		CashFlows: []performanceCashFlow{
+			{
+				Date:      time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				Type:      "deposit",
+				USDAmount: dec("1000"),
+			},
+		},
+		Trades: []performanceTrade{
+			{
+				Date:      time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				Side:      "buy",
+				Ticker:    "AAPL",
+				Quantity:  dec("1"),
+				Price:     dec("100"),
+				TotalFees: dec("2.50"),
+			},
+		},
+	}
+
+	points := computePerformancePointsFromActivity(activity, "day")
+	if len(points) < 2 {
+		t.Fatalf("len(points) = %d, want at least 2", len(points))
+	}
+	last := points[len(points)-1]
+	portfolio, err := decimal.NewFromString(last.PortfolioValue)
+	if err != nil {
+		t.Fatalf("parse portfolio: %v", err)
+	}
+	want := dec("997.5")
+	if !portfolio.Equal(want) {
+		t.Errorf("portfolio value = %s, want %s (holdings 100 + cash 897.5 after buy fees)", portfolio, want)
 	}
 }
 

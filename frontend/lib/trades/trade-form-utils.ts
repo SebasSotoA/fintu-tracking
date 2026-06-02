@@ -5,7 +5,7 @@ import type { Holding, Trade } from "@/lib/types"
 export interface TradeFormValues {
   date: string
   ticker: string
-  asset_type: "stock" | "etf"
+  asset_type: "stock" | "etf" | "crypto"
   side: "buy" | "sell"
   quantity: string
   price: string
@@ -24,7 +24,7 @@ export function tradeClosingFeeForForm(trade: Trade): string {
       return ""
     }
   }
-  return pick(trade.closing_fee) || pick(trade.trading_fee) || pick(trade.fee)
+  return pick(trade.closing_fee) || pick(trade.trading_fee)
 }
 
 export function sumTradeFees(values: Pick<TradeFormValues, "closing_fee">): Decimal {
@@ -50,11 +50,10 @@ export function buildTradePayload(values: TradeFormValues) {
   const payload: {
     date: string
     ticker: string
-    asset_type: "stock" | "etf"
+    asset_type: "stock" | "etf" | "crypto"
     side: "buy" | "sell"
     quantity: string
     price: string
-    fee: string
     notes: string | null
     closing_fee?: string
   } = {
@@ -64,7 +63,6 @@ export function buildTradePayload(values: TradeFormValues) {
     side: values.side,
     quantity: values.quantity,
     price: values.price,
-    fee: "0",
     notes: values.notes || null,
   }
 

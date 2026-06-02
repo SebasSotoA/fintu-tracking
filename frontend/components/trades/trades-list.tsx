@@ -7,23 +7,38 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Pencil, Trash2 } from "lucide-react"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Check, ChevronsUpDown, Download, Pencil, Trash2 } from "lucide-react"
 import { formatCurrency, format } from "@/lib/decimal"
 import { formatCalendarDate } from "@/lib/date-utils"
-import { useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useCallback, useMemo, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { EditTradeDialog } from "./edit-trade-dialog"
 import { DeleteTradeDialog } from "./delete-trade-dialog"
 import { TradeDateFilter } from "@/components/trades/trade-date-filter"
+import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
+import { downloadTradesCsv } from "@/lib/trades/export-trades-csv"
 import {
   DEFAULT_TRADE_FILTERS,
   filterTrades,
   hasActiveFilters,
+  parseTradeFiltersFromSearchParams,
+  tradeFiltersToSearchParams,
+  uniqueTradeTickers,
   type TradeAssetTypeFilter,
   type TradeFilters,
   type TradeSideFilter,
 } from "@/lib/trades/trade-filters"
+import { cn } from "@/lib/utils"
 
 interface TradesListProps {
   trades: Trade[]
@@ -39,6 +54,7 @@ const ASSET_OPTIONS: { value: TradeAssetTypeFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "stock", label: "Stocks" },
   { value: "etf", label: "ETFs" },
+  { value: "crypto", label: "Crypto" },
 ]
 
 function FilterSelect<T extends string>({
@@ -75,25 +91,122 @@ function FilterSelect<T extends string>({
   )
 }
 
+function TradeTickerFilter({
+  tickers,
+  value,
+  onChange,
+}: {
+  tickers: string[]
+  value: string | null
+  onChange: (ticker: string | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const label = value ?? "All tickers"
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="trade-filter-ticker" className="text-xs text-muted-foreground">
+        Ticker
+      </Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            id="trade-filter-ticker"
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            aria-label="Filter trades by ticker"
+            className={cn(
+              "h-8 w-[7.5rem] justify-between px-2.5 font-normal",
+              !value && "text-muted-foreground",
+            )}
+          >
+            <span className="truncate font-mono">{label}</span>
+            <ChevronsUpDown className="ml-1 size-3.5 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[12rem] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search ticker..." />
+            <CommandList>
+              <CommandEmpty>No ticker found.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="all-tickers"
+                  onSelect={() => {
+                    onChange(null)
+                    setOpen(false)
+                  }}
+                >
+                  <Check className={cn("mr-2 size-4", value === null ? "opacity-100" : "opacity-0")} />
+                  All tickers
+                </CommandItem>
+                {tickers.map((ticker) => (
+                  <CommandItem
+                    key={ticker}
+                    value={ticker}
+                    onSelect={() => {
+                      onChange(ticker)
+                      setOpen(false)
+                    }}
+                  >
+                    <Check
+                      className={cn("mr-2 size-4", value === ticker ? "opacity-100" : "opacity-0")}
+                    />
+                    {ticker}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+
 export function TradesList({ trades: initialTrades }: TradesListProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const trades = initialTrades || []
-  const [filters, setFilters] = useState<TradeFilters>(DEFAULT_TRADE_FILTERS)
+
+  const filters = useMemo(
+    () => parseTradeFiltersFromSearchParams(Object.fromEntries(searchParams.entries())),
+    [searchParams],
+  )
+
+  const setFilters = useCallback(
+    (next: TradeFilters) => {
+      const query = tradeFiltersToSearchParams(next).toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    },
+    [pathname, router],
+  )
+
+  const patchFilters = useCallback(
+    (patch: Partial<TradeFilters>) => {
+      setFilters({ ...filters, ...patch })
+    },
+    [filters, setFilters],
+  )
+
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null)
   const [deletingTrade, setDeletingTrade] = useState<Trade | null>(null)
 
+  const tickerOptions = useMemo(() => uniqueTradeTickers(trades), [trades])
   const filteredTrades = useMemo(() => filterTrades(trades, filters), [trades, filters])
   const filtersActive = hasActiveFilters(filters)
 
-  const handleTradeUpdated = () => {
+  const handleTradeMutated = async () => {
     router.refresh()
-    queryClient.invalidateQueries({ queryKey: ["net-worth"] })
+    await invalidateAfterTradeMutation(queryClient)
   }
 
-  const handleTradeDeleted = () => {
-    router.refresh()
-    queryClient.invalidateQueries({ queryKey: ["net-worth"] })
+  const handleExport = () => {
+    downloadTradesCsv(filteredTrades)
   }
 
   if (trades.length === 0) {
@@ -123,87 +236,105 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
                   label="Side"
                   value={filters.side}
                   options={SIDE_OPTIONS}
-                  onChange={(side) => setFilters((prev) => ({ ...prev, side }))}
+                  onChange={(side) => patchFilters({ side })}
                 />
                 <FilterSelect
                   id="trade-filter-asset"
                   label="Asset"
                   value={filters.assetType}
                   options={ASSET_OPTIONS}
-                  onChange={(assetType) => setFilters((prev) => ({ ...prev, assetType }))}
+                  onChange={(assetType) => patchFilters({ assetType })}
+                />
+                <TradeTickerFilter
+                  tickers={tickerOptions}
+                  value={filters.ticker}
+                  onChange={(ticker) => patchFilters({ ticker })}
                 />
                 <TradeDateFilter
                   value={filters.dateRange}
-                  onChange={(dateRange) => setFilters((prev) => ({ ...prev, dateRange }))}
+                  onChange={(dateRange) => patchFilters({ dateRange })}
                 />
               </div>
-              <p className="pb-2 text-sm text-muted-foreground">
-                Showing {filteredTrades.length} of {trades.length} trades
-              </p>
+              <div className="flex flex-col items-end gap-2 pb-2">
+                <p className="text-sm text-muted-foreground" title="Filter URLs can be shared or bookmarked">
+                  Showing {filteredTrades.length} of {trades.length} trades
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={handleExport}
+                  disabled={filteredTrades.length === 0}
+                >
+                  <Download className="size-4" />
+                  Export
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-          {filteredTrades.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-muted-foreground mb-2">No trades match these filters</p>
-              {filtersActive && (
-                <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_TRADE_FILTERS)}>
-                  Clear filters
-                </Button>
-              )}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Ticker</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Side</TableHead>
-                  <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                  <TableHead className="text-right">Fees</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTrades.map((trade) => (
-                  <TableRow key={trade.id}>
-                    <TableCell>{formatCalendarDate(trade.date)}</TableCell>
-                    <TableCell className="font-mono font-semibold">{trade.ticker}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={trade.side === "buy" ? "default" : "secondary"}>
-                        {trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">{format(trade.quantity, 4)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatCurrency(trade.price, "USD")}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(trade.total_fees || trade.fee, "USD")}
-                    </TableCell>
-                    <TableCell className="text-right font-mono font-semibold">
-                      {formatCurrency(trade.total, "USD")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => setEditingTrade(trade)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setDeletingTrade(trade)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            {filteredTrades.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <p className="text-muted-foreground mb-2">No trades match these filters</p>
+                {filtersActive && (
+                  <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_TRADE_FILTERS)}>
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Ticker</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Side</TableHead>
+                    <TableHead className="text-right">Quantity</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Fees</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
+                </TableHeader>
+                <TableBody>
+                  {filteredTrades.map((trade) => (
+                    <TableRow key={trade.id}>
+                      <TableCell>{formatCalendarDate(trade.date)}</TableCell>
+                      <TableCell className="font-mono font-semibold">{trade.ticker}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={trade.side === "buy" ? "default" : "secondary"}>
+                          {trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">{format(trade.quantity, 4)}</TableCell>
+                      <TableCell className="text-right font-mono">{formatCurrency(trade.price, "USD")}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency(trade.total_fees, "USD")}
+                      </TableCell>
+                      <TableCell className="text-right font-mono font-semibold">
+                        {formatCurrency(trade.total, "USD")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => setEditingTrade(trade)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setDeletingTrade(trade)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
         </Card>
       </section>
 
@@ -212,7 +343,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
           trade={editingTrade}
           open={!!editingTrade}
           onOpenChange={() => setEditingTrade(null)}
-          onSuccess={handleTradeUpdated}
+          onSuccess={handleTradeMutated}
         />
       )}
 
@@ -221,7 +352,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
           trade={deletingTrade}
           open={!!deletingTrade}
           onOpenChange={() => setDeletingTrade(null)}
-          onSuccess={handleTradeDeleted}
+          onSuccess={handleTradeMutated}
         />
       )}
     </>

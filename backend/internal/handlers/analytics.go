@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"time"
 
 	"fintu-tracking-backend/internal/database"
@@ -9,24 +8,6 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 )
-
-// GetFeeAttribution handles GET /api/analytics/fee-attribution
-func GetFeeAttribution(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
-
-	// Parse query parameters for date range
-	dateRange := parseDateRange(c)
-
-	feeService := services.NewFeeService(database.GetPool())
-	attributions, err := feeService.CalculateFeeAttribution(c.Context(), userID, dateRange)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to calculate fee attribution: " + err.Error(),
-		})
-	}
-
-	return c.JSON(attributions)
-}
 
 // GetFeeBreakdown handles GET /api/analytics/fee-breakdown
 func GetFeeBreakdown(c fiber.Ctx) error {
@@ -157,73 +138,6 @@ func GetCashReconciliation(c fiber.Ctx) error {
 	}
 
 	return c.JSON(report)
-}
-
-// CreatePortfolioSnapshot handles POST /api/analytics/portfolio-snapshot
-func CreatePortfolioSnapshot(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
-
-	analyticsService := services.NewAnalyticsService(database.GetPool())
-
-	// Get current net worth summary
-	netWorth, err := analyticsService.GetNetWorthSummary(c.Context(), userID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to calculate portfolio snapshot: " + err.Error(),
-		})
-	}
-
-	// Get total fees
-	var totalFees string
-	err = database.GetPool().QueryRow(context.Background(), `
-		SELECT COALESCE(SUM(usd_amount), 0)
-		FROM cash_flows
-		WHERE user_id = $1 AND type = 'fee'
-	`, userID).Scan(&totalFees)
-	if err != nil {
-		totalFees = "0"
-	}
-
-	// Insert snapshot
-	var snapshotID string
-	now := time.Now()
-	err = database.GetPool().QueryRow(context.Background(), `
-		INSERT INTO portfolio_snapshots (
-			user_id, snapshot_date, total_value_usd, total_invested_usd, 
-			total_cash_usd, total_fees_usd, total_fx_impact_usd, holdings
-		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		ON CONFLICT (user_id, snapshot_date) 
-		DO UPDATE SET
-			total_value_usd = EXCLUDED.total_value_usd,
-			total_invested_usd = EXCLUDED.total_invested_usd,
-			total_cash_usd = EXCLUDED.total_cash_usd,
-			total_fees_usd = EXCLUDED.total_fees_usd,
-			total_fx_impact_usd = EXCLUDED.total_fx_impact_usd,
-			holdings = EXCLUDED.holdings
-		RETURNING id
-	`,
-		userID,
-		now.Format("2006-01-02"),
-		netWorth.NetWorth,
-		netWorth.TotalInvested,
-		netWorth.CashBalance,
-		totalFees,
-		"0",  // FX impact placeholder
-		"[]", // Holdings JSON placeholder
-	).Scan(&snapshotID)
-
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create snapshot: " + err.Error(),
-		})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"id":            snapshotID,
-		"snapshot_date": now.Format("2006-01-02"),
-		"message":       "Portfolio snapshot created successfully",
-	})
 }
 
 // Helper function to parse date range from query parameters

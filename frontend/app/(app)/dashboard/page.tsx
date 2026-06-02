@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { NetWorthCard } from "@/components/dashboard/net-worth-card"
 import { HoldingsTableServer } from "@/components/dashboard/holdings-table-server"
-import { getNetWorth } from "@/lib/api/server-portfolio"
+import { getNetWorth } from "@/lib/api/server-analytics"
 
 async function NetWorthCardServer() {
   const data = await getNetWorth().catch(() => null)

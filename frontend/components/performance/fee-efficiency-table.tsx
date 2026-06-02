@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react"
 import { getFeeEfficiency, type FeeEfficiencyTickerRow } from "@/lib/api/analytics"
+import { queryKeys } from "@/lib/api/query-keys"
 import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips"
 import { MetricLabel } from "@/components/analytics/metric-primitives"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -78,7 +79,7 @@ export function FeeEfficiencyTable() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc")
 
   const { data, isLoading } = useQuery({
-    queryKey: ["fee-efficiency", "ticker"],
+    queryKey: queryKeys.feeEfficiency("ticker"),
     queryFn: () => getFeeEfficiency("ticker"),
     retry: false,
   })

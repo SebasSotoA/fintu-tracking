@@ -34,7 +34,6 @@ export interface Trade {
   side: "buy" | "sell"
   quantity: string
   price: string
-  fee: string
   deposit_fee: string
   trading_fee: string
   closing_fee: string

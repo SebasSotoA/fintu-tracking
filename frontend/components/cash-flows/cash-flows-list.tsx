@@ -15,6 +15,7 @@ import {
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
+import { invalidateAfterCashFlowMutation } from "@/lib/api/query-keys"
 import { EditCashFlowDialog } from "./edit-cash-flow-dialog"
 import { DeleteCashFlowDialog } from "./delete-cash-flow-dialog"
 import Link from "next/link"
@@ -31,14 +32,14 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
   const [editingCashFlow, setEditingCashFlow] = useState<CashFlow | null>(null)
   const [deletingCashFlow, setDeletingCashFlow] = useState<CashFlow | null>(null)
 
-  const handleUpdated = () => {
+  const handleUpdated = async () => {
     router.refresh()
-    queryClient.invalidateQueries({ queryKey: ["net-worth"] })
+    await invalidateAfterCashFlowMutation(queryClient)
   }
 
-  const handleDeleted = () => {
+  const handleDeleted = async () => {
     router.refresh()
-    queryClient.invalidateQueries({ queryKey: ["net-worth"] })
+    await invalidateAfterCashFlowMutation(queryClient)
   }
 
   if (cashFlows.length === 0) {

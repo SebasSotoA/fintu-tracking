@@ -19,6 +19,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { api } from "@/lib/api/client";
+import { queryKeys } from "@/lib/api/query-keys";
 import type { ReturnAttribution as ReturnAttributionData } from "@/lib/api/analytics";
 import Decimal from "decimal.js";
 import { TrendingUpIcon, AlertCircleIcon } from "lucide-react";
@@ -154,7 +155,7 @@ function WaterfallTooltip({
 
 export function ReturnAttribution(): React.JSX.Element {
   const { data: attribution, isLoading, error } = useQuery<ReturnAttributionData>({
-    queryKey: ["return-attribution"],
+    queryKey: queryKeys.returnAttribution(),
     queryFn: async () => {
       return api.get<ReturnAttributionData>("/api/analytics/return-attribution");
     },

@@ -16,8 +16,8 @@ const cashFlowsBalanceCaseExpr = `
 
 const netTradeCashFlowCaseExpr = `
   CASE
-    WHEN side = 'buy' THEN (quantity * price + COALESCE(fee, 0))
-    WHEN side = 'sell' THEN -(quantity * price - COALESCE(fee, 0))
+    WHEN side = 'buy' THEN (quantity * price + COALESCE(total_fees, 0))
+    WHEN side = 'sell' THEN -(quantity * price - COALESCE(total_fees, 0))
     ELSE 0
   END`
 
@@ -61,7 +61,7 @@ type tradeCashFlowRow struct {
 	Side     string
 	Quantity decimal.Decimal
 	Price    decimal.Decimal
-	Fee      decimal.Decimal
+	TotalFees decimal.Decimal
 }
 
 func sumNetTradeCashFlow(trades []tradeCashFlowRow) decimal.Decimal {
@@ -69,9 +69,9 @@ func sumNetTradeCashFlow(trades []tradeCashFlowRow) decimal.Decimal {
 	for _, tr := range trades {
 		switch tr.Side {
 		case "buy":
-			total = total.Add(tr.Quantity.Mul(tr.Price).Add(tr.Fee))
+			total = total.Add(tr.Quantity.Mul(tr.Price).Add(tr.TotalFees))
 		case "sell":
-			proceeds := tr.Quantity.Mul(tr.Price).Sub(tr.Fee)
+			proceeds := tr.Quantity.Mul(tr.Price).Sub(tr.TotalFees)
 			total = total.Sub(proceeds)
 		}
 	}

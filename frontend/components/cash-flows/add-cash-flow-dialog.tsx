@@ -5,6 +5,7 @@ import type { FormEvent } from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
+import { invalidateAfterCashFlowMutation } from "@/lib/api/query-keys"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -85,7 +86,7 @@ export function AddCashFlowDialog() {
         } catch {
           showToast.error("Deposit saved but fee entry failed")
           router.refresh()
-          queryClient.invalidateQueries({ queryKey: ["net-worth"] })
+          await invalidateAfterCashFlowMutation(queryClient)
           return
         }
       }
@@ -94,7 +95,7 @@ export function AddCashFlowDialog() {
       setOpen(false)
       setFormData(emptyForm())
       router.refresh()
-      queryClient.invalidateQueries({ queryKey: ["net-worth"] })
+      await invalidateAfterCashFlowMutation(queryClient)
     } catch (err) {
       showToast.error(
         err instanceof Error ? err.message : "Failed to add cash flow",

@@ -7,18 +7,14 @@ describe("tradeClosingFeeForForm", () => {
     const trade = {
       closing_fee: "0.15",
       trading_fee: "1",
-      fee: "2",
     } as Trade
     expect(tradeClosingFeeForForm(trade)).toBe("0.15")
   })
 
-  it("falls back to trading_fee then legacy fee", () => {
+  it("falls back to trading_fee", () => {
     expect(
-      tradeClosingFeeForForm({ closing_fee: "0", trading_fee: "0.20", fee: "0" } as Trade),
+      tradeClosingFeeForForm({ closing_fee: "0", trading_fee: "0.20" } as Trade),
     ).toBe("0.2")
-    expect(tradeClosingFeeForForm({ closing_fee: "0", trading_fee: "0", fee: "0.10" } as Trade)).toBe(
-      "0.1",
-    )
   })
 })
 

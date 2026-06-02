@@ -21,7 +21,7 @@ type performanceTrade struct {
 	Ticker   string
 	Quantity decimal.Decimal
 	Price    decimal.Decimal
-	Fee      decimal.Decimal
+	TotalFees decimal.Decimal
 }
 
 type performanceActivity struct {
@@ -174,11 +174,11 @@ func (a performanceActivity) metricsAsOf(asOf time.Time) (invested, fees, portfo
 		case "buy":
 			h.qty = h.qty.Add(tr.Quantity)
 			h.price = tr.Price
-			cashDec = cashDec.Sub(notional.Add(tr.Fee))
+			cashDec = cashDec.Sub(notional.Add(tr.TotalFees))
 		case "sell":
 			h.qty = h.qty.Sub(tr.Quantity)
 			h.price = tr.Price
-			cashDec = cashDec.Add(notional.Sub(tr.Fee))
+			cashDec = cashDec.Add(notional.Sub(tr.TotalFees))
 		}
 		holdings[tr.Ticker] = h
 	}

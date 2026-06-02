@@ -99,7 +99,6 @@ func main() {
 	protected.Get("/portfolio/performance", handlers.GetPerformance)
 
 	// Analytics endpoints
-	protected.Get("/analytics/fee-attribution", handlers.GetFeeAttribution)
 	protected.Get("/analytics/fee-breakdown", handlers.GetFeeBreakdown)
 	protected.Get("/analytics/fee-impact", handlers.GetFeeImpact)
 	protected.Get("/analytics/fee-efficiency", handlers.GetFeeEfficiency)
@@ -108,7 +107,6 @@ func main() {
 	protected.Get("/analytics/performance-time-series", handlers.GetPerformanceTimeSeries)
 	protected.Get("/analytics/net-worth", handlers.GetNetWorth)
 	protected.Get("/analytics/cash-reconciliation", handlers.GetCashReconciliation)
-	protected.Post("/analytics/portfolio-snapshot", handlers.CreatePortfolioSnapshot)
 
 	// Start server
 	port := os.Getenv("PORT")

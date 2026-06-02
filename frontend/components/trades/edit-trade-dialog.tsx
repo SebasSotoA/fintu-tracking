@@ -35,7 +35,12 @@ function tradeToFormValues(trade: Trade): TradeFormValues {
   return {
     date: toDateInputValue(trade.date),
     ticker: trade.ticker,
-    asset_type: trade.asset_type === "etf" ? "etf" : "stock",
+    asset_type:
+      trade.asset_type === "etf"
+        ? "etf"
+        : trade.asset_type === "crypto"
+          ? "crypto"
+          : "stock",
     side: trade.side,
     quantity: new Decimal(trade.quantity).toString(),
     price: new Decimal(trade.price).toString(),
@@ -153,7 +158,9 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               <Label htmlFor="edit-asset_type">Asset Type</Label>
               <Select
                 value={formData.asset_type}
-                onValueChange={(value: "stock" | "etf") => setFormData({ ...formData, asset_type: value })}
+                onValueChange={(value: "stock" | "etf" | "crypto") =>
+                  setFormData({ ...formData, asset_type: value })
+                }
               >
                 <SelectTrigger id="edit-asset_type">
                   <SelectValue />
@@ -161,6 +168,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 <SelectContent>
                   <SelectItem value="stock">Stock</SelectItem>
                   <SelectItem value="etf">ETF</SelectItem>
+                  <SelectItem value="crypto">Crypto</SelectItem>
                 </SelectContent>
               </Select>
             </div>

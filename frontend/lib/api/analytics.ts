@@ -48,6 +48,7 @@ export interface PerformancePoint {
   cumulative_fx_impact: string
   net_return: string
   net_return_pct: string
+  spy_indexed?: string
 }
 
 /** GET /api/analytics/fx-impact */

@@ -6,6 +6,9 @@ import {
   formatTradeDateRangeLabel,
   hasActiveFilters,
   normalizeTradeDateRange,
+  parseTradeFiltersFromSearchParams,
+  tradeFiltersToApiParams,
+  tradeFiltersToSearchParams,
 } from "./trade-filters"
 import type { Trade } from "@/lib/types"
 
@@ -19,7 +22,6 @@ function makeTrade(overrides: Partial<Trade>): Trade {
     side: "buy",
     quantity: "1",
     price: "100",
-    fee: "0",
     deposit_fee: "0",
     trading_fee: "0",
     closing_fee: "0",
@@ -124,9 +126,83 @@ describe("filterTrades", () => {
       side: "buy",
       assetType: "etf",
       dateRange: { from: "2024-01-01", to: "2024-12-31" },
+      ticker: null,
     })
     expect(result).toHaveLength(1)
     expect(result[0].id).toBe("3")
+  })
+
+  it("filters by ticker (case-insensitive exact match)", () => {
+    const result = filterTrades(trades, { ...DEFAULT_TRADE_FILTERS, ticker: "voo" })
+    expect(result).toHaveLength(1)
+    expect(result[0].ticker).toBe("VOO")
+  })
+
+  it("filters by crypto asset type", () => {
+    const cryptoTrades = [
+      ...trades,
+      makeTrade({ id: "4", asset_type: "crypto", ticker: "BTC", date: "2026-01-01" }),
+    ]
+    expect(
+      filterTrades(cryptoTrades, { ...DEFAULT_TRADE_FILTERS, assetType: "crypto" }),
+    ).toHaveLength(1)
+  })
+})
+
+describe("parseTradeFiltersFromSearchParams", () => {
+  it("parses URL filter params", () => {
+    expect(
+      parseTradeFiltersFromSearchParams({
+        side: "buy",
+        asset: "etf",
+        from: "2026-01-01",
+        to: "2026-01-31",
+        ticker: "aapl",
+      }),
+    ).toEqual({
+      side: "buy",
+      assetType: "etf",
+      dateRange: { from: "2026-01-01", to: "2026-01-31" },
+      ticker: "AAPL",
+    })
+  })
+
+  it("returns defaults for missing params", () => {
+    expect(parseTradeFiltersFromSearchParams({})).toEqual(DEFAULT_TRADE_FILTERS)
+  })
+})
+
+describe("tradeFiltersToSearchParams", () => {
+  it("serializes active filters", () => {
+    const params = tradeFiltersToSearchParams({
+      side: "sell",
+      assetType: "stock",
+      dateRange: { from: "2026-03-01", to: null },
+      ticker: "MSFT",
+    })
+    expect(params.get("side")).toBe("sell")
+    expect(params.get("asset")).toBe("stock")
+    expect(params.get("from")).toBe("2026-03-01")
+    expect(params.get("ticker")).toBe("MSFT")
+  })
+})
+
+describe("tradeFiltersToApiParams", () => {
+  it("maps filters to API query fields", () => {
+    expect(
+      tradeFiltersToApiParams({
+        side: "buy",
+        assetType: "crypto",
+        dateRange: { from: "2026-01-01", to: null },
+        ticker: "BTC",
+      }),
+    ).toEqual({
+      side: "buy",
+      asset_type: "crypto",
+      from: "2026-01-01",
+      to: "2026-01-01",
+      ticker: "BTC",
+    })
   })
 })
 
@@ -146,5 +222,9 @@ describe("hasActiveFilters", () => {
 
   it("is true when any dimension is narrowed", () => {
     expect(hasActiveFilters({ ...DEFAULT_TRADE_FILTERS, side: "buy" })).toBe(true)
+  })
+
+  it("is true when ticker is set", () => {
+    expect(hasActiveFilters({ ...DEFAULT_TRADE_FILTERS, ticker: "AAPL" })).toBe(true)
   })
 })

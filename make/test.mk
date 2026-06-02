@@ -7,6 +7,13 @@ test:
 	@cd $(BACKEND_DIR) && $(GOTEST) -race ./...
 	@echo "Tests passed"
 
+test-all:
+	@echo "Running backend tests..."
+	@cd $(BACKEND_DIR) && $(GOTEST) -race ./...
+	@echo "Running frontend tests..."
+	@cd frontend && pnpm test
+	@echo "All tests passed"
+
 test-verbose:
 	@echo "Running tests (verbose)..."
 	@cd $(BACKEND_DIR) && $(GOTEST) -race -v ./...

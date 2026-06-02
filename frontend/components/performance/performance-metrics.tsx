@@ -3,6 +3,7 @@
 import type { Trade, CashFlow, FxRate, MarketPrice, NetWorthData } from "@/lib/types"
 import { useQuery } from "@tanstack/react-query"
 import { api } from "@/lib/api/client"
+import { queryKeys } from "@/lib/api/query-keys"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Decimal } from "@/lib/decimal"
 import { formatCurrency } from "@/lib/decimal"
@@ -18,7 +19,7 @@ interface PerformanceMetricsProps {
 
 export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }: PerformanceMetricsProps) {
   const { data: netWorth, isPending: isNetWorthPending } = useQuery<NetWorthData>({
-    queryKey: ["net-worth"],
+    queryKey: queryKeys.netWorth(),
     queryFn: () => api.get<NetWorthData>("/api/analytics/net-worth"),
     staleTime: 60_000,
   })
@@ -45,7 +46,7 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
     .reduce((sum, cf) => sum.add(new Decimal(cf.usd_amount)), new Decimal(0))
 
   // Calculate trade fees
-  const tradeFees = safeTrades.reduce((sum, t) => sum.add(new Decimal(t.fee || 0)), new Decimal(0))
+  const tradeFees = safeTrades.reduce((sum, t) => sum.add(new Decimal(t.total_fees || 0)), new Decimal(0))
 
   const totalFeesUSD = totalFees.add(tradeFees)
 

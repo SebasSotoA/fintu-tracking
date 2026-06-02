@@ -49,6 +49,12 @@ describe("HoldingsTable", () => {
     expect(rows[1]).toHaveTextContent("AAPL")
     expect(rows[2]).toHaveTextContent("MSFT")
   })
+
+  it("links ticker to filtered trades page", () => {
+    renderWithProviders(<HoldingsTable holdings={[sampleHolding]} />)
+    const link = screen.getByRole("link", { name: "AAPL" })
+    expect(link).toHaveAttribute("href", "/trades?ticker=AAPL")
+  })
 })
 
 describe("HoldingsTableServer", () => {

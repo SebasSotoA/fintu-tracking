@@ -70,3 +70,15 @@ func mustParseDate(t *testing.T, s string) time.Time {
 	}
 	return parsed
 }
+
+func TestReconcileQueriesUseSQLViews(t *testing.T) {
+	t.Parallel()
+
+	assertSQLFragments(t, reconcileDiscrepanciesSQL(), []string{
+		"fee_reconciliation_summary",
+		"reconciliation_diff",
+	})
+	assertSQLFragments(t, reconcileOrphanedCashFlowsSQL(), []string{
+		"orphaned_fee_cash_flows",
+	})
+}

@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react"
 import Decimal from "decimal.js"
 import { getNetWorth } from "@/lib/api/analytics"
+import { queryKeys } from "@/lib/api/query-keys"
 import type { CashFlow, NetWorthData } from "@/lib/types"
 import { MetricLabel, StatCell } from "@/components/analytics/metric-primitives"
 import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips"
@@ -58,7 +59,7 @@ export function PerformanceHero({
   cashFlows,
 }: PerformanceHeroProps): React.JSX.Element {
   const { data: netWorth, isLoading, error } = useQuery({
-    queryKey: ["net-worth"],
+    queryKey: queryKeys.netWorth(),
     queryFn: () => getNetWorth(),
     initialData: initialNetWorth ?? undefined,
     staleTime: 60_000,

@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
 import { createTrade } from "@/lib/api/trades"
 import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
 import {
@@ -87,7 +88,7 @@ export function AddTradeDialog() {
       setFormData(emptyForm())
       setPriceWarning(null)
       router.refresh()
-      queryClient.invalidateQueries({ queryKey: ["net-worth"] })
+      await invalidateAfterTradeMutation(queryClient)
     } catch (err) {
       showToast.error(
         err instanceof Error ? err.message : "Failed to add trade",
@@ -113,7 +114,7 @@ export function AddTradeDialog() {
       <DialogContent className="flex max-h-[90vh] flex-col gap-4 sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add Trade</DialogTitle>
-          <DialogDescription>Record a buy or sell for a US stock or ETF</DialogDescription>
+          <DialogDescription>Record a buy or sell for a stock, ETF, or crypto</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className={formClassName}>
           <div className="grid grid-cols-2 gap-4">
@@ -149,7 +150,9 @@ export function AddTradeDialog() {
               <Label htmlFor="asset_type">Asset Type</Label>
               <Select
                 value={formData.asset_type}
-                onValueChange={(value: "stock" | "etf") => setFormData({ ...formData, asset_type: value })}
+                onValueChange={(value: "stock" | "etf" | "crypto") =>
+                  setFormData({ ...formData, asset_type: value })
+                }
               >
                 <SelectTrigger id="asset_type">
                   <SelectValue />
@@ -157,6 +160,7 @@ export function AddTradeDialog() {
                 <SelectContent>
                   <SelectItem value="stock">Stock</SelectItem>
                   <SelectItem value="etf">ETF</SelectItem>
+                  <SelectItem value="crypto">Crypto</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftRight, RefreshCw } from "lucide-react"
+import { queryKeys } from "@/lib/api/query-keys"
 import { fetchCurrentRate, getFxRateChart } from "@/lib/api/fx-rates"
 import { FxRateSparkline } from "@/components/cash-flows/fx-rate-sparkline"
 
@@ -67,7 +68,7 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
     isLoading: isChartLoading,
     isFetching: isChartFetching,
   } = useQuery({
-    queryKey: ["fx-rate-chart", 30],
+    queryKey: queryKeys.fxRateChart(30),
     queryFn: () => getFxRateChart(30),
     staleTime: 5 * 60 * 1000,
   })
@@ -79,9 +80,9 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
     setError(null)
     try {
       await fetchCurrentRate()
-      await queryClient.invalidateQueries({ queryKey: ["fx-rate-chart"] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.fxRateChart() })
       router.refresh()
-      queryClient.invalidateQueries({ queryKey: ["net-worth"] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.netWorth() })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch exchange rate")
     } finally {

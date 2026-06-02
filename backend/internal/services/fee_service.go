@@ -26,91 +26,6 @@ type DateRange struct {
 	EndDate   *time.Time
 }
 
-// CalculateFeeAttribution returns detailed fee breakdown for all trades in a period
-func (s *FeeService) CalculateFeeAttribution(ctx context.Context, userID string, dateRange *DateRange) ([]models.FeeAttribution, error) {
-	query := `
-		SELECT 
-			t.id,
-			t.ticker,
-			t.date,
-			t.side,
-			0::numeric as deposit_fee,
-			COALESCE(t.fee, 0) as trading_fee,
-			0::numeric as closing_fee,
-			COALESCE(t.fee, 0) as total_fees,
-			t.quantity * t.price as trade_value,
-			CASE 
-				WHEN t.quantity * t.price > 0 THEN (COALESCE(t.fee, 0) / NULLIF(t.quantity * t.price, 0) * 100)
-				ELSE 0
-			END as fee_impact_pct,
-			ARRAY_AGG(cf.id) FILTER (WHERE cf.id IS NOT NULL) as cash_flow_ids
-		FROM trades t
-		LEFT JOIN cash_flows cf ON cf.related_trade_id = t.id AND cf.type = 'fee'
-		WHERE t.user_id = $1
-	`
-
-	args := []interface{}{userID}
-	argCount := 1
-
-	if dateRange != nil {
-		if dateRange.StartDate != nil {
-			argCount++
-			query += fmt.Sprintf(" AND t.date >= $%d", argCount)
-			args = append(args, *dateRange.StartDate)
-		}
-		if dateRange.EndDate != nil {
-			argCount++
-			query += fmt.Sprintf(" AND t.date <= $%d", argCount)
-			args = append(args, *dateRange.EndDate)
-		}
-	}
-
-	query += " GROUP BY t.id, t.ticker, t.date, t.side, t.fee, t.quantity, t.price"
-	query += " ORDER BY t.date DESC, t.ticker"
-
-	rows, err := s.pool.Query(ctx, query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query fee attribution: %w", err)
-	}
-	defer rows.Close()
-
-	var attributions []models.FeeAttribution
-	for rows.Next() {
-		var attr models.FeeAttribution
-		var cashFlowIDs *string
-
-		err := rows.Scan(
-			&attr.TradeID,
-			&attr.Ticker,
-			&attr.Date,
-			&attr.Side,
-			&attr.DepositFee,
-			&attr.TradingFee,
-			&attr.ClosingFee,
-			&attr.TotalFees,
-			&attr.TradeValue,
-			&attr.FeeImpactPct,
-			&cashFlowIDs,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan fee attribution: %w", err)
-		}
-
-		// Parse cash flow IDs array
-		if cashFlowIDs != nil {
-			// PostgreSQL array format: {id1,id2,id3}
-			// Simple parsing - for production, use a proper array scanner
-			attr.CashFlowIDs = []string{}
-		} else {
-			attr.CashFlowIDs = []string{}
-		}
-
-		attributions = append(attributions, attr)
-	}
-
-	return attributions, rows.Err()
-}
-
 // GetTotalFeesByType returns aggregate fees broken down by type
 func (s *FeeService) GetTotalFeesByType(ctx context.Context, userID string, dateRange *DateRange) (models.FeeBreakdown, error) {
 	query := `
@@ -233,7 +148,7 @@ func (s *FeeService) GetFeeImpactOnReturn(ctx context.Context, userID, ticker st
 		SELECT 
 			SUM(CASE WHEN side = 'buy' THEN quantity ELSE -quantity END) as net_quantity,
 			SUM(CASE WHEN side = 'buy' THEN (quantity * price) ELSE 0 END) as total_cost,
-			SUM(COALESCE(fee, 0)) as total_fees,
+			SUM(COALESCE(total_fees, 0)) as total_fees,
 			COUNT(*) as trade_count
 		FROM trades
 		WHERE user_id = $1 AND ticker = $2
@@ -339,18 +254,7 @@ func (s *FeeService) ReconcileCashFlowFees(ctx context.Context, userID string) (
 		}
 	}
 
-	// Check for orphaned cash flows
-	orphanedRows, err := s.pool.Query(ctx, `
-		SELECT cf.id
-		FROM cash_flows cf
-		WHERE cf.user_id = $1 
-		  AND cf.type = 'fee' 
-		  AND cf.related_type = 'trade'
-		  AND cf.related_trade_id IS NOT NULL
-		  AND NOT EXISTS (
-			SELECT 1 FROM trades t WHERE t.id = cf.related_trade_id
-		  )
-	`, userID)
+	orphanedRows, err := s.pool.Query(ctx, reconcileOrphanedCashFlowsSQL(), userID)
 	if err != nil {
 		return report, fmt.Errorf("failed to check orphaned cash flows: %w", err)
 	}
@@ -386,22 +290,7 @@ func (s *FeeService) ReconcileCashFlowFees(ctx context.Context, userID string) (
 		}
 	}
 
-	// Check for discrepancies in individual trades
-	discRows, err := s.pool.Query(ctx, `
-		SELECT 
-			t.id,
-			t.ticker,
-			t.date,
-			t.total_fees,
-			COALESCE(SUM(cf.usd_amount), 0) as cash_flow_fees
-		FROM trades t
-		LEFT JOIN cash_flows cf ON cf.related_trade_id = t.id
-		  AND cf.type = 'fee'
-		  AND cf.related_type = 'trade'
-		WHERE t.user_id = $1 AND t.total_fees > 0
-		GROUP BY t.id, t.ticker, t.date, t.total_fees
-		HAVING t.total_fees != COALESCE(SUM(cf.usd_amount), 0)
-	`, userID)
+	discRows, err := s.pool.Query(ctx, reconcileDiscrepanciesSQL(), userID)
 	if err != nil {
 		return report, fmt.Errorf("failed to check discrepancies: %w", err)
 	}
@@ -447,13 +336,13 @@ func (s *FeeService) GetFeeEfficiency(ctx context.Context, userID string, groupB
 			SELECT 
 				ticker,
 				COUNT(*) as trade_count,
-				SUM(COALESCE(fee, 0)) as total_fees,
+				SUM(COALESCE(total_fees, 0)) as total_fees,
 				SUM(quantity * price) as total_value,
-				AVG(COALESCE(fee, 0) / NULLIF(quantity * price, 0) * 100) as avg_fee_pct
+				AVG(COALESCE(total_fees, 0) / NULLIF(quantity * price, 0) * 100) as avg_fee_pct
 			FROM trades
-			WHERE user_id = $1 AND COALESCE(fee, 0) > 0
+			WHERE user_id = $1 AND COALESCE(total_fees, 0) > 0
 			GROUP BY ticker
-			ORDER BY SUM(COALESCE(fee, 0)) DESC
+			ORDER BY SUM(COALESCE(total_fees, 0)) DESC
 		`
 
 		rows, err := s.pool.Query(ctx, query, userID)
@@ -488,3 +377,16 @@ func (s *FeeService) GetFeeEfficiency(ctx context.Context, userID string, groupB
 	return map[string]interface{}{}, nil
 }
 
+func reconcileDiscrepanciesSQL() string {
+	return `
+		SELECT trade_id, ticker, date, trade_total_fees, cash_flow_total_fees, reconciliation_diff
+		FROM fee_reconciliation_summary
+		WHERE user_id = $1 AND reconciliation_diff <> 0
+	`
+}
+
+func reconcileOrphanedCashFlowsSQL() string {
+	return `
+		SELECT id FROM orphaned_fee_cash_flows WHERE user_id = $1
+	`
+}

@@ -58,9 +58,7 @@ func GetHoldings(c fiber.Ctx) error {
 	}
 
 	query := `
-		SELECT id, user_id, date, ticker, asset_type, side, quantity, price, fee,
-			COALESCE(deposit_fee, 0), COALESCE(trading_fee, 0), COALESCE(closing_fee, 0),
-			COALESCE(total_fees, 0), total, notes, created_at, updated_at
+		SELECT ` + tradeListColumns + `
 		FROM trades
 		WHERE user_id = $1
 		ORDER BY date ASC

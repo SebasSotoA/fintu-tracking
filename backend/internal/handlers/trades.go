@@ -16,26 +16,32 @@ import (
 )
 
 const tradeListColumns = `
-	id, user_id, date, ticker, asset_type, side, quantity, price, fee,
+	id, user_id, date, ticker, asset_type, side, quantity, price,
 	COALESCE(deposit_fee, 0), COALESCE(trading_fee, 0), COALESCE(closing_fee, 0),
 	COALESCE(total_fees, 0), total, notes, created_at, updated_at
 `
 
-// ListTrades returns all trades for the authenticated user
+// ListTrades returns trades for the authenticated user with optional filters.
 func ListTrades(c fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 	if userID == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
-	query := `
-		SELECT ` + tradeListColumns + `
-		FROM trades
-		WHERE user_id = $1
-		ORDER BY date DESC
-	`
+	filters, err := parseTradeListFilters(
+		c.Query("from"),
+		c.Query("to"),
+		c.Query("side"),
+		c.Query("asset_type"),
+		c.Query("ticker"),
+	)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
-	rows, err := database.GetPool().Query(context.Background(), query, userID)
+	query, args := buildListTradesQuery(userID, filters)
+
+	rows, err := database.GetPool().Query(context.Background(), query, args...)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -97,15 +103,9 @@ func CreateTrade(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	legacyFee := decimal.Zero
-	if req.Fee != nil && *req.Fee != "" {
-		legacyFee, err = decimal.NewFromString(*req.Fee)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid fee format"})
-		}
-	}
-	if depositFee.Add(tradingFee).Add(closingFee).GreaterThan(decimal.Zero) {
-		legacyFee = decimal.Zero
+	depositFee, tradingFee, closingFee, err = applyLegacyFeeToTrading(req.Fee, depositFee, tradingFee, closingFee)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	if req.Side == "sell" {
@@ -115,24 +115,23 @@ func CreateTrade(c fiber.Ctx) error {
 	}
 
 	id := uuid.New().String()
-	feeStr := legacyFee.StringFixed(2)
 
 	query := `
 		INSERT INTO trades (
-			id, user_id, date, ticker, asset_type, side, quantity, price, fee, notes,
+			id, user_id, date, ticker, asset_type, side, quantity, price, notes,
 			deposit_fee, trading_fee, closing_fee
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING ` + tradeListColumns
 
 	var trade models.Trade
 	err = database.GetPool().QueryRow(context.Background(), query,
 		id, userID, date, req.Ticker, req.AssetType, req.Side,
-		req.Quantity, req.Price, feeStr, req.Notes,
+		req.Quantity, req.Price, req.Notes,
 		depositFee.StringFixed(2), tradingFee.StringFixed(2), closingFee.StringFixed(2),
 	).Scan(
 		&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType,
-		&trade.Side, &trade.Quantity, &trade.Price, &trade.Fee,
+		&trade.Side, &trade.Quantity, &trade.Price,
 		&trade.DepositFee, &trade.TradingFee, &trade.ClosingFee, &trade.TotalFees,
 		&trade.Total, &trade.Notes, &trade.CreatedAt, &trade.UpdatedAt,
 	)
@@ -160,7 +159,7 @@ func UpdateTrade(c fiber.Ctx) error {
 	loadQuery := `SELECT ` + tradeListColumns + ` FROM trades WHERE id = $1 AND user_id = $2`
 	err := database.GetPool().QueryRow(context.Background(), loadQuery, id, userID).Scan(
 		&existing.ID, &existing.UserID, &existing.Date, &existing.Ticker, &existing.AssetType,
-		&existing.Side, &existing.Quantity, &existing.Price, &existing.Fee,
+		&existing.Side, &existing.Quantity, &existing.Price,
 		&existing.DepositFee, &existing.TradingFee, &existing.ClosingFee, &existing.TotalFees,
 		&existing.Total, &existing.Notes, &existing.CreatedAt, &existing.UpdatedAt,
 	)
@@ -217,37 +216,29 @@ func UpdateTrade(c fiber.Ctx) error {
 	if err != nil {
 		closingFee = decimal.Zero
 	}
-	legacyFee, err := decimal.NewFromString(existing.Fee)
-	if err != nil {
-		legacyFee = decimal.Zero
-	}
 
 	if req.DepositFee != nil {
 		depositFee, err = parseOptionalFee(req.DepositFee)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid deposit_fee format"})
 		}
-		legacyFee = decimal.Zero
 	}
 	if req.TradingFee != nil {
 		tradingFee, err = parseOptionalFee(req.TradingFee)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid trading_fee format"})
 		}
-		legacyFee = decimal.Zero
 	}
 	if req.ClosingFee != nil {
 		closingFee, err = parseOptionalFee(req.ClosingFee)
 		if err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid closing_fee format"})
 		}
-		legacyFee = decimal.Zero
 	}
-	if req.Fee != nil && req.DepositFee == nil && req.TradingFee == nil && req.ClosingFee == nil {
-		legacyFee, err = decimal.NewFromString(*req.Fee)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid fee format"})
-		}
+
+	depositFee, tradingFee, closingFee, err = applyLegacyFeeToTrading(req.Fee, depositFee, tradingFee, closingFee)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	quantity, err := decimal.NewFromString(existing.Quantity)
@@ -269,15 +260,15 @@ func UpdateTrade(c fiber.Ctx) error {
 	updateQuery := `
 		UPDATE trades
 		SET date = $1, ticker = $2, asset_type = $3, side = $4, quantity = $5,
-		    price = $6, fee = $7, notes = $8,
-		    deposit_fee = $9, trading_fee = $10, closing_fee = $11,
+		    price = $6, notes = $7,
+		    deposit_fee = $8, trading_fee = $9, closing_fee = $10,
 		    updated_at = NOW()
-		WHERE id = $12 AND user_id = $13
+		WHERE id = $11 AND user_id = $12
 	`
 
 	result, err := database.GetPool().Exec(context.Background(), updateQuery,
 		existing.Date, existing.Ticker, existing.AssetType, existing.Side,
-		existing.Quantity, existing.Price, legacyFee.StringFixed(2), notes,
+		existing.Quantity, existing.Price, notes,
 		depositFee.StringFixed(2), tradingFee.StringFixed(2), closingFee.StringFixed(2),
 		id, userID,
 	)
@@ -329,11 +320,28 @@ func scanTradeRow(rows pgx.Rows) (models.Trade, error) {
 	var trade models.Trade
 	err := rows.Scan(
 		&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType,
-		&trade.Side, &trade.Quantity, &trade.Price, &trade.Fee,
+		&trade.Side, &trade.Quantity, &trade.Price,
 		&trade.DepositFee, &trade.TradingFee, &trade.ClosingFee, &trade.TotalFees,
 		&trade.Total, &trade.Notes, &trade.CreatedAt, &trade.UpdatedAt,
 	)
 	return trade, err
+}
+
+func applyLegacyFeeToTrading(legacyFee *string, deposit, trading, closing decimal.Decimal) (decimal.Decimal, decimal.Decimal, decimal.Decimal, error) {
+	if deposit.Add(trading).Add(closing).GreaterThan(decimal.Zero) {
+		return deposit, trading, closing, nil
+	}
+	if legacyFee == nil || strings.TrimSpace(*legacyFee) == "" {
+		return deposit, trading, closing, nil
+	}
+	mapped, err := decimal.NewFromString(strings.TrimSpace(*legacyFee))
+	if err != nil {
+		return deposit, trading, closing, fmt.Errorf("invalid fee format")
+	}
+	if mapped.IsNegative() {
+		return deposit, trading, closing, fmt.Errorf("fee cannot be negative")
+	}
+	return deposit, mapped, closing, nil
 }
 
 func parseSplitFees(deposit, trading, closing *string) (decimal.Decimal, decimal.Decimal, decimal.Decimal, error) {

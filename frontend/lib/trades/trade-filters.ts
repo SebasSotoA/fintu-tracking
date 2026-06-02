@@ -1,9 +1,10 @@
 import { formatCalendarDate } from "@/lib/date-utils"
 import type { Trade } from "@/lib/types"
+import type { TradeListQueryParams } from "@/lib/api/server-trades"
 import { startOfYear, subDays, subMonths } from "date-fns"
 
 export type TradeSideFilter = "all" | "buy" | "sell"
-export type TradeAssetTypeFilter = "all" | "stock" | "etf"
+export type TradeAssetTypeFilter = "all" | "stock" | "etf" | "crypto"
 export type TradeDatePreset = "last30d" | "ytd" | "12m"
 
 export interface TradeDateRange {
@@ -15,6 +16,7 @@ export interface TradeFilters {
   side: TradeSideFilter
   assetType: TradeAssetTypeFilter
   dateRange: TradeDateRange
+  ticker: string | null
 }
 
 export const EMPTY_TRADE_DATE_RANGE: TradeDateRange = { from: null, to: null }
@@ -23,6 +25,12 @@ export const DEFAULT_TRADE_FILTERS: TradeFilters = {
   side: "all",
   assetType: "all",
   dateRange: EMPTY_TRADE_DATE_RANGE,
+  ticker: null,
+}
+
+function firstSearchParam(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0]
+  return value
 }
 
 function tradeCalendarDay(trade: Trade): string {
@@ -78,6 +86,7 @@ export function filterTrades(trades: Trade[], filters: TradeFilters): Trade[] {
   return trades.filter((trade) => {
     if (filters.side !== "all" && trade.side !== filters.side) return false
     if (filters.assetType !== "all" && trade.asset_type !== filters.assetType) return false
+    if (filters.ticker && trade.ticker.toUpperCase() !== filters.ticker.toUpperCase()) return false
 
     const day = tradeCalendarDay(trade)
     if (!day) return false
@@ -88,10 +97,64 @@ export function filterTrades(trades: Trade[], filters: TradeFilters): Trade[] {
   })
 }
 
+export function uniqueTradeTickers(trades: Trade[]): string[] {
+  const tickers = new Set(trades.map((trade) => trade.ticker.toUpperCase()))
+  return [...tickers].sort((a, b) => a.localeCompare(b))
+}
+
 export function hasActiveFilters(filters: TradeFilters): boolean {
   return (
     filters.side !== "all" ||
     filters.assetType !== "all" ||
-    filters.dateRange.from !== null
+    filters.dateRange.from !== null ||
+    filters.ticker !== null
   )
+}
+
+export function parseTradeFiltersFromSearchParams(
+  params: Record<string, string | string[] | undefined>,
+): TradeFilters {
+  const sideRaw = firstSearchParam(params.side)
+  const side: TradeSideFilter =
+    sideRaw === "buy" || sideRaw === "sell" ? sideRaw : "all"
+
+  const assetRaw = firstSearchParam(params.asset)
+  const assetType: TradeAssetTypeFilter =
+    assetRaw === "stock" || assetRaw === "etf" || assetRaw === "crypto" ? assetRaw : "all"
+
+  const from = firstSearchParam(params.from) ?? null
+  const to = firstSearchParam(params.to) ?? null
+  const dateRange =
+    from !== null ? normalizeTradeDateRange({ from, to: to ?? null }) : EMPTY_TRADE_DATE_RANGE
+
+  const tickerRaw = firstSearchParam(params.ticker)?.trim()
+  const ticker = tickerRaw ? tickerRaw.toUpperCase() : null
+
+  return { side, assetType, dateRange, ticker }
+}
+
+export function tradeFiltersToSearchParams(filters: TradeFilters): URLSearchParams {
+  const params = new URLSearchParams()
+  if (filters.side !== "all") params.set("side", filters.side)
+  if (filters.assetType !== "all") params.set("asset", filters.assetType)
+  const normalizedRange = normalizeTradeDateRange(filters.dateRange)
+  if (normalizedRange.from) {
+    params.set("from", normalizedRange.from)
+    if (normalizedRange.to) params.set("to", normalizedRange.to)
+  }
+  if (filters.ticker) params.set("ticker", filters.ticker)
+  return params
+}
+
+export function tradeFiltersToApiParams(filters: TradeFilters): TradeListQueryParams {
+  const params: TradeListQueryParams = {}
+  if (filters.side !== "all") params.side = filters.side
+  if (filters.assetType !== "all") params.asset_type = filters.assetType
+  const normalizedRange = normalizeTradeDateRange(filters.dateRange)
+  if (normalizedRange.from) {
+    params.from = normalizedRange.from
+    params.to = normalizedRange.to ?? normalizedRange.from
+  }
+  if (filters.ticker) params.ticker = filters.ticker
+  return params
 }

@@ -43,7 +43,6 @@ type Trade struct {
 	Side              string    `json:"side" db:"side"` // buy, sell
 	Quantity          string    `json:"quantity" db:"quantity"`
 	Price             string    `json:"price" db:"price"`
-	Fee               string    `json:"fee" db:"fee"` // Legacy fee field
 	DepositFee        string    `json:"deposit_fee" db:"deposit_fee"`
 	TradingFee        string    `json:"trading_fee" db:"trading_fee"`
 	ClosingFee        string    `json:"closing_fee" db:"closing_fee"`
@@ -106,21 +105,6 @@ type PerformanceMetrics struct {
 	XIRR               string `json:"xirr"`
 }
 
-// FeeAttribution represents detailed fee breakdown for a trade or period
-type FeeAttribution struct {
-	TradeID         string    `json:"trade_id"`
-	Ticker          string    `json:"ticker"`
-	Date            time.Time `json:"date"`
-	Side            string    `json:"side"`
-	DepositFee      string    `json:"deposit_fee"`
-	TradingFee      string    `json:"trading_fee"`
-	ClosingFee      string    `json:"closing_fee"`
-	TotalFees       string    `json:"total_fees"`
-	TradeValue      string    `json:"trade_value"`
-	FeeImpactPct    string    `json:"fee_impact_pct"` // Fees as % of trade value
-	CashFlowIDs     []string  `json:"cash_flow_ids"`  // Linked cash flow entries
-}
-
 // FeeBreakdown represents aggregate fee statistics
 type FeeBreakdown struct {
 	DepositFees      string            `json:"deposit_fees"`
@@ -167,6 +151,7 @@ type PerformancePoint struct {
 	CumulativeFXImpact string    `json:"cumulative_fx_impact"`
 	NetReturn         string    `json:"net_return"`
 	NetReturnPct      string    `json:"net_return_pct"`
+	SpyIndexed        string    `json:"spy_indexed,omitempty"`
 }
 
 // ReconciliationReport checks data integrity between trades and cash flows

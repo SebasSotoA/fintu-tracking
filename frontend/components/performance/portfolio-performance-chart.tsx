@@ -18,6 +18,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart"
+import { queryKeys } from "@/lib/api/query-keys"
 import { formatCurrency } from "@/lib/decimal"
 import Decimal from "decimal.js"
 
@@ -36,6 +37,10 @@ const chartConfig = {
     label: "Invested capital",
     color: "var(--chart-2)",
   },
+  spy_indexed: {
+    label: "SPY (indexed)",
+    color: "var(--chart-4)",
+  },
 } satisfies ChartConfig
 
 const TOOLTIP_CLASS =
@@ -53,10 +58,17 @@ function toChartData(points: PerformancePoint[]) {
     label: formatChartDate(point.date),
     portfolio_value: new Decimal(point.portfolio_value || "0").toNumber(),
     invested_capital: new Decimal(point.invested_capital || "0").toNumber(),
+    spy_indexed: point.spy_indexed
+      ? new Decimal(point.spy_indexed).toNumber()
+      : null,
   }))
 }
 
-function ChartHeaderLegend() {
+function hasSpySeries(points: PerformancePoint[]): boolean {
+  return points.some((p) => p.spy_indexed && p.spy_indexed !== "")
+}
+
+function ChartHeaderLegend({ showSpy }: { showSpy: boolean }) {
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
       <span className="flex items-center gap-1.5">
@@ -74,6 +86,16 @@ function ChartHeaderLegend() {
         />
         Invested capital
       </span>
+      {showSpy ? (
+        <span className="flex items-center gap-1.5">
+          <span
+            className="h-2 w-2 shrink-0 rounded-[2px]"
+            style={{ backgroundColor: "var(--chart-4)" }}
+            aria-hidden
+          />
+          SPY (indexed)
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -82,7 +104,7 @@ export function PortfolioPerformanceChart() {
   const [interval, setInterval] = useState<PerformanceInterval>("month")
 
   const { data: points = [], isLoading, error } = useQuery({
-    queryKey: ["performance-time-series", interval],
+    queryKey: queryKeys.performanceTimeSeries(interval),
     queryFn: () => getPerformanceTimeSeries(interval),
     retry: false,
     placeholderData: keepPreviousData,
@@ -123,6 +145,7 @@ export function PortfolioPerformanceChart() {
   }
 
   const chartData = toChartData(points)
+  const showSpy = hasSpySeries(points)
 
   return (
     <Card>
@@ -131,7 +154,7 @@ export function PortfolioPerformanceChart() {
           <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
             Portfolio vs invested
           </CardTitle>
-          <ChartHeaderLegend />
+          <ChartHeaderLegend showSpy={showSpy} />
         </div>
         <ToggleGroup
           type="single"
@@ -190,9 +213,11 @@ export function PortfolioPerformanceChart() {
                       const item = payload?.[0]?.payload as { label?: string } | undefined
                       return item?.label ?? ""
                     }}
-                    formatter={(value) => (
+                    formatter={(value, name) => (
                       <span className="font-mono font-medium tabular-nums text-foreground">
-                        {formatCurrency(String(value), "USD")}
+                        {name === "spy_indexed"
+                          ? Number(value).toFixed(2)
+                          : formatCurrency(String(value), "USD")}
                       </span>
                     )}
                   />
@@ -213,6 +238,16 @@ export function PortfolioPerformanceChart() {
                 strokeDasharray="6 4"
                 dot={false}
               />
+              {showSpy ? (
+                <Line
+                  type="monotone"
+                  dataKey="spy_indexed"
+                  stroke="var(--color-spy_indexed)"
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls
+                />
+              ) : null}
             </LineChart>
           </ChartContainer>
         )}

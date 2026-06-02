@@ -19,6 +19,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { api } from "@/lib/api/client";
+import { queryKeys } from "@/lib/api/query-keys";
 import type { FeeBreakdown } from "@/lib/api/analytics";
 import Decimal from "decimal.js";
 import { DollarSignIcon, TrendingDownIcon } from "lucide-react";
@@ -110,7 +111,7 @@ function ChartEmptyState({ message }: { message: string }): React.JSX.Element {
 
 export function FeeAttributionChart(): React.JSX.Element {
   const { data: feeBreakdown, isLoading, error } = useQuery<FeeBreakdown>({
-    queryKey: ["fee-breakdown"],
+    queryKey: queryKeys.feeBreakdown(),
     queryFn: async () => {
       return api.get<FeeBreakdown>("/api/analytics/fee-breakdown");
     },
