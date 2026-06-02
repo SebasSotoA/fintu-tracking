@@ -1,11 +1,10 @@
 "use client"
 
 import type { FxRate } from "@/lib/types"
-import type { FxRateChartPoint } from "@/lib/api/fx-rates"
 import { Decimal } from "@/lib/decimal"
-import { useCallback, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftRight, RefreshCw } from "lucide-react"
 import { fetchCurrentRate, getFxRateChart } from "@/lib/api/fx-rates"
@@ -56,8 +55,6 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
   const safeRecentRates = recentRates || []
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [chartPoints, setChartPoints] = useState<FxRateChartPoint[]>([])
-
   const [convertUsd, setConvertUsd] = useState("1")
   const [convertCop, setConvertCop] = useState("")
   const [, setConvertLastEdited] = useState<ConvertLastEdited>("usd")
@@ -65,25 +62,24 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
   const latest = safeRecentRates[0]
   const canonical = latest ? Number(latest.rate) : 0
 
-  const loadChart = useCallback(async () => {
-    try {
-      const points = await getFxRateChart(30)
-      setChartPoints(points)
-    } catch {
-      setChartPoints([])
-    }
-  }, [])
+  const {
+    data: chartPoints = [],
+    isLoading: isChartLoading,
+    isFetching: isChartFetching,
+  } = useQuery({
+    queryKey: ["fx-rate-chart", 30],
+    queryFn: () => getFxRateChart(30),
+    staleTime: 5 * 60 * 1000,
+  })
 
-  useEffect(() => {
-    void loadChart()
-  }, [loadChart])
+  const showChartLoading = isChartLoading || (isChartFetching && chartPoints.length === 0)
 
   const handleRefreshRate = async () => {
     setIsRefreshing(true)
     setError(null)
     try {
       await fetchCurrentRate()
-      await loadChart()
+      await queryClient.invalidateQueries({ queryKey: ["fx-rate-chart"] })
       router.refresh()
       queryClient.invalidateQueries({ queryKey: ["net-worth"] })
     } catch (err) {
@@ -205,7 +201,7 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
           </div>
       )}
 
-      <FxRateSparkline points={chartPoints} />
+      <FxRateSparkline points={chartPoints} isLoading={showChartLoading} />
     </div>
   )
 }
