@@ -5,15 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Pencil, Trash2, LinkIcon } from "lucide-react"
+import { Download, Pencil, Trash2, LinkIcon } from "lucide-react"
+import { listCashFlowsForExport } from "@/lib/api/cash-flows"
+import { downloadCashFlowsCsv } from "@/lib/cash-flows/export-cash-flows-csv"
+import { TablePagination } from "@/components/ui/table-pagination"
+import {
+  mergePageSearchParams,
+  type PageSize,
+} from "@/lib/pagination/table-pagination"
+import { toast } from "sonner"
 import { formatCalendarDate } from "@/lib/date-utils"
 import { formatAmountPlain, formatCurrency } from "@/lib/decimal"
 import {
   getDepositWithdrawalUsdDisplay,
   getFeeAttributionLabel,
 } from "@/lib/cash-flows/cash-flows-list-display"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useCallback, useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { invalidateAfterCashFlowMutation } from "@/lib/api/query-keys"
 import { EditCashFlowDialog } from "./edit-cash-flow-dialog"
@@ -22,15 +30,53 @@ import Link from "next/link"
 
 interface CashFlowsListProps {
   cashFlows: CashFlow[]
+  total: number
+  page: number
+  pageSize: PageSize
   highlightId?: string
 }
 
-export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: CashFlowsListProps) {
+export function CashFlowsList({
+  cashFlows: initialCashFlows,
+  total,
+  page,
+  pageSize,
+  highlightId,
+}: CashFlowsListProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const cashFlows = initialCashFlows || []
   const [editingCashFlow, setEditingCashFlow] = useState<CashFlow | null>(null)
   const [deletingCashFlow, setDeletingCashFlow] = useState<CashFlow | null>(null)
+  const [exporting, setExporting] = useState(false)
+
+  const replaceQuery = useCallback(
+    (params: URLSearchParams) => {
+      const query = params.toString()
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    },
+    [pathname, router],
+  )
+
+  const setPage = useCallback(
+    (nextPage: number) => {
+      const params = new URLSearchParams(searchParams.toString())
+      const merged = mergePageSearchParams(params, nextPage, pageSize)
+      replaceQuery(merged)
+    },
+    [pageSize, replaceQuery, searchParams],
+  )
+
+  const setPageSize = useCallback(
+    (nextSize: PageSize) => {
+      const params = new URLSearchParams(searchParams.toString())
+      const merged = mergePageSearchParams(params, 1, nextSize)
+      replaceQuery(merged)
+    },
+    [replaceQuery, searchParams],
+  )
 
   const handleUpdated = async () => {
     router.refresh()
@@ -42,7 +88,19 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
     await invalidateAfterCashFlowMutation(queryClient)
   }
 
-  if (cashFlows.length === 0) {
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const rows = await listCashFlowsForExport()
+      downloadCashFlowsCsv(rows)
+    } catch {
+      toast.error("Failed to export cash flows")
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  if (total === 0) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
@@ -56,8 +114,19 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
   return (
     <>
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
           <CardTitle>Cash Flow History</CardTitle>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2 shrink-0"
+            onClick={handleExport}
+            disabled={total === 0 || exporting}
+          >
+            <Download className="size-4" />
+            Export
+          </Button>
         </CardHeader>
         <CardContent>
           <Table>
@@ -157,6 +226,13 @@ export function CashFlowsList({ cashFlows: initialCashFlows, highlightId }: Cash
               })}
             </TableBody>
           </Table>
+          <TablePagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </CardContent>
       </Card>
 

@@ -1,5 +1,7 @@
 import { apiClient } from "./client"
+import type { PaginatedResult } from "./pagination"
 import type { CashFlow } from "@/lib/types"
+import { EXPORT_PAGE_SIZE } from "@/lib/pagination/table-pagination"
 
 export interface CreateCashFlowData {
   date: string
@@ -29,6 +31,13 @@ export interface UpdateCashFlowData {
 
 export async function listCashFlows(): Promise<CashFlow[]> {
   return apiClient.get<CashFlow[]>("/api/cash-flows")
+}
+
+export async function listCashFlowsForExport(): Promise<CashFlow[]> {
+  const result = await apiClient.get<PaginatedResult<CashFlow>>(
+    `/api/cash-flows?page=1&page_size=${EXPORT_PAGE_SIZE}`,
+  )
+  return result.items
 }
 
 export async function createCashFlow(data: CreateCashFlowData): Promise<CashFlow> {

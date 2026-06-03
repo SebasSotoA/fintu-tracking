@@ -4,6 +4,14 @@ import (
 	"time"
 )
 
+// PaginatedResponse is the envelope for paginated list endpoints.
+type PaginatedResponse[T any] struct {
+	Items    []T `json:"items"`
+	Total    int `json:"total"`
+	Page     int `json:"page"`
+	PageSize int `json:"page_size"`
+}
+
 // FxRate represents a foreign exchange rate record
 type FxRate struct {
 	ID        string    `json:"id" db:"id"`

@@ -14,13 +14,8 @@ type tradeListFilters struct {
 	ticker    string
 }
 
-func buildListTradesQuery(userID string, filters tradeListFilters) (string, []interface{}) {
-	query := `
-		SELECT ` + tradeListColumns + `
-		FROM trades
-		WHERE user_id = $1`
-	args := []interface{}{userID}
-	argN := 1
+func appendTradeListFilters(query string, args []interface{}, filters tradeListFilters) (string, []interface{}) {
+	argN := len(args)
 
 	if filters.from != nil {
 		argN++
@@ -48,7 +43,34 @@ func buildListTradesQuery(userID string, filters tradeListFilters) (string, []in
 		args = append(args, filters.ticker)
 	}
 
+	return query, args
+}
+
+func buildCountTradesQuery(userID string, filters tradeListFilters) (string, []interface{}) {
+	query := `SELECT COUNT(*) FROM trades WHERE user_id = $1`
+	args := []interface{}{userID}
+	query, args = appendTradeListFilters(query, args, filters)
+	return query, args
+}
+
+func buildListTradesQuery(userID string, filters tradeListFilters, limit, offset int) (string, []interface{}) {
+	query := `
+		SELECT ` + tradeListColumns + `
+		FROM trades
+		WHERE user_id = $1`
+	args := []interface{}{userID}
+	query, args = appendTradeListFilters(query, args, filters)
 	query += " ORDER BY date DESC"
+
+	if limit > 0 {
+		argN := len(args) + 1
+		query += fmt.Sprintf(" LIMIT $%d", argN)
+		args = append(args, limit)
+		argN++
+		query += fmt.Sprintf(" OFFSET $%d", argN)
+		args = append(args, offset)
+	}
+
 	return query, args
 }
 
@@ -62,7 +84,7 @@ func parseTradeListFilters(fromStr, toStr, side, assetType, ticker string) (trad
 	if filters.side != "" && filters.side != "buy" && filters.side != "sell" {
 		return filters, fmt.Errorf("invalid side")
 	}
-	if filters.assetType != "" && filters.assetType != "stock" && filters.assetType != "etf" {
+	if filters.assetType != "" && filters.assetType != "stock" && filters.assetType != "etf" && filters.assetType != "crypto" {
 		return filters, fmt.Errorf("invalid asset_type")
 	}
 

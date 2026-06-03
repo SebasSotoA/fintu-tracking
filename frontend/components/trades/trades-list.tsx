@@ -26,22 +26,32 @@ import { EditTradeDialog } from "./edit-trade-dialog"
 import { DeleteTradeDialog } from "./delete-trade-dialog"
 import { TradeDateFilter } from "@/components/trades/trade-date-filter"
 import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
+import { listTradesForExport } from "@/lib/api/trades"
 import { downloadTradesCsv } from "@/lib/trades/export-trades-csv"
 import {
   DEFAULT_TRADE_FILTERS,
-  filterTrades,
   hasActiveFilters,
   parseTradeFiltersFromSearchParams,
+  tradeFiltersToApiParams,
   tradeFiltersToSearchParams,
-  uniqueTradeTickers,
   type TradeAssetTypeFilter,
   type TradeFilters,
   type TradeSideFilter,
 } from "@/lib/trades/trade-filters"
+import { TablePagination } from "@/components/ui/table-pagination"
+import {
+  mergePageSearchParams,
+  type PageSize,
+} from "@/lib/pagination/table-pagination"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface TradesListProps {
   trades: Trade[]
+  total: number
+  page: number
+  pageSize: PageSize
+  tickers: string[]
 }
 
 const SIDE_OPTIONS: { value: TradeSideFilter; label: string }[] = [
@@ -166,7 +176,13 @@ function TradeTickerFilter({
   )
 }
 
-export function TradesList({ trades: initialTrades }: TradesListProps) {
+export function TradesList({
+  trades: initialTrades,
+  total,
+  page,
+  pageSize,
+  tickers,
+}: TradesListProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -178,12 +194,20 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
     [searchParams],
   )
 
-  const setFilters = useCallback(
-    (next: TradeFilters) => {
-      const query = tradeFiltersToSearchParams(next).toString()
+  const replaceQuery = useCallback(
+    (params: URLSearchParams) => {
+      const query = params.toString()
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
     },
     [pathname, router],
+  )
+
+  const setFilters = useCallback(
+    (next: TradeFilters) => {
+      const params = mergePageSearchParams(tradeFiltersToSearchParams(next), 1, pageSize)
+      replaceQuery(params)
+    },
+    [pageSize, replaceQuery],
   )
 
   const patchFilters = useCallback(
@@ -193,11 +217,26 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
     [filters, setFilters],
   )
 
+  const setPage = useCallback(
+    (nextPage: number) => {
+      const params = mergePageSearchParams(tradeFiltersToSearchParams(filters), nextPage, pageSize)
+      replaceQuery(params)
+    },
+    [filters, pageSize, replaceQuery],
+  )
+
+  const setPageSize = useCallback(
+    (nextSize: PageSize) => {
+      const params = mergePageSearchParams(tradeFiltersToSearchParams(filters), 1, nextSize)
+      replaceQuery(params)
+    },
+    [filters, replaceQuery],
+  )
+
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null)
   const [deletingTrade, setDeletingTrade] = useState<Trade | null>(null)
+  const [exporting, setExporting] = useState(false)
 
-  const tickerOptions = useMemo(() => uniqueTradeTickers(trades), [trades])
-  const filteredTrades = useMemo(() => filterTrades(trades, filters), [trades, filters])
   const filtersActive = hasActiveFilters(filters)
 
   const handleTradeMutated = async () => {
@@ -205,11 +244,19 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
     await invalidateAfterTradeMutation(queryClient)
   }
 
-  const handleExport = () => {
-    downloadTradesCsv(filteredTrades)
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const rows = await listTradesForExport(tradeFiltersToApiParams(filters))
+      downloadTradesCsv(rows)
+    } catch {
+      toast.error("Failed to export trades")
+    } finally {
+      setExporting(false)
+    }
   }
 
-  if (trades.length === 0) {
+  if (total === 0 && !filtersActive) {
     return (
       <section>
         <h2 className="mb-4 text-lg font-semibold tracking-tight">Trade History</h2>
@@ -246,7 +293,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
                   onChange={(assetType) => patchFilters({ assetType })}
                 />
                 <TradeTickerFilter
-                  tickers={tickerOptions}
+                  tickers={tickers}
                   value={filters.ticker}
                   onChange={(ticker) => patchFilters({ ticker })}
                 />
@@ -257,7 +304,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
               </div>
               <div className="flex flex-col items-end gap-2 pb-2">
                 <p className="text-sm text-muted-foreground" title="Filter URLs can be shared or bookmarked">
-                  Showing {filteredTrades.length} of {trades.length} trades
+                  Showing {trades.length} of {total} trades
                 </p>
                 <Button
                   type="button"
@@ -265,7 +312,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
                   size="sm"
                   className="gap-2"
                   onClick={handleExport}
-                  disabled={filteredTrades.length === 0}
+                  disabled={total === 0 || exporting}
                 >
                   <Download className="size-4" />
                   Export
@@ -274,7 +321,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
             </div>
           </CardHeader>
           <CardContent>
-            {filteredTrades.length === 0 ? (
+            {total === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <p className="text-muted-foreground mb-2">No trades match these filters</p>
                 {filtersActive && (
@@ -284,6 +331,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
                 )}
               </div>
             ) : (
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -299,7 +347,7 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTrades.map((trade) => (
+                  {trades.map((trade) => (
                     <TableRow key={trade.id}>
                       <TableCell>{formatCalendarDate(trade.date)}</TableCell>
                       <TableCell className="font-mono font-semibold">{trade.ticker}</TableCell>
@@ -333,6 +381,14 @@ export function TradesList({ trades: initialTrades }: TradesListProps) {
                   ))}
                 </TableBody>
               </Table>
+              <TablePagination
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+              </>
             )}
           </CardContent>
         </Card>

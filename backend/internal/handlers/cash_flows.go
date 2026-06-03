@@ -18,21 +18,58 @@ const cashFlowListColumns = `
 	fee_type, related_trade_id, related_cash_flow_id, related_type, created_at, updated_at
 `
 
-// ListCashFlows returns all cash flows for the authenticated user
+// ListCashFlows returns cash flows for the authenticated user.
+// Without page/page_size query params, returns a plain JSON array (legacy).
+// With page or page_size, returns models.PaginatedResponse.
 func ListCashFlows(c fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 	if userID == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
+	pageStr := c.Query("page")
+	pageSizeStr := c.Query("page_size")
+
+	limit := 0
+	offset := 0
+	page := 1
+	pageSize := defaultPageSize
+
+	if paginationRequested(pageStr, pageSizeStr) {
+		params, err := parsePaginationParams(pageStr, pageSizeStr)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		page = params.page
+		pageSize = params.pageSize
+		limit = pageSize
+		offset = (page - 1) * pageSize
+	}
+
+	var total int
+	if limit > 0 {
+		if err := database.GetPool().QueryRow(context.Background(), `
+			SELECT COUNT(*) FROM cash_flows WHERE user_id = $1
+		`, userID).Scan(&total); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		page = clampPage(page, total, pageSize)
+		offset = (page - 1) * pageSize
+	}
+
 	query := `
 		SELECT ` + cashFlowListColumns + `
 		FROM cash_flows
 		WHERE user_id = $1
-		ORDER BY date DESC
-	`
+		ORDER BY date DESC`
 
-	rows, err := database.GetPool().Query(context.Background(), query, userID)
+	args := []interface{}{userID}
+	if limit > 0 {
+		query += " LIMIT $2 OFFSET $3"
+		args = append(args, limit, offset)
+	}
+
+	rows, err := database.GetPool().Query(context.Background(), query, args...)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -45,6 +82,15 @@ func ListCashFlows(c fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		cashFlows = append(cashFlows, cf)
+	}
+
+	if limit > 0 {
+		return c.JSON(models.PaginatedResponse[models.CashFlow]{
+			Items:    cashFlows,
+			Total:    total,
+			Page:     page,
+			PageSize: pageSize,
+		})
 	}
 
 	return c.JSON(cashFlows)

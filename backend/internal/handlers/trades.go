@@ -22,6 +22,8 @@ const tradeListColumns = `
 `
 
 // ListTrades returns trades for the authenticated user with optional filters.
+// Without page/page_size query params, returns a plain JSON array (legacy).
+// With page or page_size, returns models.PaginatedResponse.
 func ListTrades(c fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 	if userID == "" {
@@ -39,7 +41,36 @@ func ListTrades(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	query, args := buildListTradesQuery(userID, filters)
+	pageStr := c.Query("page")
+	pageSizeStr := c.Query("page_size")
+
+	limit := 0
+	offset := 0
+	page := 1
+	pageSize := defaultPageSize
+
+	if paginationRequested(pageStr, pageSizeStr) {
+		params, err := parsePaginationParams(pageStr, pageSizeStr)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		}
+		page = params.page
+		pageSize = params.pageSize
+		limit = pageSize
+		offset = (page - 1) * pageSize
+	}
+
+	var total int
+	if limit > 0 {
+		countQuery, countArgs := buildCountTradesQuery(userID, filters)
+		if err := database.GetPool().QueryRow(context.Background(), countQuery, countArgs...).Scan(&total); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		page = clampPage(page, total, pageSize)
+		offset = (page - 1) * pageSize
+	}
+
+	query, args := buildListTradesQuery(userID, filters, limit, offset)
 
 	rows, err := database.GetPool().Query(context.Background(), query, args...)
 	if err != nil {
@@ -56,7 +87,43 @@ func ListTrades(c fiber.Ctx) error {
 		trades = append(trades, trade)
 	}
 
+	if limit > 0 {
+		return c.JSON(models.PaginatedResponse[models.Trade]{
+			Items:    trades,
+			Total:    total,
+			Page:     page,
+			PageSize: pageSize,
+		})
+	}
+
 	return c.JSON(trades)
+}
+
+// ListTradeTickers returns distinct tickers for the authenticated user (filter combobox).
+func ListTradeTickers(c fiber.Ctx) error {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	rows, err := database.GetPool().Query(context.Background(), `
+		SELECT DISTINCT ticker FROM trades WHERE user_id = $1 ORDER BY ticker ASC
+	`, userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	defer rows.Close()
+
+	tickers := make([]string, 0)
+	for rows.Next() {
+		var ticker string
+		if err := rows.Scan(&ticker); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		tickers = append(tickers, ticker)
+	}
+
+	return c.JSON(tickers)
 }
 
 // CreateTrade creates a new trade

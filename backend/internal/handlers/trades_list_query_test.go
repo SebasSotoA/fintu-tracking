@@ -9,7 +9,7 @@ import (
 func TestBuildListTradesQuery_NoFilters(t *testing.T) {
 	t.Parallel()
 
-	query, args := buildListTradesQuery("user-1", tradeListFilters{})
+	query, args := buildListTradesQuery("user-1", tradeListFilters{}, 0, 0)
 	if len(args) != 1 || args[0] != "user-1" {
 		t.Fatalf("args = %v, want [user-1]", args)
 	}
@@ -34,9 +34,9 @@ func TestBuildListTradesQuery_AllFilters(t *testing.T) {
 		ticker:    "AAPL",
 	}
 
-	query, args := buildListTradesQuery("user-1", filters)
-	if len(args) != 6 {
-		t.Fatalf("len(args) = %d, want 6", len(args))
+	query, args := buildListTradesQuery("user-1", filters, 50, 0)
+	if len(args) != 8 {
+		t.Fatalf("len(args) = %d, want 8", len(args))
 	}
 	for _, fragment := range []string{
 		"date >= $2",

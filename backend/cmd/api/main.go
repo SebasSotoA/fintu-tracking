@@ -84,6 +84,7 @@ func main() {
 	protected.Delete("/cash-flows/:id", handlers.DeleteCashFlow)
 
 	// Trades endpoints
+	protected.Get("/trades/tickers", handlers.ListTradeTickers)
 	protected.Get("/trades", handlers.ListTrades)
 	protected.Post("/trades", handlers.CreateTrade)
 	protected.Put("/trades/:id", handlers.UpdateTrade)
