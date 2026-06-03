@@ -83,7 +83,8 @@ func main() {
 	protected.Put("/cash-flows/:id", handlers.UpdateCashFlow)
 	protected.Delete("/cash-flows/:id", handlers.DeleteCashFlow)
 
-	// Trades endpoints
+	// Trades endpoints (/trade-tickers avoids GET /trades/tickers matching PUT /trades/:id on some setups)
+	protected.Get("/trade-tickers", handlers.ListTradeTickers)
 	protected.Get("/trades/tickers", handlers.ListTradeTickers)
 	protected.Get("/trades", handlers.ListTrades)
 	protected.Post("/trades", handlers.CreateTrade)

@@ -2,10 +2,7 @@
 # Testing
 # =============================================================================
 
-test:
-	@echo "Running tests..."
-	@cd $(BACKEND_DIR) && $(GOTEST) -race ./...
-	@echo "Tests passed"
+test: test-all
 
 test-all:
 	@echo "Running backend tests..."

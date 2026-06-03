@@ -36,7 +36,19 @@ export async function listTrades(params?: Omit<TradeListQueryParams, "page" | "p
 export async function listTradesPaginated(
   params: TradeListQueryParams & { page: number; page_size: PageSize | typeof EXPORT_PAGE_SIZE },
 ): Promise<PaginatedResult<Trade>> {
-  return serverGet<PaginatedResult<Trade>>(`/api/trades${buildTradesQuery(params)}`)
+  const data = await serverGet<PaginatedResult<Trade> | Trade[]>(
+    `/api/trades${buildTradesQuery(params)}`,
+  )
+  if (Array.isArray(data)) {
+    const start = (params.page - 1) * params.page_size
+    return {
+      items: data.slice(start, start + params.page_size),
+      total: data.length,
+      page: params.page,
+      page_size: params.page_size,
+    }
+  }
+  return data
 }
 
 /** All rows matching filters for CSV export (capped server-side). */
@@ -52,5 +64,9 @@ export async function listTradesForExport(
 }
 
 export async function listTradeTickers(): Promise<string[]> {
-  return serverGet<string[]>("/api/trades/tickers")
+  try {
+    return await serverGet<string[]>("/api/trade-tickers")
+  } catch {
+    return serverGet<string[]>("/api/trades/tickers")
+  }
 }

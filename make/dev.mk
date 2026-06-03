@@ -56,6 +56,11 @@ dev: install check-env ensure-ports-free
 		echo "   Backend PID: $$BACKEND_PID"; \
 		echo "   Backend logs: tail -f /tmp/fintu-backend.log"; \
 		echo ""; \
+		ROUTES_FILE="$$SCRIPT_DIR/$(FRONTEND_DIR)/.next/dev/types/routes.d.ts"; \
+		if [ -f "$$ROUTES_FILE" ] && ! grep -q '"/dashboard"' "$$ROUTES_FILE" 2>/dev/null; then \
+			echo "Clearing corrupted Next.js dev cache (.next)..."; \
+			rm -rf "$$SCRIPT_DIR/$(FRONTEND_DIR)/.next"; \
+		fi; \
 		echo "Starting frontend server..."; \
 		(cd $$SCRIPT_DIR/$(FRONTEND_DIR) && $(NPM) run dev) > /tmp/fintu-frontend.log 2>&1 & \
 		FRONTEND_PID=$$!; \
@@ -187,7 +192,7 @@ restart-backend: stop-backend
 		fi \
 	'
 
-restart-frontend: stop-frontend
+restart-frontend: stop-frontend clean-frontend
 	@echo "Checking port availability..."
 	@$(MAKE) check-port-available PORT=$(FRONTEND_PORT)
 	@echo "Restarting frontend server..."
