@@ -25,24 +25,28 @@ export default async function TradesPage({ searchParams }: TradesPageProps) {
   let currentPageSize: PageSize = pageSize
   let tickers: string[] = []
 
-  try {
-    const result = await listTradesPaginated({
+  const [tradesResult, tickersResult] = await Promise.allSettled([
+    listTradesPaginated({
       ...tradeFiltersToApiParams(filters),
       page,
       page_size: pageSize,
-    })
-    trades = result.items
-    total = result.total
-    currentPage = result.page
-    currentPageSize = result.page_size as PageSize
-  } catch (error) {
-    console.error("Failed to fetch trades:", error)
+    }),
+    listTradeTickers(),
+  ])
+
+  if (tradesResult.status === "fulfilled") {
+    trades = tradesResult.value.items
+    total = tradesResult.value.total
+    currentPage = tradesResult.value.page
+    currentPageSize = tradesResult.value.page_size as PageSize
+  } else {
+    console.error("Failed to fetch trades:", tradesResult.reason)
   }
 
-  try {
-    tickers = await listTradeTickers()
-  } catch (error) {
-    console.error("Failed to fetch trade tickers:", error)
+  if (tickersResult.status === "fulfilled") {
+    tickers = tickersResult.value
+  } else {
+    console.error("Failed to fetch trade tickers:", tickersResult.reason)
   }
 
   return (

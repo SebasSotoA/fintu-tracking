@@ -27,6 +27,16 @@ func ListCashFlows(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
+	filters, err := parseCashFlowListFilters(
+		c.Query("from"),
+		c.Query("to"),
+		c.Query("type"),
+		c.Query("currency"),
+	)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
 	pageStr := c.Query("page")
 	pageSizeStr := c.Query("page_size")
 
@@ -48,26 +58,15 @@ func ListCashFlows(c fiber.Ctx) error {
 
 	var total int
 	if limit > 0 {
-		if err := database.GetPool().QueryRow(context.Background(), `
-			SELECT COUNT(*) FROM cash_flows WHERE user_id = $1
-		`, userID).Scan(&total); err != nil {
+		countQuery, countArgs := buildCountCashFlowsQuery(userID, filters)
+		if err := database.GetPool().QueryRow(context.Background(), countQuery, countArgs...).Scan(&total); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		page = clampPage(page, total, pageSize)
 		offset = (page - 1) * pageSize
 	}
 
-	query := `
-		SELECT ` + cashFlowListColumns + `
-		FROM cash_flows
-		WHERE user_id = $1
-		ORDER BY date DESC`
-
-	args := []interface{}{userID}
-	if limit > 0 {
-		query += " LIMIT $2 OFFSET $3"
-		args = append(args, limit, offset)
-	}
+	query, args := buildListCashFlowsQuery(userID, filters, limit, offset)
 
 	rows, err := database.GetPool().Query(context.Background(), query, args...)
 	if err != nil {

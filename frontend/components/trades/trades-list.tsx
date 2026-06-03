@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { FilterSelect } from "@/components/filters/filter-select"
 import {
   Command,
   CommandEmpty,
@@ -67,40 +67,6 @@ const ASSET_OPTIONS: { value: TradeAssetTypeFilter; label: string }[] = [
   { value: "crypto", label: "Crypto" },
 ]
 
-function FilterSelect<T extends string>({
-  id,
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  id: string
-  label: string
-  value: T
-  options: { value: T; label: string }[]
-  onChange: (value: T) => void
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground">
-        {label}
-      </Label>
-      <Select value={value} onValueChange={(next) => onChange(next as T)}>
-        <SelectTrigger id={id} className="h-8 w-[7.5rem]" aria-label={label}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  )
-}
-
 function TradeTickerFilter({
   tickers,
   value,
@@ -128,15 +94,15 @@ function TradeTickerFilter({
             aria-expanded={open}
             aria-label="Filter trades by ticker"
             className={cn(
-              "h-8 w-[7.5rem] justify-between px-2.5 font-normal",
+              "h-9 w-[9.5rem] justify-between px-3 text-sm font-normal",
               !value && "text-muted-foreground",
             )}
           >
             <span className="truncate font-mono">{label}</span>
-            <ChevronsUpDown className="ml-1 size-3.5 shrink-0 opacity-50" />
+            <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[12rem] p-0" align="start">
+        <PopoverContent className="w-[14rem] p-0" align="start">
           <Command>
             <CommandInput placeholder="Search ticker..." />
             <CommandList>
@@ -240,8 +206,8 @@ export function TradesList({
   const filtersActive = hasActiveFilters(filters)
 
   const handleTradeMutated = async () => {
-    router.refresh()
     await invalidateAfterTradeMutation(queryClient)
+    router.refresh()
   }
 
   const handleExport = async () => {

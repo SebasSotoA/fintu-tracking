@@ -25,11 +25,12 @@ describe("clampPage", () => {
 
 describe("parsePageParams", () => {
   it("defaults page and page_size", () => {
-    expect(parsePageParams({})).toEqual({ page: 1, pageSize: 50 })
+    expect(parsePageParams({})).toEqual({ page: 1, pageSize: 10 })
   })
 
   it("parses valid page_size options", () => {
+    expect(parsePageSize("10")).toBe(10)
     expect(parsePageSize("25")).toBe(25)
-    expect(parsePageSize("999")).toBe(50)
+    expect(parsePageSize("999")).toBe(10)
   })
 })

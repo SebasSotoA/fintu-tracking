@@ -12,7 +12,7 @@ func TestParsePaginationParams_Defaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if params.page != 1 || params.pageSize != 50 {
+	if params.page != 1 || params.pageSize != 10 {
 		t.Fatalf("got page=%d pageSize=%d", params.page, params.pageSize)
 	}
 }

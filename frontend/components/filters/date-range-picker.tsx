@@ -8,6 +8,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { parseCalendarDay, toCalendarDay } from "@/lib/date/calendar-day"
 import { cn } from "@/lib/utils"
 import {
   applyTradeDatePreset,
@@ -16,20 +17,6 @@ import {
   type TradeDatePreset,
   type TradeDateRange,
 } from "@/lib/trades/trade-filters"
-
-function parseCalendarDay(day: string | null): Date | undefined {
-  if (!day) return undefined
-  const [y, m, d] = day.split("-").map(Number)
-  if (!y || !m || !d) return undefined
-  return new Date(y, m - 1, d)
-}
-
-function toCalendarDay(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const day = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${day}`
-}
 
 const PRESETS: { id: TradeDatePreset; label: string }[] = [
   { id: "last30d", label: "Last 30d" },

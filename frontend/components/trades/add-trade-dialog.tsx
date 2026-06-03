@@ -12,12 +12,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { SingleDatePicker } from "@/components/filters/single-date-picker"
 import { Plus } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
 import { createTrade } from "@/lib/api/trades"
 import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
@@ -87,8 +88,8 @@ export function AddTradeDialog() {
       setOpen(false)
       setFormData(emptyForm())
       setPriceWarning(null)
-      router.refresh()
       await invalidateAfterTradeMutation(queryClient)
+      router.refresh()
     } catch (err) {
       showToast.error(
         err instanceof Error ? err.message : "Failed to add trade",
@@ -98,11 +99,6 @@ export function AddTradeDialog() {
     }
   }
 
-  const formClassName = cn(
-    "space-y-4",
-    priceWarning && "scrollbar-minimal min-h-0 max-h-[36rem] overflow-y-auto pr-1",
-  )
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -111,145 +107,147 @@ export function AddTradeDialog() {
           Add Trade
         </Button>
       </DialogTrigger>
-      <DialogContent className="flex max-h-[90vh] flex-col gap-4 sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-2xl">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>Add Trade</DialogTitle>
           <DialogDescription>Record a buy or sell for a stock, ETF, or crypto</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className={formClassName}>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
+        <DialogScrollBody>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <SingleDatePicker
                 id="date"
-                type="date"
+                label="Date"
+                ariaLabel="Trade date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onChange={(date) => setFormData({ ...formData, date })}
                 required
               />
+              <div className="space-y-2">
+                <Label htmlFor="ticker">Ticker</Label>
+                <Input
+                  id="ticker"
+                  placeholder="AAPL"
+                  value={formData.ticker}
+                  onChange={(e) => {
+                    setFormData({ ...formData, ticker: e.target.value })
+                    setPriceWarning(null)
+                  }}
+                  onBlur={handleTickerBlur}
+                  required
+                />
+                {priceWarning && (
+                  <p className="text-xs text-amber-600 dark:text-amber-500">{priceWarning}</p>
+                )}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="ticker">Ticker</Label>
-              <Input
-                id="ticker"
-                placeholder="AAPL"
-                value={formData.ticker}
-                onChange={(e) => {
-                  setFormData({ ...formData, ticker: e.target.value })
-                  setPriceWarning(null)
-                }}
-                onBlur={handleTickerBlur}
-                required
-              />
-              {priceWarning && <p className="text-xs text-amber-600 dark:text-amber-500">{priceWarning}</p>}
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="asset_type">Asset Type</Label>
-              <Select
-                value={formData.asset_type}
-                onValueChange={(value: "stock" | "etf" | "crypto") =>
-                  setFormData({ ...formData, asset_type: value })
-                }
-              >
-                <SelectTrigger id="asset_type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="stock">Stock</SelectItem>
-                  <SelectItem value="etf">ETF</SelectItem>
-                  <SelectItem value="crypto">Crypto</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="asset_type">Asset Type</Label>
+                <Select
+                  value={formData.asset_type}
+                  onValueChange={(value: "stock" | "etf" | "crypto") =>
+                    setFormData({ ...formData, asset_type: value })
+                  }
+                >
+                  <SelectTrigger id="asset_type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="stock">Stock</SelectItem>
+                    <SelectItem value="etf">ETF</SelectItem>
+                    <SelectItem value="crypto">Crypto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="side">Side</Label>
+                <Select
+                  value={formData.side}
+                  onValueChange={(value: "buy" | "sell") => setFormData({ ...formData, side: value })}
+                >
+                  <SelectTrigger id="side">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="buy">Buy</SelectItem>
+                    <SelectItem value="sell">Sell</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="side">Side</Label>
-              <Select
-                value={formData.side}
-                onValueChange={(value: "buy" | "sell") => setFormData({ ...formData, side: value })}
-              >
-                <SelectTrigger id="side">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="buy">Buy</SelectItem>
-                  <SelectItem value="sell">Sell</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  step="0.00000001"
+                  placeholder="10"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="price">Price (USD)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.0001"
+                  placeholder="150.00"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
+              <Label htmlFor="closing_fee">Closing fee (USD)</Label>
               <Input
-                id="quantity"
+                id="closing_fee"
                 type="number"
-                step="0.00000001"
-                placeholder="10"
-                value={formData.quantity}
-                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                required
+                step="0.01"
+                min="0"
+                placeholder="0"
+                value={formData.closing_fee}
+                onChange={(e) => setFormData({ ...formData, closing_fee: e.target.value })}
               />
+              <p className="text-xs text-muted-foreground">
+                Hapi fee on this buy or sell. For COP→USD deposit fees, use Cash Flows.
+              </p>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="price">Price (USD)</Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.0001"
-                placeholder="150.00"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                required
+              <Label>Total (USD)</Label>
+              <div className="text-2xl font-bold font-mono">${calculateTradeTotal(formData)}</div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <NotesTextarea
+                id="notes"
+                placeholder="Additional details..."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="closing_fee">Closing fee (USD)</Label>
-            <Input
-              id="closing_fee"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0"
-              value={formData.closing_fee}
-              onChange={(e) => setFormData({ ...formData, closing_fee: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">
-              Hapi fee on this buy or sell. For COP→USD deposit fees, use Cash Flows.
-            </p>
-          </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <div className="space-y-2">
-            <Label>Total (USD)</Label>
-            <div className="text-2xl font-bold font-mono">${calculateTradeTotal(formData)}</div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Textarea
-              id="notes"
-              placeholder="Additional details..."
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            />
-          </div>
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
-
-          <div className="flex gap-3 justify-end">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Adding..." : "Add Trade"}
-            </Button>
-          </div>
-        </form>
+            <div className="flex gap-3 justify-end">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Adding..." : "Add Trade"}
+              </Button>
+            </div>
+          </form>
+        </DialogScrollBody>
       </DialogContent>
     </Dialog>
   )

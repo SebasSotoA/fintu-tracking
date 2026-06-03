@@ -3,6 +3,30 @@ import { render, screen } from "@testing-library/react"
 import type { CashFlow, NetWorthData } from "@/lib/types"
 import { PerformanceContent } from "./performance-content"
 
+const mockCashFlows: CashFlow[] = [
+  {
+    id: "cf-1",
+    user_id: "u1",
+    type: "deposit",
+    amount: "100",
+    currency: "USD",
+    fx_rate: null,
+    usd_amount: "100.00",
+    date: "2024-01-01",
+    notes: null,
+    fee_type: null,
+    related_trade_id: null,
+    related_cash_flow_id: null,
+    related_type: null,
+    created_at: "2024-01-01T00:00:00Z",
+    updated_at: "2024-01-01T00:00:00Z",
+  },
+]
+
+vi.mock("@tanstack/react-query", () => ({
+  useQuery: () => ({ data: mockCashFlows }),
+}))
+
 vi.mock("next/dynamic", () => ({
   default: (loader: () => Promise<unknown>) => {
     return function MockDynamic(props: Record<string, unknown>) {
@@ -49,24 +73,6 @@ const netWorth: NetWorthData = {
   breakdown: { by_asset_type: {}, by_ticker: {} },
 }
 
-const cashFlow: CashFlow = {
-  id: "cf-1",
-  user_id: "u1",
-  type: "deposit",
-  amount: "100",
-  currency: "USD",
-  fx_rate: null,
-  usd_amount: "100.00",
-  date: "2024-01-01",
-  notes: null,
-  fee_type: null,
-  related_trade_id: null,
-  related_cash_flow_id: null,
-  related_type: null,
-  created_at: "2024-01-01T00:00:00Z",
-  updated_at: "2024-01-01T00:00:00Z",
-}
-
 function sectionTestIds(container: HTMLElement): string[] {
   return Array.from(container.querySelectorAll("[data-testid]")).map(
     (el) => el.getAttribute("data-testid") ?? "",
@@ -74,10 +80,8 @@ function sectionTestIds(container: HTMLElement): string[] {
 }
 
 describe("PerformanceContent", () => {
-  it("passes server-fetched cash flows to hero and charts", () => {
-    const { container } = render(
-      <PerformanceContent netWorth={netWorth} cashFlows={[cashFlow]} />,
-    )
+  it("loads cash flows via TanStack Query for hero and charts", () => {
+    const { container } = render(<PerformanceContent netWorth={netWorth} />)
     expect(screen.getByTestId("performance-hero")).toHaveTextContent("flows:1")
     expect(screen.getByTestId("performance-charts")).toHaveTextContent("flows:1")
     expect(sectionTestIds(container)).toEqual([
@@ -91,9 +95,7 @@ describe("PerformanceContent", () => {
   })
 
   it("does not render legacy performance metrics grid", () => {
-    render(
-      <PerformanceContent netWorth={netWorth} cashFlows={[]} />,
-    )
+    render(<PerformanceContent netWorth={netWorth} />)
     expect(screen.queryByText("XIRR (USD)")).not.toBeInTheDocument()
     expect(screen.queryByText("Portfolio Value")).not.toBeInTheDocument()
   })

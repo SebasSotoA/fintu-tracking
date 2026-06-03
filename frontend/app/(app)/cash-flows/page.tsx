@@ -2,34 +2,39 @@ import { Suspense } from "react"
 import { CashFlowsList } from "@/components/cash-flows/cash-flows-list"
 import { AddCashFlowDialog } from "@/components/cash-flows/add-cash-flow-dialog"
 import { FxRateManager } from "@/components/cash-flows/fx-rate-manager"
-import { ReconciliationDashboard } from "@/components/analytics/reconciliation-dashboard"
+import { LazyReconciliationDashboard } from "@/components/cash-flows/lazy-reconciliation-dashboard"
 import { listCashFlowsPaginated } from "@/lib/api/server-cash-flows"
-import { listFxRates } from "@/lib/api/server-fx-rates"
+import {
+  cashFlowFiltersToApiParams,
+  parseCashFlowFiltersFromSearchParams,
+} from "@/lib/cash-flows/cash-flow-filters"
 import { parsePageParams } from "@/lib/pagination/table-pagination"
-import type { CashFlow, FxRate } from "@/lib/types"
+import type { CashFlow } from "@/lib/types"
 import type { PageSize } from "@/lib/pagination/table-pagination"
 
 async function CashFlowsContent({
-  fxRatesPromise,
   highlightId,
   page,
   pageSize,
+  searchParamsRecord,
 }: {
-  fxRatesPromise: Promise<FxRate[]>
   highlightId?: string
   page: number
   pageSize: PageSize
+  searchParamsRecord: Record<string, string | string[] | undefined>
 }) {
-  const fxRates = await fxRatesPromise
-  const recentFxRates = fxRates.slice(0, Math.min(fxRates.length, 90))
-
   let cashFlows: CashFlow[] = []
   let total = 0
   let currentPage = page
   let currentPageSize: PageSize = pageSize
 
   try {
-    const result = await listCashFlowsPaginated({ page, page_size: pageSize })
+    const filters = parseCashFlowFiltersFromSearchParams(searchParamsRecord)
+    const result = await listCashFlowsPaginated({
+      ...cashFlowFiltersToApiParams(filters),
+      page,
+      page_size: pageSize,
+    })
     cashFlows = result.items
     total = result.total
     currentPage = result.page
@@ -41,7 +46,7 @@ async function CashFlowsContent({
   return (
     <>
       <div className="mb-6">
-        <FxRateManager recentRates={recentFxRates} />
+        <FxRateManager />
       </div>
       <CashFlowsList
         cashFlows={cashFlows}
@@ -62,7 +67,6 @@ export default async function CashFlowsPage({
   const params = await searchParams
   const highlight = typeof params.highlight === "string" ? params.highlight : undefined
   const { page, pageSize } = parsePageParams(params)
-  const fxRatesPromise = listFxRates().catch(() => [])
 
   return (
     <>
@@ -71,14 +75,14 @@ export default async function CashFlowsPage({
       </div>
       <Suspense fallback={<div className="h-96 bg-muted rounded-lg animate-pulse" />}>
         <CashFlowsContent
-          fxRatesPromise={fxRatesPromise}
           highlightId={highlight}
           page={page}
           pageSize={pageSize}
+          searchParamsRecord={params}
         />
       </Suspense>
       <div className="mt-8">
-        <ReconciliationDashboard />
+        <LazyReconciliationDashboard />
       </div>
     </>
   )

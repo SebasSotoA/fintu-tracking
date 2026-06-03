@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
+import { NotesTextarea } from "@/components/ui/notes-textarea"
+import { SingleDatePicker } from "@/components/filters/single-date-picker"
 import { Decimal } from "@/lib/decimal"
-import { cn } from "@/lib/utils"
 import { updateTrade } from "@/lib/api/trades"
 import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
 import { toDateInputValue } from "@/lib/date-utils"
@@ -112,30 +113,22 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col gap-4 sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-2xl">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>Edit Trade</DialogTitle>
           <DialogDescription>Update the trade details</DialogDescription>
         </DialogHeader>
-        <form
-          onSubmit={handleSubmit}
-          className={cn(
-            "space-y-4",
-            priceWarning &&
-              "scrollbar-minimal min-h-0 max-h-[min(65vh,36rem)] overflow-y-auto pr-1",
-          )}
-        >
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-date">Date</Label>
-              <Input
+        <DialogScrollBody>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <SingleDatePicker
                 id="edit-date"
-                type="date"
+                label="Date"
+                ariaLabel="Trade date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onChange={(date) => setFormData({ ...formData, date })}
                 required
               />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="edit-ticker">Ticker</Label>
               <Input
@@ -239,7 +232,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
 
           <div className="space-y-2">
             <Label htmlFor="edit-notes">Notes (optional)</Label>
-            <Textarea
+            <NotesTextarea
               id="edit-notes"
               placeholder="Additional details..."
               value={formData.notes}
@@ -257,7 +250,8 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>
-        </form>
+          </form>
+        </DialogScrollBody>
       </DialogContent>
     </Dialog>
   )

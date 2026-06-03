@@ -6,12 +6,12 @@ import (
 )
 
 const (
-	defaultPageSize = 50
+	defaultPageSize = 10
 	maxPageSize     = 100
 	exportPageSize  = 10000
 )
 
-var allowedPageSizes = map[int]bool{25: true, 50: true, 100: true}
+var allowedPageSizes = map[int]bool{10: true, 25: true, 50: true, 100: true}
 
 type paginationParams struct {
 	page     int

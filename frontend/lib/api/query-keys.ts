@@ -9,6 +9,8 @@ export const queryKeys = {
   performanceTimeSeries: (interval: string) => ["performance-time-series", interval] as const,
   feeEfficiency: (groupBy: string) => ["fee-efficiency", groupBy] as const,
   cashReconciliation: () => ["cash-reconciliation"] as const,
+  cashFlowsExport: () => ["cash-flows-export"] as const,
+  fxCurrentRate: () => ["fx-current-rate"] as const,
 }
 
 export async function invalidatePortfolioCaches(queryClient: QueryClient) {
@@ -22,9 +24,15 @@ export async function invalidatePortfolioCaches(queryClient: QueryClient) {
 }
 
 export async function invalidateAfterTradeMutation(queryClient: QueryClient) {
-  await invalidatePortfolioCaches(queryClient)
+  await Promise.all([
+    invalidatePortfolioCaches(queryClient),
+    queryClient.invalidateQueries({ queryKey: queryKeys.cashFlowsExport() }),
+  ])
 }
 
 export async function invalidateAfterCashFlowMutation(queryClient: QueryClient) {
-  await invalidatePortfolioCaches(queryClient)
+  await Promise.all([
+    invalidatePortfolioCaches(queryClient),
+    queryClient.invalidateQueries({ queryKey: queryKeys.cashFlowsExport() }),
+  ])
 }

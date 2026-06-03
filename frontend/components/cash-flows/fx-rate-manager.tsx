@@ -1,9 +1,7 @@
 "use client"
 
-import type { FxRate } from "@/lib/types"
 import { Decimal } from "@/lib/decimal"
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { ArrowLeftRight, RefreshCw } from "lucide-react"
@@ -46,22 +44,22 @@ function formatUsdAmount(d: Decimal): string {
   return d.toFixed(2)
 }
 
-interface FxRateManagerProps {
-  recentRates: FxRate[]
-}
-
-export function FxRateManager({ recentRates }: FxRateManagerProps) {
-  const router = useRouter()
+export function FxRateManager() {
   const queryClient = useQueryClient()
-  const safeRecentRates = recentRates || []
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [convertUsd, setConvertUsd] = useState("1")
   const [convertCop, setConvertCop] = useState("")
   const [, setConvertLastEdited] = useState<ConvertLastEdited>("usd")
 
-  const latest = safeRecentRates[0]
-  const canonical = latest ? Number(latest.rate) : 0
+  const { data: currentRate } = useQuery({
+    queryKey: queryKeys.fxCurrentRate(),
+    queryFn: () => fetchCurrentRate(),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const latestRate = currentRate?.rate
+  const canonical = latestRate ? Number(latestRate) : 0
 
   const {
     data: chartPoints = [],
@@ -80,9 +78,11 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
     setError(null)
     try {
       await fetchCurrentRate()
-      await queryClient.invalidateQueries({ queryKey: queryKeys.fxRateChart() })
-      router.refresh()
-      await queryClient.invalidateQueries({ queryKey: queryKeys.netWorth() })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.fxCurrentRate() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.fxRateChart() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.netWorth() }),
+      ])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch exchange rate")
     } finally {
@@ -91,20 +91,20 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
   }
 
   useEffect(() => {
-    if (!latest?.rate || canonical <= 0) return
-    const rate = new Decimal(latest.rate)
+    if (!latestRate || canonical <= 0) return
+    const rate = new Decimal(latestRate)
     setConvertUsd("1")
     setConvertCop(formatCopAmount(new Decimal(1).mul(rate)))
     setConvertLastEdited("usd")
-  }, [latest?.id, latest?.rate, canonical])
+  }, [currentRate?.date, latestRate, canonical])
 
   const handleConvertUsdChange = (raw: string) => {
     const value = sanitizeDecimalInput(raw)
     setConvertUsd(value)
     setConvertLastEdited("usd")
     const parsed = parsePositiveDecimal(value)
-    if (!latest?.rate) return
-    const rate = new Decimal(latest.rate)
+    if (!latestRate) return
+    const rate = new Decimal(latestRate)
     if (parsed) {
       setConvertCop(formatCopAmount(parsed.mul(rate)))
     } else if (value.trim() === "") {
@@ -117,8 +117,8 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
     setConvertCop(value)
     setConvertLastEdited("cop")
     const parsed = parsePositiveDecimal(value)
-    if (!latest?.rate) return
-    const rate = new Decimal(latest.rate)
+    if (!latestRate) return
+    const rate = new Decimal(latestRate)
     if (parsed) {
       setConvertUsd(formatUsdAmount(parsed.div(rate)))
     } else if (value.trim() === "") {
@@ -147,7 +147,7 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
-      {(!latest || canonical <= 0) && (
+      {(!latestRate || canonical <= 0) && (
         <div className="mb-6 rounded-xl border border-dashed border-border bg-surface-container p-8 text-center">
           <p className="mb-4 text-muted-foreground">No exchange rate on file yet.</p>
           <Button type="button" variant="secondary" disabled={isRefreshing} onClick={handleRefreshRate}>
@@ -156,7 +156,7 @@ export function FxRateManager({ recentRates }: FxRateManagerProps) {
         </div>
       )}
 
-      {latest && canonical > 0 && (
+      {latestRate && canonical > 0 && (
         <div className="mb-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center">
             <div className="flex min-h-[5.5rem] flex-1 flex-col justify-center rounded-xl border border-border bg-surface-container p-4">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">US Dollar</span>

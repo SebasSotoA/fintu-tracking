@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
+import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
+import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { createCashFlow, deleteCashFlow, updateCashFlow } from "@/lib/api/cash-flows"
 import {
   computeGrossUsd,
@@ -147,12 +148,13 @@ export function EditCashFlowDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 p-0">
+        <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>Edit Cash Flow</DialogTitle>
           <DialogDescription>Update the cash flow details</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <DialogScrollBody>
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-cf-date">Date</Label>
@@ -283,7 +285,7 @@ export function EditCashFlowDialog({
 
           <div className="space-y-2">
             <Label htmlFor="edit-cf-notes">Notes (optional)</Label>
-            <Textarea
+            <NotesTextarea
               id="edit-cf-notes"
               placeholder="Additional details..."
               value={formData.notes}
@@ -299,7 +301,8 @@ export function EditCashFlowDialog({
               {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>
-        </form>
+          </form>
+        </DialogScrollBody>
       </DialogContent>
     </Dialog>
   )

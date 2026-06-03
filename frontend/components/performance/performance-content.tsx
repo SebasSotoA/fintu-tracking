@@ -1,7 +1,10 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import type { CashFlow, NetWorthData } from "@/lib/types"
+import { useQuery } from "@tanstack/react-query"
+import type { NetWorthData } from "@/lib/types"
+import { listCashFlowsForExport } from "@/lib/api/cash-flows"
+import { queryKeys } from "@/lib/api/query-keys"
 import { PerformanceHero } from "@/components/performance/performance-hero"
 
 const ChartSkeleton = () => (
@@ -50,13 +53,15 @@ const PerformanceCharts = dynamic(
 
 export interface PerformanceContentProps {
   netWorth: NetWorthData | null
-  cashFlows: CashFlow[]
 }
 
-export function PerformanceContent({
-  netWorth,
-  cashFlows,
-}: PerformanceContentProps) {
+export function PerformanceContent({ netWorth }: PerformanceContentProps) {
+  const { data: cashFlows = [] } = useQuery({
+    queryKey: queryKeys.cashFlowsExport(),
+    queryFn: () => listCashFlowsForExport(),
+    staleTime: 60_000,
+  })
+
   return (
     <div className="space-y-6">
       <PerformanceHero initialNetWorth={netWorth} cashFlows={cashFlows} />
