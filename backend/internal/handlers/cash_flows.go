@@ -7,6 +7,7 @@ import (
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
@@ -34,6 +35,7 @@ func ListCashFlows(c fiber.Ctx) error {
 		c.Query("to"),
 		c.Query("type"),
 		c.Query("currency"),
+		c.Query("exclude_mirrored"),
 	)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -125,7 +127,7 @@ func CreateCashFlow(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	if req.Type != "deposit" && req.Type != "withdrawal" && req.Type != "fee" {
+	if !isValidCashFlowType(req.Type) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid type"})
 	}
 	if req.Currency != "COP" && req.Currency != "USD" {
@@ -133,6 +135,14 @@ func CreateCashFlow(c fiber.Ctx) error {
 	}
 	if (req.Type == "deposit" || req.Type == "withdrawal") && req.Currency != "COP" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Deposits and withdrawals must use COP"})
+	}
+	if req.Type == "cash_adjustment" {
+		if req.Currency != "USD" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cash adjustments must use USD"})
+		}
+		if req.Notes == nil || strings.TrimSpace(*req.Notes) == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for cash adjustments"})
+		}
 	}
 
 	amount, err := decimal.NewFromString(req.Amount)
@@ -228,12 +238,22 @@ func UpdateCashFlow(c fiber.Ctx) error {
 	originalRelatedParentID := existingCF.RelatedCashFlowID
 
 	if req.Date != nil {
-		existingCF.Date, _ = time.Parse("2006-01-02", *req.Date)
+		parsedDate, err := time.Parse("2006-01-02", *req.Date)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid date format"})
+		}
+		existingCF.Date = parsedDate
 	}
 	if req.Type != nil {
+		if !isValidCashFlowType(*req.Type) {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid type"})
+		}
 		existingCF.Type = *req.Type
 	}
 	if req.Currency != nil {
+		if *req.Currency != "COP" && *req.Currency != "USD" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid currency"})
+		}
 		existingCF.Currency = *req.Currency
 	}
 	if req.Amount != nil {
@@ -244,6 +264,9 @@ func UpdateCashFlow(c fiber.Ctx) error {
 	}
 	if req.FeeType != nil {
 		existingCF.FeeType = req.FeeType
+	}
+	if req.Notes != nil {
+		existingCF.Notes = req.Notes
 	}
 	if req.RelatedTradeID != nil {
 		existingCF.RelatedTradeID = req.RelatedTradeID
@@ -257,6 +280,14 @@ func UpdateCashFlow(c fiber.Ctx) error {
 
 	if (existingCF.Type == "deposit" || existingCF.Type == "withdrawal") && existingCF.Currency != "COP" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Deposits and withdrawals must use COP"})
+	}
+	if existingCF.Type == "cash_adjustment" {
+		if existingCF.Currency != "USD" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cash adjustments must use USD"})
+		}
+		if existingCF.Notes == nil || strings.TrimSpace(*existingCF.Notes) == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for cash adjustments"})
+		}
 	}
 
 	amount, err := decimal.NewFromString(existingCF.Amount)
@@ -298,7 +329,7 @@ func UpdateCashFlow(c fiber.Ctx) error {
 
 	result, err := database.GetPool().Exec(context.Background(), updateQuery,
 		existingCF.Date, existingCF.Type, existingCF.Currency, existingCF.Amount,
-		existingCF.FxRate, usdAmount.String(), req.Notes,
+		existingCF.FxRate, usdAmount.String(), existingCF.Notes,
 		existingCF.FeeType, existingCF.RelatedTradeID, existingCF.RelatedCashFlowID, existingCF.RelatedType,
 		id, userID)
 
@@ -369,4 +400,8 @@ func DeleteCashFlow(c fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{"message": "Cash flow deleted successfully"})
+}
+
+func isValidCashFlowType(flowType string) bool {
+	return flowType == "deposit" || flowType == "withdrawal" || flowType == "fee" || flowType == "cash_adjustment"
 }

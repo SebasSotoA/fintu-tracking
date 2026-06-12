@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"fintu-tracking-backend/internal/models"
+	"github.com/shopspring/decimal"
 )
 
 // GetNetWorthSummary provides complete financial position
 func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string) (models.NetWorthSummary, error) {
 	summary := models.NetWorthSummary{
-		HoldingsValue:    "0",
-		CashBalance:      "0",
-		NetWorth:         "0",
-		TotalInvested:    "0",
-		TotalFees:        "0",
-		TotalGainLoss:    "0",
-		TotalGainLossPct: "0",
+		HoldingsValue:     "0",
+		CashBalance:       "0",
+		NetWorth:          "0",
+		TotalInvested:     "0",
+		TotalFees:         "0",
+		TotalGainLoss:     "0",
+		TotalGainLossPct:  "0",
 		XIRR:              "0",
 		TotalDepositedCOP: "0",
 		TotalWithdrawnCOP: "0",
@@ -29,50 +29,29 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 		},
 	}
 
-	rows, err := s.pool.Query(ctx, netWorthHoldingsSQL(), userID)
+	holdings, err := s.GetCurrentHoldings(ctx, userID)
 	if err != nil {
-		return summary, fmt.Errorf("failed to calculate holdings: %w", err)
+		return summary, fmt.Errorf("failed to load holdings: %w", err)
 	}
-	defer rows.Close()
 
 	totalHoldingsValue := decimal.Zero
-	totalCostBasis := decimal.Zero
-	totalFees := decimal.Zero
 
-	for rows.Next() {
-		var ticker, assetType string
-		var netQty, costBasis, fees, currentPrice *string
-
-		if err := rows.Scan(&ticker, &assetType, &netQty, &costBasis, &fees, &currentPrice); err != nil {
+	for _, holding := range holdings {
+		marketValue, err := decimal.NewFromString(holding.MarketValue)
+		if err != nil {
 			continue
 		}
+		totalHoldingsValue = totalHoldingsValue.Add(marketValue)
 
-		if netQty != nil && costBasis != nil {
-			qty, _ := decimal.NewFromString(*netQty)
-			cost, _ := decimal.NewFromString(*costBasis)
-			fee, _ := decimal.NewFromString(*fees)
-
-			totalCostBasis = totalCostBasis.Add(cost)
-			totalFees = totalFees.Add(fee)
-
-			var marketValue decimal.Decimal
-			if currentPrice != nil {
-				price, _ := decimal.NewFromString(*currentPrice)
-				marketValue = qty.Mul(price)
-				totalHoldingsValue = totalHoldingsValue.Add(marketValue)
-			}
-
-			if val, exists := summary.Breakdown.ByAssetType[assetType]; exists {
-				current, _ := decimal.NewFromString(val)
-				summary.Breakdown.ByAssetType[assetType] = current.Add(marketValue).String()
-			} else {
-				summary.Breakdown.ByAssetType[assetType] = marketValue.String()
-			}
-
-			summary.Breakdown.ByTicker[ticker] = marketValue.String()
+		if val, exists := summary.Breakdown.ByAssetType[holding.AssetType]; exists {
+			current, _ := decimal.NewFromString(val)
+			summary.Breakdown.ByAssetType[holding.AssetType] = current.Add(marketValue).String()
+		} else {
+			summary.Breakdown.ByAssetType[holding.AssetType] = marketValue.String()
 		}
-	}
 
+		summary.Breakdown.ByTicker[holding.Ticker] = marketValue.String()
+	}
 	summary.HoldingsValue = totalHoldingsValue.String()
 
 	var cashFlowsBalance string
@@ -98,13 +77,28 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 	s.pool.QueryRow(ctx, netInvestedSQL(), userID).Scan(&totalInvested)
 	summary.TotalInvested = totalInvested
 
-	var allFees string
+	var transferFees string
 	s.pool.QueryRow(ctx, `
 		SELECT COALESCE(SUM(usd_amount), 0)
 		FROM cash_flows
-		WHERE user_id = $1 AND type = 'fee'
-	`, userID).Scan(&allFees)
-	summary.TotalFees = allFees
+		WHERE user_id = $1
+		  AND type = 'fee'
+		  AND (
+		    related_cash_flow_id IS NOT NULL
+		    OR fee_type IN ('deposit', 'withdrawal')
+		  )
+	`, userID).Scan(&transferFees)
+
+	var tradeFees string
+	s.pool.QueryRow(ctx, `
+		SELECT COALESCE(SUM(total_fees), 0)
+		FROM trades
+		WHERE user_id = $1
+	`, userID).Scan(&tradeFees)
+
+	transferFeesDec, _ := decimal.NewFromString(transferFees)
+	tradeFeesDec, _ := decimal.NewFromString(tradeFees)
+	summary.TotalFees = transferFeesDec.Add(tradeFeesDec).String()
 
 	invested, _ := decimal.NewFromString(totalInvested)
 	gainLoss := netWorth.Sub(invested)

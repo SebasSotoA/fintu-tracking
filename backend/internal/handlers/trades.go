@@ -2,11 +2,11 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
+	"fmt"
 	"strings"
 	"time"
 
@@ -17,7 +17,7 @@ import (
 )
 
 const tradeListColumns = `
-	id, user_id, date, ticker, asset_type, side, quantity, price,
+	id, user_id, date, ticker, asset_type, side, is_opening_position, quantity, price,
 	COALESCE(deposit_fee, 0), COALESCE(trading_fee, 0), COALESCE(closing_fee, 0),
 	COALESCE(total_fees, 0), total, notes, created_at, updated_at
 `
@@ -165,6 +165,13 @@ func CreateTrade(c fiber.Ctx) error {
 	if req.Side != "buy" && req.Side != "sell" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid side"})
 	}
+	isOpeningPosition := req.IsOpeningPosition != nil && *req.IsOpeningPosition
+	if isOpeningPosition && req.Side != "buy" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Opening position must use buy side"})
+	}
+	if isOpeningPosition && (req.Notes == nil || strings.TrimSpace(*req.Notes) == "") {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for opening positions"})
+	}
 
 	quantity, err := decimal.NewFromString(req.Quantity)
 	if err != nil || !quantity.GreaterThan(decimal.Zero) {
@@ -190,6 +197,9 @@ func CreateTrade(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
+	if isOpeningPosition && depositFee.Add(tradingFee).Add(closingFee).GreaterThan(decimal.Zero) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Opening position cannot include fees"})
+	}
 
 	if req.Side == "sell" {
 		if err := validateSellQuantity(context.Background(), userID, req.Ticker, "", quantity); err != nil {
@@ -201,20 +211,20 @@ func CreateTrade(c fiber.Ctx) error {
 
 	query := `
 		INSERT INTO trades (
-			id, user_id, date, ticker, asset_type, side, quantity, price, notes,
+			id, user_id, date, ticker, asset_type, side, is_opening_position, quantity, price, notes,
 			deposit_fee, trading_fee, closing_fee
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 		RETURNING ` + tradeListColumns
 
 	var trade models.Trade
 	err = database.GetPool().QueryRow(context.Background(), query,
 		id, userID, date, req.Ticker, req.AssetType, req.Side,
-		req.Quantity, req.Price, req.Notes,
+		isOpeningPosition, req.Quantity, req.Price, req.Notes,
 		depositFee.StringFixed(2), tradingFee.StringFixed(2), closingFee.StringFixed(2),
 	).Scan(
 		&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType,
-		&trade.Side, &trade.Quantity, &trade.Price,
+		&trade.Side, &trade.IsOpeningPosition, &trade.Quantity, &trade.Price,
 		&trade.DepositFee, &trade.TradingFee, &trade.ClosingFee, &trade.TotalFees,
 		&trade.Total, &trade.Notes, &trade.CreatedAt, &trade.UpdatedAt,
 	)
@@ -242,7 +252,7 @@ func UpdateTrade(c fiber.Ctx) error {
 	loadQuery := `SELECT ` + tradeListColumns + ` FROM trades WHERE id = $1 AND user_id = $2`
 	err := database.GetPool().QueryRow(context.Background(), loadQuery, id, userID).Scan(
 		&existing.ID, &existing.UserID, &existing.Date, &existing.Ticker, &existing.AssetType,
-		&existing.Side, &existing.Quantity, &existing.Price,
+		&existing.Side, &existing.IsOpeningPosition, &existing.Quantity, &existing.Price,
 		&existing.DepositFee, &existing.TradingFee, &existing.ClosingFee, &existing.TotalFees,
 		&existing.Total, &existing.Notes, &existing.CreatedAt, &existing.UpdatedAt,
 	)
@@ -275,6 +285,12 @@ func UpdateTrade(c fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid side"})
 		}
 		existing.Side = *req.Side
+	}
+	if req.IsOpeningPosition != nil {
+		existing.IsOpeningPosition = *req.IsOpeningPosition
+	}
+	if existing.IsOpeningPosition && existing.Side != "buy" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Opening position must use buy side"})
 	}
 	if req.Quantity != nil {
 		existing.Quantity = *req.Quantity
@@ -323,6 +339,9 @@ func UpdateTrade(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
+	if existing.IsOpeningPosition && depositFee.Add(tradingFee).Add(closingFee).GreaterThan(decimal.Zero) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Opening position cannot include fees"})
+	}
 
 	quantity, err := decimal.NewFromString(existing.Quantity)
 	if err != nil || !quantity.GreaterThan(decimal.Zero) {
@@ -339,18 +358,21 @@ func UpdateTrade(c fiber.Ctx) error {
 	if req.Notes != nil {
 		notes = req.Notes
 	}
+	if existing.IsOpeningPosition && (notes == nil || strings.TrimSpace(*notes) == "") {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for opening positions"})
+	}
 
 	updateQuery := `
 		UPDATE trades
-		SET date = $1, ticker = $2, asset_type = $3, side = $4, quantity = $5,
-		    price = $6, notes = $7,
-		    deposit_fee = $8, trading_fee = $9, closing_fee = $10,
+		SET date = $1, ticker = $2, asset_type = $3, side = $4, is_opening_position = $5, quantity = $6,
+		    price = $7, notes = $8,
+		    deposit_fee = $9, trading_fee = $10, closing_fee = $11,
 		    updated_at = NOW()
-		WHERE id = $11 AND user_id = $12
+		WHERE id = $12 AND user_id = $13
 	`
 
 	result, err := database.GetPool().Exec(context.Background(), updateQuery,
-		existing.Date, existing.Ticker, existing.AssetType, existing.Side,
+		existing.Date, existing.Ticker, existing.AssetType, existing.Side, existing.IsOpeningPosition,
 		existing.Quantity, existing.Price, notes,
 		depositFee.StringFixed(2), tradingFee.StringFixed(2), closingFee.StringFixed(2),
 		id, userID,
@@ -403,7 +425,7 @@ func scanTradeRow(rows pgx.Rows) (models.Trade, error) {
 	var trade models.Trade
 	err := rows.Scan(
 		&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType,
-		&trade.Side, &trade.Quantity, &trade.Price,
+		&trade.Side, &trade.IsOpeningPosition, &trade.Quantity, &trade.Price,
 		&trade.DepositFee, &trade.TradingFee, &trade.ClosingFee, &trade.TotalFees,
 		&trade.Total, &trade.Notes, &trade.CreatedAt, &trade.UpdatedAt,
 	)
@@ -489,6 +511,10 @@ func validateSellQuantity(ctx context.Context, userID, ticker, excludeTradeID st
 		return fmt.Errorf("failed to check holdings: %w", err)
 	}
 
+	return validateSellQuantityAgainstNetHoldings(ticker, netQty, sellQty)
+}
+
+func validateSellQuantityAgainstNetHoldings(ticker string, netQty, sellQty decimal.Decimal) error {
 	if sellQty.GreaterThan(netQty) {
 		return fmt.Errorf("insufficient holdings: have %s %s, selling %s",
 			netQty.String(), ticker, sellQty.String())

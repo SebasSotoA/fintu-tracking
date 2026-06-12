@@ -46,7 +46,7 @@ func netWorthHoldingsSQL() string {
 
 func performanceTradeLoadSQL() string {
 	return `
-		SELECT date, side, ticker, quantity, price, COALESCE(total_fees, 0)
+		SELECT date, side, ticker, quantity, price, COALESCE(total_fees, 0), COALESCE(is_opening_position, false)
 		FROM trades
 		WHERE user_id = $1
 		ORDER BY date ASC

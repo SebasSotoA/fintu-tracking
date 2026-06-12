@@ -2,15 +2,17 @@ package handlers
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type cashFlowListFilters struct {
-	from     *time.Time
-	to       *time.Time
-	flowType string
-	currency string
+	from            *time.Time
+	to              *time.Time
+	flowType        string
+	currency        string
+	excludeMirrored bool
 }
 
 func appendCashFlowListFilters(query string, args []interface{}, filters cashFlowListFilters) (string, []interface{}) {
@@ -35,6 +37,9 @@ func appendCashFlowListFilters(query string, args []interface{}, filters cashFlo
 		argN++
 		query += fmt.Sprintf(" AND currency = $%d", argN)
 		args = append(args, filters.currency)
+	}
+	if filters.excludeMirrored {
+		query += " AND NOT (type = 'fee' AND related_trade_id IS NOT NULL)"
 	}
 
 	return query, args
@@ -68,17 +73,25 @@ func buildListCashFlowsQuery(userID string, filters cashFlowListFilters, limit, 
 	return query, args
 }
 
-func parseCashFlowListFilters(fromStr, toStr, flowType, currency string) (cashFlowListFilters, error) {
+func parseCashFlowListFilters(fromStr, toStr, flowType, currency, excludeMirroredStr string) (cashFlowListFilters, error) {
 	filters := cashFlowListFilters{
-		flowType: strings.ToLower(strings.TrimSpace(flowType)),
-		currency: strings.ToUpper(strings.TrimSpace(currency)),
+		flowType:        strings.ToLower(strings.TrimSpace(flowType)),
+		currency:        strings.ToUpper(strings.TrimSpace(currency)),
+		excludeMirrored: true,
 	}
 
-	if filters.flowType != "" && filters.flowType != "deposit" && filters.flowType != "withdrawal" && filters.flowType != "fee" {
+	if filters.flowType != "" && filters.flowType != "deposit" && filters.flowType != "withdrawal" && filters.flowType != "fee" && filters.flowType != "cash_adjustment" {
 		return filters, fmt.Errorf("invalid type")
 	}
 	if filters.currency != "" && filters.currency != "USD" && filters.currency != "COP" {
 		return filters, fmt.Errorf("invalid currency")
+	}
+	if strings.TrimSpace(excludeMirroredStr) != "" {
+		value, err := strconv.ParseBool(strings.TrimSpace(excludeMirroredStr))
+		if err != nil {
+			return filters, fmt.Errorf("invalid exclude_mirrored")
+		}
+		filters.excludeMirrored = value
 	}
 
 	if fromStr != "" {

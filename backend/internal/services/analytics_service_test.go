@@ -13,11 +13,11 @@ func TestNetInvestedContribution(t *testing.T) {
 	linkedID := "cf-linked-1"
 
 	tests := []struct {
-		name                string
-		flowType            string
-		usdAmount           string
-		relatedCashFlowID   *string
-		want                string
+		name              string
+		flowType          string
+		usdAmount         string
+		relatedCashFlowID *string
+		want              string
 	}{
 		{
 			name:      "deposit adds amount",
@@ -54,6 +54,12 @@ func TestNetInvestedContribution(t *testing.T) {
 			name:      "unrelated type ignored",
 			flowType:  "transfer",
 			usdAmount: "50",
+			want:      "0",
+		},
+		{
+			name:      "cash adjustment does not affect net invested",
+			flowType:  "cash_adjustment",
+			usdAmount: "75",
 			want:      "0",
 		},
 	}
@@ -293,6 +299,22 @@ func TestSumCashFlowsBalance_SkipsLinkedTransferFees(t *testing.T) {
 	}
 }
 
+func TestSumCashFlowsBalance_AppliesCashAdjustment(t *testing.T) {
+	t.Parallel()
+
+	flows := []cashFlowBalanceRow{
+		{Type: "deposit", USDAmount: dec("200")},
+		{Type: "cash_adjustment", USDAmount: dec("-25.50")},
+		{Type: "cash_adjustment", USDAmount: dec("10")},
+	}
+
+	got := sumCashFlowsBalance(flows)
+	want := dec("184.50")
+	if !got.Equal(want) {
+		t.Fatalf("cash flows balance = %s, want %s", got, want)
+	}
+}
+
 func TestPortfolioCash_ExcludesMirroredTradeFees(t *testing.T) {
 	t.Parallel()
 
@@ -322,13 +344,42 @@ func TestPortfolioCashSQLFragments(t *testing.T) {
 	assertSQLFragments(t, cashFlowsBalanceSQL(), []string{
 		"type = 'deposit'",
 		"type = 'withdrawal'",
+		"type = 'cash_adjustment'",
 		"type = 'fee' AND related_trade_id IS NULL AND related_cash_flow_id IS NULL",
 	})
 	assertSQLFragments(t, netTradeCashFlowSQL(), []string{
 		"side = 'buy'",
 		"side = 'sell'",
 		"COALESCE(total_fees, 0)",
+		"is_opening_position",
 	})
+}
+
+func TestSumNetTradeCashFlow_OpeningBuyDoesNotChangeCash(t *testing.T) {
+	t.Parallel()
+
+	trades := []tradeCashFlowRow{
+		{
+			Side:              "buy",
+			Quantity:          dec("10"),
+			Price:             dec("100"),
+			TotalFees:         dec("0"),
+			IsOpeningPosition: true,
+		},
+		{
+			Side:              "sell",
+			Quantity:          dec("2"),
+			Price:             dec("110"),
+			TotalFees:         dec("1"),
+			IsOpeningPosition: false,
+		},
+	}
+
+	got := sumNetTradeCashFlow(trades)
+	want := dec("-219")
+	if !got.Equal(want) {
+		t.Fatalf("trade cash flow = %s, want %s", got, want)
+	}
 }
 
 func TestReturnAttributionHoldingsSQLUsesTotalFees(t *testing.T) {
@@ -364,5 +415,25 @@ func TestPerformanceTradeLoadSQLUsesTotalFees(t *testing.T) {
 	})
 	if strings.Contains(sql, " fee") && strings.Contains(sql, "COALESCE(fee") {
 		t.Errorf("performance load SQL must not use legacy fee column:\n%s", sql)
+	}
+}
+
+func TestSumEconomicFees_TransferAndTradingOnly(t *testing.T) {
+	t.Parallel()
+
+	linkedDepositID := "dep-1"
+	linkedTradeID := "tr-1"
+	rows := []economicFeeRow{
+		{Type: "fee", FeeType: "deposit", USDAmount: dec("1.99"), RelatedCashFlowID: &linkedDepositID},
+		{Type: "fee", FeeType: "withdrawal", USDAmount: dec("2"), RelatedCashFlowID: &linkedDepositID},
+		{Type: "fee", FeeType: "trading", USDAmount: dec("5"), RelatedTradeID: &linkedTradeID},
+		{Type: "fee", FeeType: "other", USDAmount: dec("7")},
+	}
+
+	tradeTotalFees := dec("5")
+	got := sumEconomicFees(rows, tradeTotalFees)
+	want := dec("8.99")
+	if !got.Equal(want) {
+		t.Fatalf("economic fees = %s, want %s", got, want)
 	}
 }

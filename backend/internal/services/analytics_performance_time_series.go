@@ -6,8 +6,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"fintu-tracking-backend/internal/models"
+	"github.com/shopspring/decimal"
 )
 
 // GetPerformanceTimeSeries returns portfolio performance over time.
@@ -99,7 +99,7 @@ func (s *AnalyticsService) loadPerformanceActivity(ctx context.Context, userID s
 	var activity performanceActivity
 
 	cfRows, err := s.pool.Query(ctx, `
-		SELECT date, type, usd_amount, related_cash_flow_id
+		SELECT date, type, usd_amount, related_trade_id, related_cash_flow_id
 		FROM cash_flows
 		WHERE user_id = $1
 		ORDER BY date ASC
@@ -111,10 +111,12 @@ func (s *AnalyticsService) loadPerformanceActivity(ctx context.Context, userID s
 
 	for cfRows.Next() {
 		var cf performanceCashFlow
+		var relatedTradeID *string
 		var relatedID *string
-		if err := cfRows.Scan(&cf.Date, &cf.Type, &cf.USDAmount, &relatedID); err != nil {
+		if err := cfRows.Scan(&cf.Date, &cf.Type, &cf.USDAmount, &relatedTradeID, &relatedID); err != nil {
 			return activity, fmt.Errorf("scan cash flow: %w", err)
 		}
+		cf.RelatedTradeID = relatedTradeID
 		cf.RelatedCashFlowID = relatedID
 		activity.CashFlows = append(activity.CashFlows, cf)
 	}
@@ -130,7 +132,7 @@ func (s *AnalyticsService) loadPerformanceActivity(ctx context.Context, userID s
 
 	for trRows.Next() {
 		var tr performanceTrade
-		if err := trRows.Scan(&tr.Date, &tr.Side, &tr.Ticker, &tr.Quantity, &tr.Price, &tr.TotalFees); err != nil {
+		if err := trRows.Scan(&tr.Date, &tr.Side, &tr.Ticker, &tr.Quantity, &tr.Price, &tr.TotalFees, &tr.IsOpeningPosition); err != nil {
 			return activity, fmt.Errorf("scan trade: %w", err)
 		}
 		activity.Trades = append(activity.Trades, tr)
@@ -146,16 +148,18 @@ type performanceCashFlow struct {
 	Date              time.Time
 	Type              string
 	USDAmount         decimal.Decimal
+	RelatedTradeID    *string
 	RelatedCashFlowID *string
 }
 
 type performanceTrade struct {
-	Date     time.Time
-	Side     string
-	Ticker   string
-	Quantity decimal.Decimal
-	Price    decimal.Decimal
-	TotalFees decimal.Decimal
+	Date              time.Time
+	Side              string
+	Ticker            string
+	Quantity          decimal.Decimal
+	Price             decimal.Decimal
+	TotalFees         decimal.Decimal
+	IsOpeningPosition bool
 }
 
 type performanceActivity struct {
@@ -285,8 +289,12 @@ func (a performanceActivity) metricsAsOf(asOf time.Time) (invested, fees, portfo
 		case "withdrawal":
 			cashDec = cashDec.Sub(cf.USDAmount)
 			investedDec = investedDec.Add(netInvestedContribution(cf.Type, cf.USDAmount, cf.RelatedCashFlowID))
+		case "cash_adjustment":
+			cashDec = cashDec.Add(cf.USDAmount)
 		case "fee":
-			cashDec = cashDec.Sub(cf.USDAmount)
+			if cf.RelatedTradeID == nil && cf.RelatedCashFlowID == nil {
+				cashDec = cashDec.Sub(cf.USDAmount)
+			}
 			feesDec = feesDec.Add(cf.USDAmount)
 			investedDec = investedDec.Add(netInvestedContribution(cf.Type, cf.USDAmount, cf.RelatedCashFlowID))
 		}
@@ -308,7 +316,9 @@ func (a performanceActivity) metricsAsOf(asOf time.Time) (invested, fees, portfo
 		case "buy":
 			h.qty = h.qty.Add(tr.Quantity)
 			h.price = tr.Price
-			cashDec = cashDec.Sub(notional.Add(tr.TotalFees))
+			if !tr.IsOpeningPosition {
+				cashDec = cashDec.Sub(notional.Add(tr.TotalFees))
+			}
 		case "sell":
 			h.qty = h.qty.Sub(tr.Quantity)
 			h.price = tr.Price

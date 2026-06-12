@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"fintu-tracking-backend/internal/models"
+	"github.com/shopspring/decimal"
 )
 
 func fixtureUserPerformanceActivity() performanceActivity {
@@ -26,11 +26,11 @@ func fixtureUserPerformanceActivity() performanceActivity {
 		},
 		Trades: []performanceTrade{
 			{
-				Date:     time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
-				Side:     "buy",
-				Ticker:   "AAPL",
-				Quantity: dec("2"),
-				Price:    dec("150"),
+				Date:      time.Date(2024, 2, 1, 0, 0, 0, 0, time.UTC),
+				Side:      "buy",
+				Ticker:    "AAPL",
+				Quantity:  dec("2"),
+				Price:     dec("150"),
 				TotalFees: dec("1"),
 			},
 		},
@@ -175,5 +175,53 @@ func TestAggregatePerformancePointsByInterval(t *testing.T) {
 	}
 	if aggregated[1].PortfolioValue != "300" {
 		t.Errorf("feb point value = %s, want 300", aggregated[1].PortfolioValue)
+	}
+}
+
+func TestPerformanceTimeSeriesCashRulesMatchPortfolioCashRules(t *testing.T) {
+	t.Parallel()
+
+	tradeID := "trade-1"
+	activity := performanceActivity{
+		CashFlows: []performanceCashFlow{
+			{
+				Date:      time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+				Type:      "deposit",
+				USDAmount: dec("100"),
+			},
+			{
+				Date:      time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC),
+				Type:      "fee",
+				USDAmount: dec("3"),
+			},
+			{
+				Date:           time.Date(2024, 1, 3, 0, 0, 0, 0, time.UTC),
+				Type:           "fee",
+				USDAmount:      dec("2"),
+				RelatedTradeID: &tradeID,
+			},
+		},
+		Trades: []performanceTrade{
+			{
+				Date:      time.Date(2024, 1, 3, 0, 0, 0, 0, time.UTC),
+				Side:      "buy",
+				Ticker:    "AAPL",
+				Quantity:  dec("1"),
+				Price:     dec("50"),
+				TotalFees: dec("2"),
+			},
+		},
+	}
+
+	points := computePerformancePointsFromActivity(activity, "day")
+	if len(points) == 0 {
+		t.Fatal("expected performance points")
+	}
+
+	last := points[len(points)-1]
+	gotPortfolio := dec(last.PortfolioValue)
+	wantPortfolio := dec("95")
+	if !gotPortfolio.Equal(wantPortfolio) {
+		t.Fatalf("portfolio value = %s, want %s", gotPortfolio, wantPortfolio)
 	}
 }
