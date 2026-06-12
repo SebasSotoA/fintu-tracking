@@ -38,8 +38,8 @@ func TestBuildListCashFlowsQuery_Filters(t *testing.T) {
 	}
 
 	query, args := buildListCashFlowsQuery("user-1", filters, 10, 0)
-	if !strings.Contains(query, "linked_transfer_fee_usd") {
-		t.Fatalf("query missing linked_transfer_fee_usd: %s", query)
+	if strings.Contains(query, "linked_transfer_fee_usd") {
+		t.Fatalf("query must not include linked_transfer_fee_usd subquery: %s", query)
 	}
 	if !strings.Contains(query, "type = $") || !strings.Contains(query, "currency = $") {
 		t.Fatalf("query missing filters: %s", query)

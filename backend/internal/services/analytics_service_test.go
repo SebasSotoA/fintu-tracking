@@ -32,11 +32,11 @@ func TestNetInvestedContribution(t *testing.T) {
 			want:      "-100",
 		},
 		{
-			name:              "linked deposit fee subtracts from net invested",
+			name:              "linked deposit fee does not affect net invested",
 			flowType:          "fee",
 			usdAmount:         "6",
 			relatedCashFlowID: &linkedID,
-			want:              "-6",
+			want:              "0",
 		},
 		{
 			name:      "standalone fee does not affect net invested",
@@ -88,17 +88,17 @@ func TestSumNetInvested(t *testing.T) {
 		want  string
 	}{
 		{
-			name: "deposit 404.01 and linked fee 6",
+			name: "net deposit 398.01 with linked fee audit row",
 			flows: []netInvestedFlow{
-				{Type: "deposit", USDAmount: dec("404.01")},
+				{Type: "deposit", USDAmount: dec("398.01")},
 				{Type: "fee", USDAmount: dec("6"), RelatedCashFlowID: &linkedID},
 			},
 			want: "398.01",
 		},
 		{
-			name: "deposit 400 and linked fee 6",
+			name: "net deposit 394 with linked fee audit row",
 			flows: []netInvestedFlow{
-				{Type: "deposit", USDAmount: dec("400")},
+				{Type: "deposit", USDAmount: dec("394")},
 				{Type: "fee", USDAmount: dec("6"), RelatedCashFlowID: &linkedID},
 			},
 			want: "394",
@@ -204,8 +204,10 @@ func TestNetInvestedSQLContainsCaseLogic(t *testing.T) {
 	assertSQLFragments(t, netInvestedSQL(), []string{
 		"type = 'deposit'",
 		"type = 'withdrawal'",
-		"type = 'fee' AND related_cash_flow_id IS NOT NULL",
 	})
+	if strings.Contains(netInvestedSQL(), "related_cash_flow_id IS NOT NULL") {
+		t.Error("net invested SQL must not subtract linked transfer fees")
+	}
 	assertSQLFragments(t, netInvestedSQLAsOfDate(), []string{
 		"date <= $2",
 	})
@@ -234,9 +236,10 @@ func dec(s string) decimal.Decimal {
 func TestPortfolioNetWorth_Deposit400LinkedFee6BuyTrade(t *testing.T) {
 	t.Parallel()
 
+	depositID := "dep-1"
 	flows := []cashFlowBalanceRow{
-		{Type: "deposit", USDAmount: dec("400")},
-		{Type: "fee", USDAmount: dec("6")},
+		{Type: "deposit", USDAmount: dec("394")},
+		{Type: "fee", USDAmount: dec("6"), RelatedCashFlowID: &depositID},
 	}
 	trades := []tradeCashFlowRow{
 		{Side: "buy", Quantity: dec("2"), Price: dec("150"), TotalFees: dec("1")},
@@ -274,6 +277,22 @@ func TestPortfolioNetWorth_Deposit400LinkedFee6BuyTrade(t *testing.T) {
 
 }
 
+func TestSumCashFlowsBalance_SkipsLinkedTransferFees(t *testing.T) {
+	t.Parallel()
+
+	depositID := "dep-net-322"
+	flows := []cashFlowBalanceRow{
+		{Type: "deposit", USDAmount: dec("322")},
+		{Type: "fee", USDAmount: dec("1.99"), RelatedCashFlowID: &depositID},
+	}
+
+	got := sumCashFlowsBalance(flows)
+	want := dec("322")
+	if !got.Equal(want) {
+		t.Fatalf("cash flows balance = %s, want %s (linked transfer fee must not subtract again)", got, want)
+	}
+}
+
 func TestPortfolioCash_ExcludesMirroredTradeFees(t *testing.T) {
 	t.Parallel()
 
@@ -303,7 +322,7 @@ func TestPortfolioCashSQLFragments(t *testing.T) {
 	assertSQLFragments(t, cashFlowsBalanceSQL(), []string{
 		"type = 'deposit'",
 		"type = 'withdrawal'",
-		"type = 'fee' AND related_trade_id IS NULL",
+		"type = 'fee' AND related_trade_id IS NULL AND related_cash_flow_id IS NULL",
 	})
 	assertSQLFragments(t, netTradeCashFlowSQL(), []string{
 		"side = 'buy'",

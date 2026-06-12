@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"errors"
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
 )
 
@@ -108,11 +110,7 @@ func scanCashFlowRow(row cashFlowScanner, cf *models.CashFlow) error {
 }
 
 func scanCashFlowListRow(row cashFlowScanner, cf *models.CashFlow) error {
-	return row.Scan(
-		&cf.ID, &cf.UserID, &cf.Date, &cf.Type, &cf.Currency, &cf.Amount, &cf.FxRate, &cf.UsdAmount,
-		&cf.Notes, &cf.FeeType, &cf.RelatedTradeID, &cf.RelatedCashFlowID, &cf.RelatedType,
-		&cf.CreatedAt, &cf.UpdatedAt, &cf.LinkedTransferFeeUSD,
-	)
+	return scanCashFlowRow(row, cf)
 }
 
 // CreateCashFlow creates a new cash flow
@@ -147,12 +145,8 @@ func CreateCashFlow(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid date format"})
 	}
 
-	var usdAmount decimal.Decimal
 	var fxRate *decimal.Decimal
-
-	if req.Currency == "USD" {
-		usdAmount = amount
-	} else {
+	if req.Currency == "COP" {
 		if req.FxRate == nil || *req.FxRate == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "FX rate required for COP transactions"})
 		}
@@ -161,8 +155,14 @@ func CreateCashFlow(c fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid FX rate format"})
 		}
 		fxRate = &rate
-		usdAmount = amount.Div(rate)
 	}
+
+	grossUsd, err := computeGrossUsd(req.Currency, amount, fxRate)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	usdAmount := grossUsd
 
 	id := uuid.New().String()
 
@@ -193,6 +193,12 @@ func CreateCashFlow(c fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
+	if req.Type == "fee" && req.RelatedCashFlowID != nil {
+		if err := recomputeTransferNetUSD(context.Background(), *req.RelatedCashFlowID, userID); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+	}
+
 	return c.Status(fiber.StatusCreated).JSON(cashFlow)
 }
 
@@ -217,6 +223,9 @@ func UpdateCashFlow(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Cash flow not found"})
 	}
+
+	originalType := existingCF.Type
+	originalRelatedParentID := existingCF.RelatedCashFlowID
 
 	if req.Date != nil {
 		existingCF.Date, _ = time.Parse("2006-01-02", *req.Date)
@@ -250,16 +259,34 @@ func UpdateCashFlow(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Deposits and withdrawals must use COP"})
 	}
 
-	amount, _ := decimal.NewFromString(existingCF.Amount)
-	var usdAmount decimal.Decimal
-	if existingCF.Currency == "USD" {
-		usdAmount = amount
-	} else {
+	amount, err := decimal.NewFromString(existingCF.Amount)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid amount format"})
+	}
+	var fxRateDec *decimal.Decimal
+	if existingCF.Currency == "COP" {
 		if existingCF.FxRate == nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "FX rate required for COP"})
 		}
-		rate, _ := decimal.NewFromString(*existingCF.FxRate)
-		usdAmount = amount.Div(rate)
+		rate, err := decimal.NewFromString(*existingCF.FxRate)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid FX rate format"})
+		}
+		fxRateDec = &rate
+	}
+
+	grossUsd, err := computeGrossUsd(existingCF.Currency, amount, fxRateDec)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	usdAmount := grossUsd
+	if isTransferParentType(existingCF.Type) {
+		linkedFeesSum, err := sumLinkedTransferFeesUSD(context.Background(), id)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		usdAmount = computeNetTransferUsd(grossUsd, []decimal.Decimal{linkedFeesSum})
 	}
 
 	updateQuery := `
@@ -283,6 +310,27 @@ func UpdateCashFlow(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Cash flow not found"})
 	}
 
+	if isTransferParentType(existingCF.Type) {
+		if err := recomputeTransferNetUSD(context.Background(), id, userID); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+	}
+
+	if originalType == "fee" || existingCF.Type == "fee" {
+		parents := make(map[string]struct{})
+		if originalType == "fee" && originalRelatedParentID != nil {
+			parents[*originalRelatedParentID] = struct{}{}
+		}
+		if existingCF.Type == "fee" && existingCF.RelatedCashFlowID != nil {
+			parents[*existingCF.RelatedCashFlowID] = struct{}{}
+		}
+		for parentID := range parents {
+			if err := recomputeTransferNetUSD(context.Background(), parentID, userID); err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			}
+		}
+	}
+
 	return c.JSON(fiber.Map{"message": "Cash flow updated successfully"})
 }
 
@@ -295,6 +343,15 @@ func DeleteCashFlow(c fiber.Ctx) error {
 
 	id := c.Params("id")
 
+	var flowType string
+	var relatedParentID *string
+	err := database.GetPool().QueryRow(context.Background(),
+		`SELECT type, related_cash_flow_id FROM cash_flows WHERE id = $1 AND user_id = $2`, id, userID).
+		Scan(&flowType, &relatedParentID)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
 	query := `DELETE FROM cash_flows WHERE id = $1 AND user_id = $2`
 	result, err := database.GetPool().Exec(context.Background(), query, id, userID)
 	if err != nil {
@@ -303,6 +360,12 @@ func DeleteCashFlow(c fiber.Ctx) error {
 
 	if result.RowsAffected() == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Cash flow not found"})
+	}
+
+	if flowType == "fee" && relatedParentID != nil {
+		if err := recomputeTransferNetUSD(context.Background(), *relatedParentID, userID); err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
 	}
 
 	return c.JSON(fiber.Map{"message": "Cash flow deleted successfully"})

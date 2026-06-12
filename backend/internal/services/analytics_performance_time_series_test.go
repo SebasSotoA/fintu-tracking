@@ -15,7 +15,7 @@ func fixtureUserPerformanceActivity() performanceActivity {
 			{
 				Date:      time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
 				Type:      "deposit",
-				USDAmount: dec("1000"),
+				USDAmount: dec("995"),
 			},
 			{
 				Date:              time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),

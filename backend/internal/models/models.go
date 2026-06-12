@@ -36,9 +36,8 @@ type CashFlow struct {
 	FeeType        *string   `json:"fee_type" db:"fee_type"` // deposit, trading, closing, maintenance, other, withdrawal
 	RelatedTradeID    *string   `json:"related_trade_id" db:"related_trade_id"`
 	RelatedCashFlowID *string   `json:"related_cash_flow_id" db:"related_cash_flow_id"`
-	RelatedType          *string   `json:"related_type" db:"related_type"` // trade, deposit, withdrawal, standalone
-	LinkedTransferFeeUSD *string   `json:"linked_transfer_fee_usd,omitempty"`
-	CreatedAt            time.Time `json:"created_at" db:"created_at"`
+	RelatedType       *string   `json:"related_type" db:"related_type"` // trade, deposit, withdrawal, standalone
+	CreatedAt         time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt            time.Time `json:"updated_at" db:"updated_at"`
 }
 

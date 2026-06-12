@@ -47,15 +47,9 @@ func buildCountCashFlowsQuery(userID string, filters cashFlowListFilters) (strin
 	return query, args
 }
 
-const cashFlowLinkedTransferFeeExpr = `
-	(SELECT COALESCE(SUM(f.usd_amount), 0)::text
-	 FROM cash_flows f
-	 WHERE f.related_cash_flow_id = cash_flows.id AND f.type = 'fee'
-	) AS linked_transfer_fee_usd`
-
 func buildListCashFlowsQuery(userID string, filters cashFlowListFilters, limit, offset int) (string, []interface{}) {
 	query := `
-		SELECT ` + cashFlowListColumns + `, ` + cashFlowLinkedTransferFeeExpr + `
+		SELECT ` + cashFlowListColumns + `
 		FROM cash_flows
 		WHERE user_id = $1`
 	args := []interface{}{userID}

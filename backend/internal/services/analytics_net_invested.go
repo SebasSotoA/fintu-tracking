@@ -10,7 +10,6 @@ const netInvestedCaseExpr = `
   CASE
     WHEN type = 'deposit' THEN usd_amount
     WHEN type = 'withdrawal' THEN -usd_amount
-    WHEN type = 'fee' AND related_cash_flow_id IS NOT NULL THEN -usd_amount
     ELSE 0
   END`
 
@@ -28,16 +27,12 @@ type netInvestedFlow struct {
 	RelatedCashFlowID *string
 }
 
-func netInvestedContribution(flowType string, usdAmount decimal.Decimal, relatedCashFlowID *string) decimal.Decimal {
+func netInvestedContribution(flowType string, usdAmount decimal.Decimal, _ *string) decimal.Decimal {
 	switch flowType {
 	case "deposit":
 		return usdAmount
 	case "withdrawal":
 		return usdAmount.Neg()
-	case "fee":
-		if relatedCashFlowID != nil {
-			return usdAmount.Neg()
-		}
 	}
 	return decimal.Zero
 }
@@ -51,8 +46,6 @@ func sumNetInvested(flows []netInvestedFlow) decimal.Decimal {
 }
 
 // depositFeeAttributionAmount is the deposit-fee slice shown in return attribution.
-// Includes linked transfer fees so totals match /api/analytics/fee-breakdown.
-// Linked fees are still subtracted in netInvestedContribution to avoid double-counting capital.
 func depositFeeAttributionAmount(feeType string, usdAmount decimal.Decimal, _ *string) decimal.Decimal {
 	if feeType == "deposit" {
 		return usdAmount
