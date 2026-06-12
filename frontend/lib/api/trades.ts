@@ -28,6 +28,7 @@ export interface CreateTradeData {
   deposit_fee?: string
   trading_fee?: string
   notes?: string | null
+  is_opening_position?: boolean
 }
 
 export interface UpdateTradeData {
@@ -41,6 +42,7 @@ export interface UpdateTradeData {
   deposit_fee?: string
   trading_fee?: string
   notes?: string | null
+  is_opening_position?: boolean
 }
 
 export async function listTrades(): Promise<Trade[]> {

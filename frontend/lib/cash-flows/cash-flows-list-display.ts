@@ -1,5 +1,10 @@
 import type { CashFlow } from "@/lib/types"
 
+export function getCashFlowTypeLabel(type: CashFlow["type"]): string {
+  if (type === "cash_adjustment") return "Cash adjustment"
+  return type.charAt(0).toUpperCase() + type.slice(1)
+}
+
 export function getFeeAttributionLabel(cashFlows: CashFlow[], cf: CashFlow): string | null {
   if (cf.type !== "fee" || !cf.related_cash_flow_id) return null
   const parent = cashFlows.find((c) => c.id === cf.related_cash_flow_id)

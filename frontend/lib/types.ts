@@ -11,7 +11,7 @@ export interface CashFlow {
   id: string
   user_id: string
   date: string
-  type: "deposit" | "withdrawal" | "fee"
+  type: "deposit" | "withdrawal" | "fee" | "cash_adjustment"
   currency: "COP" | "USD"
   amount: string
   fx_rate: string | null
@@ -40,6 +40,7 @@ export interface Trade {
   total_fees: string
   total: string
   notes: string | null
+  is_opening_position?: boolean
   realized_pl?: string | null
   realized_pl_pct?: string | null
   created_at: string

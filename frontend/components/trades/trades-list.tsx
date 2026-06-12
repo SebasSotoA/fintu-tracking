@@ -317,7 +317,14 @@ export function TradesList({
                   {trades.map((trade) => (
                     <TableRow key={trade.id}>
                       <TableCell>{formatCalendarDate(trade.date)}</TableCell>
-                      <TableCell className="font-mono font-semibold">{trade.ticker}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-semibold">{trade.ticker}</span>
+                          {trade.is_opening_position && (
+                            <Badge variant="outline">Opening</Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
                       </TableCell>

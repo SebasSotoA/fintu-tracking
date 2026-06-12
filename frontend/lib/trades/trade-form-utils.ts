@@ -11,6 +11,7 @@ export interface TradeFormValues {
   price: string
   closing_fee: string
   notes: string
+  is_opening_position: boolean
 }
 
 /** Prefill closing fee from Hapi field or legacy trade fee columns. */
@@ -41,7 +42,7 @@ export function calculateTradeTotal(values: TradeFormValues): string {
   if (!values.quantity || !values.price) return "0"
   const quantity = new Decimal(values.quantity)
   const price = new Decimal(values.price)
-  const fees = sumTradeFees(values)
+  const fees = values.is_opening_position ? new Decimal(0) : sumTradeFees(values)
   const subtotal = quantity.mul(price)
   return values.side === "buy" ? subtotal.add(fees).toFixed(2) : subtotal.sub(fees).toFixed(2)
 }
@@ -56,6 +57,7 @@ export function buildTradePayload(values: TradeFormValues) {
     price: string
     notes: string | null
     closing_fee?: string
+    is_opening_position?: boolean
   } = {
     date: toDateInputValue(values.date),
     ticker: values.ticker.toUpperCase(),
@@ -66,7 +68,11 @@ export function buildTradePayload(values: TradeFormValues) {
     notes: values.notes || null,
   }
 
-  if (values.closing_fee.trim()) payload.closing_fee = values.closing_fee
+  if (values.is_opening_position) {
+    payload.is_opening_position = true
+  } else if (values.closing_fee.trim()) {
+    payload.closing_fee = values.closing_fee
+  }
 
   return payload
 }

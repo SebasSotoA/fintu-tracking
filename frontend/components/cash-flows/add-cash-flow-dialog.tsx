@@ -34,7 +34,7 @@ import { showToast } from "@/lib/toast"
 
 const emptyForm = () => ({
   date: new Date().toISOString().split("T")[0],
-  type: "deposit" as "deposit" | "withdrawal" | "fee",
+  type: "deposit" as "deposit" | "withdrawal" | "fee" | "cash_adjustment",
   currency: "COP" as "COP" | "USD",
   amount: "",
   fx_rate: "",
@@ -63,6 +63,10 @@ export function AddCashFlowDialog() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (formData.type === "cash_adjustment" && !formData.notes.trim()) {
+      showToast.error("Cash adjustment requires notes")
+      return
+    }
     setIsLoading(true)
 
     try {
@@ -144,11 +148,11 @@ export function AddCashFlowDialog() {
               <Label htmlFor="cf-type">Type</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value: "deposit" | "withdrawal" | "fee") =>
+                onValueChange={(value: "deposit" | "withdrawal" | "fee" | "cash_adjustment") =>
                   setFormData({
                     ...formData,
                     type: value,
-                    currency: value === "fee" ? "USD" : "COP",
+                    currency: value === "fee" || value === "cash_adjustment" ? "USD" : "COP",
                     deposit_fee_usd: "",
                     net_usd_target: "",
                   })
@@ -161,6 +165,7 @@ export function AddCashFlowDialog() {
                   <SelectItem value="deposit">Deposit</SelectItem>
                   <SelectItem value="withdrawal">Withdrawal</SelectItem>
                   <SelectItem value="fee">Fee</SelectItem>
+                  <SelectItem value="cash_adjustment">Cash adjustment</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -307,13 +312,25 @@ export function AddCashFlowDialog() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cf-notes">Notes (optional)</Label>
+            <Label htmlFor="cf-notes">
+              Notes {formData.type === "cash_adjustment" ? "(required)" : "(optional)"}
+            </Label>
             <NotesTextarea
               id="cf-notes"
-              placeholder="Additional details..."
+              placeholder={
+                formData.type === "cash_adjustment"
+                  ? "Adjust buy power without changing deposit history"
+                  : "Additional details..."
+              }
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              required={formData.type === "cash_adjustment"}
             />
+            {formData.type === "cash_adjustment" && (
+              <p className="text-xs text-muted-foreground">
+                Adjust buy power without changing deposit history.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-3 justify-end">

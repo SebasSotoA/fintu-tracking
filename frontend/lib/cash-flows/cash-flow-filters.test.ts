@@ -27,6 +27,12 @@ describe("cash-flow-filters", () => {
     expect(params).toEqual({ type: "fee", currency: "COP" })
   })
 
+  it("accepts cash adjustment type from search params", () => {
+    const filters = parseCashFlowFiltersFromSearchParams({ type: "cash_adjustment" })
+    expect(filters.type).toBe("cash_adjustment")
+    expect(cashFlowFiltersToApiParams(filters)).toEqual({ type: "cash_adjustment" })
+  })
+
   it("serializes filters to URL params", () => {
     const params = cashFlowFiltersToSearchParams(
       parseCashFlowFiltersFromSearchParams({ type: "withdrawal" }),

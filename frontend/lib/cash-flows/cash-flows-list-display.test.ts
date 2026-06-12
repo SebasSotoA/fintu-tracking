@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest"
 import type { CashFlow } from "@/lib/types"
-import { getFeeAttributionLabel, isMirroredTradeFeeRow } from "./cash-flows-list-display"
+import {
+  getCashFlowTypeLabel,
+  getFeeAttributionLabel,
+  isMirroredTradeFeeRow,
+} from "./cash-flows-list-display"
 
 function baseCashFlow(overrides: Partial<CashFlow>): CashFlow {
   return {
@@ -55,5 +59,12 @@ describe("isMirroredTradeFeeRow", () => {
   it("returns false for standalone fees", () => {
     const fee = baseCashFlow({ id: "fee-1", type: "fee", fee_type: "other" })
     expect(isMirroredTradeFeeRow(fee)).toBe(false)
+  })
+})
+
+describe("getCashFlowTypeLabel", () => {
+  it("formats cash adjustment type for table badges", () => {
+    expect(getCashFlowTypeLabel("cash_adjustment")).toBe("Cash adjustment")
+    expect(getCashFlowTypeLabel("deposit")).toBe("Deposit")
   })
 })

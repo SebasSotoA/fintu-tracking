@@ -29,6 +29,7 @@ import { toast } from "sonner"
 import { formatCalendarDate } from "@/lib/date-utils"
 import { Decimal, formatAmountPlain, formatCurrency } from "@/lib/decimal"
 import {
+  getCashFlowTypeLabel,
   getFeeAttributionLabel,
   isMirroredTradeFeeRow,
 } from "@/lib/cash-flows/cash-flows-list-display"
@@ -53,6 +54,7 @@ const TYPE_OPTIONS: { value: CashFlowTypeFilter; label: string }[] = [
   { value: "deposit", label: "Deposits" },
   { value: "withdrawal", label: "Withdrawals" },
   { value: "fee", label: "Fees" },
+  { value: "cash_adjustment", label: "Cash adjustments" },
 ]
 
 const CURRENCY_OPTIONS: { value: CashFlowCurrencyFilter; label: string }[] = [
@@ -287,6 +289,8 @@ export function CashFlowsList({
                           ? `-${formatCurrency(new Decimal(cf.usd_amount || "0").abs().toString(), "USD")}`
                           : cf.type === "deposit"
                             ? formatCurrency(cf.usd_amount, "USD")
+                          : cf.type === "cash_adjustment"
+                            ? formatCurrency(cf.amount, "USD")
                             : "—"
 
                       return (
@@ -306,10 +310,12 @@ export function CashFlowsList({
                                   ? "default"
                                   : cf.type === "withdrawal"
                                     ? "secondary"
-                                    : "destructive"
+                                    : cf.type === "fee"
+                                      ? "destructive"
+                                      : "outline"
                               }
                             >
-                              {cf.type}
+                              {getCashFlowTypeLabel(cf.type)}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right font-mono">

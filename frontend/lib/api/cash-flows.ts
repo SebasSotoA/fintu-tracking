@@ -5,7 +5,7 @@ import { EXPORT_PAGE_SIZE } from "@/lib/pagination/table-pagination"
 
 export interface CreateCashFlowData {
   date: string
-  type: "deposit" | "withdrawal" | "fee"
+  type: "deposit" | "withdrawal" | "fee" | "cash_adjustment"
   currency: "COP" | "USD"
   amount: string
   fx_rate?: string | null
@@ -18,7 +18,7 @@ export interface CreateCashFlowData {
 
 export interface UpdateCashFlowData {
   date?: string
-  type?: "deposit" | "withdrawal" | "fee"
+  type?: "deposit" | "withdrawal" | "fee" | "cash_adjustment"
   currency?: "COP" | "USD"
   amount?: string
   fx_rate?: string | null
