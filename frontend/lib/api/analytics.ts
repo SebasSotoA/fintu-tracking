@@ -16,8 +16,13 @@ export type NetWorthSummary = NetWorthData
 export interface CashBreakdown {
   deposits_usd: string
   withdrawals_usd: string
-  /** Transfer and standalone fees (legacy field; prefer transfer_fees_usd when present). */
+  /** Standalone fees subtracted in cash flows net (legacy field; prefer standalone_fees_usd). */
   fees_usd: string
+  /** Standalone fees subtracted from cash flows net. */
+  standalone_fees_usd?: string
+  /** Transfer fees on deposits/withdrawals — informational only, already in deposits. */
+  transfer_fees_paid_usd?: string
+  /** @deprecated Legacy combined field; use transfer_fees_paid_usd when present. */
   transfer_fees_usd?: string
   cash_flows_net_usd: string
   trade_buys_usd: string
@@ -26,9 +31,14 @@ export interface CashBreakdown {
   cash_balance: string
 }
 
-/** Resolves transfer/standalone fees from cash-breakdown API payload. */
-export function getTransferFeesUsd(breakdown: CashBreakdown): string {
-  return breakdown.transfer_fees_usd ?? breakdown.fees_usd
+/** Standalone fees subtracted in the cash flows waterfall. */
+export function getStandaloneFeesUsd(breakdown: CashBreakdown): string {
+  return breakdown.standalone_fees_usd ?? breakdown.fees_usd
+}
+
+/** Transfer fees paid on deposits/withdrawals (audit only, not subtracted again). */
+export function getTransferFeesPaidUsd(breakdown: CashBreakdown): string {
+  return breakdown.transfer_fees_paid_usd ?? breakdown.transfer_fees_usd ?? "0"
 }
 
 /** GET /api/analytics/return-attribution */

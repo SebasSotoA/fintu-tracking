@@ -21,7 +21,6 @@ export interface CashFlow {
   related_trade_id: string | null
   related_cash_flow_id: string | null
   related_type: "trade" | "deposit" | "withdrawal" | "standalone" | null
-  linked_transfer_fee_usd?: string | null
   created_at: string
   updated_at: string
 }

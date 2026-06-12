@@ -28,10 +28,7 @@ import { formatTradeDateRangeLabel } from "@/lib/trades/trade-filters"
 import { toast } from "sonner"
 import { formatCalendarDate } from "@/lib/date-utils"
 import { formatAmountPlain, formatCurrency } from "@/lib/decimal"
-import {
-  getDepositWithdrawalUsdDisplay,
-  getFeeAttributionLabel,
-} from "@/lib/cash-flows/cash-flows-list-display"
+import { getFeeAttributionLabel } from "@/lib/cash-flows/cash-flows-list-display"
 import { useCallback, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
@@ -233,8 +230,6 @@ export function CashFlowsList({
                   </TableHeader>
                   <TableBody>
                     {cashFlows.map((cf) => {
-                      const isTransfer = cf.type === "deposit" || cf.type === "withdrawal"
-                      const transferUsd = isTransfer ? getDepositWithdrawalUsdDisplay(cashFlows, cf) : null
                       const feeAttributionLabel = cf.type === "fee" ? getFeeAttributionLabel(cashFlows, cf) : null
 
                       return (
@@ -276,7 +271,7 @@ export function CashFlowsList({
                             {formatAmountPlain(cf.amount, cf.currency as "USD" | "COP")}
                           </TableCell>
                           <TableCell className="text-right font-mono font-semibold">
-                            {transferUsd ?? formatCurrency(cf.usd_amount, "USD")}
+                            {formatCurrency(cf.usd_amount, "USD")}
                           </TableCell>
                           <TableCell>
                             {cf.related_type === "trade" && cf.related_trade_id ? (

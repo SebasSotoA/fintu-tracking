@@ -4,7 +4,11 @@ import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import Decimal from "decimal.js"
 import { api } from "@/lib/api/client"
-import { getTransferFeesUsd, type CashBreakdown } from "@/lib/api/analytics"
+import {
+  getStandaloneFeesUsd,
+  getTransferFeesPaidUsd,
+  type CashBreakdown,
+} from "@/lib/api/analytics"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -21,10 +25,30 @@ function formatUsd(value: string): string {
   }).format(n.toNumber())
 }
 
-function Row({ label, value, sign }: { label: string; value: string; sign?: "+" | "−" }) {
+function isNonZeroUsd(value: string): boolean {
+  try {
+    return !new Decimal(value || "0").isZero()
+  } catch {
+    return false
+  }
+}
+
+function Row({
+  label,
+  value,
+  sign,
+  title,
+}: {
+  label: string
+  value: string
+  sign?: "+" | "−"
+  title?: string
+}) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
-      <span className="text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground" title={title}>
+        {label}
+      </span>
       <span className="font-mono tabular-nums text-foreground">
         {sign ? `${sign} ` : ""}
         {formatUsd(value)}
@@ -49,6 +73,9 @@ export function CashBreakdownCard() {
     return null
   }
 
+  const transferFeesPaid = getTransferFeesPaidUsd(data)
+  const standaloneFees = getStandaloneFeesUsd(data)
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -68,14 +95,25 @@ export function CashBreakdownCard() {
       {open && (
         <CardContent className="space-y-3 pt-0 text-sm">
           <p className="text-muted-foreground">
-            Cash is uninvested USD — not your full deposit history. Hapi deposits are net after
-            transfer fee; trade commissions are inside buy/sell lines. Money used to buy stocks
-            appears under Holdings.
+            Cash is uninvested USD — not your full deposit history. Deposits show USD credited by
+            Hapi (net after transfer fees). Transfer fees are listed for audit only — already
+            reflected in deposits. Trade commissions are inside buy/sell lines. Money used to buy
+            stocks appears under Holdings.
           </p>
           <div className="space-y-2 rounded-lg border border-border/50 bg-muted/20 p-3">
-            <Row label="Deposits" value={data.deposits_usd} sign="+" />
+            <Row
+              label="Deposits"
+              value={data.deposits_usd}
+              sign="+"
+              title="USD credited by Hapi (net after transfer fees)"
+            />
             <Row label="Withdrawals" value={data.withdrawals_usd} sign="−" />
-            <Row label="Transfer & standalone fees" value={getTransferFeesUsd(data)} sign="−" />
+            {isNonZeroUsd(transferFeesPaid) && (
+              <Row label="Transfer fees paid" value={transferFeesPaid} />
+            )}
+            {isNonZeroUsd(standaloneFees) && (
+              <Row label="Standalone fees" value={standaloneFees} sign="−" />
+            )}
             <div className="border-t border-border/50 pt-2">
               <Row label="Cash flows net" value={data.cash_flows_net_usd} />
             </div>

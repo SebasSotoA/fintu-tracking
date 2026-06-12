@@ -242,12 +242,20 @@ export function AddCashFlowDialog() {
           )}
 
           <div className="space-y-1">
-            <Label>USD amount {isTransfer ? "(before fee)" : ""}</Label>
-            <div className="text-2xl font-bold font-mono">${grossUsd}</div>
-            {netUsd !== null && (
-              <p className="text-sm text-muted-foreground">
-                Net after fee: <span className="font-mono font-semibold text-foreground">${netUsd}</span>
-              </p>
+            {isTransfer ? (
+              <>
+                <Label>USD received in Hapi</Label>
+                <div className="text-2xl font-bold font-mono">${netUsd ?? grossUsd}</div>
+                <p className="text-sm text-muted-foreground">
+                  Before transfer fee:{" "}
+                  <span className="font-mono font-semibold text-foreground">${grossUsd}</span>
+                </p>
+              </>
+            ) : (
+              <>
+                <Label>USD amount</Label>
+                <div className="text-2xl font-bold font-mono">${grossUsd}</div>
+              </>
             )}
           </div>
 
