@@ -88,7 +88,7 @@ describe("PerformanceHero", () => {
 
   it("shows em dash for time-weighted return when XIRR is zero placeholder", () => {
     renderHero()
-    const twrLabel = screen.getByText("Time-weighted return")
+    const twrLabel = screen.getByText("Money-weighted return (XIRR)")
     const twrCell = twrLabel.closest("div")?.parentElement
     expect(twrCell).toBeTruthy()
     expect(within(twrCell as HTMLElement).getByText("—")).toBeInTheDocument()
@@ -97,7 +97,7 @@ describe("PerformanceHero", () => {
   it("shows three stats in performance summary without FX context", () => {
     renderHero()
     const summary = screen.getByLabelText("Performance summary")
-    expect(within(summary).getByText("Time-weighted return")).toBeInTheDocument()
+    expect(within(summary).getByText("Money-weighted return (XIRR)")).toBeInTheDocument()
     expect(within(summary).getByText("Fee drag")).toBeInTheDocument()
     expect(within(summary).getByText("Since first deposit")).toBeInTheDocument()
     expect(within(summary).queryByText("FX context")).not.toBeInTheDocument()

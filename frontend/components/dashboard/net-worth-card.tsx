@@ -29,7 +29,10 @@ export const METRIC_TOOLTIPS = {
     "Net worth minus total deposited capital (withdrawals reduce invested). Shown as amount and % of invested.",
   holdings:
     "Current market value of open positions only, using latest prices.",
-  cash: "Uninvested USD after deposits, withdrawals, fees, and trade settlements.",
+  cash:
+    "Uninvested USD available to buy (poder de compra on Hapi): deposits − withdrawals − transfer fees − money spent on buys + sell proceeds. Should match your broker buying power.",
+  totalDepositedCop:
+    "Sum of deposit amounts recorded in COP (gross pesos sent), before USD conversion.",
   portfolioValue:
     "Same as holdings value — current market value of all open positions.",
   totalInvested:
@@ -38,7 +41,9 @@ export const METRIC_TOOLTIPS = {
     "Net worth minus total invested — includes both position gains and cash not yet deployed.",
   totalFees: "Sum of all fee cash flows (deposits, trading, closing, etc.) in USD.",
   netReturn:
-    "Total gain/loss including uninvested cash, as % of all deposits (withdrawals reduce the base).",
+    "Total gain/loss vs capital deployed (total invested). Same % as the badge under net worth.",
+  xirrVsNetReturn:
+    "XIRR is money-weighted (timing of deposits matters). Net return % is simple gain ÷ invested — they often differ.",
   feeDrag:
     "Total fees paid as % of capital deployed (total invested).",
   xirr: "Money-weighted return (XIRR) from deposits, withdrawals, and current net worth.",
@@ -154,10 +159,30 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
               ·
             </span>
             <span className="inline-flex items-center gap-1">
-              <MetricLabel label="Cash" tooltip={METRIC_TOOLTIPS.cash} className="!gap-0.5" />
+              <MetricLabel
+                label="Available USD (buy power)"
+                tooltip={METRIC_TOOLTIPS.cash}
+                className="!gap-0.5"
+              />
               <span className="text-foreground">{formatUsd(cash)}</span>
             </span>
           </div>
+          {netWorth.total_deposited_cop && new Decimal(netWorth.total_deposited_cop).gt(0) && (
+            <div className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+              <MetricLabel
+                label="Total deposited (COP)"
+                tooltip={METRIC_TOOLTIPS.totalDepositedCop}
+                className="!inline-flex"
+              />
+              <span className="font-mono text-foreground tabular-nums">
+                {new Intl.NumberFormat("es-CO", {
+                  style: "currency",
+                  currency: "COP",
+                  maximumFractionDigits: 0,
+                }).format(new Decimal(netWorth.total_deposited_cop).toNumber())}
+              </span>
+            </div>
+          )}
         </section>
 
         <Separator />
@@ -208,8 +233,8 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
             valueClassName={isPositive ? "text-primary" : "text-destructive"}
           />
           <StatCell
-            label="Time-weighted return"
-            tooltip={METRIC_TOOLTIPS.xirr}
+            label="Money-weighted return (XIRR)"
+            tooltip={`${METRIC_TOOLTIPS.xirr} ${METRIC_TOOLTIPS.xirrVsNetReturn}`}
             value={isXirrPlaceholder(xirr) ? "—" : formatPct(xirr)}
             valueClassName={
               isXirrPlaceholder(xirr)

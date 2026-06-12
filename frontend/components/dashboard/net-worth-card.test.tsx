@@ -61,7 +61,7 @@ describe("NetWorthCard", () => {
 
   it("shows em dash for time-weighted return when XIRR is zero placeholder", () => {
     renderCard()
-    const twrLabel = screen.getByText("Time-weighted return")
+    const twrLabel = screen.getByText("Money-weighted return (XIRR)")
     const twrCell = twrLabel.closest("div")?.parentElement
     expect(twrCell).toBeTruthy()
     expect(within(twrCell as HTMLElement).getByText("—")).toBeInTheDocument()
@@ -92,13 +92,19 @@ describe("NetWorthCard", () => {
     expect(screen.getByRole("button", { name: /about net worth/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /about total gain\/loss/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /about portfolio value/i })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /about time-weighted return/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /about money-weighted return \(xirr\)/i })).toBeInTheDocument()
   })
 
   it("documents total invested as net capital after linked transfer fees", () => {
     expect(METRIC_TOOLTIPS.totalInvested).toBe(
       "Capital that reached your portfolio: net deposits minus withdrawals, after linked transfer fees.",
     )
+  })
+
+  it("labels cash as available USD buy power", () => {
+    renderCard()
+    expect(screen.getByText("Available USD (buy power)")).toBeInTheDocument()
+    expect(screen.queryByText(/^Cash$/)).not.toBeInTheDocument()
   })
 
   it("shows loading skeleton layout while fetching", () => {

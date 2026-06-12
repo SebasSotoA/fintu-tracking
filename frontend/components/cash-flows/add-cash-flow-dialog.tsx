@@ -137,7 +137,12 @@ export function AddCashFlowDialog() {
               <Select
                 value={formData.type}
                 onValueChange={(value: "deposit" | "withdrawal" | "fee") =>
-                  setFormData({ ...formData, type: value, deposit_fee_usd: "" })
+                  setFormData({
+                    ...formData,
+                    type: value,
+                    currency: value === "fee" ? "USD" : "COP",
+                    deposit_fee_usd: "",
+                  })
                 }
               >
                 <SelectTrigger id="cf-type">
@@ -155,26 +160,23 @@ export function AddCashFlowDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="cf-currency">Currency</Label>
-              <Select
-                value={formData.currency}
-                onValueChange={(value: "COP" | "USD") => setFormData({ ...formData, currency: value })}
-              >
-                <SelectTrigger id="cf-currency">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="COP">COP</SelectItem>
-                  <SelectItem value="USD">USD</SelectItem>
-                </SelectContent>
-              </Select>
+              {isTransfer ? (
+                <p id="cf-currency" className="flex h-9 items-center text-sm font-mono">
+                  COP
+                </p>
+              ) : (
+                <p id="cf-currency" className="flex h-9 items-center text-sm font-mono">
+                  USD
+                </p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cf-amount">Amount</Label>
+              <Label htmlFor="cf-amount">Amount ({isTransfer ? "COP" : "USD"})</Label>
               <Input
                 id="cf-amount"
                 type="number"
                 step="0.01"
-                placeholder="1000000"
+                placeholder={isTransfer ? "1000000" : "10.00"}
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 required
@@ -206,7 +208,7 @@ export function AddCashFlowDialog() {
             </div>
           )}
 
-          {formData.currency === "COP" && (
+          {isTransfer && (
             <div className="space-y-2">
               <Label htmlFor="cf-fx-rate">FX Rate (COP/USD)</Label>
               <Input

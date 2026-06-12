@@ -12,6 +12,25 @@ export type PerformanceInterval = "day" | "week" | "month" | "quarter" | "year"
 /** GET /api/analytics/net-worth — canonical analytics types live here. */
 export type NetWorthSummary = NetWorthData
 
+/** GET /api/analytics/cash-breakdown */
+export interface CashBreakdown {
+  deposits_usd: string
+  withdrawals_usd: string
+  /** Transfer and standalone fees (legacy field; prefer transfer_fees_usd when present). */
+  fees_usd: string
+  transfer_fees_usd?: string
+  cash_flows_net_usd: string
+  trade_buys_usd: string
+  trade_sells_usd: string
+  trade_net_usd: string
+  cash_balance: string
+}
+
+/** Resolves transfer/standalone fees from cash-breakdown API payload. */
+export function getTransferFeesUsd(breakdown: CashBreakdown): string {
+  return breakdown.transfer_fees_usd ?? breakdown.fees_usd
+}
+
 /** GET /api/analytics/return-attribution */
 export interface ReturnAttribution {
   starting_capital: string

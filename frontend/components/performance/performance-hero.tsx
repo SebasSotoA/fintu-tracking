@@ -152,7 +152,7 @@ export function PerformanceHero({
           className="grid grid-cols-2 gap-4 rounded-lg border border-border/50 bg-muted/30 p-4 md:grid-cols-3"
         >
           <StatCell
-            label="Time-weighted return"
+            label="Money-weighted return (XIRR)"
             tooltip={PERFORMANCE_TOOLTIPS.timeWeightedReturn}
             value={isXirrPlaceholder(xirr) ? "—" : formatPct(xirr)}
             valueClassName={

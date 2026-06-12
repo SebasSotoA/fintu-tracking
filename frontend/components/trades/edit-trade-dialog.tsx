@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { SingleDatePicker } from "@/components/filters/single-date-picker"
+import { SellTickerSelect } from "@/components/trades/sell-ticker-select"
 import { Decimal } from "@/lib/decimal"
 import { updateTrade } from "@/lib/api/trades"
 import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
@@ -129,21 +130,41 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 onChange={(date) => setFormData({ ...formData, date })}
                 required
               />
-            <div className="space-y-2">
-              <Label htmlFor="edit-ticker">Ticker</Label>
-              <Input
+            {formData.side === "sell" ? (
+              <SellTickerSelect
                 id="edit-ticker"
-                placeholder="AAPL"
                 value={formData.ticker}
-                onChange={(e) => {
-                  setFormData({ ...formData, ticker: e.target.value })
+                onChange={(ticker, holding) => {
+                  setFormData({
+                    ...formData,
+                    ticker,
+                    asset_type:
+                      holding?.assetType === "etf"
+                        ? "etf"
+                        : holding?.assetType === "crypto"
+                          ? "crypto"
+                          : "stock",
+                  })
                   setPriceWarning(null)
                 }}
-                onBlur={handleTickerBlur}
-                required
               />
-              {priceWarning && <p className="text-xs text-amber-600 dark:text-amber-500">{priceWarning}</p>}
-            </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="edit-ticker">Ticker</Label>
+                <Input
+                  id="edit-ticker"
+                  placeholder="AAPL"
+                  value={formData.ticker}
+                  onChange={(e) => {
+                    setFormData({ ...formData, ticker: e.target.value })
+                    setPriceWarning(null)
+                  }}
+                  onBlur={handleTickerBlur}
+                  required
+                />
+                {priceWarning && <p className="text-xs text-amber-600 dark:text-amber-500">{priceWarning}</p>}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -169,7 +190,13 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               <Label htmlFor="edit-side">Side</Label>
               <Select
                 value={formData.side}
-                onValueChange={(value: "buy" | "sell") => setFormData({ ...formData, side: value })}
+                onValueChange={(value: "buy" | "sell") =>
+                  setFormData({
+                    ...formData,
+                    side: value,
+                    ticker: value === "buy" ? formData.ticker : trade.side === "sell" ? formData.ticker : "",
+                  })
+                }
               >
                 <SelectTrigger id="edit-side">
                   <SelectValue />

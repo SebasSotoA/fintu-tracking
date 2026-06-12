@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { NetWorthCard } from "@/components/dashboard/net-worth-card"
+import { CashBreakdownCard } from "@/components/dashboard/cash-breakdown-card"
 import { HoldingsTableServer } from "@/components/dashboard/holdings-table-server"
 import { getNetWorth } from "@/lib/api/server-analytics"
 
@@ -14,6 +15,7 @@ export default function DashboardPage() {
       <Suspense fallback={<div className="h-36 bg-muted rounded-lg animate-pulse" />}>
         <NetWorthCardServer />
       </Suspense>
+      <CashBreakdownCard />
       <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
         <HoldingsTableServer />
       </Suspense>

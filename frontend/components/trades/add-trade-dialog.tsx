@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { SingleDatePicker } from "@/components/filters/single-date-picker"
+import { SellTickerSelect } from "@/components/trades/sell-ticker-select"
 import { Plus } from "lucide-react"
 import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
 import { createTrade } from "@/lib/api/trades"
@@ -123,23 +124,43 @@ export function AddTradeDialog() {
                 onChange={(date) => setFormData({ ...formData, date })}
                 required
               />
-              <div className="space-y-2">
-                <Label htmlFor="ticker">Ticker</Label>
-                <Input
+              {formData.side === "sell" ? (
+                <SellTickerSelect
                   id="ticker"
-                  placeholder="AAPL"
                   value={formData.ticker}
-                  onChange={(e) => {
-                    setFormData({ ...formData, ticker: e.target.value })
+                  onChange={(ticker, holding) => {
+                    setFormData({
+                      ...formData,
+                      ticker,
+                      asset_type:
+                        holding?.assetType === "etf"
+                          ? "etf"
+                          : holding?.assetType === "crypto"
+                            ? "crypto"
+                            : "stock",
+                    })
                     setPriceWarning(null)
                   }}
-                  onBlur={handleTickerBlur}
-                  required
                 />
-                {priceWarning && (
-                  <p className="text-xs text-amber-600 dark:text-amber-500">{priceWarning}</p>
-                )}
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="ticker">Ticker</Label>
+                  <Input
+                    id="ticker"
+                    placeholder="AAPL"
+                    value={formData.ticker}
+                    onChange={(e) => {
+                      setFormData({ ...formData, ticker: e.target.value })
+                      setPriceWarning(null)
+                    }}
+                    onBlur={handleTickerBlur}
+                    required
+                  />
+                  {priceWarning && (
+                    <p className="text-xs text-amber-600 dark:text-amber-500">{priceWarning}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -165,7 +186,13 @@ export function AddTradeDialog() {
                 <Label htmlFor="side">Side</Label>
                 <Select
                   value={formData.side}
-                  onValueChange={(value: "buy" | "sell") => setFormData({ ...formData, side: value })}
+                  onValueChange={(value: "buy" | "sell") =>
+                  setFormData({
+                    ...formData,
+                    side: value,
+                    ticker: value === "buy" ? formData.ticker : "",
+                  })
+                }
                 >
                   <SelectTrigger id="side">
                     <SelectValue />

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Check, ChevronsUpDown, Download, Pencil, Trash2 } from "lucide-react"
-import { formatCurrency, format } from "@/lib/decimal"
+import { Decimal, formatCurrency, format } from "@/lib/decimal"
 import { formatCalendarDate } from "@/lib/date-utils"
 import { useCallback, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -309,6 +309,7 @@ export function TradesList({
                     <TableHead className="text-right">Price</TableHead>
                     <TableHead className="text-right">Fees</TableHead>
                     <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Realized P/L</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -332,6 +333,19 @@ export function TradesList({
                       </TableCell>
                       <TableCell className="text-right font-mono font-semibold">
                         {formatCurrency(trade.total, "USD")}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {trade.side === "sell" && trade.realized_pl != null && trade.realized_pl !== "" ? (
+                          <span
+                            className={
+                              new Decimal(trade.realized_pl).gte(0) ? "text-primary" : "text-destructive"
+                            }
+                          >
+                            {formatCurrency(trade.realized_pl, "USD")}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

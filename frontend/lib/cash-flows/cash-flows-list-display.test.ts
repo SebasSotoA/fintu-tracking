@@ -41,6 +41,15 @@ describe("getDepositWithdrawalUsdDisplay", () => {
     })
     expect(getDepositWithdrawalUsdDisplay([deposit, fee], deposit)).toBe("$394.00")
   })
+
+  it("shows net USD from linked_transfer_fee_usd when fee row is not in array", () => {
+    const deposit = baseCashFlow({
+      id: "dep-1",
+      usd_amount: "227.99",
+      linked_transfer_fee_usd: "1.99",
+    })
+    expect(getDepositWithdrawalUsdDisplay([deposit], deposit)).toBe("$226.00")
+  })
 })
 
 describe("getFeeAttributionLabel", () => {

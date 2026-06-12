@@ -21,6 +21,7 @@ export interface CashFlow {
   related_trade_id: string | null
   related_cash_flow_id: string | null
   related_type: "trade" | "deposit" | "withdrawal" | "standalone" | null
+  linked_transfer_fee_usd?: string | null
   created_at: string
   updated_at: string
 }
@@ -40,6 +41,8 @@ export interface Trade {
   total_fees: string
   total: string
   notes: string | null
+  realized_pl?: string | null
+  realized_pl_pct?: string | null
   created_at: string
   updated_at: string
 }
@@ -53,6 +56,7 @@ export interface MarketPrice {
 
 export interface Holding {
   ticker: string
+  assetType?: string
   quantity: string
   avgCost: string
   totalInvested: string
@@ -70,6 +74,8 @@ export interface NetWorthData {
   total_gain_loss: string
   total_gain_loss_pct: string
   xirr: string
+  total_deposited_cop?: string
+  total_withdrawn_cop?: string
   breakdown: {
     by_asset_type: Record<string, string>
     by_ticker: Record<string, string>
