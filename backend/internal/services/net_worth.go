@@ -19,7 +19,9 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 		TotalFees:        "0",
 		TotalGainLoss:    "0",
 		TotalGainLossPct: "0",
-		XIRR:             "0",
+		XIRR:              "0",
+		TotalDepositedCOP: "0",
+		TotalWithdrawnCOP: "0",
 		Breakdown: models.NetWorthBreakdown{
 			ByAssetType: make(map[string]string),
 			ByTicker:    make(map[string]string),
@@ -116,6 +118,15 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 	xirrRate, err := calculateXIRR(ctx, s.pool, userID, netWorth, time.Now())
 	if err == nil && !xirrRate.IsZero() {
 		summary.XIRR = xirrRate.Mul(decimal.NewFromInt(100)).StringFixed(2)
+	}
+
+	if err := s.pool.QueryRow(ctx, `
+		SELECT
+			COALESCE(SUM(CASE WHEN type = 'deposit' AND currency = 'COP' THEN amount ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN type = 'withdrawal' AND currency = 'COP' THEN amount ELSE 0 END), 0)
+		FROM cash_flows WHERE user_id = $1
+	`, userID).Scan(&summary.TotalDepositedCOP, &summary.TotalWithdrawnCOP); err != nil {
+		return summary, fmt.Errorf("failed to sum COP deposits and withdrawals: %w", err)
 	}
 
 	return summary, nil

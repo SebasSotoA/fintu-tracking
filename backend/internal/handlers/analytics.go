@@ -125,6 +125,21 @@ func GetNetWorth(c fiber.Ctx) error {
 	return c.JSON(netWorth)
 }
 
+// GetCashBreakdown handles GET /api/analytics/cash-breakdown
+func GetCashBreakdown(c fiber.Ctx) error {
+	userID := c.Locals("user_id").(string)
+
+	analyticsService := services.NewAnalyticsService(database.GetPool())
+	breakdown, err := analyticsService.GetCashBreakdown(c.Context(), userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to calculate cash breakdown: " + err.Error(),
+		})
+	}
+
+	return c.JSON(breakdown)
+}
+
 // GetCashReconciliation handles GET /api/analytics/cash-reconciliation
 func GetCashReconciliation(c fiber.Ctx) error {
 	userID := c.Locals("user_id").(string)

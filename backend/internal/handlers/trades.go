@@ -6,6 +6,7 @@ import (
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/services"
 	"strings"
 	"time"
 
@@ -85,6 +86,21 @@ func ListTrades(c fiber.Ctx) error {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		trades = append(trades, trade)
+	}
+
+	realizedMap, realizedErr := services.NewAnalyticsService(database.GetPool()).RealizedPLByTradeID(c.Context(), userID)
+	if realizedErr == nil {
+		for i := range trades {
+			if trades[i].Side != "sell" {
+				continue
+			}
+			pl, ok := realizedMap[trades[i].ID]
+			if !ok {
+				continue
+			}
+			plStr := pl.StringFixed(2)
+			trades[i].RealizedPL = &plStr
+		}
 	}
 
 	if limit > 0 {

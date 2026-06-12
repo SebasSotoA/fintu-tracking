@@ -36,9 +36,10 @@ type CashFlow struct {
 	FeeType        *string   `json:"fee_type" db:"fee_type"` // deposit, trading, closing, maintenance, other, withdrawal
 	RelatedTradeID    *string   `json:"related_trade_id" db:"related_trade_id"`
 	RelatedCashFlowID *string   `json:"related_cash_flow_id" db:"related_cash_flow_id"`
-	RelatedType       *string   `json:"related_type" db:"related_type"` // trade, deposit, withdrawal, standalone
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
+	RelatedType          *string   `json:"related_type" db:"related_type"` // trade, deposit, withdrawal, standalone
+	LinkedTransferFeeUSD *string   `json:"linked_transfer_fee_usd,omitempty"`
+	CreatedAt            time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt            time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Trade represents a stock, ETF, or crypto trade with detailed fee breakdown
@@ -57,6 +58,8 @@ type Trade struct {
 	TotalFees         string    `json:"total_fees" db:"total_fees"`
 	Total             string    `json:"total" db:"total"`
 	Notes             *string   `json:"notes" db:"notes"`
+	RealizedPL        *string   `json:"realized_pl,omitempty"`
+	RealizedPLPct     *string   `json:"realized_pl_pct,omitempty"`
 	CreatedAt         time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -194,8 +197,10 @@ type NetWorthSummary struct {
 	TotalFees        string            `json:"total_fees"`
 	TotalGainLoss    string            `json:"total_gain_loss"`
 	TotalGainLossPct string            `json:"total_gain_loss_pct"`
-	XIRR             string            `json:"xirr"`
-	Breakdown        NetWorthBreakdown `json:"breakdown"`
+	XIRR              string            `json:"xirr"`
+	TotalDepositedCOP string            `json:"total_deposited_cop"`
+	TotalWithdrawnCOP string            `json:"total_withdrawn_cop"`
+	Breakdown         NetWorthBreakdown `json:"breakdown"`
 }
 
 // NetWorthBreakdown provides detailed allocation information

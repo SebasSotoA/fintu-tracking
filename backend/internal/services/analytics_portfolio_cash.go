@@ -10,7 +10,7 @@ const cashFlowsBalanceCaseExpr = `
   CASE
     WHEN type = 'deposit' THEN usd_amount
     WHEN type = 'withdrawal' THEN -usd_amount
-    WHEN type = 'fee' THEN -usd_amount
+    WHEN type = 'fee' AND related_trade_id IS NULL THEN -usd_amount
     ELSE 0
   END`
 
@@ -38,8 +38,9 @@ func portfolioNetWorth(holdingsValue, cashAfterTrades decimal.Decimal) decimal.D
 }
 
 type cashFlowBalanceRow struct {
-	Type      string
-	USDAmount decimal.Decimal
+	Type           string
+	USDAmount      decimal.Decimal
+	RelatedTradeID *string
 }
 
 func sumCashFlowsBalance(flows []cashFlowBalanceRow) decimal.Decimal {
@@ -51,6 +52,9 @@ func sumCashFlowsBalance(flows []cashFlowBalanceRow) decimal.Decimal {
 		case "withdrawal":
 			total = total.Sub(f.USDAmount)
 		case "fee":
+			if f.RelatedTradeID != nil {
+				continue
+			}
 			total = total.Sub(f.USDAmount)
 		}
 	}

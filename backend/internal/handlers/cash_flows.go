@@ -77,7 +77,7 @@ func ListCashFlows(c fiber.Ctx) error {
 	cashFlows := make([]models.CashFlow, 0)
 	for rows.Next() {
 		var cf models.CashFlow
-		if err := scanCashFlowRow(rows, &cf); err != nil {
+		if err := scanCashFlowListRow(rows, &cf); err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
 		cashFlows = append(cashFlows, cf)
@@ -107,6 +107,14 @@ func scanCashFlowRow(row cashFlowScanner, cf *models.CashFlow) error {
 	)
 }
 
+func scanCashFlowListRow(row cashFlowScanner, cf *models.CashFlow) error {
+	return row.Scan(
+		&cf.ID, &cf.UserID, &cf.Date, &cf.Type, &cf.Currency, &cf.Amount, &cf.FxRate, &cf.UsdAmount,
+		&cf.Notes, &cf.FeeType, &cf.RelatedTradeID, &cf.RelatedCashFlowID, &cf.RelatedType,
+		&cf.CreatedAt, &cf.UpdatedAt, &cf.LinkedTransferFeeUSD,
+	)
+}
+
 // CreateCashFlow creates a new cash flow
 func CreateCashFlow(c fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
@@ -124,6 +132,9 @@ func CreateCashFlow(c fiber.Ctx) error {
 	}
 	if req.Currency != "COP" && req.Currency != "USD" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid currency"})
+	}
+	if (req.Type == "deposit" || req.Type == "withdrawal") && req.Currency != "COP" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Deposits and withdrawals must use COP"})
 	}
 
 	amount, err := decimal.NewFromString(req.Amount)
@@ -233,6 +244,10 @@ func UpdateCashFlow(c fiber.Ctx) error {
 	}
 	if req.RelatedType != nil {
 		existingCF.RelatedType = req.RelatedType
+	}
+
+	if (existingCF.Type == "deposit" || existingCF.Type == "withdrawal") && existingCF.Currency != "COP" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Deposits and withdrawals must use COP"})
 	}
 
 	amount, _ := decimal.NewFromString(existingCF.Amount)

@@ -274,13 +274,36 @@ func TestPortfolioNetWorth_Deposit400LinkedFee6BuyTrade(t *testing.T) {
 
 }
 
+func TestPortfolioCash_ExcludesMirroredTradeFees(t *testing.T) {
+	t.Parallel()
+
+	tradeID := "trade-abc"
+	flows := []cashFlowBalanceRow{
+		{Type: "deposit", USDAmount: dec("400")},
+		{Type: "fee", USDAmount: dec("6")},
+		{Type: "fee", USDAmount: dec("1"), RelatedTradeID: &tradeID},
+	}
+	trades := []tradeCashFlowRow{
+		{Side: "buy", Quantity: dec("2"), Price: dec("150"), TotalFees: dec("1")},
+	}
+
+	cashFlowsNet := sumCashFlowsBalance(flows)
+	tradeCosts := sumNetTradeCashFlow(trades)
+	cashAfterTrades := portfolioCashAfterTrades(cashFlowsNet, tradeCosts)
+
+	want := dec("93")
+	if !cashAfterTrades.Equal(want) {
+		t.Fatalf("cash = %s, want %s (mirrored trade fee must not double-count)", cashAfterTrades, want)
+	}
+}
+
 func TestPortfolioCashSQLFragments(t *testing.T) {
 	t.Parallel()
 
 	assertSQLFragments(t, cashFlowsBalanceSQL(), []string{
 		"type = 'deposit'",
 		"type = 'withdrawal'",
-		"type = 'fee'",
+		"type = 'fee' AND related_trade_id IS NULL",
 	})
 	assertSQLFragments(t, netTradeCashFlowSQL(), []string{
 		"side = 'buy'",
