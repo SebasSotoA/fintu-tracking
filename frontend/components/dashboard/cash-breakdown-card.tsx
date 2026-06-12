@@ -123,7 +123,7 @@ export function CashBreakdownCard() {
               <Row label="Net to market" value={data.trade_net_usd} sign="−" />
             </div>
             <div className="border-t border-border/50 pt-2 font-medium">
-              <Row label="Cash balance" value={data.cash_balance} />
+              <Row label="Buy power" value={data.cash_balance} />
             </div>
           </div>
         </CardContent>

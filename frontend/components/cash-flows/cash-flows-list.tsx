@@ -27,8 +27,11 @@ import {
 import { formatTradeDateRangeLabel } from "@/lib/trades/trade-filters"
 import { toast } from "sonner"
 import { formatCalendarDate } from "@/lib/date-utils"
-import { formatAmountPlain, formatCurrency } from "@/lib/decimal"
-import { getFeeAttributionLabel } from "@/lib/cash-flows/cash-flows-list-display"
+import { Decimal, formatAmountPlain, formatCurrency } from "@/lib/decimal"
+import {
+  getFeeAttributionLabel,
+  isMirroredTradeFeeRow,
+} from "@/lib/cash-flows/cash-flows-list-display"
 import { useCallback, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
@@ -73,6 +76,7 @@ export function CashFlowsList({
   const [editingCashFlow, setEditingCashFlow] = useState<CashFlow | null>(null)
   const [deletingCashFlow, setDeletingCashFlow] = useState<CashFlow | null>(null)
   const [exporting, setExporting] = useState(false)
+  const [showTradeFeeAuditRows, setShowTradeFeeAuditRows] = useState(false)
 
   const filters = useMemo(
     () => parseCashFlowFiltersFromSearchParams(Object.fromEntries(searchParams.entries())),
@@ -80,6 +84,23 @@ export function CashFlowsList({
   )
 
   const filtersActive = hasActiveCashFlowFilters(filters)
+  const visibleCashFlows = useMemo(
+    () => (showTradeFeeAuditRows ? cashFlows : cashFlows.filter((cf) => !isMirroredTradeFeeRow(cf))),
+    [cashFlows, showTradeFeeAuditRows],
+  )
+  const linkedFeeByParentId = useMemo(() => {
+    const byParentId = new Map<string, CashFlow>()
+    cashFlows.forEach((cf) => {
+      if (
+        cf.type === "fee" &&
+        (cf.related_type === "deposit" || cf.related_type === "withdrawal") &&
+        cf.related_cash_flow_id
+      ) {
+        byParentId.set(cf.related_cash_flow_id, cf)
+      }
+    })
+    return byParentId
+  }, [cashFlows])
 
   const replaceQuery = useCallback(
     (params: URLSearchParams) => {
@@ -187,18 +208,30 @@ export function CashFlowsList({
               />
             </div>
             <div className="flex flex-col items-end gap-2 pb-2">
-              <p className="text-sm text-muted-foreground">Showing {cashFlows.length} of {total} cash flows</p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2 shrink-0"
-                onClick={handleExport}
-                disabled={total === 0 || exporting}
-              >
-                <Download className="size-4" />
-                Export
-              </Button>
+              <p className="text-sm text-muted-foreground">
+                Showing {visibleCashFlows.length} of {total} cash flows
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={showTradeFeeAuditRows ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowTradeFeeAuditRows((current) => !current)}
+                >
+                  Show trade fee audit rows
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 shrink-0"
+                  onClick={handleExport}
+                  disabled={total === 0 || exporting}
+                >
+                  <Download className="size-4" />
+                  Export
+                </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -219,25 +252,49 @@ export function CashFlowsList({
                     <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Fee Type</TableHead>
-                      <TableHead>Currency</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">USD Amount</TableHead>
+                      <TableHead className="text-right">COP wired</TableHead>
+                      <TableHead className="text-right">FX</TableHead>
+                      <TableHead className="text-right">Fee</TableHead>
+                      <TableHead className="text-right">USD credited (net)</TableHead>
                       <TableHead>Attribution</TableHead>
                       <TableHead>Notes</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {cashFlows.map((cf) => {
+                    {visibleCashFlows.map((cf) => {
                       const feeAttributionLabel = cf.type === "fee" ? getFeeAttributionLabel(cashFlows, cf) : null
+                      const linkedFee =
+                        cf.type === "deposit" || cf.type === "withdrawal" ? linkedFeeByParentId.get(cf.id) : undefined
+                      const copWired =
+                        cf.type === "deposit" || cf.type === "withdrawal"
+                          ? formatAmountPlain(cf.amount, "COP")
+                          : "—"
+                      const fxRate =
+                        cf.type === "deposit" || cf.type === "withdrawal"
+                          ? (cf.fx_rate ?? "—")
+                          : "—"
+                      const feeAmount =
+                        cf.type === "deposit" || cf.type === "withdrawal"
+                          ? linkedFee
+                            ? formatCurrency(linkedFee.amount, "USD")
+                            : "—"
+                          : cf.type === "fee"
+                            ? formatCurrency(cf.amount, "USD")
+                            : "—"
+                      const usdCredited =
+                        cf.type === "withdrawal"
+                          ? `-${formatCurrency(new Decimal(cf.usd_amount || "0").abs().toString(), "USD")}`
+                          : cf.type === "deposit"
+                            ? formatCurrency(cf.usd_amount, "USD")
+                            : "—"
 
                       return (
                         <TableRow
                           key={cf.id}
                           className={
                             cf.id === highlightId
-                              ? "bg-amber-50 dark:bg-amber-950/20 ring-1 ring-inset ring-amber-400"
+                              ? "bg-accent/40 ring-1 ring-inset ring-border"
                               : undefined
                           }
                         >
@@ -255,23 +312,13 @@ export function CashFlowsList({
                               {cf.type}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            {cf.fee_type ? (
-                              <Badge variant="outline" className="capitalize">
-                                {cf.fee_type}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{cf.currency}</Badge>
-                          </TableCell>
                           <TableCell className="text-right font-mono">
-                            {formatAmountPlain(cf.amount, cf.currency as "USD" | "COP")}
+                            {copWired}
                           </TableCell>
+                          <TableCell className="text-right font-mono">{fxRate}</TableCell>
+                          <TableCell className="text-right font-mono">{feeAmount}</TableCell>
                           <TableCell className="text-right font-mono font-semibold">
-                            {formatCurrency(cf.usd_amount, "USD")}
+                            {usdCredited}
                           </TableCell>
                           <TableCell>
                             {cf.related_type === "trade" && cf.related_trade_id ? (

@@ -15,10 +15,10 @@ export default function DashboardPage() {
       <Suspense fallback={<div className="h-36 bg-muted rounded-lg animate-pulse" />}>
         <NetWorthCardServer />
       </Suspense>
-      <CashBreakdownCard />
       <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
         <HoldingsTableServer />
       </Suspense>
+      <CashBreakdownCard />
     </div>
   )
 }

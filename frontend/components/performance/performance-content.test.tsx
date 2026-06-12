@@ -37,12 +37,6 @@ vi.mock("next/dynamic", () => ({
       if (name.includes("return-attribution")) {
         return <div data-testid="return-attribution" />
       }
-      if (name.includes("fee-attribution-chart")) {
-        return <div data-testid="fee-attribution-chart" />
-      }
-      if (name.includes("fee-efficiency-table")) {
-        return <div data-testid="fee-efficiency-table" />
-      }
       if (name.includes("performance-charts")) {
         return (
           <div data-testid="performance-charts">
@@ -58,6 +52,12 @@ vi.mock("next/dynamic", () => ({
 vi.mock("./performance-hero", () => ({
   PerformanceHero: ({ cashFlows }: { cashFlows: CashFlow[] }) => (
     <div data-testid="performance-hero">flows:{cashFlows.length}</div>
+  ),
+}))
+
+vi.mock("./fees-breakdown", () => ({
+  FeesBreakdown: ({ cashFlows }: { cashFlows: CashFlow[] }) => (
+    <div data-testid="fees-breakdown">flows:{cashFlows.length}</div>
   ),
 }))
 
@@ -88,8 +88,7 @@ describe("PerformanceContent", () => {
       "performance-hero",
       "portfolio-performance-chart",
       "return-attribution",
-      "fee-attribution-chart",
-      "fee-efficiency-table",
+      "fees-breakdown",
       "performance-charts",
     ])
   })

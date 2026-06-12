@@ -157,7 +157,7 @@ export function AddTradeDialog() {
                     required
                   />
                   {priceWarning && (
-                    <p className="text-xs text-amber-600 dark:text-amber-500">{priceWarning}</p>
+                    <p className="text-xs text-destructive">{priceWarning}</p>
                   )}
                 </div>
               )}
@@ -219,7 +219,7 @@ export function AddTradeDialog() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="price">Price (USD)</Label>
+                <Label htmlFor="price">Price</Label>
                 <Input
                   id="price"
                   type="number"
@@ -233,7 +233,7 @@ export function AddTradeDialog() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="closing_fee">Closing fee (USD)</Label>
+              <Label htmlFor="closing_fee">Commission</Label>
               <Input
                 id="closing_fee"
                 type="number"
@@ -243,9 +243,7 @@ export function AddTradeDialog() {
                 value={formData.closing_fee}
                 onChange={(e) => setFormData({ ...formData, closing_fee: e.target.value })}
               />
-              <p className="text-xs text-muted-foreground">
-                Hapi fee on this buy or sell. For COP→USD deposit fees, use Cash Flows.
-              </p>
+              <p className="text-xs text-muted-foreground">Mapped to trading fee for this trade.</p>
             </div>
 
             <div className="space-y-2">

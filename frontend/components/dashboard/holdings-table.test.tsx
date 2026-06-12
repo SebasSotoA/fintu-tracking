@@ -7,9 +7,11 @@ import { HoldingsTable } from "./holdings-table"
 import { HoldingsTableServer } from "./holdings-table-server"
 
 const mockGetHoldings = vi.fn()
+const mockListMarketPrices = vi.fn()
 
 vi.mock("@/lib/api/server-portfolio", () => ({
   getHoldings: () => mockGetHoldings(),
+  listMarketPrices: () => mockListMarketPrices(),
 }))
 
 vi.mock("next/navigation", () => ({
@@ -55,11 +57,33 @@ describe("HoldingsTable", () => {
     const link = screen.getByRole("link", { name: "AAPL" })
     expect(link).toHaveAttribute("href", "/trades?ticker=AAPL")
   })
+
+  it("shows price as-of text when timestamp is available", () => {
+    renderWithProviders(
+      <HoldingsTable
+        holdings={[sampleHolding]}
+        priceUpdatedAtByTicker={{ AAPL: "2026-06-12T10:00:00Z" }}
+        lastPriceRefreshAt="2026-06-12T10:05:00Z"
+      />,
+    )
+    expect(screen.getByText(/Prices as of/i)).toBeInTheDocument()
+  })
+
+  it("warns when price timestamps are stale", () => {
+    renderWithProviders(
+      <HoldingsTable
+        holdings={[sampleHolding]}
+        priceUpdatedAtByTicker={{ AAPL: "2020-01-01T00:00:00Z" }}
+      />,
+    )
+    expect(screen.getByText(/Some prices are stale/i)).toBeInTheDocument()
+  })
 })
 
 describe("HoldingsTableServer", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockListMarketPrices.mockResolvedValue([])
   })
 
   it("fetches holdings and renders the table", async () => {

@@ -1,54 +1,28 @@
-"use client";
+"use client"
 
-import type React from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
-import Decimal from "decimal.js";
-import { api } from "@/lib/api/client";
-import { queryKeys } from "@/lib/api/query-keys";
-import type { NetWorthData } from "@/lib/types";
-import { MetricLabel, StatCell } from "@/components/analytics/metric-primitives";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import type React from "react"
+import { useQuery } from "@tanstack/react-query"
+import Decimal from "decimal.js"
+import { api } from "@/lib/api/client"
+import { queryKeys } from "@/lib/api/query-keys"
+import type { NetWorthData } from "@/lib/types"
+import { MetricLabel } from "@/components/analytics/metric-primitives"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface NetWorthCardProps {
-  initialData?: NetWorthData | null;
+  initialData?: NetWorthData | null
 }
 
 export const METRIC_TOOLTIPS = {
-  netWorth:
-    "Total portfolio value: market value of all holdings plus uninvested cash (USD).",
-  totalGainLoss:
-    "Net worth minus total deposited capital (withdrawals reduce invested). Shown as amount and % of invested.",
-  holdings:
-    "Current market value of open positions only, using latest prices.",
+  portfolioTotal:
+    "Total portfolio value: current market value of holdings plus available buy power in USD.",
   cash:
-    "Uninvested USD available to buy (poder de compra on Hapi): deposits − withdrawals − transfer fees − money spent on buys + sell proceeds. Should match your broker buying power.",
-  totalDepositedCop:
-    "Sum of deposit amounts recorded in COP (gross pesos sent), before USD conversion.",
-  portfolioValue:
-    "Same as holdings value — current market value of all open positions.",
-  totalInvested:
-    "Capital that reached your portfolio: net deposits minus withdrawals, after linked transfer fees.",
-  totalGainLossStat:
-    "Net worth minus total invested — includes both position gains and cash not yet deployed.",
-  totalFees: "Sum of all fee cash flows (deposits, trading, closing, etc.) in USD.",
-  netReturn:
-    "Total gain/loss vs capital deployed (total invested). Same % as the badge under net worth.",
-  xirrVsNetReturn:
-    "XIRR is money-weighted (timing of deposits matters). Net return % is simple gain ÷ invested — they often differ.",
-  feeDrag:
-    "Total fees paid as % of capital deployed (total invested).",
-  xirr: "Money-weighted return (XIRR) from deposits, withdrawals, and current net worth.",
-  assetAllocation: "Share of holdings value by asset class (ETF, stock, crypto).",
-} as const;
+    "Uninvested USD available to buy (poder de compra on Hapi): deposits − withdrawals − transfer fees − money spent on buys + sell proceeds.",
+  unrealizedProxy:
+    "Proxy badge based on total gain/loss from analytics. Detailed XIRR and attribution stay in Performance.",
+} as const
 
 function formatUsd(value: Decimal): string {
   return new Intl.NumberFormat("en-US", {
@@ -56,19 +30,7 @@ function formatUsd(value: Decimal): string {
     currency: "USD",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value.toNumber());
-}
-
-function formatPct(value: Decimal): string {
-  return `${value.toFixed(2)}%`;
-}
-
-function isXirrPlaceholder(xirr: Decimal): boolean {
-  return xirr.isZero();
-}
-
-function formatAssetTypeLabel(key: string): string {
-  return key.replace(/_/g, " ").toUpperCase();
+  }).format(value.toNumber())
 }
 
 export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Element {
@@ -78,18 +40,17 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
     initialData: initialData ?? undefined,
     staleTime: 60_000,
     refetchInterval: 60_000,
-  });
+  })
 
   if (isLoading) {
     return (
       <Card variant="kpi" className="col-span-full">
         <CardContent className="space-y-4 pt-6">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-16 w-72" />
+          <Skeleton className="h-10 w-64" />
         </CardContent>
       </Card>
-    );
+    )
   }
 
   if (error || !netWorth) {
@@ -102,187 +63,40 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
           </CardDescription>
         </CardHeader>
       </Card>
-    );
+    )
   }
 
-  const netWorthValue = new Decimal(netWorth.net_worth || "0");
-  const gainLoss = new Decimal(netWorth.total_gain_loss || "0");
-  const gainLossPct = new Decimal(netWorth.total_gain_loss_pct || "0");
-  const holdings = new Decimal(netWorth.holdings_value || "0");
-  const cash = new Decimal(netWorth.cash_balance || "0");
-  const totalInvested = new Decimal(netWorth.total_invested || "0");
-  const totalFees = new Decimal(netWorth.total_fees || "0");
-  const xirr = new Decimal(netWorth.xirr || "0");
-  const isPositive = gainLoss.greaterThanOrEqualTo(0);
-
-  const feeDragPct = totalInvested.greaterThan(0)
-    ? totalFees.div(totalInvested).mul(100)
-    : new Decimal(0);
+  const portfolioTotal = new Decimal(netWorth.net_worth || "0")
+  const buyPower = new Decimal(netWorth.cash_balance || "0")
+  const gainLoss = new Decimal(netWorth.total_gain_loss || "0")
+  const gainLossPct = new Decimal(netWorth.total_gain_loss_pct || "0")
+  const isPositive = gainLoss.greaterThanOrEqualTo(0)
+  const showUnrealizedProxyBadge = !gainLoss.isZero()
 
   return (
     <Card variant="kpi" className="col-span-full">
-      <CardContent className="space-y-6 pt-6">
+      <CardContent className="space-y-4 pt-6">
         <section className="space-y-2">
-          <MetricLabel label="Net worth" tooltip={METRIC_TOOLTIPS.netWorth} />
-          <div className="flex flex-wrap items-baseline gap-3">
+          <MetricLabel label="Portfolio total" tooltip={METRIC_TOOLTIPS.portfolioTotal} />
+          <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-4xl font-bold font-mono tracking-tight tabular-nums md:text-5xl">
-              {formatUsd(netWorthValue)}
+              {formatUsd(portfolioTotal)}
             </h2>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant={isPositive ? "default" : "destructive"}
-                  className="cursor-default px-3 py-1 text-base tabular-nums"
-                >
-                  <span className="flex items-center gap-1">
-                    {isPositive ? (
-                      <ArrowUpIcon className="size-4" />
-                    ) : (
-                      <ArrowDownIcon className="size-4" />
-                    )}
-                    {formatUsd(gainLoss.abs())} ({formatPct(gainLossPct.abs())})
-                  </span>
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-xs">
-                {METRIC_TOOLTIPS.totalGainLoss}
-              </TooltipContent>
-            </Tooltip>
+            {showUnrealizedProxyBadge && (
+              <Badge variant={isPositive ? "default" : "destructive"} className="px-3 py-1 text-sm tabular-nums">
+                Unrealized P/L proxy: {formatUsd(gainLoss)} ({gainLossPct.toFixed(2)}%)
+              </Badge>
+            )}
           </div>
-
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground font-mono tabular-nums">
-            <span className="inline-flex items-center gap-1">
-              <MetricLabel label="Holdings" tooltip={METRIC_TOOLTIPS.holdings} className="!gap-0.5" />
-              <span className="text-foreground">{formatUsd(holdings)}</span>
-            </span>
-            <span className="text-muted-foreground/50 hidden sm:inline" aria-hidden>
-              ·
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <MetricLabel
-                label="Available USD (buy power)"
-                tooltip={METRIC_TOOLTIPS.cash}
-                className="!gap-0.5"
-              />
-              <span className="text-foreground">{formatUsd(cash)}</span>
-            </span>
-          </div>
-          {netWorth.total_deposited_cop && new Decimal(netWorth.total_deposited_cop).gt(0) && (
-            <div className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
-              <MetricLabel
-                label="Total deposited (COP)"
-                tooltip={METRIC_TOOLTIPS.totalDepositedCop}
-                className="!inline-flex"
-              />
-              <span className="font-mono text-foreground tabular-nums">
-                {new Intl.NumberFormat("es-CO", {
-                  style: "currency",
-                  currency: "COP",
-                  maximumFractionDigits: 0,
-                }).format(new Decimal(netWorth.total_deposited_cop).toNumber())}
-              </span>
-            </div>
-          )}
         </section>
-
-        <Separator />
-
-        <section
-          aria-label="Portfolio summary"
-          className="grid grid-cols-2 gap-4 rounded-lg border border-border/50 bg-muted/30 p-4 md:grid-cols-4"
-        >
-          <StatCell
-            label="Portfolio value"
-            tooltip={METRIC_TOOLTIPS.portfolioValue}
-            value={formatUsd(holdings)}
-          />
-          <StatCell
-            label="Total invested"
-            tooltip={METRIC_TOOLTIPS.totalInvested}
-            value={formatUsd(totalInvested)}
-          />
-          <StatCell
-            label="Total gain/loss"
-            tooltip={METRIC_TOOLTIPS.totalGainLossStat}
-            value={formatUsd(gainLoss)}
-            valueClassName={isPositive ? "text-primary" : "text-destructive"}
-            subValue={formatPct(gainLossPct)}
-            subTooltip={METRIC_TOOLTIPS.netReturn}
-          />
-          <StatCell
-            label="Total fees"
-            tooltip={METRIC_TOOLTIPS.totalFees}
-            value={formatUsd(totalFees)}
-            valueClassName="text-destructive"
-            subValue={
-              totalFees.greaterThan(0) && totalInvested.greaterThan(0)
-                ? `${formatPct(feeDragPct)} drag`
-                : undefined
-            }
-            subTooltip={METRIC_TOOLTIPS.feeDrag}
-          />
+        <section className="rounded-lg border border-border/50 bg-muted/30 p-4">
+          <MetricLabel label="Buy power" tooltip={METRIC_TOOLTIPS.cash} className="mb-2" />
+          <p className="text-2xl font-semibold font-mono tabular-nums">{formatUsd(buyPower)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            XIRR and detailed return attribution are available on the Performance page.
+          </p>
         </section>
-
-        <Separator />
-
-        <section className="grid grid-cols-2 gap-4 md:grid-cols-3">
-          <StatCell
-            label="Net return"
-            tooltip={METRIC_TOOLTIPS.netReturn}
-            value={formatPct(gainLossPct)}
-            valueClassName={isPositive ? "text-primary" : "text-destructive"}
-          />
-          <StatCell
-            label="Money-weighted return (XIRR)"
-            tooltip={`${METRIC_TOOLTIPS.xirr} ${METRIC_TOOLTIPS.xirrVsNetReturn}`}
-            value={isXirrPlaceholder(xirr) ? "—" : formatPct(xirr)}
-            valueClassName={
-              isXirrPlaceholder(xirr)
-                ? "text-muted-foreground"
-                : xirr.greaterThanOrEqualTo(0)
-                  ? "text-primary"
-                  : "text-destructive"
-            }
-          />
-        </section>
-
-        {netWorth.breakdown?.by_asset_type &&
-          Object.keys(netWorth.breakdown.by_asset_type).length > 0 && (
-            <>
-              <Separator />
-              <section className="space-y-3">
-                <MetricLabel
-                  label="Asset allocation"
-                  tooltip={METRIC_TOOLTIPS.assetAllocation}
-                />
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                  {Object.entries(netWorth.breakdown.by_asset_type).map(([assetType, value]) => {
-                    const assetValue = new Decimal(value);
-                    const pct = holdings.greaterThan(0)
-                      ? assetValue.div(holdings).mul(100)
-                      : new Decimal(0);
-                    return (
-                      <div
-                        key={assetType}
-                        className="flex flex-col gap-1"
-                      >
-                        <p className="text-xs font-medium text-muted-foreground">
-                          {formatAssetTypeLabel(assetType)}
-                        </p>
-                        <p className="text-lg font-semibold font-mono tabular-nums">
-                          {formatUsd(assetValue)}
-                        </p>
-                        <p className="text-xs font-mono text-muted-foreground tabular-nums">
-                          {formatPct(pct)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            </>
-          )}
       </CardContent>
     </Card>
-  );
+  )
 }

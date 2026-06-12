@@ -6,3 +6,7 @@ export function getFeeAttributionLabel(cashFlows: CashFlow[], cf: CashFlow): str
   if (!parent || (parent.type !== "deposit" && parent.type !== "withdrawal")) return null
   return `Fee for ${parent.type}`
 }
+
+export function isMirroredTradeFeeRow(cf: CashFlow): boolean {
+  return cf.type === "fee" && cf.related_type === "trade" && !!cf.related_trade_id
+}

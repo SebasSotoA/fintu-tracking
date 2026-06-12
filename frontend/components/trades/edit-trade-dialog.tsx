@@ -162,7 +162,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                   onBlur={handleTickerBlur}
                   required
                 />
-                {priceWarning && <p className="text-xs text-amber-600 dark:text-amber-500">{priceWarning}</p>}
+                {priceWarning && <p className="text-xs text-destructive">{priceWarning}</p>}
               </div>
             )}
           </div>
@@ -223,7 +223,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-price">Price (USD)</Label>
+              <Label htmlFor="edit-price">Price</Label>
               <Input
                 id="edit-price"
                 type="number"
@@ -237,7 +237,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-closing_fee">Closing fee (USD)</Label>
+            <Label htmlFor="edit-closing_fee">Commission</Label>
             <Input
               id="edit-closing_fee"
               type="number"
@@ -247,9 +247,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               value={formData.closing_fee}
               onChange={(e) => setFormData({ ...formData, closing_fee: e.target.value })}
             />
-            <p className="text-xs text-muted-foreground">
-              Hapi fee on this buy or sell. For COP→USD deposit fees, use Cash Flows.
-            </p>
+            <p className="text-xs text-muted-foreground">Mapped to trading fee for this trade.</p>
           </div>
 
           <div className="space-y-2">

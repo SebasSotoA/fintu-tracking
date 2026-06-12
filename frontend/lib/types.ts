@@ -59,6 +59,10 @@ export interface Holding {
   quantity: string
   avgCost: string
   totalInvested: string
+  currentPrice?: string
+  priceAsOf?: string | null
+  price_as_of?: string | null
+  market_price_updated_at?: string | null
   marketValue: string
   unrealizedPL: string
   unrealizedPLPercent: string

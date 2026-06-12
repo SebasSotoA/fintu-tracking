@@ -6,6 +6,7 @@ import type { NetWorthData } from "@/lib/types"
 import { listCashFlowsForExport } from "@/lib/api/cash-flows"
 import { queryKeys } from "@/lib/api/query-keys"
 import { PerformanceHero } from "@/components/performance/performance-hero"
+import { FeesBreakdown } from "@/components/performance/fees-breakdown"
 
 const ChartSkeleton = () => (
   <div className="h-64 bg-muted rounded-lg animate-pulse" />
@@ -23,22 +24,6 @@ const ReturnAttribution = dynamic(
   () =>
     import("@/components/analytics/return-attribution").then((m) => ({
       default: m.ReturnAttribution,
-    })),
-  { ssr: false, loading: ChartSkeleton },
-)
-
-const FeeAttributionChart = dynamic(
-  () =>
-    import("@/components/analytics/fee-attribution-chart").then((m) => ({
-      default: m.FeeAttributionChart,
-    })),
-  { ssr: false, loading: ChartSkeleton },
-)
-
-const FeeEfficiencyTable = dynamic(
-  () =>
-    import("@/components/performance/fee-efficiency-table").then((m) => ({
-      default: m.FeeEfficiencyTable,
     })),
   { ssr: false, loading: ChartSkeleton },
 )
@@ -67,8 +52,7 @@ export function PerformanceContent({ netWorth }: PerformanceContentProps) {
       <PerformanceHero initialNetWorth={netWorth} cashFlows={cashFlows} />
       <PortfolioPerformanceChart />
       <ReturnAttribution />
-      <FeeAttributionChart />
-      <FeeEfficiencyTable />
+      <FeesBreakdown cashFlows={cashFlows} />
       <PerformanceCharts cashFlows={cashFlows} />
     </div>
   )

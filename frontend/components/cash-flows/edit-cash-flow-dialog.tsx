@@ -13,12 +13,14 @@ import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { createCashFlow, deleteCashFlow, updateCashFlow } from "@/lib/api/cash-flows"
 import {
-  computeGrossUsd,
-  computeNetUsdAfterFee,
   feeTypeForCashFlowType,
   findLinkedDepositFee,
   parsePositiveFee,
 } from "@/lib/cash-flows/deposit-fee-utils"
+import {
+  computeCopToWireFromNetTarget,
+  computeHapiDepositBreakdown,
+} from "@/lib/cash-flows/hapi-deposit-calculator"
 import { toDateInputValue } from "@/lib/date-utils"
 import { showToast } from "@/lib/toast"
 
@@ -51,6 +53,7 @@ export function EditCashFlowDialog({
     amount: cashFlow.amount,
     fx_rate: cashFlow.fx_rate || "",
     deposit_fee_usd: linkedFee?.amount ?? "",
+    net_usd_target: "",
     fee_type: (cashFlow.fee_type || "other") as
       | "deposit"
       | "trading"
@@ -71,6 +74,7 @@ export function EditCashFlowDialog({
       amount: cashFlow.amount,
       fx_rate: cashFlow.fx_rate || "",
       deposit_fee_usd: fee?.amount ?? "",
+      net_usd_target: "",
       fee_type: (cashFlow.fee_type || "other") as
         | "deposit"
         | "trading"
@@ -83,13 +87,14 @@ export function EditCashFlowDialog({
   }, [open, cashFlow, cashFlows])
 
   const isTransfer = formData.type === "deposit" || formData.type === "withdrawal"
-  const grossUsd = computeGrossUsd(
-    formData.currency as "COP" | "USD",
-    formData.amount,
-    formData.fx_rate,
-  )
-  const netUsd = isTransfer ? computeNetUsdAfterFee(grossUsd, formData.deposit_fee_usd) : null
+  const transferBreakdown = computeHapiDepositBreakdown({
+    copAmount: formData.amount,
+    fxRate: formData.fx_rate,
+    feeUsd: formData.deposit_fee_usd,
+  })
+  const standaloneUsdAmount = formData.amount.trim() ? formData.amount : "0.00"
   const feeLabel = formData.type === "withdrawal" ? "Withdrawal fee (USD)" : "Deposit fee (USD)"
+  const netLabel = formData.type === "withdrawal" ? "USD debited from Hapi" : "USD credited to buy power"
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -176,6 +181,7 @@ export function EditCashFlowDialog({
                     type: value,
                     currency: value === "fee" ? "USD" : "COP",
                     deposit_fee_usd: "",
+                    net_usd_target: "",
                   })
                 }
               >
@@ -253,6 +259,41 @@ export function EditCashFlowDialog({
 
           {isTransfer && (
             <div className="space-y-2">
+              <Label htmlFor="edit-cf-net-target">
+                Target {formData.type === "withdrawal" ? "USD debited" : "USD credited"} (optional)
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="edit-cf-net-target"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="100.00"
+                  value={formData.net_usd_target}
+                  onChange={(e) => setFormData({ ...formData, net_usd_target: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setFormData({
+                      ...formData,
+                      amount: computeCopToWireFromNetTarget({
+                        netUsdTarget: formData.net_usd_target,
+                        feeUsd: formData.deposit_fee_usd,
+                        fxRate: formData.fx_rate,
+                      }),
+                    })
+                  }
+                >
+                  Fill COP
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {isTransfer && (
+            <div className="space-y-2">
               <Label htmlFor="edit-cf-deposit-fee">
                 {feeLabel}{" "}
                 <span className="text-xs font-normal text-muted-foreground">optional</span>
@@ -272,17 +313,20 @@ export function EditCashFlowDialog({
           <div className="space-y-1">
             {isTransfer ? (
               <>
-                <Label>USD received in Hapi</Label>
-                <div className="text-2xl font-bold font-mono">${netUsd ?? grossUsd}</div>
+                <Label>{netLabel}</Label>
+                <div className="text-2xl font-bold font-mono">${transferBreakdown.netUsdCredited}</div>
                 <p className="text-sm text-muted-foreground">
-                  Before transfer fee:{" "}
-                  <span className="font-mono font-semibold text-foreground">${grossUsd}</span>
+                  Gross USD (COP / FX):{" "}
+                  <span className="font-mono font-semibold text-foreground">${transferBreakdown.grossUsd}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {feeLabel}: <span className="font-mono text-foreground">${transferBreakdown.feeUsd}</span>
                 </p>
               </>
             ) : (
               <>
                 <Label>USD amount</Label>
-                <div className="text-2xl font-bold font-mono">${grossUsd}</div>
+                <div className="text-2xl font-bold font-mono">${standaloneUsdAmount}</div>
               </>
             )}
           </div>
