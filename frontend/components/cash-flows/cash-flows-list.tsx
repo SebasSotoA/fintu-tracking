@@ -53,7 +53,6 @@ const TYPE_OPTIONS: { value: CashFlowTypeFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "deposit", label: "Deposits" },
   { value: "withdrawal", label: "Withdrawals" },
-  { value: "fee", label: "Fees" },
   { value: "cash_adjustment", label: "Cash adjustments" },
 ]
 

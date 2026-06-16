@@ -1,55 +1,57 @@
 import { Decimal } from "@/lib/decimal"
 
 export interface HapiDepositBreakdownInput {
-  copAmount: string
-  fxRate: string
+  netUsd: string
   feeUsd: string
+  fxRate: string
 }
 
 export interface HapiDepositBreakdown {
-  grossUsd: string
+  netUsd: string
   feeUsd: string
-  netUsdCredited: string
+  subtotalUsd: string
+  copToWire: string
 }
 
-export interface HapiCopFromNetInput {
-  netUsdTarget: string
+export interface HapiCopFromNetUsdInput {
+  netUsd: string
   feeUsd: string
   fxRate: string
 }
 
 export function computeHapiDepositBreakdown(input: HapiDepositBreakdownInput): HapiDepositBreakdown {
-  const copAmount = safeDecimal(input.copAmount)
+  const netUsd = safeDecimal(input.netUsd)
   const fxRate = safeDecimal(input.fxRate)
-  const feeUsd = nonNegativeDecimal(input.feeUsd)
+  const feeUsd = nonNegativeDecimal(input.feeUsd) ?? new Decimal(0)
 
-  if (!copAmount || !fxRate || fxRate.lte(0)) {
+  if (!netUsd || !fxRate || netUsd.lte(0) || fxRate.lte(0)) {
     return {
-      grossUsd: "0.00",
-      feeUsd: feeUsd?.toFixed(2) ?? "0.00",
-      netUsdCredited: "0.00",
+      netUsd: "0.00",
+      feeUsd: feeUsd.toFixed(2),
+      subtotalUsd: "0.00",
+      copToWire: "0.00",
     }
   }
 
-  const grossUsd = copAmount.div(fxRate)
-  const netUsdCredited = grossUsd.sub(feeUsd ?? new Decimal(0))
+  const subtotalUsd = netUsd.add(feeUsd)
+  const copToWire = subtotalUsd.mul(fxRate)
 
   return {
-    grossUsd: grossUsd.toFixed(2),
-    feeUsd: (feeUsd ?? new Decimal(0)).toFixed(2),
-    netUsdCredited: netUsdCredited.toFixed(2),
+    netUsd: netUsd.toFixed(2),
+    feeUsd: feeUsd.toFixed(2),
+    subtotalUsd: subtotalUsd.toFixed(2),
+    copToWire: copToWire.toFixed(2),
   }
 }
 
-export function computeCopToWireFromNetTarget(input: HapiCopFromNetInput): string {
-  const netUsdTarget = safeDecimal(input.netUsdTarget)
+export function computeCopFromNetUsd(input: HapiCopFromNetUsdInput): string {
+  const netUsd = safeDecimal(input.netUsd)
   const feeUsd = nonNegativeDecimal(input.feeUsd) ?? new Decimal(0)
   const fxRate = safeDecimal(input.fxRate)
 
-  if (!netUsdTarget || !fxRate || fxRate.lte(0)) return "0"
-  if (netUsdTarget.lte(0)) return "0"
+  if (!netUsd || !fxRate || netUsd.lte(0) || fxRate.lte(0)) return "0.00"
 
-  return netUsdTarget.add(feeUsd).mul(fxRate).toFixed(0)
+  return netUsd.add(feeUsd).mul(fxRate).toFixed(2)
 }
 
 function safeDecimal(value: string): Decimal | null {

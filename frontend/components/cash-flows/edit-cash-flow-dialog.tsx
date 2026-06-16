@@ -18,7 +18,7 @@ import {
   parsePositiveFee,
 } from "@/lib/cash-flows/deposit-fee-utils"
 import {
-  computeCopToWireFromNetTarget,
+  computeCopFromNetUsd,
   computeHapiDepositBreakdown,
 } from "@/lib/cash-flows/hapi-deposit-calculator"
 import { toDateInputValue } from "@/lib/date-utils"
@@ -30,6 +30,11 @@ interface EditCashFlowDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
+}
+
+function normalizeNetUsd(cashFlow: CashFlow): string {
+  if (cashFlow.type !== "withdrawal") return cashFlow.usd_amount || ""
+  return cashFlow.usd_amount.startsWith("-") ? cashFlow.usd_amount.slice(1) : cashFlow.usd_amount
 }
 
 export function EditCashFlowDialog({
@@ -45,22 +50,13 @@ export function EditCashFlowDialog({
   )
 
   const [isLoading, setIsLoading] = useState(false)
-
   const [formData, setFormData] = useState({
     date: toDateInputValue(cashFlow.date),
     type: cashFlow.type,
-    currency: cashFlow.currency,
     amount: cashFlow.amount,
     fx_rate: cashFlow.fx_rate || "",
     deposit_fee_usd: linkedFee?.amount ?? "",
-    net_usd_target: "",
-    fee_type: (cashFlow.fee_type || "other") as
-      | "deposit"
-      | "trading"
-      | "closing"
-      | "maintenance"
-      | "other"
-      | "withdrawal",
+    net_usd: normalizeNetUsd(cashFlow),
     notes: cashFlow.notes || "",
   })
 
@@ -70,31 +66,29 @@ export function EditCashFlowDialog({
     setFormData({
       date: toDateInputValue(cashFlow.date),
       type: cashFlow.type,
-      currency: cashFlow.currency,
       amount: cashFlow.amount,
       fx_rate: cashFlow.fx_rate || "",
       deposit_fee_usd: fee?.amount ?? "",
-      net_usd_target: "",
-      fee_type: (cashFlow.fee_type || "other") as
-        | "deposit"
-        | "trading"
-        | "closing"
-        | "maintenance"
-        | "other"
-        | "withdrawal",
+      net_usd: normalizeNetUsd(cashFlow),
       notes: cashFlow.notes || "",
     })
   }, [open, cashFlow, cashFlows])
 
   const isTransfer = formData.type === "deposit" || formData.type === "withdrawal"
   const transferBreakdown = computeHapiDepositBreakdown({
-    copAmount: formData.amount,
-    fxRate: formData.fx_rate,
+    netUsd: formData.net_usd,
     feeUsd: formData.deposit_fee_usd,
+    fxRate: formData.fx_rate,
   })
   const standaloneUsdAmount = formData.amount.trim() ? formData.amount : "0.00"
-  const feeLabel = formData.type === "withdrawal" ? "Withdrawal fee (USD)" : "Deposit fee (USD)"
-  const netLabel = formData.type === "withdrawal" ? "USD debited from Hapi" : "USD credited to buy power"
+  const feeLabel = formData.type === "withdrawal" ? "Withdrawal fee USD" : "Deposit fee USD"
+  const netInputLabel = formData.type === "withdrawal" ? "USD debited from Hapi" : "USD to receive in Hapi"
+  const netPreviewLabel = formData.type === "withdrawal" ? "USD debited from Hapi" : "USD credited to buy power"
+  const transferAmount = computeCopFromNetUsd({
+    netUsd: formData.net_usd,
+    feeUsd: formData.deposit_fee_usd,
+    fxRate: formData.fx_rate,
+  })
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -108,10 +102,10 @@ export function EditCashFlowDialog({
       await updateCashFlow(cashFlow.id, {
         date: formData.date,
         type: formData.type as "deposit" | "withdrawal" | "fee" | "cash_adjustment",
-        currency: formData.currency as "COP" | "USD",
-        amount: formData.amount,
-        fx_rate: formData.currency === "COP" ? formData.fx_rate : null,
-        fee_type: formData.type === "fee" ? formData.fee_type : null,
+        currency: isTransfer ? "COP" : "USD",
+        amount: isTransfer ? transferAmount : formData.amount,
+        fx_rate: isTransfer ? formData.fx_rate : null,
+        fee_type: formData.type === "fee" ? cashFlow.fee_type : null,
         notes: formData.notes || null,
       })
 
@@ -130,7 +124,7 @@ export function EditCashFlowDialog({
             related_trade_id: null,
             related_cash_flow_id: cashFlow.id,
             related_type: transferType,
-            notes: `${feeLabel.replace(" (USD)", "")} for ${formData.date}`,
+            notes: `${feeLabel} for ${formData.date}`,
           }
 
           if (linkedFee) {
@@ -157,215 +151,175 @@ export function EditCashFlowDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-md flex-col gap-0 p-0">
+      <DialogContent className="flex max-h-[90vh] max-w-xl flex-col gap-0 p-0">
         <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>Edit Cash Flow</DialogTitle>
           <DialogDescription>Update the cash flow details</DialogDescription>
         </DialogHeader>
         <DialogScrollBody>
           <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-cf-date">Date</Label>
-              <Input
-                id="edit-cf-date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-cf-type">Type</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value: "deposit" | "withdrawal" | "fee" | "cash_adjustment") =>
-                  setFormData({
-                    ...formData,
-                    type: value,
-                    currency: value === "fee" || value === "cash_adjustment" ? "USD" : "COP",
-                    deposit_fee_usd: "",
-                    net_usd_target: "",
-                  })
-                }
-              >
-                <SelectTrigger id="edit-cf-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="deposit">Deposit</SelectItem>
-                  <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                  <SelectItem value="fee">Fee</SelectItem>
-                  <SelectItem value="cash_adjustment">Cash adjustment</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-cf-currency">Currency</Label>
-              <p id="edit-cf-currency" className="flex h-9 items-center text-sm font-mono">
-                {isTransfer ? "COP" : "USD"}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-cf-amount">Amount ({isTransfer ? "COP" : "USD"})</Label>
-              <Input
-                id="edit-cf-amount"
-                type="number"
-                step="0.01"
-                placeholder={isTransfer ? "1000000" : "10.00"}
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-
-          {formData.type === "fee" && (
-            <div className="space-y-2">
-              <Label htmlFor="edit-cf-fee-type">Fee Type</Label>
-              <Select
-                value={formData.fee_type}
-                onValueChange={(
-                  value: "deposit" | "trading" | "closing" | "maintenance" | "other" | "withdrawal",
-                ) => setFormData({ ...formData, fee_type: value })}
-              >
-                <SelectTrigger id="edit-cf-fee-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="deposit">Deposit</SelectItem>
-                  <SelectItem value="trading">Trading</SelectItem>
-                  <SelectItem value="closing">Closing</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                  <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {isTransfer && (
-            <div className="space-y-2">
-              <Label htmlFor="edit-cf-fx-rate">FX Rate (COP/USD)</Label>
-              <Input
-                id="edit-cf-fx-rate"
-                type="number"
-                step="0.01"
-                placeholder="4000"
-                value={formData.fx_rate}
-                onChange={(e) => setFormData({ ...formData, fx_rate: e.target.value })}
-                required
-              />
-            </div>
-          )}
-
-          {isTransfer && (
-            <div className="space-y-2">
-              <Label htmlFor="edit-cf-net-target">
-                Target {formData.type === "withdrawal" ? "USD debited" : "USD credited"} (optional)
-              </Label>
-              <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-cf-date">Date</Label>
                 <Input
-                  id="edit-cf-net-target"
+                  id="edit-cf-date"
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-cf-type">Type</Label>
+                {formData.type === "fee" ? (
+                  <p id="edit-cf-type" className="flex h-9 items-center text-sm font-mono">
+                    Fee (linked)
+                  </p>
+                ) : (
+                  <Select
+                    value={formData.type}
+                    onValueChange={(value: "deposit" | "withdrawal" | "cash_adjustment") =>
+                      setFormData({
+                        ...formData,
+                        type: value,
+                        deposit_fee_usd: "",
+                        net_usd: "",
+                      })
+                    }
+                  >
+                    <SelectTrigger id="edit-cf-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="deposit">Deposit</SelectItem>
+                      <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                      <SelectItem value="cash_adjustment">Cash adjustment</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
+
+            {isTransfer && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-cf-net-usd">{netInputLabel}</Label>
+                <Input
+                  id="edit-cf-net-usd"
                   type="number"
                   step="0.01"
                   min="0"
                   placeholder="100.00"
-                  value={formData.net_usd_target}
-                  onChange={(e) => setFormData({ ...formData, net_usd_target: e.target.value })}
+                  value={formData.net_usd}
+                  onChange={(e) => setFormData({ ...formData, net_usd: e.target.value })}
+                  required
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    setFormData({
-                      ...formData,
-                      amount: computeCopToWireFromNetTarget({
-                        netUsdTarget: formData.net_usd_target,
-                        feeUsd: formData.deposit_fee_usd,
-                        fxRate: formData.fx_rate,
-                      }),
-                    })
-                  }
-                >
-                  Fill COP
-                </Button>
               </div>
-            </div>
-          )}
+            )}
 
-          {isTransfer && (
+            {!isTransfer && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-cf-amount">Amount (USD)</Label>
+                <Input
+                  id="edit-cf-amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="10.00"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  required
+                />
+              </div>
+            )}
+
+            {isTransfer && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-cf-deposit-fee">
+                  {feeLabel}{" "}
+                  <span className="text-xs font-normal text-muted-foreground">optional</span>
+                </Label>
+                <Input
+                  id="edit-cf-deposit-fee"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="1.99"
+                  value={formData.deposit_fee_usd}
+                  onChange={(e) => setFormData({ ...formData, deposit_fee_usd: e.target.value })}
+                />
+              </div>
+            )}
+
+            {isTransfer && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-cf-fx-rate">FX rate COP/USD</Label>
+                <Input
+                  id="edit-cf-fx-rate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="3532.531"
+                  value={formData.fx_rate}
+                  onChange={(e) => setFormData({ ...formData, fx_rate: e.target.value })}
+                  required
+                />
+              </div>
+            )}
+
+            <div className="space-y-1">
+              {isTransfer ? (
+                <>
+                  <Label>{netPreviewLabel}</Label>
+                  <div className="text-2xl font-bold font-mono">${transferBreakdown.netUsd}</div>
+                  <p className="text-sm text-muted-foreground">
+                    Subtotal USD (net + fee):{" "}
+                    <span className="font-mono font-semibold text-foreground">${transferBreakdown.subtotalUsd}</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {feeLabel}: <span className="font-mono text-foreground">${transferBreakdown.feeUsd}</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    COP to wire:{" "}
+                    <span className="font-mono font-semibold text-foreground">${transferBreakdown.copToWire}</span>
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Label>USD amount</Label>
+                  <div className="text-2xl font-bold font-mono">${standaloneUsdAmount}</div>
+                </>
+              )}
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="edit-cf-deposit-fee">
-                {feeLabel}{" "}
-                <span className="text-xs font-normal text-muted-foreground">optional</span>
+              <Label htmlFor="edit-cf-notes">
+                Notes {formData.type === "cash_adjustment" ? "(required)" : "(optional)"}
               </Label>
-              <Input
-                id="edit-cf-deposit-fee"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="1.99"
-                value={formData.deposit_fee_usd}
-                onChange={(e) => setFormData({ ...formData, deposit_fee_usd: e.target.value })}
+              <NotesTextarea
+                id="edit-cf-notes"
+                placeholder={
+                  formData.type === "cash_adjustment"
+                    ? "Adjust buy power without changing deposit history"
+                    : "Additional details..."
+                }
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                required={formData.type === "cash_adjustment"}
               />
+              {formData.type === "cash_adjustment" && (
+                <p className="text-xs text-muted-foreground">
+                  Adjust buy power without changing deposit history.
+                </p>
+              )}
             </div>
-          )}
 
-          <div className="space-y-1">
-            {isTransfer ? (
-              <>
-                <Label>{netLabel}</Label>
-                <div className="text-2xl font-bold font-mono">${transferBreakdown.netUsdCredited}</div>
-                <p className="text-sm text-muted-foreground">
-                  Gross USD (COP / FX):{" "}
-                  <span className="font-mono font-semibold text-foreground">${transferBreakdown.grossUsd}</span>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {feeLabel}: <span className="font-mono text-foreground">${transferBreakdown.feeUsd}</span>
-                </p>
-              </>
-            ) : (
-              <>
-                <Label>USD amount</Label>
-                <div className="text-2xl font-bold font-mono">${standaloneUsdAmount}</div>
-              </>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="edit-cf-notes">
-              Notes {formData.type === "cash_adjustment" ? "(required)" : "(optional)"}
-            </Label>
-            <NotesTextarea
-              id="edit-cf-notes"
-              placeholder={
-                formData.type === "cash_adjustment"
-                  ? "Adjust buy power without changing deposit history"
-                  : "Additional details..."
-              }
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              required={formData.type === "cash_adjustment"}
-            />
-            {formData.type === "cash_adjustment" && (
-              <p className="text-xs text-muted-foreground">
-                Adjust buy power without changing deposit history.
-              </p>
-            )}
-          </div>
-
-          <div className="flex gap-3 justify-end">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
+            <div className="flex gap-3 justify-end">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
           </form>
         </DialogScrollBody>
       </DialogContent>

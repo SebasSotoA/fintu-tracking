@@ -1,57 +1,59 @@
 import { describe, expect, it } from "vitest"
 import {
-  computeCopToWireFromNetTarget,
+  computeCopFromNetUsd,
   computeHapiDepositBreakdown,
 } from "./hapi-deposit-calculator"
 
 describe("computeHapiDepositBreakdown", () => {
-  it("computes gross and net from cop, fx and fee", () => {
+  it("computes subtotal and cop to wire from net usd, fee and fx", () => {
     expect(
       computeHapiDepositBreakdown({
-        copAmount: "362390",
-        fxRate: "3553.191",
+        netUsd: "100",
         feeUsd: "1.99",
+        fxRate: "3532.531",
       }),
     ).toEqual({
-      grossUsd: "101.99",
+      netUsd: "100.00",
+      subtotalUsd: "101.99",
       feeUsd: "1.99",
-      netUsdCredited: "100.00",
+      copToWire: "360282.84",
     })
   })
 
-  it("returns zeroed values when cop or fx are invalid", () => {
+  it("returns zeroed values when net usd or fx are invalid", () => {
     expect(
       computeHapiDepositBreakdown({
-        copAmount: "",
-        fxRate: "3553.191",
+        netUsd: "",
         feeUsd: "1.99",
+        fxRate: "3532.531",
       }),
     ).toEqual({
-      grossUsd: "0.00",
+      netUsd: "0.00",
+      subtotalUsd: "0.00",
       feeUsd: "1.99",
-      netUsdCredited: "0.00",
+      copToWire: "0.00",
     })
   })
 })
 
-describe("computeCopToWireFromNetTarget", () => {
-  it("computes cop to wire from net target, fee and fx", () => {
+describe("computeCopFromNetUsd", () => {
+  it("computes cop to wire from net usd, fee and fx", () => {
     expect(
-      computeCopToWireFromNetTarget({
-        netUsdTarget: "100",
+      computeCopFromNetUsd({
+        netUsd: "100",
         feeUsd: "1.99",
-        fxRate: "3553.191",
+        fxRate: "3532.531",
       }),
-    ).toBe("362390")
+    ).toBe("360282.84")
   })
 
-  it("returns zero when net target or fx are invalid", () => {
+  it("returns zero when net usd or fx are invalid", () => {
     expect(
-      computeCopToWireFromNetTarget({
-        netUsdTarget: "",
+      computeCopFromNetUsd({
+        netUsd: "",
         feeUsd: "1.99",
-        fxRate: "3553.191",
+        fxRate: "3532.531",
       }),
-    ).toBe("0")
+    ).toBe("0.00")
   })
 })

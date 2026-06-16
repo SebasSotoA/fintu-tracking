@@ -4,7 +4,7 @@ import {
   type TradeDateRange,
 } from "@/lib/trades/trade-filters"
 
-export type CashFlowTypeFilter = "all" | "deposit" | "withdrawal" | "fee" | "cash_adjustment"
+export type CashFlowTypeFilter = "all" | "deposit" | "withdrawal" | "cash_adjustment"
 export type CashFlowCurrencyFilter = "all" | "USD" | "COP"
 
 export interface CashFlowFilters {
@@ -20,7 +20,7 @@ export const DEFAULT_CASH_FLOW_FILTERS: CashFlowFilters = {
 }
 
 export interface CashFlowListQueryParams {
-  type?: "deposit" | "withdrawal" | "fee" | "cash_adjustment"
+  type?: "deposit" | "withdrawal" | "cash_adjustment"
   currency?: "USD" | "COP"
   from?: string
   to?: string
@@ -46,7 +46,6 @@ export function parseCashFlowFiltersFromSearchParams(
   const type: CashFlowTypeFilter =
     typeRaw === "deposit" ||
     typeRaw === "withdrawal" ||
-    typeRaw === "fee" ||
     typeRaw === "cash_adjustment"
       ? typeRaw
       : "all"

@@ -22,9 +22,9 @@ describe("cash-flow-filters", () => {
 
   it("maps filters to API params", () => {
     const params = cashFlowFiltersToApiParams(
-      parseCashFlowFiltersFromSearchParams({ type: "fee", currency: "COP" }),
+      parseCashFlowFiltersFromSearchParams({ type: "deposit", currency: "COP" }),
     )
-    expect(params).toEqual({ type: "fee", currency: "COP" })
+    expect(params).toEqual({ type: "deposit", currency: "COP" })
   })
 
   it("accepts cash adjustment type from search params", () => {
@@ -41,5 +41,11 @@ describe("cash-flow-filters", () => {
     expect(hasActiveCashFlowFilters(parseCashFlowFiltersFromSearchParams({ type: "withdrawal" }))).toBe(
       true,
     )
+  })
+
+  it("ignores unsupported fee filter value from URL", () => {
+    const filters = parseCashFlowFiltersFromSearchParams({ type: "fee" })
+    expect(filters.type).toBe("all")
+    expect(cashFlowFiltersToApiParams(filters)).toEqual({})
   })
 })
