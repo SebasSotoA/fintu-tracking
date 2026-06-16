@@ -225,7 +225,6 @@ export function TradesList({
   if (total === 0 && !filtersActive) {
     return (
       <section>
-        <h2 className="mb-4 text-lg font-semibold tracking-tight">Trade History</h2>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-muted-foreground mb-4">No trades recorded yet</p>
@@ -239,7 +238,6 @@ export function TradesList({
   return (
     <>
       <section>
-        <h2 className="mb-4 text-lg font-semibold tracking-tight">Trade History</h2>
         <Card>
           <CardHeader className="pb-0">
             <div className="flex flex-wrap items-end justify-between gap-3">

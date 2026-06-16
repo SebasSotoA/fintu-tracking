@@ -45,9 +45,6 @@ async function CashFlowsContent({
 
   return (
     <>
-      <div className="mb-6">
-        <FxRateManager />
-      </div>
       <CashFlowsList
         cashFlows={cashFlows}
         total={total}
@@ -55,6 +52,9 @@ async function CashFlowsContent({
         pageSize={currentPageSize}
         highlightId={highlightId}
       />
+      <div className="mt-8">
+        <FxRateManager />
+      </div>
     </>
   )
 }
