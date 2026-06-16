@@ -144,6 +144,9 @@ func CreateCashFlow(c fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for cash adjustments"})
 		}
 	}
+	if err := validateFeeLinkage(req.Type, req.RelatedCashFlowID, req.RelatedTradeID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
 	amount, err := decimal.NewFromString(req.Amount)
 	if err != nil {
@@ -289,6 +292,9 @@ func UpdateCashFlow(c fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for cash adjustments"})
 		}
 	}
+	if err := validateFeeLinkage(existingCF.Type, existingCF.RelatedCashFlowID, existingCF.RelatedTradeID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
 	amount, err := decimal.NewFromString(existingCF.Amount)
 	if err != nil {
@@ -404,4 +410,11 @@ func DeleteCashFlow(c fiber.Ctx) error {
 
 func isValidCashFlowType(flowType string) bool {
 	return flowType == "deposit" || flowType == "withdrawal" || flowType == "fee" || flowType == "cash_adjustment"
+}
+
+func validateFeeLinkage(flowType string, relatedCashFlowID *string, relatedTradeID *string) error {
+	if flowType == "fee" && relatedCashFlowID == nil && relatedTradeID == nil {
+		return fmt.Errorf("Standalone fees are not supported; fees must be linked to a deposit, withdrawal, or trade")
+	}
+	return nil
 }

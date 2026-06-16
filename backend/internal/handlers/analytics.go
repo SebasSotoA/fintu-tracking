@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/services"
 
 	"github.com/gofiber/fiber/v3"
@@ -11,7 +12,10 @@ import (
 
 // GetFeeBreakdown handles GET /api/analytics/fee-breakdown
 func GetFeeBreakdown(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
 
 	dateRange := parseDateRange(c)
 
@@ -28,7 +32,10 @@ func GetFeeBreakdown(c fiber.Ctx) error {
 
 // GetFeeImpact handles GET /api/analytics/fee-impact
 func GetFeeImpact(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
 	ticker := c.Query("ticker")
 
 	if ticker == "" {
@@ -50,7 +57,10 @@ func GetFeeImpact(c fiber.Ctx) error {
 
 // GetFeeEfficiency handles GET /api/analytics/fee-efficiency
 func GetFeeEfficiency(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
 	groupBy := c.Query("group_by", "ticker")
 
 	feeService := services.NewFeeService(database.GetPool())
@@ -66,7 +76,10 @@ func GetFeeEfficiency(c fiber.Ctx) error {
 
 // GetReturnAttribution handles GET /api/analytics/return-attribution
 func GetReturnAttribution(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
 
 	analyticsService := services.NewAnalyticsService(database.GetPool())
 	attribution, err := analyticsService.CalculateReturnAttribution(c.Context(), userID)
@@ -81,7 +94,10 @@ func GetReturnAttribution(c fiber.Ctx) error {
 
 // GetFXImpact handles GET /api/analytics/fx-impact
 func GetFXImpact(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
 
 	analyticsService := services.NewAnalyticsService(database.GetPool())
 	fxReport, err := analyticsService.CalculateFXImpact(c.Context(), userID)
@@ -96,7 +112,10 @@ func GetFXImpact(c fiber.Ctx) error {
 
 // GetPerformanceTimeSeries handles GET /api/analytics/performance-time-series
 func GetPerformanceTimeSeries(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
 	interval := c.Query("interval", "day")
 
 	analyticsService := services.NewAnalyticsService(database.GetPool())
@@ -112,7 +131,10 @@ func GetPerformanceTimeSeries(c fiber.Ctx) error {
 
 // GetNetWorth handles GET /api/analytics/net-worth
 func GetNetWorth(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
 
 	analyticsService := services.NewAnalyticsService(database.GetPool())
 	netWorth, err := analyticsService.GetNetWorthSummary(c.Context(), userID)
@@ -127,7 +149,10 @@ func GetNetWorth(c fiber.Ctx) error {
 
 // GetCashBreakdown handles GET /api/analytics/cash-breakdown
 func GetCashBreakdown(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
 
 	analyticsService := services.NewAnalyticsService(database.GetPool())
 	breakdown, err := analyticsService.GetCashBreakdown(c.Context(), userID)
@@ -142,7 +167,10 @@ func GetCashBreakdown(c fiber.Ctx) error {
 
 // GetCashReconciliation handles GET /api/analytics/cash-reconciliation
 func GetCashReconciliation(c fiber.Ctx) error {
-	userID := c.Locals("user_id").(string)
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
 
 	feeService := services.NewFeeService(database.GetPool())
 	report, err := feeService.ReconcileCashFlowFees(c.Context(), userID)

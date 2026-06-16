@@ -34,7 +34,7 @@ func (s *AnalyticsService) GetCashBreakdown(ctx context.Context, userID string) 
 		CashBalance:         "0",
 	}
 
-	var deposits, withdrawals, cashAdjustments, standaloneFees, transferFees string
+	var deposits, withdrawals, cashAdjustments, standaloneLegacyFees, transferFees string
 	err := s.pool.QueryRow(ctx, `
 		SELECT
 			COALESCE(SUM(CASE WHEN type = 'deposit' THEN usd_amount ELSE 0 END), 0),
@@ -43,20 +43,21 @@ func (s *AnalyticsService) GetCashBreakdown(ctx context.Context, userID string) 
 			COALESCE(SUM(CASE WHEN type = 'fee' AND related_trade_id IS NULL AND related_cash_flow_id IS NULL THEN usd_amount ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN type = 'fee' AND related_cash_flow_id IS NOT NULL THEN usd_amount ELSE 0 END), 0)
 		FROM cash_flows WHERE user_id = $1
-	`, userID).Scan(&deposits, &withdrawals, &cashAdjustments, &standaloneFees, &transferFees)
+	`, userID).Scan(&deposits, &withdrawals, &cashAdjustments, &standaloneLegacyFees, &transferFees)
 	if err != nil {
 		return out, err
 	}
 	out.DepositsUSD = deposits
 	out.WithdrawalsUSD = withdrawals
 	out.CashAdjustmentsUSD = cashAdjustments
-	out.FeesUSD = standaloneFees
+	// Preserved for legacy standalone fee rows created before fee-link enforcement.
+	out.FeesUSD = standaloneLegacyFees
 	out.TransferFeesPaidUSD = transferFees
 
 	dep, _ := decimal.NewFromString(deposits)
 	wd, _ := decimal.NewFromString(withdrawals)
 	adj, _ := decimal.NewFromString(cashAdjustments)
-	fee, _ := decimal.NewFromString(standaloneFees)
+	fee, _ := decimal.NewFromString(standaloneLegacyFees)
 	cashFlowsNet := dep.Sub(wd).Add(adj).Sub(fee)
 	out.CashFlowsNetUSD = cashFlowsNet.String()
 
