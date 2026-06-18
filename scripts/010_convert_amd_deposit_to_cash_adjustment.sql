@@ -1,4 +1,4 @@
-﻿-- Migration 010: Reclassify fake AMD sale deposit as USD cash adjustment.
+-- Migration 010: Reclassify fake AMD sale deposit as USD cash adjustment.
 -- Identified in DB 2026-06-17: deposit used to mirror AMD sale proceeds for buying power
 -- without a real COP salary deposit. Keeps usd_amount (buying power); removes from net-deposit/invested metrics.
 --
