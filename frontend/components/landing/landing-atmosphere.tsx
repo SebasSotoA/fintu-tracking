@@ -15,17 +15,17 @@ export function LandingAtmosphere({ children, className }: LandingAtmosphereProp
         className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
       >
         <div
-          className="absolute -top-32 right-0 h-[520px] w-[min(90vw,720px)] opacity-60 landing-glow will-change-[opacity]"
+          className="absolute -top-32 right-0 h-[520px] w-[min(90vw,720px)] opacity-75 landing-glow will-change-[opacity]"
           style={{
             background:
-              "radial-gradient(ellipse 70% 60% at 65% 40%, var(--landing-glow-mint) 0%, transparent 72%)",
+              "radial-gradient(ellipse 75% 65% at 62% 38%, var(--landing-glow-mint) 0%, transparent 62%)",
           }}
         />
         <div
-          className="absolute -bottom-48 -left-24 h-96 w-96 opacity-35 landing-glow-reverse will-change-[opacity]"
+          className="absolute -bottom-48 -left-24 h-96 w-96 opacity-50 landing-glow-reverse will-change-[opacity]"
           style={{
             background:
-              "radial-gradient(circle at center, var(--landing-glow-teal) 0%, transparent 68%)",
+              "radial-gradient(circle at center, var(--landing-glow-soft) 0%, transparent 64%)",
           }}
         />
         <div

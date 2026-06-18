@@ -122,9 +122,13 @@
   /* on-primary-container #719a8d */
   --on-primary-container: oklch(0.617 0.055 172);
 
-  /* Landing atmosphere — mint/teal family aligned with logo (#a5d0c1) */
-  --landing-glow-mint: oklch(0.793 0.065 172 / 0.2);
-  --landing-glow-teal: oklch(0.45 0.055 172 / 0.28);
+  /* Landing atmosphere — airy mint wash matching logo (#a5d0c1), not forest/lime green */
+  --landing-glow-mint: oklch(
+    from var(--primary) min(calc(l + 0.06), 0.88) calc(c * 0.55) calc(h - 3) / 0.4
+  );
+  --landing-glow-soft: oklch(
+    from var(--primary) min(calc(l + 0.08), 0.9) calc(c * 0.4) calc(h - 3) / 0.25
+  );
 }
 
 @theme inline {
@@ -248,7 +252,7 @@
       opacity: 0.5;
     }
     50% {
-      opacity: 0.68;
+      opacity: 0.75;
     }
   }
 

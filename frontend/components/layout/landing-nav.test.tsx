@@ -30,6 +30,17 @@ describe("LandingNav", () => {
     expect(screen.queryByRole("link", { name: "Dashboard" })).not.toBeInTheDocument()
   })
 
+  it("uses glass header styling that merges with the hero gradient", async () => {
+    mockGetUser.mockResolvedValue({ data: { user: null } })
+
+    const { container } = render(await LandingNav())
+    const header = container.querySelector("header")
+
+    expect(header).toHaveClass("sticky", "backdrop-blur-md", "border-border/10")
+    expect(header?.className).toMatch(/bg-background\/[1-4]\d/)
+    expect(header?.className).not.toMatch(/bg-background\/[6-9]\d/)
+  })
+
   it("shows dashboard when logged in", async () => {
     mockGetUser.mockResolvedValue({
       data: { user: { id: "user-1", email: "investor@example.com" } },

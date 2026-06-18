@@ -22,6 +22,12 @@ describe("LandingHero", () => {
     ).toBeInTheDocument()
   })
 
+  it("does not expose an about section anchor", () => {
+    const { container } = render(<LandingHero />)
+
+    expect(container.querySelector("#about")).not.toBeInTheDocument()
+  })
+
   it("renders CTAs with correct auth hrefs", () => {
     render(<LandingHero />)
 

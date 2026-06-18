@@ -4,6 +4,15 @@ import userEvent from "@testing-library/user-event"
 import { LandingNavMobile } from "./landing-nav-mobile"
 
 describe("LandingNavMobile", () => {
+  it("uses glass styling on the mobile menu panel", () => {
+    render(<LandingNavMobile isAuthenticated={false} />)
+
+    const menu = document.getElementById("landing-mobile-menu")
+    expect(menu).toHaveClass("backdrop-blur-md", "border-border/10")
+    expect(menu?.className).toMatch(/bg-background\/[1-4]\d/)
+    expect(menu?.className).not.toMatch(/bg-background\/[6-9]\d/)
+  })
+
   it("exposes anchor links when menu is opened", async () => {
     const user = userEvent.setup()
     render(<LandingNavMobile isAuthenticated={false} />)
@@ -16,7 +25,7 @@ describe("LandingNavMobile", () => {
 
     expect(menu).toHaveAttribute("aria-hidden", "false")
     expect(screen.getByRole("link", { name: "Features" })).toHaveAttribute("href", "#features")
-    expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("href", "#about")
+    expect(screen.queryByRole("link", { name: "About" })).not.toBeInTheDocument()
   })
 
   it("shows login and get started when logged out", async () => {

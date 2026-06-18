@@ -7,7 +7,6 @@ import { landingDisplay } from "@/lib/fonts/landing-display"
 
 const footerLinks = [
   { href: "#features", label: "Features" },
-  { href: "#about", label: "About" },
   { href: "/auth/login", label: "Login" },
 ] as const
 

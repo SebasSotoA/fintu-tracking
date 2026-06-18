@@ -10,10 +10,7 @@ interface LandingNavMobileProps {
   isAuthenticated: boolean
 }
 
-const navLinks = [
-  { href: "#features", label: "Features" },
-  { href: "#about", label: "About" },
-] as const
+const navLinks = [{ href: "#features", label: "Features" }] as const
 
 export function LandingNavMobile({ isAuthenticated }: LandingNavMobileProps) {
   const [open, setOpen] = useState(false)
@@ -53,7 +50,7 @@ export function LandingNavMobile({ isAuthenticated }: LandingNavMobileProps) {
         id="landing-mobile-menu"
         inert={!open || undefined}
         className={cn(
-          "fixed inset-x-0 top-16 z-40 border-b border-border/40 bg-background/95 backdrop-blur-xl transition-all duration-300 motion-reduce:transition-none",
+          "fixed inset-x-0 top-16 z-40 border-b border-border/10 bg-background/35 backdrop-blur-md transition-all duration-300 motion-reduce:transition-none",
           open
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-2 opacity-0",
@@ -65,13 +62,13 @@ export function LandingNavMobile({ isAuthenticated }: LandingNavMobileProps) {
             <a
               key={link.href}
               href={link.href}
-              className="rounded-lg px-3 py-3 text-sm font-medium text-foreground/80 outline-none transition-colors hover:bg-surface-container-low hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
+              className="rounded-lg px-3 py-3 text-sm font-medium text-foreground/80 outline-none transition-colors hover:bg-primary/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
               onClick={() => setOpen(false)}
             >
               {link.label}
             </a>
           ))}
-          <div className="mt-3 flex flex-col gap-2 border-t border-border/30 pt-4">
+          <div className="mt-3 flex flex-col gap-2 border-t border-border/10 pt-4">
             {isAuthenticated ? (
               <Button asChild className="w-full gap-2">
                 <Link href="/dashboard" onClick={() => setOpen(false)}>

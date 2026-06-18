@@ -17,7 +17,7 @@ describe("LandingFooter", () => {
     expect(container.querySelector("svg.text-primary")).toBeTruthy()
 
     expect(screen.getByRole("link", { name: "Features" })).toHaveAttribute("href", "#features")
-    expect(screen.getByRole("link", { name: "About" })).toHaveAttribute("href", "#about")
+    expect(screen.queryByRole("link", { name: "About" })).not.toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("href", "/auth/login")
 
     expect(

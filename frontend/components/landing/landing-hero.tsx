@@ -12,7 +12,7 @@ const precisionMetrics = [
 
 export function LandingHero() {
   return (
-    <section id="about" className="relative container mx-auto px-6 pb-20 pt-14 md:pb-28 md:pt-20">
+    <section className="relative container mx-auto px-6 pb-20 pt-14 md:pb-28 md:pt-20">
       <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
         <div className="max-w-xl landing-fade-up">
           <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium tracking-wide text-primary uppercase">
@@ -58,10 +58,6 @@ export function LandingHero() {
         </div>
 
         <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:ml-auto lg:max-w-none landing-fade-up-delayed">
-          <div
-            aria-hidden
-            className="absolute -inset-4 rounded-3xl border border-primary/15 bg-primary/10"
-          />
           <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-surface-container/80 shadow-2xl shadow-black/40 landing-float">
             <div className="flex items-center justify-between border-b border-border/50 bg-surface-container-high/80 px-4 py-3">
               <span className="font-mono text-[11px] tracking-widest text-muted-foreground uppercase">

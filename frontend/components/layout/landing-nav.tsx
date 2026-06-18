@@ -12,7 +12,7 @@ export async function LandingNav() {
   } = await supabase.auth.getUser()
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/20 bg-background/85 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+    <header className="sticky top-0 z-50 w-full border-b border-border/10 bg-background/35 backdrop-blur-md supports-[backdrop-filter]:bg-background/25">
       <div className="container mx-auto flex h-16 items-center justify-between px-6">
         <Link
           href="/"
@@ -25,15 +25,9 @@ export async function LandingNav() {
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
           <a
             href="#features"
-            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground/60 outline-none transition-all duration-200 hover:bg-surface-container-low hover:text-foreground/90 focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground/60 outline-none transition-all duration-200 hover:bg-primary/5 hover:text-foreground/90 focus-visible:ring-2 focus-visible:ring-primary/40"
           >
             Features
-          </a>
-          <a
-            href="#about"
-            className="rounded-lg px-4 py-2 text-sm font-medium text-foreground/60 outline-none transition-all duration-200 hover:bg-surface-container-low hover:text-foreground/90 focus-visible:ring-2 focus-visible:ring-primary/40"
-          >
-            About
           </a>
         </nav>
 
