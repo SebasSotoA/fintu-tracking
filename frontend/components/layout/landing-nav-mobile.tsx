@@ -21,8 +21,8 @@ export function LandingNavMobile({ isAuthenticated }: LandingNavMobileProps) {
   useEffect(() => {
     if (!open) return
 
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = "hidden"
+    const root = document.documentElement
+    root.classList.add("overflow-hidden")
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false)
@@ -30,7 +30,7 @@ export function LandingNavMobile({ isAuthenticated }: LandingNavMobileProps) {
     window.addEventListener("keydown", onKeyDown)
 
     return () => {
-      document.body.style.overflow = previousOverflow
+      root.classList.remove("overflow-hidden")
       window.removeEventListener("keydown", onKeyDown)
     }
   }, [open])

@@ -1,6 +1,6 @@
-import Image from "next/image"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
+import { FintuLogo } from "@/components/brand/fintu-logo"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard } from "lucide-react"
 import { LandingNavMobile } from "@/components/layout/landing-nav-mobile"
@@ -18,14 +18,8 @@ export async function LandingNav() {
           href="/"
           className="flex items-center rounded-lg outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          <Image
-            src="/fintu-logo.svg"
-            alt="Fintu"
-            width={114}
-            height={28}
-            className="h-7 w-auto"
-            priority
-          />
+          <FintuLogo />
+          <span className="sr-only">Fintu</span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">

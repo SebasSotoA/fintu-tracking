@@ -11,7 +11,7 @@ const features = [
       "Track COP to USD conversions with historical FX rates applied at each trade date—not today's spot rate.",
     icon: TrendingUp,
     className: "md:col-span-2 md:row-span-2",
-    accent: "from-primary/15 via-primary-container/30 to-transparent",
+    accent: "from-primary/12 via-primary/5 to-transparent",
   },
   {
     id: "cost-basis",
@@ -19,7 +19,7 @@ const features = [
     description: "Average cost method with every fee rolled into your true entry price.",
     icon: DollarSign,
     className: "md:col-span-1",
-    accent: "from-primary-container/40 to-transparent",
+    accent: "from-primary/10 to-transparent",
   },
   {
     id: "portfolio",
@@ -27,7 +27,7 @@ const features = [
     description: "Holdings, allocation, and P/L in both currencies—side by side.",
     icon: PieChart,
     className: "md:col-span-1",
-    accent: "from-surface-container-high/80 to-transparent",
+    accent: "from-primary/8 to-transparent",
   },
   {
     id: "performance",
@@ -36,7 +36,7 @@ const features = [
       "XIRR and fee-impact analysis that reflect how your capital actually compounded over time.",
     icon: BarChart3,
     className: "md:col-span-2",
-    accent: "from-primary/10 via-primary-container/20 to-transparent",
+    accent: "from-primary/10 via-primary/5 to-transparent",
   },
 ] as const
 
@@ -82,7 +82,7 @@ export function LandingFeatures() {
                 />
                 <CardContent className="relative flex h-full flex-col justify-between gap-6 p-6 md:p-8">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="rounded-xl border border-primary/15 bg-primary-container/50 p-3 transition-colors duration-300 group-hover:border-primary/30 group-hover:bg-primary-container/70">
+                    <div className="rounded-xl border border-primary/20 bg-primary/10 p-3 transition-colors duration-300 group-hover:border-primary/35 group-hover:bg-primary/15">
                       <Icon className="size-5 text-primary" strokeWidth={1.75} />
                     </div>
                     <span className="font-mono text-[10px] tracking-widest text-muted-foreground/70 uppercase">

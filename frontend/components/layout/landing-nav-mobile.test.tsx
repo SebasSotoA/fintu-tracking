@@ -41,4 +41,17 @@ describe("LandingNavMobile", () => {
     expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/dashboard")
     expect(screen.queryByRole("link", { name: "Login" })).not.toBeInTheDocument()
   })
+
+  it("locks document scroll while the menu is open", async () => {
+    const user = userEvent.setup()
+    render(<LandingNavMobile isAuthenticated={false} />)
+
+    expect(document.documentElement).not.toHaveClass("overflow-hidden")
+
+    await user.click(screen.getByRole("button", { name: "Open menu" }))
+    expect(document.documentElement).toHaveClass("overflow-hidden")
+
+    await user.click(screen.getByRole("button", { name: "Close menu" }))
+    expect(document.documentElement).not.toHaveClass("overflow-hidden")
+  })
 })

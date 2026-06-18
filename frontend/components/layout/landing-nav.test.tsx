@@ -2,10 +2,6 @@ import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { LandingNav } from "./landing-nav"
 
-vi.mock("next/image", () => ({
-  default: ({ alt, src }: { alt: string; src: string }) => <img alt={alt} src={src} />,
-}))
-
 const mockGetUser = vi.fn()
 
 vi.mock("@/lib/supabase/server", () => ({

@@ -121,6 +121,10 @@
   --surface-container-highest: oklch(0.233 0 0);
   /* on-primary-container #719a8d */
   --on-primary-container: oklch(0.617 0.055 172);
+
+  /* Landing atmosphere — mint/teal family aligned with logo (#a5d0c1) */
+  --landing-glow-mint: oklch(0.793 0.065 172 / 0.2);
+  --landing-glow-teal: oklch(0.45 0.055 172 / 0.28);
 }
 
 @theme inline {
@@ -239,13 +243,12 @@
   }
 
   @keyframes landing-glow {
-    0% {
-      opacity: 0.45;
-      transform: scale(1);
-    }
+    0%,
     100% {
-      opacity: 0.7;
-      transform: scale(1.04);
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.68;
     }
   }
 
@@ -268,18 +271,35 @@
 
     .landing-float {
       animation: landing-float 8s ease-in-out infinite;
+      will-change: transform;
     }
 
     .landing-float-slow {
       animation: landing-float 10s ease-in-out 1s infinite reverse;
+      will-change: transform;
     }
 
     .landing-glow {
-      animation: landing-glow 12s ease-in-out infinite alternate;
+      animation: landing-glow 14s ease-in-out infinite;
     }
 
     .landing-glow-reverse {
-      animation: landing-glow 16s ease-in-out infinite alternate-reverse;
+      animation: landing-glow 18s ease-in-out infinite reverse;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .landing-fade-up,
+    .landing-fade-up-delayed,
+    .landing-fade-up-stagger,
+    .landing-fade-up-metric,
+    .landing-float,
+    .landing-float-slow,
+    .landing-glow,
+    .landing-glow-reverse {
+      animation: none !important;
+      opacity: 1;
+      transform: none;
     }
   }
 }

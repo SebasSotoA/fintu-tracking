@@ -1,6 +1,6 @@
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
+import { FintuLogo } from "@/components/brand/fintu-logo"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { landingDisplay } from "@/lib/fonts/landing-display"
@@ -21,13 +21,8 @@ export function LandingFooter() {
               href="/"
               className="inline-flex rounded-lg outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary/40"
             >
-              <Image
-                src="/fintu-logo.svg"
-                alt="Fintu"
-                width={114}
-                height={28}
-                className="h-7 w-auto"
-              />
+              <FintuLogo />
+              <span className="sr-only">Fintu</span>
             </Link>
             <p
               className={cn(
@@ -44,7 +39,7 @@ export function LandingFooter() {
           </div>
 
           <div className="flex flex-col gap-8 md:items-end">
-            <nav className="flex flex-wrap gap-x-6 gap-y-2 md:justify-end">
+            <nav className="flex flex-wrap gap-x-6 gap-y-2 md:justify-end" aria-label="Footer">
               {footerLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -66,7 +61,7 @@ export function LandingFooter() {
 
         <div className="mt-14 flex flex-col gap-3 border-t border-border/30 pt-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Fintu. All rights reserved.</p>
-          <p className="font-mono tracking-wide text-on-primary-container/80">
+          <p className="font-mono tracking-wide text-primary/70">
             COP ↔ USD · fees · XIRR · cost basis
           </p>
         </div>
