@@ -316,12 +316,7 @@ export function TradesList({
                     <TableRow key={trade.id}>
                       <TableCell>{formatCalendarDate(trade.date)}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-semibold">{trade.ticker}</span>
-                          {trade.is_opening_position && (
-                            <Badge variant="outline">Opening</Badge>
-                          )}
-                        </div>
+                        <span className="font-mono font-semibold">{trade.ticker}</span>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>

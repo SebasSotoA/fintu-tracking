@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest"
 import { buildTradePayload, calculateTradeTotal, tradeClosingFeeForForm } from "./trade-form-utils"
 import type { Trade } from "@/lib/types"
 
+const baseFormValues = {
+  date: "2026-06-01",
+  ticker: "aapl",
+  asset_type: "stock" as const,
+  side: "buy" as const,
+  quantity: "1",
+  price: "100",
+  closing_fee: "0.15",
+  notes: "",
+}
+
 describe("tradeClosingFeeForForm", () => {
   it("prefers closing_fee", () => {
     const trade = {
@@ -20,54 +31,28 @@ describe("tradeClosingFeeForForm", () => {
 
 describe("buildTradePayload", () => {
   it("sends only closing_fee", () => {
-    const payload = buildTradePayload({
-      date: "2026-06-01",
-      ticker: "aapl",
-      asset_type: "stock",
-      side: "buy",
-      quantity: "1",
-      price: "100",
-      closing_fee: "0.15",
-      notes: "",
-      is_opening_position: false,
-    })
+    const payload = buildTradePayload(baseFormValues)
     expect(payload.closing_fee).toBe("0.15")
     expect(payload).not.toHaveProperty("deposit_fee")
     expect(payload).not.toHaveProperty("transaction_fx_rate")
+    expect(payload).not.toHaveProperty("is_opening_position")
   })
 
-  it("marks opening positions and omits closing fee", () => {
-    const payload = buildTradePayload({
-      date: "2026-06-01",
-      ticker: "amd",
-      asset_type: "stock",
-      side: "buy",
-      quantity: "5",
-      price: "100",
-      closing_fee: "2.00",
-      notes: "Bought before tracking",
-      is_opening_position: true,
-    })
-
-    expect(payload.is_opening_position).toBe(true)
+  it("omits closing_fee when empty", () => {
+    const payload = buildTradePayload({ ...baseFormValues, closing_fee: "" })
     expect(payload).not.toHaveProperty("closing_fee")
+    expect(payload).not.toHaveProperty("is_opening_position")
   })
 })
 
 describe("calculateTradeTotal", () => {
-  it("ignores commission for opening position buys", () => {
+  it("includes commission for buys", () => {
+    expect(calculateTradeTotal(baseFormValues)).toBe("100.15")
+  })
+
+  it("subtracts commission for sells", () => {
     expect(
-      calculateTradeTotal({
-        date: "2026-06-01",
-        ticker: "AMD",
-        asset_type: "stock",
-        side: "buy",
-        quantity: "2",
-        price: "10",
-        closing_fee: "1.50",
-        notes: "seeded lot",
-        is_opening_position: true,
-      }),
-    ).toBe("20.00")
+      calculateTradeTotal({ ...baseFormValues, side: "sell", quantity: "2", price: "10", closing_fee: "1.50" }),
+    ).toBe("18.50")
   })
 })

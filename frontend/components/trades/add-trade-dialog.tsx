@@ -40,7 +40,6 @@ const emptyForm = (): TradeFormValues => ({
   price: "",
   closing_fee: "",
   notes: "",
-  is_opening_position: false,
 })
 
 export function AddTradeDialog() {
@@ -81,10 +80,6 @@ export function AddTradeDialog() {
       )
       if (sellError) {
         setError(sellError)
-        return
-      }
-      if (formData.is_opening_position && !formData.notes.trim()) {
-        setError("Opening position requires notes")
         return
       }
 
@@ -196,7 +191,6 @@ export function AddTradeDialog() {
                     ...formData,
                     side: value,
                     ticker: value === "buy" ? formData.ticker : "",
-                    is_opening_position: value === "buy" ? formData.is_opening_position : false,
                   })
                 }
                 >
@@ -248,39 +242,9 @@ export function AddTradeDialog() {
                 placeholder="0"
                 value={formData.closing_fee}
                 onChange={(e) => setFormData({ ...formData, closing_fee: e.target.value })}
-                disabled={formData.is_opening_position}
               />
-              <p className="text-xs text-muted-foreground">
-                {formData.is_opening_position
-                  ? "Opening positions do not apply commission."
-                  : "Mapped to trading fee for this trade."}
-              </p>
+              <p className="text-xs text-muted-foreground">Mapped to trading fee for this trade.</p>
             </div>
-
-            {formData.side === "buy" && (
-              <div className="space-y-2 rounded-md border p-3">
-                <label htmlFor="is_opening_position" className="flex items-start gap-2 text-sm">
-                  <input
-                    id="is_opening_position"
-                    type="checkbox"
-                    checked={formData.is_opening_position}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        is_opening_position: e.target.checked,
-                        closing_fee: e.target.checked ? "" : formData.closing_fee,
-                      })
-                    }
-                    className="mt-0.5"
-                  />
-                  <span>Opening position (pre-tracked stock)</span>
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Use this when you already owned shares before using this tracker (example: AMD bought before
-                  tracking).
-                </p>
-              </div>
-            )}
 
             <div className="space-y-2">
               <Label>Total (USD)</Label>
@@ -288,19 +252,12 @@ export function AddTradeDialog() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes">
-                Notes {formData.is_opening_position ? "(required)" : "(optional)"}
-              </Label>
+              <Label htmlFor="notes">Notes (optional)</Label>
               <NotesTextarea
                 id="notes"
-                placeholder={
-                  formData.is_opening_position
-                    ? "Explain where this opening position comes from"
-                    : "Additional details..."
-                }
+                placeholder="Additional details..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                required={formData.is_opening_position}
               />
             </div>
 

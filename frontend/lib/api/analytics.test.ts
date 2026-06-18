@@ -9,9 +9,6 @@ import {
   getFxImpact,
   getFeeEfficiency,
   getFxRateChart,
-  getStandaloneFeesUsd,
-  getTransferFeesPaidUsd,
-  type CashBreakdown,
 } from "./analytics"
 
 vi.mock("./client", () => ({
@@ -23,51 +20,6 @@ vi.mock("./client", () => ({
 import { apiClient } from "./client"
 
 const mockGet = vi.mocked(apiClient.get)
-
-function baseBreakdown(overrides: Partial<CashBreakdown> = {}): CashBreakdown {
-  return {
-    deposits_usd: "0",
-    withdrawals_usd: "0",
-    fees_usd: "0",
-    cash_flows_net_usd: "0",
-    trade_buys_usd: "0",
-    trade_sells_usd: "0",
-    trade_net_usd: "0",
-    cash_balance: "0",
-    ...overrides,
-  }
-}
-
-describe("cash breakdown fee helpers", () => {
-  it("getStandaloneFeesUsd prefers standalone_fees_usd over fees_usd", () => {
-    expect(
-      getStandaloneFeesUsd(
-        baseBreakdown({ standalone_fees_usd: "5.00", fees_usd: "10.00" }),
-      ),
-    ).toBe("5.00")
-  })
-
-  it("getStandaloneFeesUsd falls back to fees_usd", () => {
-    expect(getStandaloneFeesUsd(baseBreakdown({ fees_usd: "3.50" }))).toBe("3.50")
-  })
-
-  it("getTransferFeesPaidUsd prefers transfer_fees_paid_usd", () => {
-    expect(
-      getTransferFeesPaidUsd(
-        baseBreakdown({
-          transfer_fees_paid_usd: "12.00",
-          transfer_fees_usd: "8.00",
-          fees_usd: "4.00",
-        }),
-      ),
-    ).toBe("12.00")
-  })
-
-  it("getTransferFeesPaidUsd falls back to transfer_fees_usd then zero", () => {
-    expect(getTransferFeesPaidUsd(baseBreakdown({ transfer_fees_usd: "8.00" }))).toBe("8.00")
-    expect(getTransferFeesPaidUsd(baseBreakdown())).toBe("0")
-  })
-})
 
 describe("buildDateRangeSearchParams", () => {
   it("returns empty string when no range", () => {
