@@ -108,7 +108,6 @@ func main() {
 	protected.Get("/analytics/fx-impact", handlers.GetFXImpact)
 	protected.Get("/analytics/performance-time-series", handlers.GetPerformanceTimeSeries)
 	protected.Get("/analytics/net-worth", handlers.GetNetWorth)
-	protected.Get("/analytics/cash-breakdown", handlers.GetCashBreakdown)
 	protected.Get("/analytics/cash-reconciliation", handlers.GetCashReconciliation)
 
 	// Start server

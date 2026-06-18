@@ -26,7 +26,6 @@ func TestAnalyticsHandlers_ReturnUnauthorizedWhenUserIDMissing(t *testing.T) {
 		{"GetFXImpact", GetFXImpact, "/fx-impact", "/fx-impact"},
 		{"GetPerformanceTimeSeries", GetPerformanceTimeSeries, "/performance-time-series", "/performance-time-series"},
 		{"GetNetWorth", GetNetWorth, "/net-worth", "/net-worth"},
-		{"GetCashBreakdown", GetCashBreakdown, "/cash-breakdown", "/cash-breakdown"},
 		{"GetCashReconciliation", GetCashReconciliation, "/cash-reconciliation", "/cash-reconciliation"},
 	}
 
