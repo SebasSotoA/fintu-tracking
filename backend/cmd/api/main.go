@@ -110,7 +110,10 @@ func main() {
 	protected.Get("/analytics/net-worth", handlers.GetNetWorth)
 	protected.Get("/analytics/cash-reconciliation", handlers.GetCashReconciliation)
 
-	// Start server
+		// Activity feed
+		protected.Get("/activity/feed", handlers.GetActivityFeed)
+
+		// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

@@ -11,6 +11,7 @@ export const queryKeys = {
   cashReconciliation: () => ["cash-reconciliation"] as const,
   cashFlowsExport: () => ["cash-flows-export"] as const,
   fxCurrentRate: () => ["fx-current-rate"] as const,
+  activityFeed: (limit = 8) => ["activity-feed", limit] as const,
 }
 
 export async function invalidatePortfolioCaches(queryClient: QueryClient) {
@@ -23,16 +24,13 @@ export async function invalidatePortfolioCaches(queryClient: QueryClient) {
   ])
 }
 
-export async function invalidateAfterTradeMutation(queryClient: QueryClient) {
+async function invalidateAfterMutation(queryClient: QueryClient) {
   await Promise.all([
     invalidatePortfolioCaches(queryClient),
     queryClient.invalidateQueries({ queryKey: queryKeys.cashFlowsExport() }),
+    queryClient.invalidateQueries({ queryKey: ["activity-feed"] }),
   ])
 }
 
-export async function invalidateAfterCashFlowMutation(queryClient: QueryClient) {
-  await Promise.all([
-    invalidatePortfolioCaches(queryClient),
-    queryClient.invalidateQueries({ queryKey: queryKeys.cashFlowsExport() }),
-  ])
-}
+export const invalidateAfterTradeMutation = invalidateAfterMutation
+export const invalidateAfterCashFlowMutation = invalidateAfterMutation
