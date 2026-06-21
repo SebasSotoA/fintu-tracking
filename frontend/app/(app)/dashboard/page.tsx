@@ -26,12 +26,18 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <PortfolioHealthBanner />
-      <Suspense fallback={<div className="h-36 bg-muted rounded-lg animate-pulse" />}>
-        <NetWorthCardServer />
-      </Suspense>
-      <Suspense fallback={<div className="h-16 bg-muted rounded-lg animate-pulse" />}>
-        <ActivityFeed />
-      </Suspense>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <Suspense fallback={<div className="h-36 bg-muted rounded-lg animate-pulse" />}>
+            <NetWorthCardServer />
+          </Suspense>
+        </div>
+        <div>
+          <Suspense fallback={<div className="h-16 bg-muted rounded-lg animate-pulse" />}>
+            <ActivityFeed />
+          </Suspense>
+        </div>
+      </div>
       <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
         <DashboardQuickTradeServer />
       </Suspense>

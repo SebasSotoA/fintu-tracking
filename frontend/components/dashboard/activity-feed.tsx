@@ -63,7 +63,7 @@ export function ActivityFeed() {
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Recent Activity</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-1">
+      <CardContent className="space-y-1 max-h-[400px] overflow-y-auto scrollbar-minimal">
         {items.map((item) => (
           <ActivityFeedItem key={item.id} item={item} />
         ))}
