@@ -256,6 +256,11 @@
     }
   }
 
+  @keyframes landing-progress-fill {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .landing-fade-up {
       animation: landing-fade-up 0.7s ease-out both;
@@ -290,6 +295,10 @@
     .landing-glow-reverse {
       animation: landing-glow 18s ease-in-out infinite reverse;
     }
+
+    .landing-progress-fill {
+      animation: landing-progress-fill 3.5s linear;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -300,7 +309,8 @@
     .landing-float,
     .landing-float-slow,
     .landing-glow,
-    .landing-glow-reverse {
+    .landing-glow-reverse,
+    .landing-progress-fill {
       animation: none !important;
       opacity: 1;
       transform: none;

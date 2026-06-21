@@ -31,25 +31,34 @@ import {
 } from "@/lib/trades/trade-form-utils"
 import { showToast } from "@/lib/toast"
 
-const emptyForm = (): TradeFormValues => ({
+const emptyForm = (overrides?: { ticker?: string; asset_type?: string; side?: string }): TradeFormValues => ({
   date: new Date().toISOString().split("T")[0],
-  ticker: "",
-  asset_type: "stock",
-  side: "buy",
+  ticker: overrides?.ticker ?? "",
+  asset_type: overrides?.asset_type ?? "stock",
+  side: overrides?.side ?? "buy",
   quantity: "",
   price: "",
   closing_fee: "",
   notes: "",
 })
 
-export function AddTradeDialog() {
+interface AddTradeDialogProps {
+  initialTicker?: string
+  initialAssetType?: "stock" | "etf" | "crypto"
+  initialSide?: "buy" | "sell"
+  /** When true, auto-opens the dialog and hides the trigger button. Use for programmatic quick-trade. */
+  autoOpen?: boolean
+}
+
+export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, autoOpen }: AddTradeDialogProps = {}) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(autoOpen ?? false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [priceWarning, setPriceWarning] = useState<string | null>(null)
-  const [formData, setFormData] = useState<TradeFormValues>(emptyForm)
+  const overrides = { ticker: initialTicker, asset_type: initialAssetType, side: initialSide }
+  const [formData, setFormData] = useState<TradeFormValues>(() => emptyForm(overrides))
 
   const handleTickerBlur = async () => {
     const ticker = formData.ticker.trim().toUpperCase()
@@ -87,7 +96,7 @@ export function AddTradeDialog() {
 
       showToast.success("Trade added")
       setOpen(false)
-      setFormData(emptyForm())
+      setFormData(emptyForm(overrides))
       setPriceWarning(null)
       await invalidateAfterTradeMutation(queryClient)
       router.refresh()
@@ -101,13 +110,21 @@ export function AddTradeDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Trade
-        </Button>
-      </DialogTrigger>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setFormData(emptyForm(overrides))
+        setOpen(next)
+      }}
+    >
+      {!autoOpen && (
+        <DialogTrigger asChild>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Trade
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-2xl">
         <DialogHeader className="shrink-0 px-6 pt-6">
           <DialogTitle>Add Trade</DialogTitle>

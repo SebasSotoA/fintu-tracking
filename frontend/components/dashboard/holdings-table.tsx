@@ -1,7 +1,10 @@
 "use client"
 
+import { useMemo } from "react"
 import type { Holding } from "@/lib/types"
 import Link from "next/link"
+import { Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, format } from "@/lib/decimal"
@@ -12,6 +15,7 @@ interface HoldingsTableProps {
   holdings: Holding[]
   priceUpdatedAtByTicker?: Record<string, string | null>
   lastPriceRefreshAt?: string | null
+  onQuickTrade?: (ticker: string, assetType: string) => void
 }
 
 function formatPriceAsOf(value: string | null | undefined): string | null {
@@ -25,6 +29,19 @@ function formatPriceAsOf(value: string | null | undefined): string | null {
     hour: "2-digit",
     minute: "2-digit",
   })
+}
+
+function getPriceAsOf(
+  holding: Holding,
+  byTicker: Record<string, string | null>,
+): string | null {
+  return (
+    holding.priceAsOf ??
+    holding.price_as_of ??
+    holding.market_price_updated_at ??
+    byTicker[holding.ticker] ??
+    null
+  )
 }
 
 function isStaleTimestamp(value: string | null | undefined): boolean {
@@ -58,19 +75,21 @@ export function HoldingsTable({
     )
   }
 
-  const sortedHoldings = [...safeHoldings].sort((a, b) => {
-    const aValue = new Decimal(a.marketValue || 0)
-    const bValue = new Decimal(b.marketValue || 0)
-    return bValue.comparedTo(aValue)
-  })
-  const hasStalePrices = sortedHoldings.some((holding) =>
-    isStaleTimestamp(
-      holding.priceAsOf ??
-        holding.price_as_of ??
-        holding.market_price_updated_at ??
-        priceUpdatedAtByTicker[holding.ticker] ??
-        null,
-    ),
+  const sortedHoldings = useMemo(
+    () =>
+      [...safeHoldings].sort((a, b) => {
+        const aValue = new Decimal(a.marketValue || 0)
+        const bValue = new Decimal(b.marketValue || 0)
+        return bValue.comparedTo(aValue)
+      }),
+    [safeHoldings],
+  )
+  const hasStalePrices = useMemo(
+    () =>
+      sortedHoldings.some((holding) =>
+        isStaleTimestamp(getPriceAsOf(holding, priceUpdatedAtByTicker)),
+      ),
+    [sortedHoldings, priceUpdatedAtByTicker],
   )
   const formattedRefresh = formatPriceAsOf(lastPriceRefreshAt)
 
@@ -106,22 +125,31 @@ export function HoldingsTable({
             {sortedHoldings.map((holding) => {
               const pl = new Decimal(holding.unrealizedPL || 0)
               const isPositive = pl.gte(0)
-              const priceAsOf =
-                holding.priceAsOf ??
-                holding.price_as_of ??
-                holding.market_price_updated_at ??
-                priceUpdatedAtByTicker[holding.ticker] ??
-                null
+              const priceAsOf = getPriceAsOf(holding, priceUpdatedAtByTicker)
 
               return (
-                <TableRow key={holding.ticker}>
+                <TableRow key={holding.ticker} className="group">
                   <TableCell className="font-mono font-semibold">
-                    <Link
-                      href={`/trades?ticker=${encodeURIComponent(holding.ticker)}`}
-                      className="hover:underline"
-                    >
-                      {holding.ticker}
-                    </Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link
+                        href={`/trades?ticker=${encodeURIComponent(holding.ticker)}`}
+                        className="hover:underline"
+                      >
+                        {holding.ticker}
+                      </Link>
+                      {onQuickTrade && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => onQuickTrade(holding.ticker, holding.assetType ?? "stock")}
+                          aria-label={`Quick buy ${holding.ticker}`}
+                          title={`Add buy for ${holding.ticker}`}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right font-mono">{format(holding.quantity, 4)}</TableCell>
                   <TableCell className="text-right font-mono">{formatCurrency(holding.avgCost, "USD")}</TableCell>

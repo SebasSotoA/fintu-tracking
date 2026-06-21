@@ -1,15 +1,21 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import type React from "react"
 import { useQuery } from "@tanstack/react-query"
 import Decimal from "decimal.js"
+import { TrendingUp, TrendingDown } from "lucide-react"
+import { Area, AreaChart, ResponsiveContainer } from "recharts"
 import { api } from "@/lib/api/client"
 import { queryKeys } from "@/lib/api/query-keys"
 import type { NetWorthData } from "@/lib/types"
+import type { PerformancePoint, PerformanceInterval } from "@/lib/api/analytics"
+import { getPerformanceTimeSeries } from "@/lib/api/analytics"
 import { MetricLabel } from "@/components/analytics/metric-primitives"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { TimePeriodSelector, type TimePeriod } from "@/components/dashboard/time-period-selector"
 
 interface NetWorthCardProps {
   initialData?: NetWorthData | null
@@ -33,7 +39,33 @@ function formatUsd(value: Decimal): string {
   }).format(value.toNumber())
 }
 
+function getPeriodConfig(period: TimePeriod): { interval: PerformanceInterval; startDate: string | undefined } {
+  const now = new Date()
+  switch (period) {
+    case "1M": {
+      const d = new Date(now); d.setMonth(d.getMonth() - 1)
+      return { interval: "day", startDate: d.toISOString().split("T")[0] }
+    }
+    case "3M": {
+      const d = new Date(now); d.setMonth(d.getMonth() - 3)
+      return { interval: "week", startDate: d.toISOString().split("T")[0] }
+    }
+    case "YTD": {
+      const d = new Date(now.getFullYear(), 0, 1)
+      return { interval: "month", startDate: d.toISOString().split("T")[0] }
+    }
+    case "1Y": {
+      const d = new Date(now); d.setFullYear(d.getFullYear() - 1)
+      return { interval: "month", startDate: d.toISOString().split("T")[0] }
+    }
+    case "ALL":
+      return { interval: "year", startDate: undefined }
+  }
+}
+
 export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Element {
+  const [period, setPeriod] = useState<TimePeriod>("ALL")
+
   const { data: netWorth, isLoading, error } = useQuery<NetWorthData>({
     queryKey: queryKeys.netWorth(),
     queryFn: () => api.get<NetWorthData>("/api/analytics/net-worth"),
@@ -41,6 +73,34 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
     staleTime: 60_000,
     refetchInterval: 60_000,
   })
+
+  const { interval, startDate } = getPeriodConfig(period)
+
+  const { data: timeSeries } = useQuery<PerformancePoint[]>({
+    queryKey: ["performance-time-series", "net-worth-mini", interval, startDate],
+    queryFn: () => getPerformanceTimeSeries(interval),
+    staleTime: 120_000,
+    enabled: period !== "ALL",
+  })
+
+  const trend = useMemo(() => {
+    if (period === "ALL" || !timeSeries?.length) return null
+    const first = new Decimal(timeSeries[0].portfolio_value)
+    const last = new Decimal(timeSeries[timeSeries.length - 1].portfolio_value)
+    if (first.isZero()) return null
+    return last.sub(first).div(first).mul(100)
+  }, [timeSeries, period])
+
+  const trendData = useMemo(() => {
+    if (!timeSeries) return []
+    return timeSeries.map((pt) => ({
+      date: pt.date,
+      value: Number(pt.portfolio_value),
+    }))
+  }, [timeSeries])
+
+  const isTrendPositive = trend && trend.gte(0)
+  const chartColor = isTrendPositive ? "var(--primary)" : "var(--destructive)"
 
   if (isLoading) {
     return (
@@ -77,7 +137,10 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
     <Card variant="kpi" className="col-span-full">
       <CardContent className="space-y-4 pt-6">
         <section className="space-y-2">
-          <MetricLabel label="Portfolio total" tooltip={METRIC_TOOLTIPS.portfolioTotal} />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <MetricLabel label="Portfolio total" tooltip={METRIC_TOOLTIPS.portfolioTotal} />
+            <TimePeriodSelector value={period} onChange={setPeriod} />
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-4xl font-bold font-mono tracking-tight tabular-nums md:text-5xl">
               {formatUsd(portfolioTotal)}
@@ -89,6 +152,42 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
             )}
           </div>
         </section>
+
+        {/* Mini trend for selected period */}
+        {period !== "ALL" && trend !== null && trendData.length > 1 && (
+          <section className="flex items-end gap-3">
+            <ResponsiveContainer width="70%" height={48}>
+              <AreaChart data={trendData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="nwTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
+                    <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke={chartColor}
+                  strokeWidth={2}
+                  fill="url(#nwTrendGradient)"
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+            <div className="flex items-center gap-1 shrink-0">
+              {isTrendPositive ? (
+                <TrendingUp className="h-4 w-4 text-primary" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-destructive" />
+              )}
+              <span className={`text-sm font-mono font-semibold ${isTrendPositive ? "text-primary" : "text-destructive"}`}>
+                {isTrendPositive ? "+" : ""}{trend.toFixed(1)}%
+              </span>
+            </div>
+          </section>
+        )}
+
         <section className="rounded-lg border border-border/50 bg-muted/30 p-4">
           <MetricLabel label="Buy power" tooltip={METRIC_TOOLTIPS.cash} className="mb-2" />
           <p className="text-2xl font-semibold font-mono tabular-nums">{formatUsd(buyPower)}</p>

@@ -284,6 +284,18 @@ type UpdateTradeRequest struct {
 	Notes             *string `json:"notes"`
 }
 
+// ActivityItem represents a unified feed entry for the activity feed endpoint.
+type ActivityItem struct {
+	ID        string    `json:"id"`
+	Date      time.Time `json:"date"`
+	Kind      string    `json:"kind"`       // "trade" | "deposit" | "withdrawal" | "fee" | "cash_adjustment"
+	SubKind   string    `json:"sub_kind"`   // trade: "buy"/"sell"; fee: fee_type; deposit/withdrawal/cash_adjustment: ""
+	Ticker    string    `json:"ticker"`     // only for trades
+	Direction string    `json:"direction"`  // "in" (deposit/buy/credit) or "out" (withdrawal/sell/fee)
+	AmountUSD string    `json:"amount_usd"` // absolute USD amount
+	Details   string    `json:"details"`    // human-readable summary line
+}
+
 // AnalyticsQuery represents a request for analytics with date range filtering
 type AnalyticsQuery struct {
 	StartDate *string `json:"start_date"`
