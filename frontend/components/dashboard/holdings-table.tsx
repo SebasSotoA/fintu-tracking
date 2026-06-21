@@ -55,6 +55,7 @@ export function HoldingsTable({
   holdings,
   priceUpdatedAtByTicker = {},
   lastPriceRefreshAt = null,
+  onQuickTrade,
 }: HoldingsTableProps) {
   const safeHoldings = holdings || []
 
