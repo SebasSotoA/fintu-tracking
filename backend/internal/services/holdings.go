@@ -29,6 +29,11 @@ type holdingPosition struct {
 	lastTradePrice decimal.Decimal
 }
 
+type marketPriceInfo struct {
+	price     decimal.Decimal
+	updatedAt *time.Time
+}
+
 func (s *AnalyticsService) GetCurrentHoldings(ctx context.Context, userID string) ([]models.Holding, error) {
 	trades, err := s.loadHoldingTrades(ctx, userID)
 	if err != nil {
@@ -104,24 +109,25 @@ func (s *AnalyticsService) loadHoldingTrades(ctx context.Context, userID string)
 	return trades, nil
 }
 
-func (s *AnalyticsService) loadMarketPrices(ctx context.Context) (map[string]decimal.Decimal, error) {
-	rows, err := s.pool.Query(ctx, `SELECT ticker, price FROM market_prices`)
+func (s *AnalyticsService) loadMarketPrices(ctx context.Context) (map[string]marketPriceInfo, error) {
+	rows, err := s.pool.Query(ctx, `SELECT ticker, price, updated_at FROM market_prices`)
 	if err != nil {
 		return nil, fmt.Errorf("load market prices: %w", err)
 	}
 	defer rows.Close()
 
-	prices := make(map[string]decimal.Decimal)
+	prices := make(map[string]marketPriceInfo)
 	for rows.Next() {
 		var ticker, priceStr string
-		if err := rows.Scan(&ticker, &priceStr); err != nil {
+		var updatedAt *time.Time
+		if err := rows.Scan(&ticker, &priceStr, &updatedAt); err != nil {
 			return nil, fmt.Errorf("scan market price: %w", err)
 		}
 		price, err := decimal.NewFromString(priceStr)
 		if err != nil {
 			return nil, fmt.Errorf("parse market price %q: %w", priceStr, err)
 		}
-		prices[ticker] = price
+		prices[ticker] = marketPriceInfo{price: price, updatedAt: updatedAt}
 	}
 
 	if err := rows.Err(); err != nil {
@@ -131,7 +137,7 @@ func (s *AnalyticsService) loadMarketPrices(ctx context.Context) (map[string]dec
 	return prices, nil
 }
 
-func computeHoldingsFromTrades(trades []holdingTradeRow, prices map[string]decimal.Decimal) map[string]models.Holding {
+func computeHoldingsFromTrades(trades []holdingTradeRow, prices map[string]marketPriceInfo) map[string]models.Holding {
 	sort.SliceStable(trades, func(i, j int) bool {
 		if trades[i].Date.Equal(trades[j].Date) {
 			return trades[i].CreatedAt.Before(trades[j].CreatedAt)
@@ -181,9 +187,15 @@ func computeHoldingsFromTrades(trades []holdingTradeRow, prices map[string]decim
 			continue
 		}
 
-		marketPrice, ok := prices[ticker]
-		if !ok {
-			marketPrice = pos.lastTradePrice
+		info, ok := prices[ticker]
+		marketPrice := pos.lastTradePrice
+		var priceAsOf *string
+		if ok {
+			marketPrice = info.price
+			if info.updatedAt != nil {
+				formatted := info.updatedAt.UTC().Format(time.RFC3339)
+				priceAsOf = &formatted
+			}
 		}
 
 		avgCost := pos.costBasis.Div(pos.qty)
@@ -213,6 +225,7 @@ func computeHoldingsFromTrades(trades []holdingTradeRow, prices map[string]decim
 			UnrealizedPL:        unrealizedPL.String(),
 			UnrealizedPLPercent: unrealizedPLPct.String(),
 			FeeImpactPercent:    feeImpactPct.String(),
+			PriceAsOf:           priceAsOf,
 		}
 	}
 

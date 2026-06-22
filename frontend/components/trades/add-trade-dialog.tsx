@@ -31,7 +31,11 @@ import {
 } from "@/lib/trades/trade-form-utils"
 import { showToast } from "@/lib/toast"
 
-const emptyForm = (overrides?: { ticker?: string; asset_type?: string; side?: string }): TradeFormValues => ({
+const emptyForm = (overrides?: {
+  ticker?: string
+  asset_type?: TradeFormValues["asset_type"]
+  side?: TradeFormValues["side"]
+}): TradeFormValues => ({
   date: new Date().toISOString().split("T")[0],
   ticker: overrides?.ticker ?? "",
   asset_type: overrides?.asset_type ?? "stock",

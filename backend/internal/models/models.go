@@ -89,17 +89,18 @@ type PortfolioSnapshot struct {
 
 // Holding represents a calculated portfolio holding with enhanced fee information
 type Holding struct {
-	Ticker              string `json:"ticker"`
-	AssetType           string `json:"assetType"`
-	Quantity            string `json:"quantity"`
-	AvgCost             string `json:"avgCost"`            // Includes pro-rated fees
-	AvgCostWithoutFees  string `json:"avgCostWithoutFees"` // Pure price average
-	TotalInvested       string `json:"totalInvested"`
-	TotalFees           string `json:"totalFees"` // Cumulative fees for this ticker
-	MarketValue         string `json:"marketValue"`
-	UnrealizedPL        string `json:"unrealizedPL"`
-	UnrealizedPLPercent string `json:"unrealizedPLPercent"`
-	FeeImpactPercent    string `json:"feeImpactPercent"` // Fees as % of total invested
+	Ticker              string  `json:"ticker"`
+	AssetType           string  `json:"assetType"`
+	Quantity            string  `json:"quantity"`
+	AvgCost             string  `json:"avgCost"`            // Includes pro-rated fees
+	AvgCostWithoutFees  string  `json:"avgCostWithoutFees"` // Pure price average
+	TotalInvested       string  `json:"totalInvested"`
+	TotalFees           string  `json:"totalFees"` // Cumulative fees for this ticker
+	MarketValue         string  `json:"marketValue"`
+	UnrealizedPL        string  `json:"unrealizedPL"`
+	UnrealizedPLPercent string  `json:"unrealizedPLPercent"`
+	FeeImpactPercent    string  `json:"feeImpactPercent"` // Fees as % of total invested
+	PriceAsOf           *string `json:"priceAsOf,omitempty"`
 }
 
 // PerformanceMetrics represents portfolio performance calculations with fee attribution

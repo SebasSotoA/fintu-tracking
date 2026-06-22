@@ -17,11 +17,11 @@ export function ActivityFeed() {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="flex flex-col h-full">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Recent Activity</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="flex-1 overflow-y-auto space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-10 w-full" />
           ))}
@@ -32,11 +32,11 @@ export function ActivityFeed() {
 
   if (error || !items) {
     return (
-      <Card>
+      <Card className="flex flex-col h-full">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Recent Activity</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto">
           <p className="text-sm text-muted-foreground">Unable to load recent activity.</p>
         </CardContent>
       </Card>
@@ -45,11 +45,11 @@ export function ActivityFeed() {
 
   if (items.length === 0) {
     return (
-      <Card>
+      <Card className="flex flex-col h-full">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Recent Activity</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto">
           <p className="text-sm text-muted-foreground">
             No activity yet — add your first trade or deposit to get started.
           </p>
@@ -59,11 +59,11 @@ export function ActivityFeed() {
   }
 
   return (
-    <Card>
+    <Card className="flex flex-col h-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Recent Activity</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-1 max-h-[400px] overflow-y-auto scrollbar-minimal">
+      <CardContent className="flex-1 overflow-y-auto space-y-1 scrollbar-minimal">
         {items.map((item) => (
           <ActivityFeedItem key={item.id} item={item} />
         ))}

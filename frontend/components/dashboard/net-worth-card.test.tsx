@@ -12,6 +12,10 @@ vi.mock("@/lib/api/client", () => ({
   },
 }))
 
+vi.mock("@/hooks/use-portfolio-health", () => ({
+  usePortfolioHealth: () => ({ alerts: [], dismiss: vi.fn() }),
+}))
+
 const baseNetWorth: NetWorthData = {
   holdings_value: "10000.00",
   cash_balance: "2000.00",
@@ -78,5 +82,11 @@ describe("NetWorthCard", () => {
 
   it("keeps buy power tooltip copy aligned with hapi meaning", () => {
     expect(METRIC_TOOLTIPS.cash).toContain("poder de compra")
+  })
+
+  it("renders the merged Notifications section", () => {
+    renderCard()
+    expect(screen.getByText("Notifications")).toBeInTheDocument()
+    expect(screen.getByText("No notifications")).toBeInTheDocument()
   })
 })

@@ -13,7 +13,7 @@ import { landingDisplay } from "@/lib/fonts/landing-display"
 
 interface DemoStep {
   id: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>
   label: string
   detail: string
   value: string

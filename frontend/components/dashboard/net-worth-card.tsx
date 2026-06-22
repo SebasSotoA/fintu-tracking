@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TimePeriodSelector, type TimePeriod } from "@/components/dashboard/time-period-selector"
+import { PortfolioHealthBanner } from "@/components/dashboard/portfolio-health-banner"
 
 interface NetWorthCardProps {
   initialData?: NetWorthData | null
@@ -134,8 +135,8 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
   const showUnrealizedProxyBadge = !gainLoss.isZero()
 
   return (
-    <Card variant="kpi" className="col-span-full">
-      <CardContent className="space-y-4 pt-6">
+    <Card variant="kpi" className="col-span-full h-full">
+      <CardContent className="flex flex-col flex-1 gap-4 pt-6">
         <section className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <MetricLabel label="Portfolio total" tooltip={METRIC_TOOLTIPS.portfolioTotal} />
@@ -194,6 +195,14 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
           <p className="mt-1 text-xs text-muted-foreground">
             XIRR and detailed return attribution are available on the Performance page.
           </p>
+        </section>
+
+        {/* Notifications — fixed height, scroll only on alerts when >2 items */}
+        <section className="flex flex-col h-56 rounded-lg border border-border/50 bg-muted/30 p-4">
+          <h3 className="mb-2 text-sm font-medium shrink-0">Notifications</h3>
+          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-minimal">
+            <PortfolioHealthBanner />
+          </div>
         </section>
       </CardContent>
     </Card>

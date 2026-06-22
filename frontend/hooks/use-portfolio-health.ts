@@ -120,11 +120,12 @@ function checkLargeMove(holdings: Holding[]): HealthAlert | null {
 
     if (pct >= threshold) {
       const sign = isNegative ? "-" : "+"
+      const formattedPL = Number(h.unrealizedPL || 0).toFixed(2)
       return {
         type: "large_move",
         severity: "warning",
         message: `${h.ticker} ${sign}${pct.toFixed(1)}% unrealized — ${isNegative ? "consider reviewing this position." : "consider taking profits."}`,
-        details: `Unrealized ${isNegative ? "loss" : "gain"} on ${h.ticker}: ${h.unrealizedPL} USD.`,
+        details: `Unrealized ${isNegative ? "loss" : "gain"} on ${h.ticker}: ${formattedPL} USD.`,
         direction: isNegative ? "down" : "up",
       }
     }

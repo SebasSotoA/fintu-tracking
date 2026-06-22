@@ -7,18 +7,16 @@ describe("LandingSocialProof", () => {
 
   beforeEach(() => {
     observeCallback = null
-    vi.stubGlobal(
-      "IntersectionObserver",
-      vi.fn((callback: IntersectionObserverCallback) => {
+    class MockIntersectionObserver {
+      constructor(callback: IntersectionObserverCallback) {
         observeCallback = callback
-        return {
-          observe: vi.fn(),
-          disconnect: vi.fn(),
-          unobserve: vi.fn(),
-          takeRecords: vi.fn(() => []),
-        }
-      }),
-    )
+      }
+      observe = vi.fn()
+      disconnect = vi.fn()
+      unobserve = vi.fn()
+      takeRecords = vi.fn(() => [])
+    }
+    vi.stubGlobal("IntersectionObserver", MockIntersectionObserver)
     vi.useFakeTimers()
   })
 
@@ -60,10 +58,11 @@ describe("LandingSocialProof", () => {
       vi.advanceTimersByTime(1600)
     })
 
-    // After animation completes, values should be at their targets
-    expect(screen.getByText("100%")).toBeInTheDocument()
-    expect(screen.getByText("4")).toBeInTheDocument()
-    expect(screen.getByText("3")).toBeInTheDocument()
+    // After animation completes, values should be at their targets.
+    // Values and suffixes are rendered in separate elements, so match by combined text.
+    expect(screen.getAllByText((_, node) => node?.textContent === "100%").length).toBe(2)
+    expect(screen.getByText((_, node) => node?.textContent === "4")).toBeInTheDocument()
+    expect(screen.getByText((_, node) => node?.textContent === "3")).toBeInTheDocument()
   })
 
   it("renders all stat descriptions", () => {

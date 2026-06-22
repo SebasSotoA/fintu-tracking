@@ -117,7 +117,6 @@ export function HoldingsTable({
               <TableHead className="text-right">Avg Cost</TableHead>
               <TableHead className="text-right">Total Invested</TableHead>
               <TableHead className="text-right">Market Value</TableHead>
-              <TableHead className="text-right">Price as of</TableHead>
               <TableHead className="text-right">Unrealized P/L</TableHead>
               <TableHead className="text-right">P/L %</TableHead>
             </TableRow>
@@ -126,7 +125,6 @@ export function HoldingsTable({
             {sortedHoldings.map((holding) => {
               const pl = new Decimal(holding.unrealizedPL || 0)
               const isPositive = pl.gte(0)
-              const priceAsOf = getPriceAsOf(holding, priceUpdatedAtByTicker)
 
               return (
                 <TableRow key={holding.ticker} className="group">
@@ -157,9 +155,6 @@ export function HoldingsTable({
                   <TableCell className="text-right font-mono">{formatCurrency(holding.totalInvested, "USD")}</TableCell>
                   <TableCell className="text-right font-mono font-semibold">
                     {formatCurrency(holding.marketValue, "USD")}
-                  </TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground">
-                    {formatPriceAsOf(priceAsOf) ?? "—"}
                   </TableCell>
                   <TableCell className={`text-right font-mono ${isPositive ? "text-primary" : "text-destructive"}`}>
                     {formatCurrency(holding.unrealizedPL, "USD")}

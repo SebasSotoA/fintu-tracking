@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-import { X, AlertTriangle, TrendingUp, TrendingDown, Clock, Wallet, Globe } from "lucide-react"
+import { AlertTriangle, TrendingUp, TrendingDown, Clock, Wallet, Globe } from "lucide-react"
 import { usePortfolioHealth, type HealthAlertType } from "@/hooks/use-portfolio-health"
 
-const AlertIcon: Record<Exclude<HealthAlertType, "large_move">, React.ComponentType<{ className?: string }>> = {
+const AlertIcon: Record<Exclude<HealthAlertType, "large_move">, React.ComponentType<{ className?: string; strokeWidth?: number }>> = {
   concentration: AlertTriangle,
   stale_prices: Clock,
   low_buying_power: Wallet,
@@ -18,9 +18,13 @@ const severityStyles: Record<string, string> = {
 }
 
 export function PortfolioHealthBanner() {
-  const { alerts, dismiss } = usePortfolioHealth()
+  const { alerts } = usePortfolioHealth()
 
-  if (alerts.length === 0) return null
+  if (alerts.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">No notifications</p>
+    )
+  }
 
   return (
     <div className="space-y-2">
@@ -48,14 +52,6 @@ export function PortfolioHealthBanner() {
                 <p className="mt-1 text-xs opacity-70">{alert.details}</p>
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => dismiss(alert.type)}
-              className="-mr-1 shrink-0 rounded p-1 opacity-60 hover:opacity-100 transition-opacity"
-              aria-label="Dismiss alert"
-            >
-              <X className="h-4 w-4" />
-            </button>
           </div>
         )
       })}

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { TimePeriodSelector, type TimePeriod } from "./time-period-selector"
+import { TimePeriodSelector } from "./time-period-selector"
 
 describe("TimePeriodSelector", () => {
   it("renders all period options", () => {

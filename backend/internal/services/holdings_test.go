@@ -2,8 +2,6 @@ package services
 
 import (
 	"testing"
-
-	"github.com/shopspring/decimal"
 )
 
 func TestComputeHoldingsFromTrades_UsesRealizedAverageCostWithFees(t *testing.T) {
@@ -36,8 +34,8 @@ func TestComputeHoldingsFromTrades_UsesRealizedAverageCostWithFees(t *testing.T)
 		},
 	}
 
-	prices := map[string]decimal.Decimal{
-		"AAPL": dec("25"),
+	prices := map[string]marketPriceInfo{
+		"AAPL": {price: dec("25")},
 	}
 
 	holdings := computeHoldingsFromTrades(trades, prices)

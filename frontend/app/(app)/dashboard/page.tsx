@@ -1,6 +1,5 @@
 import { Suspense } from "react"
 import { NetWorthCard } from "@/components/dashboard/net-worth-card"
-import { PortfolioHealthBanner } from "@/components/dashboard/portfolio-health-banner"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { DashboardQuickTrade } from "@/components/dashboard/dashboard-quick-trade"
 import { fetchHoldingsData } from "@/components/dashboard/holdings-table-server"
@@ -25,15 +24,14 @@ async function DashboardQuickTradeServer() {
 export default function DashboardPage() {
   return (
     <div className="space-y-6">
-      <PortfolioHealthBanner />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <Suspense fallback={<div className="h-36 bg-muted rounded-lg animate-pulse" />}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <div className="flex flex-col">
+          <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
             <NetWorthCardServer />
           </Suspense>
         </div>
-        <div>
-          <Suspense fallback={<div className="h-16 bg-muted rounded-lg animate-pulse" />}>
+        <div className="flex flex-col">
+          <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
             <ActivityFeed />
           </Suspense>
         </div>

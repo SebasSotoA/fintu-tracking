@@ -229,7 +229,17 @@ describe("usePortfolioHealth", () => {
 
   describe("sharp FX move", () => {
     it("returns an info alert when COP/USD moved more than 4% in 7 days", () => {
-      queryClient.setQueryData(queryKeys.netWorth(), makeNetWorth())
+      // Use a balanced breakdown so no higher-severity concentration alert wins.
+      queryClient.setQueryData(
+        queryKeys.netWorth(),
+        makeNetWorth({
+          net_worth: "20000.00",
+          breakdown: {
+            by_asset_type: { etf: "10000.00", stock: "5000.00" },
+            by_ticker: { AAPL: "5000.00", VOO: "5000.00", META: "5000.00" },
+          },
+        }),
+      )
       queryClient.setQueryData(queryKeys.fxRateChart(7), makeFxChart(7, "4300", "4000"))
 
       const { result } = renderHook(() => usePortfolioHealth(), {
