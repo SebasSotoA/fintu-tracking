@@ -5,21 +5,17 @@ import { LandingFeatures } from "@/components/landing/landing-features"
 import { LandingSocialProof } from "@/components/landing/landing-social-proof"
 import { LandingDemo } from "@/components/landing/landing-demo"
 import { LandingFooter } from "@/components/landing/landing-footer"
-import { landingDisplay } from "@/lib/fonts/landing-display"
-
 export default function HomePage() {
   return (
-    <div className={landingDisplay.variable}>
-      <LandingAtmosphere>
-        <LandingNav />
-        <main>
-          <LandingHero />
-          <LandingFeatures />
-          <LandingSocialProof />
-          <LandingDemo />
-        </main>
-        <LandingFooter />
-      </LandingAtmosphere>
-    </div>
+    <LandingAtmosphere>
+      <LandingNav />
+      <main>
+        <LandingHero />
+        <LandingFeatures />
+        <LandingSocialProof />
+        <LandingDemo />
+      </main>
+      <LandingFooter />
+    </LandingAtmosphere>
   )
 }

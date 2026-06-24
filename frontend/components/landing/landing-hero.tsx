@@ -2,7 +2,6 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { landingDisplay } from "@/lib/fonts/landing-display"
 
 const precisionMetrics = [
   { label: "COP → USD", value: "4,127.50", delta: "TRM spot" },
@@ -21,8 +20,7 @@ export function LandingHero() {
           </p>
           <h1
             className={cn(
-              landingDisplay.className,
-              "text-4xl leading-[1.08] tracking-tight text-balance sm:text-5xl md:text-6xl lg:text-[3.5rem]",
+              "font-sans text-4xl font-bold leading-[1.08] tracking-tight text-balance sm:text-5xl md:text-6xl lg:text-[3.5rem]",
             )}
           >
             Track your USD investments
@@ -93,10 +91,6 @@ export function LandingHero() {
               </p>
             </div>
           </div>
-          <div
-            aria-hidden
-            className="absolute -right-3 -bottom-3 hidden h-24 w-24 rounded-xl border border-primary/20 bg-primary/10 md:block landing-float-slow"
-          />
         </div>
       </div>
     </section>

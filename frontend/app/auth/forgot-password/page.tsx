@@ -4,9 +4,10 @@ import type React from "react"
 
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { AuthCard } from "@/components/auth/auth-card"
+import { AuthAlert } from "@/components/auth/auth-alert"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -37,68 +38,50 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <div className="w-full max-w-sm">
-          <Card>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-semibold">Check your email</CardTitle>
-              <CardDescription>
-                We've sent a password reset link to {email}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Click the link in the email to reset your password. If you don't see it, check your spam folder.
-              </p>
-              <Link href="/auth/login">
-                <Button variant="outline" className="w-full">
-                  Back to login
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <AuthCard
+        title="Check your email"
+        description={`We've sent a password reset link to ${email}`}
+      >
+        <p className="text-sm text-muted-foreground">
+          Click the link in the email to reset your password. If you don't see it, check your spam folder.
+        </p>
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/auth/login">Back to login</Link>
+        </Button>
+      </AuthCard>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-sm">
-        <Card>
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-semibold">Reset password</CardTitle>
-            <CardDescription>
-              Enter your email address and we'll send you a link to reset your password
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Sending..." : "Send reset link"}
-              </Button>
-            </form>
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              {"Remember your password? "}
-              <Link href="/auth/login" className="text-primary hover:underline">
-                Back to login
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <AuthCard
+      title="Reset password"
+      description="Enter your email address and we'll send you a link to reset your password"
+      footer={
+        <>
+          {"Remember your password? "}
+          <Link href="/auth/login" className="font-medium text-primary hover:underline">
+            Back to login
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="you@example.com"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+        <AuthAlert error={error} />
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Sending..." : "Send reset link"}
+        </Button>
+      </form>
+    </AuthCard>
   )
 }

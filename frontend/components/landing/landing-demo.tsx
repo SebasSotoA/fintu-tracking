@@ -9,7 +9,6 @@ import {
   DollarSign,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { landingDisplay } from "@/lib/fonts/landing-display"
 
 interface DemoStep {
   id: string
@@ -27,7 +26,7 @@ const steps: DemoStep[] = [
     label: "Deposit COP",
     detail: "Transfer from Hapi to your brokerage",
     value: "COP 500,000",
-    accent: "text-sky-400",
+    accent: "text-primary",
   },
   {
     id: "fx",
@@ -35,7 +34,7 @@ const steps: DemoStep[] = [
     label: "FX Conversion",
     detail: "TRM spot rate applied at trade date",
     value: "COP 4,127.50/USD",
-    accent: "text-amber-400",
+    accent: "text-primary/80",
   },
   {
     id: "net",
@@ -43,7 +42,7 @@ const steps: DemoStep[] = [
     label: "Net Buying Power",
     detail: "After fees and FX spread",
     value: "$119.14 USD",
-    accent: "text-primary",
+    accent: "text-primary/70",
   },
   {
     id: "trade",
@@ -51,7 +50,7 @@ const steps: DemoStep[] = [
     label: "Execute Trade",
     detail: "Buy US stocks, ETFs, or crypto",
     value: "Buy 1 VOO @ $453.79",
-    accent: "text-emerald-400",
+    accent: "text-primary/60",
   },
 ]
 
@@ -81,8 +80,7 @@ export function LandingDemo() {
           </p>
           <h2
             className={cn(
-              landingDisplay.className,
-              "mt-3 text-3xl tracking-tight text-balance sm:text-4xl md:text-[2.75rem]",
+              "font-sans mt-3 text-3xl tracking-tight text-balance sm:text-4xl md:text-[2.75rem]",
             )}
           >
             From pesos to positions in four steps
@@ -190,15 +188,6 @@ export function LandingDemo() {
             </div>
           </div>
 
-          {/* Decorative element */}
-          <div
-            aria-hidden
-            className="absolute -left-3 -top-3 hidden h-16 w-16 rounded-xl border border-primary/15 bg-primary/5 md:block landing-float-slow"
-          />
-          <div
-            aria-hidden
-            className="absolute -bottom-3 -right-3 hidden h-20 w-20 rounded-xl border border-primary/10 bg-primary/5 md:block landing-float"
-          />
         </div>
       </div>
     </section>

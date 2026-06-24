@@ -3,7 +3,6 @@ import { ArrowUpRight } from "lucide-react"
 import { FintuLogo } from "@/components/brand/fintu-logo"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { landingDisplay } from "@/lib/fonts/landing-display"
 
 const footerLinks = [
   { href: "#features", label: "Features" },
@@ -25,8 +24,7 @@ export function LandingFooter() {
             </Link>
             <p
               className={cn(
-                landingDisplay.className,
-                "mt-6 max-w-md text-2xl leading-snug tracking-tight text-balance md:text-3xl",
+                "font-sans mt-6 max-w-md text-xl leading-snug tracking-tight text-balance md:text-2xl",
               )}
             >
               Precision for every peso converted, every fee paid, every return earned.

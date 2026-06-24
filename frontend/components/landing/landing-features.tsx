@@ -1,7 +1,6 @@
 import { BarChart3, DollarSign, PieChart, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { landingDisplay } from "@/lib/fonts/landing-display"
 
 const features = [
   {
@@ -10,24 +9,21 @@ const features = [
     description:
       "Track COP to USD conversions with historical FX rates applied at each trade date—not today's spot rate.",
     icon: TrendingUp,
-    className: "md:col-span-2 md:row-span-2",
-    accent: "from-primary/12 via-primary/5 to-transparent",
+    accent: "from-[var(--landing-gradient-mint-start)] via-[var(--landing-gradient-mint-mid)] to-transparent",
   },
   {
     id: "cost-basis",
     title: "Accurate Cost Basis",
     description: "Average cost method with every fee rolled into your true entry price.",
     icon: DollarSign,
-    className: "md:col-span-1",
-    accent: "from-primary/10 to-transparent",
+    accent: "from-[var(--landing-gradient-mint-start)] via-[var(--landing-gradient-mint-mid)] to-transparent",
   },
   {
     id: "portfolio",
     title: "Portfolio View",
     description: "Holdings, allocation, and P/L in both currencies—side by side.",
     icon: PieChart,
-    className: "md:col-span-1",
-    accent: "from-primary/8 to-transparent",
+    accent: "from-[var(--landing-gradient-mint-start)] via-[var(--landing-gradient-mint-mid)] to-transparent",
   },
   {
     id: "performance",
@@ -35,8 +31,7 @@ const features = [
     description:
       "XIRR and fee-impact analysis that reflect how your capital actually compounded over time.",
     icon: BarChart3,
-    className: "md:col-span-2",
-    accent: "from-primary/10 via-primary/5 to-transparent",
+    accent: "from-[var(--landing-gradient-mint-start)] via-[var(--landing-gradient-mint-mid)] to-transparent",
   },
 ] as const
 
@@ -48,8 +43,7 @@ export function LandingFeatures() {
           <p className="font-mono text-xs tracking-widest text-primary uppercase">Capabilities</p>
           <h2
             className={cn(
-              landingDisplay.className,
-              "mt-3 text-3xl tracking-tight text-balance sm:text-4xl md:text-[2.75rem]",
+              "font-sans mt-3 text-3xl font-bold tracking-tight text-balance sm:text-4xl md:text-[2.75rem]",
             )}
           >
             Every pillar of precision tracking
@@ -60,17 +54,14 @@ export function LandingFeatures() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3 md:grid-rows-2 md:gap-5">
+        <div className="grid gap-4 md:grid-cols-2 md:grid-rows-2 md:gap-5">
           {features.map((feature, index) => {
             const Icon = feature.icon
             return (
               <Card
                 key={feature.id}
                 variant="interactive"
-                className={cn(
-                  "group relative overflow-hidden border-border/50 bg-surface-container/60 py-0 landing-fade-up-stagger",
-                  feature.className,
-                )}
+                className="group relative overflow-hidden border-border/50 bg-surface-container/60 py-0 landing-fade-up-stagger"
                 style={{ animationDelay: `${100 + index * 70}ms` }}
               >
                 <div
@@ -80,7 +71,7 @@ export function LandingFeatures() {
                     feature.accent,
                   )}
                 />
-                <CardContent className="relative flex h-full flex-col justify-between gap-6 p-6 md:p-8">
+                <CardContent className="relative flex h-full flex-col justify-between gap-6 p-5 md:p-6">
                   <div className="flex items-start justify-between gap-4">
                     <div className="rounded-xl border border-primary/20 bg-primary/10 p-3 transition-colors duration-300 group-hover:border-primary/35 group-hover:bg-primary/15">
                       <Icon className="size-5 text-primary" strokeWidth={1.75} />
@@ -90,7 +81,7 @@ export function LandingFeatures() {
                     </span>
                   </div>
                   <div>
-                    <h3 className={cn(landingDisplay.className, "text-2xl tracking-tight")}>
+                    <h3 className={cn("font-sans text-xl tracking-tight")}>
                       {feature.title}
                     </h3>
                     <p className="mt-3 text-sm leading-relaxed text-muted-foreground">

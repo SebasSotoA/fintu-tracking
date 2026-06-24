@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
-import { landingDisplay } from "@/lib/fonts/landing-display"
 import { useCountUp } from "@/hooks/use-count-up"
 
 interface Stat {
@@ -85,8 +84,7 @@ export function LandingSocialProof() {
           </p>
           <h2
             className={cn(
-              landingDisplay.className,
-              "mt-3 text-3xl tracking-tight text-balance sm:text-4xl",
+              "font-sans mt-3 text-3xl tracking-tight text-balance sm:text-4xl",
             )}
           >
             Every number accounted for

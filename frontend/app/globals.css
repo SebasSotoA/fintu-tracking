@@ -129,6 +129,14 @@
   --landing-glow-soft: oklch(
     from var(--primary) min(calc(l + 0.08), 0.9) calc(c * 0.4) calc(h - 3) / 0.25
   );
+
+  /* Landing card gradients — lighter, desaturated mint so they read as mint, not green */
+  --landing-gradient-mint-start: oklch(
+    from var(--primary) min(calc(l + 0.1), 0.92) calc(c * 0.5) calc(h - 3) / 0.2
+  );
+  --landing-gradient-mint-mid: oklch(
+    from var(--primary) min(calc(l + 0.04), 0.86) calc(c * 0.35) calc(h - 3) / 0.09
+  );
 }
 
 @theme inline {
