@@ -13,6 +13,13 @@ import {
 } from "lucide-react"
 import type { ActivityItem } from "@/lib/api/activity"
 import { formatCurrency } from "@/lib/decimal"
+import { cn } from "@/lib/utils"
+
+interface IconStyle {
+  icon: React.ComponentType<{ className?: string }>
+  colorClass: string
+  bgClass: string
+}
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr)
@@ -32,17 +39,26 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
-function getIcon(kind: ActivityItem["kind"], direction: ActivityItem["direction"]) {
-  if (kind === "deposit") return { icon: ArrowDownToLine, color: "text-primary" }
-  if (kind === "withdrawal") return { icon: ArrowUpFromLine, color: "text-yellow-600 dark:text-yellow-400" }
+function getIcon(kind: ActivityItem["kind"], direction: ActivityItem["direction"]): IconStyle {
+  // All activity icons use the primary mint palette for visual consistency.
+  if (kind === "deposit") {
+    return { icon: ArrowDownToLine, colorClass: "text-primary", bgClass: "bg-primary/10" }
+  }
+  if (kind === "withdrawal") {
+    return { icon: ArrowUpFromLine, colorClass: "text-primary", bgClass: "bg-primary/10" }
+  }
   if (kind === "trade") {
     return direction === "out"
-      ? { icon: TrendingDown, color: "text-primary" }        // buy: green (acquiring)
-      : { icon: TrendingUp, color: "text-yellow-600 dark:text-yellow-400" } // sell: amber
+      ? { icon: TrendingDown, colorClass: "text-primary", bgClass: "bg-primary/10" }      // buy
+      : { icon: TrendingUp, colorClass: "text-primary", bgClass: "bg-primary/10" }        // sell
   }
-  if (kind === "fee") return { icon: Receipt, color: "text-destructive" }
-  if (kind === "cash_adjustment") return { icon: Coins, color: "text-blue-500" }
-  return { icon: DollarSign, color: "text-muted-foreground" }
+  if (kind === "fee") {
+    return { icon: Receipt, colorClass: "text-primary", bgClass: "bg-primary/10" }
+  }
+  if (kind === "cash_adjustment") {
+    return { icon: Coins, colorClass: "text-primary", bgClass: "bg-primary/10" }
+  }
+  return { icon: DollarSign, colorClass: "text-primary", bgClass: "bg-primary/10" }
 }
 
 function getKindLabel(kind: ActivityItem["kind"], subKind: string): string {
@@ -63,7 +79,7 @@ interface ActivityFeedItemProps {
 }
 
 export function ActivityFeedItem({ item }: ActivityFeedItemProps) {
-  const { icon: Icon, color } = getIcon(item.kind, item.direction)
+  const { icon: Icon, colorClass, bgClass } = getIcon(item.kind, item.direction)
   const label = getKindLabel(item.kind, item.sub_kind)
 
   return (
@@ -71,7 +87,13 @@ export function ActivityFeedItem({ item }: ActivityFeedItemProps) {
       href={getLinkUrl(item.kind)}
       className="flex items-center gap-3 rounded-md px-2 py-1.5 -mx-2 hover:bg-muted/50 transition-colors"
     >
-      <div className={`flex h-8 w-8 items-center justify-center rounded-full bg-muted/50 ${color}`}>
+      <div
+        className={cn(
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+          bgClass,
+          colorClass,
+        )}
+      >
         <Icon className="h-4 w-4" />
       </div>
       <div className="flex-1 min-w-0">

@@ -189,20 +189,17 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
           </section>
         )}
 
-        <section className="rounded-lg border border-border/50 bg-muted/30 p-4">
-          <MetricLabel label="Buy power" tooltip={METRIC_TOOLTIPS.cash} className="mb-2" />
+        <section className="space-y-2 border-t border-border/50 pt-4">
+          <MetricLabel label="Buy power" tooltip={METRIC_TOOLTIPS.cash} />
           <p className="text-2xl font-semibold font-mono tabular-nums">{formatUsd(buyPower)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             XIRR and detailed return attribution are available on the Performance page.
           </p>
         </section>
 
-        {/* Notifications — fixed height, scroll only on alerts when >2 items */}
-        <section className="flex flex-col h-56 rounded-lg border border-border/50 bg-muted/30 p-4">
-          <h3 className="mb-2 text-sm font-medium shrink-0">Notifications</h3>
-          <div className="flex-1 min-h-0 overflow-y-auto scrollbar-minimal">
-            <PortfolioHealthBanner />
-          </div>
+        <section className="space-y-3 border-t border-border/50 pt-4">
+          <h3 className="text-sm font-medium">Notifications</h3>
+          <PortfolioHealthBanner />
         </section>
       </CardContent>
     </Card>
