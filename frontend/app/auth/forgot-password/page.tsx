@@ -9,11 +9,17 @@ import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 export default function ForgotPasswordPage() {
+  const searchParams = useSearchParams()
+  const initialError = searchParams.get("error")
+
   const [email, setEmail] = useState("")
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    initialError === "invalid_link" ? "This reset link is invalid or has expired." : null,
+  )
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
 

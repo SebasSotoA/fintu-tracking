@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Suspense } from "react"
+import { Suspense, useEffect, useState } from "react"
 
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -12,7 +12,6 @@ import { AuthAlert } from "@/components/auth/auth-alert"
 import { Spinner } from "@/components/ui/spinner"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState } from "react"
 
 function ResetPasswordContent() {
   const [password, setPassword] = useState("")
@@ -20,11 +19,38 @@ function ResetPasswordContent() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
+  const [hasSession, setHasSession] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const linkError = searchParams.get("error")
 
-  if (linkError === "invalid_link") {
+  useEffect(() => {
+    const checkSession = async () => {
+      const supabase = createClient()
+      const { data } = await supabase.auth.getSession()
+      setHasSession(!!data.session)
+      setIsCheckingSession(false)
+
+      if (!data.session && linkError !== "invalid_link") {
+        router.replace("/auth/forgot-password")
+      }
+    }
+
+    checkSession()
+  }, [linkError, router])
+
+  if (isCheckingSession) {
+    return (
+      <AuthCard title="Loading" description="Please wait...">
+        <div className="flex h-40 items-center justify-center">
+          <Spinner className="size-6 text-primary" />
+        </div>
+      </AuthCard>
+    )
+  }
+
+  if (!hasSession && linkError === "invalid_link") {
     return (
       <AuthCard
         title="Invalid or expired link"
@@ -35,6 +61,10 @@ function ResetPasswordContent() {
         </Button>
       </AuthCard>
     )
+  }
+
+  if (!hasSession) {
+    return null
   }
 
   if (isSuccess) {
