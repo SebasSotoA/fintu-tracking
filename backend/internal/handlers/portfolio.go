@@ -49,20 +49,40 @@ func RefreshMarketPrices(c fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-// GetHoldings calculates and returns current holdings
+// GetHoldings calculates and returns current holdings.
+// Without page/page_size query params, returns a plain JSON array (legacy).
+// With pagination params, returns models.PaginatedResponse sorted by market value descending.
 func GetHoldings(c fiber.Ctx) error {
 	userID := middleware.GetUserID(c)
 	if userID == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
+	pageStr := c.Query("page")
+	pageSizeStr := c.Query("page_size")
+
 	analyticsService := services.NewAnalyticsService(database.GetPool())
-	holdings, err := analyticsService.GetCurrentHoldings(context.Background(), userID)
+	ctx := context.Background()
+
+	if !paginationRequested(pageStr, pageSizeStr) {
+		holdings, err := analyticsService.GetCurrentHoldings(ctx, userID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(holdings)
+	}
+
+	params, err := parsePaginationParams(pageStr, pageSizeStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	holdings, err := analyticsService.GetCurrentHoldingsByMarketValue(ctx, userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	return c.JSON(holdings)
+	return c.JSON(paginateHoldings(holdings, params.page, params.pageSize))
 }
 
 // GetPerformance calculates and returns performance metrics
@@ -123,4 +143,23 @@ func GetMarketPrice(c fiber.Ctx) error {
 	}
 
 	return c.JSON(price)
+}
+
+// paginateHoldings slices a full holdings list into a paginated response,
+// clamping the page to the valid range.
+func paginateHoldings(holdings []models.Holding, page, pageSize int) models.PaginatedResponse[models.Holding] {
+	total := len(holdings)
+	page = clampPage(page, total, pageSize)
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	if end > total {
+		end = total
+	}
+
+	return models.PaginatedResponse[models.Holding]{
+		Items:    holdings[start:end],
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
+	}
 }

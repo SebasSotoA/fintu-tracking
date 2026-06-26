@@ -1,8 +1,6 @@
 "use client"
 
 import type { CashFlow } from "@/lib/types"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FilterSelect } from "@/components/filters/filter-select"
@@ -40,6 +38,10 @@ import { invalidateAfterCashFlowMutation } from "@/lib/api/query-keys"
 import { EditCashFlowDialog } from "./edit-cash-flow-dialog"
 import { DeleteCashFlowDialog } from "./delete-cash-flow-dialog"
 import Link from "next/link"
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table"
+import { DataTableColumnToggle } from "@/components/ui/data-table-column-toggle"
+import { EmptyState } from "@/components/ui/empty-state"
+import { usePersistedVisibleColumns } from "@/hooks/use-persisted-visible-columns"
 
 interface CashFlowsListProps {
   cashFlows: CashFlow[]
@@ -47,6 +49,11 @@ interface CashFlowsListProps {
   page: number
   pageSize: PageSize
   highlightId?: string
+}
+
+type CashFlowRow = CashFlow & {
+  linkedFee?: CashFlow
+  feeAttributionLabel?: string | null
 }
 
 const TYPE_OPTIONS: { value: CashFlowTypeFilter; label: string }[] = [
@@ -102,6 +109,19 @@ export function CashFlowsList({
     })
     return byParentId
   }, [cashFlows])
+
+  const rows = useMemo<CashFlowRow[]>(
+    () =>
+      visibleCashFlows.map((cf) => ({
+        ...cf,
+        linkedFee:
+          cf.type === "deposit" || cf.type === "withdrawal"
+            ? linkedFeeByParentId.get(cf.id)
+            : undefined,
+        feeAttributionLabel: cf.type === "fee" ? getFeeAttributionLabel(cashFlows, cf) : null,
+      })),
+    [visibleCashFlows, linkedFeeByParentId, cashFlows],
+  )
 
   const replaceQuery = useCallback(
     (params: URLSearchParams) => {
@@ -168,220 +188,266 @@ export function CashFlowsList({
     }
   }
 
+  const columns = useMemo<DataTableColumn<CashFlowRow>[]>(
+    () => [
+      {
+        key: "date",
+        header: "Date",
+        cell: (cf) => formatCalendarDate(cf.date),
+      },
+      {
+        key: "type",
+        header: "Type",
+        cell: (cf) => (
+          <Badge
+            variant={
+              cf.type === "deposit"
+                ? "default"
+                : cf.type === "withdrawal"
+                  ? "secondary"
+                  : cf.type === "fee"
+                    ? "destructive"
+                    : "outline"
+            }
+          >
+            {getCashFlowTypeLabel(cf.type)}
+          </Badge>
+        ),
+      },
+      {
+        key: "copWired",
+        header: "COP wired",
+        cell: (cf) => {
+          const value =
+            cf.type === "deposit" || cf.type === "withdrawal"
+              ? formatAmountPlain(cf.amount, "COP")
+              : "—"
+          return <span className="font-mono">{value}</span>
+        },
+        align: "right",
+      },
+      {
+        key: "fxRate",
+        header: "FX",
+        cell: (cf) => {
+          const value =
+            cf.type === "deposit" || cf.type === "withdrawal" ? (cf.fx_rate ?? "—") : "—"
+          return <span className="font-mono">{value}</span>
+        },
+        align: "right",
+      },
+      {
+        key: "feeAmount",
+        header: "Fee",
+        cell: (cf) => {
+          const value =
+            cf.type === "deposit" || cf.type === "withdrawal"
+              ? cf.linkedFee
+                ? formatCurrency(cf.linkedFee.amount, "USD")
+                : "—"
+              : cf.type === "fee"
+                ? formatCurrency(cf.amount, "USD")
+                : "—"
+          return <span className="font-mono">{value}</span>
+        },
+        align: "right",
+      },
+      {
+        key: "usdCredited",
+        header: "USD (net)",
+        cell: (cf) => {
+          const value =
+            cf.type === "withdrawal"
+              ? `-${formatCurrency(new Decimal(cf.usd_amount || "0").abs().toString(), "USD")}`
+              : cf.type === "deposit"
+                ? formatCurrency(cf.usd_amount, "USD")
+                : cf.type === "cash_adjustment"
+                  ? formatCurrency(cf.amount, "USD")
+                  : "—"
+          return <span className="font-mono font-semibold">{value}</span>
+        },
+        align: "right",
+      },
+      {
+        key: "attribution",
+        header: "Attribution",
+        className: "w-[12%] min-w-[8rem] max-w-[10rem]",
+        cell: (cf) => {
+          if (cf.related_type === "trade" && cf.related_trade_id) {
+            return (
+              <Link href={`/trades?highlight=${cf.related_trade_id}`} className="inline-flex max-w-full">
+                <Button variant="ghost" size="sm" className="h-auto py-1 px-2 w-full">
+                  <LinkIcon className="h-3 w-3 mr-1 shrink-0" />
+                  <span className="text-xs truncate">Trade</span>
+                </Button>
+              </Link>
+            )
+          }
+          if (cf.feeAttributionLabel && cf.related_cash_flow_id) {
+            return (
+              <Link href={`/cash-flows?highlight=${cf.related_cash_flow_id}`} className="inline-flex max-w-full">
+                <Button variant="ghost" size="sm" className="h-auto py-1 px-2 w-full text-left">
+                  <LinkIcon className="h-3 w-3 mr-1 shrink-0" />
+                  <span className="text-xs truncate">{cf.feeAttributionLabel}</span>
+                </Button>
+              </Link>
+            )
+          }
+          if (cf.related_cash_flow_id) {
+            return (
+              <Link href={`/cash-flows?highlight=${cf.related_cash_flow_id}`} className="inline-flex max-w-full">
+                <Button variant="ghost" size="sm" className="h-auto py-1 px-2 w-full">
+                  <LinkIcon className="h-3 w-3 mr-1 shrink-0" />
+                  <span className="text-xs truncate capitalize">{cf.related_type ?? "Cash flow"}</span>
+                </Button>
+              </Link>
+            )
+          }
+          return (
+            <span className="text-muted-foreground text-sm truncate block max-w-full">
+              {cf.related_type === "standalone" ? "Standalone" : "-"}
+            </span>
+          )
+        },
+      },
+      {
+        key: "notes",
+        header: "Notes",
+        className: "w-[15%] min-w-[8rem] max-w-[12rem]",
+        cell: (cf) => (
+          <span className="text-muted-foreground text-sm truncate block max-w-full">{cf.notes || "-"}</span>
+        ),
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        cell: (cf) => (
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setEditingCashFlow(cf)}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setDeletingCashFlow(cf)}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        ),
+        align: "right",
+        toggleable: false,
+      },
+    ],
+    [setEditingCashFlow, setDeletingCashFlow],
+  )
+
+  const { visibleColumns, visibleKeys, defaultKeys, setVisibleKeys } =
+    usePersistedVisibleColumns("cash-flows-table-columns", columns)
+
+  const emptyState = (
+    <EmptyState
+      title="No cash flows match these filters"
+      action={
+        filtersActive && (
+          <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_CASH_FLOW_FILTERS)}>
+            Clear filters
+          </Button>
+        )
+      }
+    />
+  )
+
   if (total === 0 && !filtersActive) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <p className="text-muted-foreground mb-4">No cash flows recorded yet</p>
-          <p className="text-sm text-muted-foreground">Add your first deposit or withdrawal to start tracking</p>
-        </CardContent>
-      </Card>
+      <EmptyState
+        title="No cash flows recorded yet"
+        description="Add your first deposit or withdrawal to start tracking"
+      />
     )
   }
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-0">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="flex flex-wrap items-end gap-3">
-              <FilterSelect
-                id="cf-filter-type"
-                label="Type"
-                value={filters.type}
-                options={TYPE_OPTIONS}
-                onChange={(type) => patchFilters({ type })}
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <FilterSelect
+              id="cf-filter-type"
+              label="Type"
+              value={filters.type}
+              options={TYPE_OPTIONS}
+              onChange={(type) => patchFilters({ type })}
+            />
+            <FilterSelect
+              id="cf-filter-currency"
+              label="Currency"
+              value={filters.currency}
+              options={CURRENCY_OPTIONS}
+              onChange={(currency) => patchFilters({ currency })}
+            />
+            <DateRangePicker
+              id="cf-filter-date"
+              label="Date"
+              ariaLabel="Filter cash flows by date"
+              value={filters.dateRange}
+              onChange={(dateRange) => patchFilters({ dateRange })}
+              formatLabel={formatTradeDateRangeLabel}
+            />
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <p className="text-sm text-muted-foreground">
+              Showing {visibleCashFlows.length} of {total} cash flows
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant={showTradeFeeAuditRows ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowTradeFeeAuditRows((current) => !current)}
+              >
+                Show trade fee audit rows
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2 shrink-0"
+                onClick={handleExport}
+                disabled={total === 0 || exporting}
+              >
+                <Download className="size-4" />
+                Export
+              </Button>
+              <DataTableColumnToggle
+                columns={columns}
+                visibleKeys={visibleKeys}
+                defaultVisibleKeys={defaultKeys}
+                onChange={setVisibleKeys}
               />
-              <FilterSelect
-                id="cf-filter-currency"
-                label="Currency"
-                value={filters.currency}
-                options={CURRENCY_OPTIONS}
-                onChange={(currency) => patchFilters({ currency })}
-              />
-              <DateRangePicker
-                id="cf-filter-date"
-                label="Date"
-                ariaLabel="Filter cash flows by date"
-                value={filters.dateRange}
-                onChange={(dateRange) => patchFilters({ dateRange })}
-                formatLabel={formatTradeDateRangeLabel}
-              />
-            </div>
-            <div className="flex flex-col items-end gap-2 pb-2">
-              <p className="text-sm text-muted-foreground">
-                Showing {visibleCashFlows.length} of {total} cash flows
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={showTradeFeeAuditRows ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowTradeFeeAuditRows((current) => !current)}
-                >
-                  Show trade fee audit rows
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2 shrink-0"
-                  onClick={handleExport}
-                  disabled={total === 0 || exporting}
-                >
-                  <Download className="size-4" />
-                  Export
-                </Button>
-              </div>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          {total === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-muted-foreground mb-2">No cash flows match these filters</p>
-              {filtersActive && (
-                <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_CASH_FLOW_FILTERS)}>
-                  Clear filters
-                </Button>
-              )}
-            </div>
-          ) : (
-            <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">COP wired</TableHead>
-                      <TableHead className="text-right">FX</TableHead>
-                      <TableHead className="text-right">Fee</TableHead>
-                      <TableHead className="text-right">USD credited (net)</TableHead>
-                      <TableHead>Attribution</TableHead>
-                      <TableHead>Notes</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {visibleCashFlows.map((cf) => {
-                      const feeAttributionLabel = cf.type === "fee" ? getFeeAttributionLabel(cashFlows, cf) : null
-                      const linkedFee =
-                        cf.type === "deposit" || cf.type === "withdrawal" ? linkedFeeByParentId.get(cf.id) : undefined
-                      const copWired =
-                        cf.type === "deposit" || cf.type === "withdrawal"
-                          ? formatAmountPlain(cf.amount, "COP")
-                          : "—"
-                      const fxRate =
-                        cf.type === "deposit" || cf.type === "withdrawal"
-                          ? (cf.fx_rate ?? "—")
-                          : "—"
-                      const feeAmount =
-                        cf.type === "deposit" || cf.type === "withdrawal"
-                          ? linkedFee
-                            ? formatCurrency(linkedFee.amount, "USD")
-                            : "—"
-                          : cf.type === "fee"
-                            ? formatCurrency(cf.amount, "USD")
-                            : "—"
-                      const usdCredited =
-                        cf.type === "withdrawal"
-                          ? `-${formatCurrency(new Decimal(cf.usd_amount || "0").abs().toString(), "USD")}`
-                          : cf.type === "deposit"
-                            ? formatCurrency(cf.usd_amount, "USD")
-                          : cf.type === "cash_adjustment"
-                            ? formatCurrency(cf.amount, "USD")
-                            : "—"
+        </div>
 
-                      return (
-                        <TableRow
-                          key={cf.id}
-                          className={
-                            cf.id === highlightId
-                              ? "bg-accent/40 ring-1 ring-inset ring-border"
-                              : undefined
-                          }
-                        >
-                          <TableCell>{formatCalendarDate(cf.date)}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                cf.type === "deposit"
-                                  ? "default"
-                                  : cf.type === "withdrawal"
-                                    ? "secondary"
-                                    : cf.type === "fee"
-                                      ? "destructive"
-                                      : "outline"
-                              }
-                            >
-                              {getCashFlowTypeLabel(cf.type)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-mono">
-                            {copWired}
-                          </TableCell>
-                          <TableCell className="text-right font-mono">{fxRate}</TableCell>
-                          <TableCell className="text-right font-mono">{feeAmount}</TableCell>
-                          <TableCell className="text-right font-mono font-semibold">
-                            {usdCredited}
-                          </TableCell>
-                          <TableCell>
-                            {cf.related_type === "trade" && cf.related_trade_id ? (
-                              <Link href={`/trades?highlight=${cf.related_trade_id}`}>
-                                <Button variant="ghost" size="sm" className="h-auto py-1 px-2">
-                                  <LinkIcon className="h-3 w-3 mr-1" />
-                                  <span className="text-xs">Trade</span>
-                                </Button>
-                              </Link>
-                            ) : feeAttributionLabel && cf.related_cash_flow_id ? (
-                              <Link href={`/cash-flows?highlight=${cf.related_cash_flow_id}`}>
-                                <Button variant="ghost" size="sm" className="h-auto py-1 px-2 text-left">
-                                  <LinkIcon className="h-3 w-3 mr-1 shrink-0" />
-                                  <span className="text-xs">{feeAttributionLabel}</span>
-                                </Button>
-                              </Link>
-                            ) : cf.related_cash_flow_id ? (
-                              <Link href={`/cash-flows?highlight=${cf.related_cash_flow_id}`}>
-                                <Button variant="ghost" size="sm" className="h-auto py-1 px-2">
-                                  <LinkIcon className="h-3 w-3 mr-1" />
-                                  <span className="text-xs capitalize">{cf.related_type ?? "Cash flow"}</span>
-                                </Button>
-                              </Link>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">
-                                {cf.related_type === "standalone" ? "Standalone" : "-"}
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm max-w-xs truncate">
-                            {cf.notes || "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => setEditingCashFlow(cf)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => setDeletingCashFlow(cf)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              <TablePagination
-                page={page}
-                pageSize={pageSize}
-                total={total}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
+        {total === 0 ? (
+          emptyState
+        ) : (
+          <>
+            <DataTable
+              data={rows}
+              columns={visibleColumns}
+              keyExtractor={(cf) => cf.id}
+              rowClassName={(cf) =>
+                cf.id === highlightId ? "bg-accent/40 ring-1 ring-inset ring-border" : undefined
+              }
+              emptyState={emptyState}
+            />
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
+        )}
+      </section>
 
       {editingCashFlow && (
         <EditCashFlowDialog

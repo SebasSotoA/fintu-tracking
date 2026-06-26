@@ -1,8 +1,6 @@
 "use client"
 
 import type { Trade } from "@/lib/types"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -45,6 +43,10 @@ import {
 } from "@/lib/pagination/table-pagination"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table"
+import { DataTableColumnToggle } from "@/components/ui/data-table-column-toggle"
+import { EmptyState } from "@/components/ui/empty-state"
+import { usePersistedVisibleColumns } from "@/hooks/use-persisted-visible-columns"
 
 interface TradesListProps {
   trades: Trade[]
@@ -222,156 +224,203 @@ export function TradesList({
     }
   }
 
+  const columns = useMemo<DataTableColumn<Trade>[]>(
+    () => [
+      {
+        key: "date",
+        header: "Date",
+        cell: (trade) => formatCalendarDate(trade.date),
+      },
+      {
+        key: "ticker",
+        header: "Ticker",
+        cell: (trade) => (
+          <span className="font-mono font-semibold">{trade.ticker}</span>
+        ),
+      },
+      {
+        key: "assetType",
+        header: "Type",
+        cell: (trade) => (
+          <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
+        ),
+      },
+      {
+        key: "side",
+        header: "Side",
+        cell: (trade) => (
+          <Badge variant={trade.side === "buy" ? "default" : "secondary"}>
+            {trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}
+          </Badge>
+        ),
+      },
+      {
+        key: "quantity",
+        header: "Quantity",
+        cell: (trade) => format(trade.quantity, 4),
+        align: "right",
+        className: "font-mono",
+      },
+      {
+        key: "price",
+        header: "Price",
+        cell: (trade) => formatCurrency(trade.price, "USD"),
+        align: "right",
+        className: "font-mono",
+      },
+      {
+        key: "fees",
+        header: "Fees",
+        cell: (trade) => formatCurrency(trade.total_fees, "USD"),
+        align: "right",
+        className: "font-mono",
+      },
+      {
+        key: "total",
+        header: "Total",
+        cell: (trade) => formatCurrency(trade.total, "USD"),
+        align: "right",
+        className: "font-mono font-semibold",
+      },
+      {
+        key: "realizedPL",
+        header: "Realized P/L",
+        cell: (trade) =>
+          trade.side === "sell" && trade.realized_pl != null && trade.realized_pl !== "" ? (
+            <span
+              className={
+                new Decimal(trade.realized_pl).gte(0) ? "text-primary" : "text-destructive"
+              }
+            >
+              {formatCurrency(trade.realized_pl, "USD")}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+        align: "right",
+        className: "font-mono",
+      },
+      {
+        key: "actions",
+        header: "Actions",
+        cell: (trade) => (
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setEditingTrade(trade)}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setDeletingTrade(trade)}>
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </div>
+        ),
+        align: "right",
+        toggleable: false,
+      },
+    ],
+    [],
+  )
+
+  const { visibleColumns, visibleKeys, defaultKeys, setVisibleKeys } =
+    usePersistedVisibleColumns("trades-table-columns", columns)
+
+  const emptyState = (
+    <EmptyState
+      title="No trades match these filters"
+      action={
+        filtersActive && (
+          <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_TRADE_FILTERS)}>
+            Clear filters
+          </Button>
+        )
+      }
+    />
+  )
+
   if (total === 0 && !filtersActive) {
     return (
       <section>
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">No trades recorded yet</p>
-            <p className="text-sm text-muted-foreground">Add your first trade to start tracking your portfolio</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          title="No trades recorded yet"
+          description="Add your first trade to start tracking your portfolio"
+        />
       </section>
     )
   }
 
   return (
     <>
-      <section>
-        <Card>
-          <CardHeader className="pb-0">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div className="flex flex-wrap items-end gap-3">
-                <FilterSelect
-                  id="trade-filter-side"
-                  label="Side"
-                  value={filters.side}
-                  options={SIDE_OPTIONS}
-                  onChange={(side) => patchFilters({ side })}
-                />
-                <FilterSelect
-                  id="trade-filter-asset"
-                  label="Asset"
-                  value={filters.assetType}
-                  options={ASSET_OPTIONS}
-                  onChange={(assetType) => patchFilters({ assetType })}
-                />
-                <TradeTickerFilter
-                  tickers={tickers}
-                  value={filters.ticker}
-                  onChange={(ticker) => patchFilters({ ticker })}
-                />
-                <TradeDateFilter
-                  value={filters.dateRange}
-                  onChange={(dateRange) => patchFilters({ dateRange })}
-                />
-              </div>
-              <div className="flex flex-col items-end gap-2 pb-2">
-                <p className="text-sm text-muted-foreground" title="Filter URLs can be shared or bookmarked">
-                  Showing {trades.length} of {total} trades
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={handleExport}
-                  disabled={total === 0 || exporting}
-                >
-                  <Download className="size-4" />
-                  Export
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {total === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-muted-foreground mb-2">No trades match these filters</p>
-                {filtersActive && (
-                  <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_TRADE_FILTERS)}>
-                    Clear filters
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Ticker</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Side</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                    <TableHead className="text-right">Fees</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Realized P/L</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {trades.map((trade) => (
-                    <TableRow key={trade.id}>
-                      <TableCell>{formatCalendarDate(trade.date)}</TableCell>
-                      <TableCell>
-                        <span className="font-mono font-semibold">{trade.ticker}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={trade.side === "buy" ? "default" : "secondary"}>
-                          {trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">{format(trade.quantity, 4)}</TableCell>
-                      <TableCell className="text-right font-mono">{formatCurrency(trade.price, "USD")}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(trade.total_fees, "USD")}
-                      </TableCell>
-                      <TableCell className="text-right font-mono font-semibold">
-                        {formatCurrency(trade.total, "USD")}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {trade.side === "sell" && trade.realized_pl != null && trade.realized_pl !== "" ? (
-                          <span
-                            className={
-                              new Decimal(trade.realized_pl).gte(0) ? "text-primary" : "text-destructive"
-                            }
-                          >
-                            {formatCurrency(trade.realized_pl, "USD")}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => setEditingTrade(trade)}>
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => setDeletingTrade(trade)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <TablePagination
-                page={page}
-                pageSize={pageSize}
-                total={total}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <FilterSelect
+              id="trade-filter-side"
+              label="Side"
+              value={filters.side}
+              options={SIDE_OPTIONS}
+              onChange={(side) => patchFilters({ side })}
+            />
+            <FilterSelect
+              id="trade-filter-asset"
+              label="Asset"
+              value={filters.assetType}
+              options={ASSET_OPTIONS}
+              onChange={(assetType) => patchFilters({ assetType })}
+            />
+            <TradeTickerFilter
+              tickers={tickers}
+              value={filters.ticker}
+              onChange={(ticker) => patchFilters({ ticker })}
+            />
+            <TradeDateFilter
+              value={filters.dateRange}
+              onChange={(dateRange) => patchFilters({ dateRange })}
+            />
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <p className="text-sm text-muted-foreground" title="Filter URLs can be shared or bookmarked">
+              Showing {trades.length} of {total} trades
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={handleExport}
+                disabled={total === 0 || exporting}
+              >
+                <Download className="size-4" />
+                Export
+              </Button>
+              <DataTableColumnToggle
+                columns={columns}
+                visibleKeys={visibleKeys}
+                defaultVisibleKeys={defaultKeys}
+                onChange={setVisibleKeys}
               />
-              </>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>
+
+        {total === 0 ? (
+          emptyState
+        ) : (
+          <>
+            <DataTable
+              data={trades}
+              columns={visibleColumns}
+              keyExtractor={(trade) => trade.id}
+              emptyState={emptyState}
+            />
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
+        )}
       </section>
 
       {editingTrade && (

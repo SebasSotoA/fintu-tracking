@@ -1,20 +1,34 @@
 import type { Holding, MarketPrice } from "@/lib/types"
-import { getHoldings, listMarketPrices } from "@/lib/api/server-portfolio"
+import { getHoldingsPaginated, listMarketPrices } from "@/lib/api/server-portfolio"
 import { HoldingsTable } from "@/components/dashboard/holdings-table"
+import type { PageSize } from "@/lib/pagination/table-pagination"
 
 interface HoldingsTableServerProps {
+  page: number
+  pageSize: PageSize
   onQuickTrade?: (ticker: string, assetType: string) => void
 }
 
 export interface HoldingsTableData {
   holdings: Holding[]
+  total: number
+  page: number
+  pageSize: PageSize
   priceUpdatedAtByTicker: Record<string, string | null>
   lastPriceRefreshAt: string | null
 }
 
-export async function fetchHoldingsData(): Promise<HoldingsTableData> {
-  const [holdings, marketPrices] = await Promise.all([
-    getHoldings().catch<Holding[]>(() => []),
+export async function fetchHoldingsData(
+  page: number,
+  pageSize: PageSize,
+): Promise<HoldingsTableData> {
+  const [holdingsResult, marketPrices] = await Promise.all([
+    getHoldingsPaginated({ page, page_size: pageSize }).catch(() => ({
+      items: [] as Holding[],
+      total: 0,
+      page,
+      page_size: pageSize,
+    })),
     listMarketPrices().catch<MarketPrice[]>(() => []),
   ])
 
@@ -29,15 +43,29 @@ export async function fetchHoldingsData(): Promise<HoldingsTableData> {
     }
   })
 
-  return { holdings, priceUpdatedAtByTicker, lastPriceRefreshAt }
+  return {
+    holdings: holdingsResult.items,
+    total: holdingsResult.total,
+    page: holdingsResult.page,
+    pageSize: holdingsResult.page_size as PageSize,
+    priceUpdatedAtByTicker,
+    lastPriceRefreshAt,
+  }
 }
 
-export async function HoldingsTableServer({ onQuickTrade }: HoldingsTableServerProps = {}) {
-  const data = await fetchHoldingsData()
+export async function HoldingsTableServer({
+  page,
+  pageSize,
+  onQuickTrade,
+}: HoldingsTableServerProps) {
+  const data = await fetchHoldingsData(page, pageSize)
 
   return (
     <HoldingsTable
       holdings={data.holdings}
+      total={data.total}
+      page={data.page}
+      pageSize={data.pageSize}
       priceUpdatedAtByTicker={data.priceUpdatedAtByTicker}
       lastPriceRefreshAt={data.lastPriceRefreshAt}
       onQuickTrade={onQuickTrade}
