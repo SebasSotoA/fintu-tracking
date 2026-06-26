@@ -14,9 +14,9 @@ import { getPerformanceTimeSeries } from "@/lib/api/analytics"
 import { MetricLabel } from "@/components/analytics/metric-primitives"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
 import { TimePeriodSelector, type TimePeriod } from "@/components/dashboard/time-period-selector"
 import { PortfolioHealthBanner } from "@/components/dashboard/portfolio-health-banner"
+import { NetWorthCardSkeleton } from "@/components/dashboard/dashboard-card-skeleton"
 
 interface NetWorthCardProps {
   initialData?: NetWorthData | null
@@ -104,14 +104,7 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
   const chartColor = isTrendPositive ? "var(--primary)" : "var(--destructive)"
 
   if (isLoading) {
-    return (
-      <Card variant="kpi" className="col-span-full">
-        <CardContent className="space-y-4 pt-6">
-          <Skeleton className="h-16 w-72" />
-          <Skeleton className="h-10 w-64" />
-        </CardContent>
-      </Card>
-    )
+    return <NetWorthCardSkeleton />
   }
 
   if (error || !netWorth) {

@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query"
 import { getActivityFeed, type ActivityItem } from "@/lib/api/activity"
 import { queryKeys } from "@/lib/api/query-keys"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
 import { ActivityFeedItem } from "@/components/dashboard/activity-feed-item"
+import { ActivityFeedCardSkeleton } from "@/components/dashboard/dashboard-card-skeleton"
 
 export function ActivityFeed() {
   const { data: items, isLoading, error } = useQuery<ActivityItem[]>({
@@ -16,18 +16,7 @@ export function ActivityFeed() {
   })
 
   if (isLoading) {
-    return (
-      <Card className="flex flex-col h-full">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </CardContent>
-      </Card>
-    )
+    return <ActivityFeedCardSkeleton />
   }
 
   if (error || !items) {

@@ -1,18 +1,26 @@
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  ActivityFeedCardSkeleton,
+  HoldingsTableCardSkeleton,
+  NetWorthCardSkeleton,
+} from "@/components/dashboard/dashboard-card-skeleton"
+
 export default function DashboardLoading() {
   return (
-    <div className="space-y-6 animate-pulse">
+    <div className="space-y-6">
       <div className="mb-8 space-y-2">
-        <div className="h-9 w-44 bg-muted rounded" />
-        <div className="h-4 w-56 bg-muted rounded" />
+        <Skeleton className="h-9 w-44" />
+        <Skeleton className="h-4 w-56" />
       </div>
-      <div className="h-36 bg-muted rounded-lg" />
-      <div className="h-48 bg-muted rounded-lg" />
-      <div className="space-y-3">
-        <div className="h-10 bg-muted rounded" />
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-14 bg-muted rounded" />
-        ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <div className="flex flex-col">
+          <NetWorthCardSkeleton />
+        </div>
+        <div className="flex flex-col">
+          <ActivityFeedCardSkeleton />
+        </div>
       </div>
+      <HoldingsTableCardSkeleton />
     </div>
   )
 }

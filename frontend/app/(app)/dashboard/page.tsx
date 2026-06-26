@@ -4,40 +4,62 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { DashboardQuickTrade } from "@/components/dashboard/dashboard-quick-trade"
 import { fetchHoldingsData } from "@/components/dashboard/holdings-table-server"
 import { getNetWorth } from "@/lib/api/server-analytics"
+import { parsePageParams, type PageSize } from "@/lib/pagination/table-pagination"
+import {
+  ActivityFeedCardSkeleton,
+  HoldingsTableCardSkeleton,
+  NetWorthCardSkeleton,
+} from "@/components/dashboard/dashboard-card-skeleton"
+
+interface DashboardPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}
 
 async function NetWorthCardServer() {
   const data = await getNetWorth().catch(() => null)
   return <NetWorthCard initialData={data} />
 }
 
-async function DashboardQuickTradeServer() {
-  const data = await fetchHoldingsData()
+async function DashboardQuickTradeServer({
+  page,
+  pageSize,
+}: {
+  page: number
+  pageSize: PageSize
+}) {
+  const data = await fetchHoldingsData(page, pageSize)
   return (
     <DashboardQuickTrade
       holdings={data.holdings}
+      total={data.total}
+      page={data.page}
+      pageSize={data.pageSize}
       priceUpdatedAtByTicker={data.priceUpdatedAtByTicker}
       lastPriceRefreshAt={data.lastPriceRefreshAt}
     />
   )
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const params = await searchParams
+  const { page, pageSize } = parsePageParams(params)
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         <div className="flex flex-col">
-          <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
+          <Suspense fallback={<NetWorthCardSkeleton />}>
             <NetWorthCardServer />
           </Suspense>
         </div>
         <div className="flex flex-col">
-          <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
+          <Suspense fallback={<ActivityFeedCardSkeleton />}>
             <ActivityFeed />
           </Suspense>
         </div>
       </div>
-      <Suspense fallback={<div className="h-64 bg-muted rounded-lg animate-pulse" />}>
-        <DashboardQuickTradeServer />
+      <Suspense fallback={<HoldingsTableCardSkeleton />}>
+        <DashboardQuickTradeServer page={page} pageSize={pageSize} />
       </Suspense>
     </div>
   )
