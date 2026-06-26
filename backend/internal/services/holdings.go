@@ -57,6 +57,37 @@ func (s *AnalyticsService) GetCurrentHoldings(ctx context.Context, userID string
 	return holdings, nil
 }
 
+// GetCurrentHoldingsByMarketValue returns all current holdings sorted by market
+// value descending, used by paginated views where the most valuable positions
+// should appear first.
+func (s *AnalyticsService) GetCurrentHoldingsByMarketValue(ctx context.Context, userID string) ([]models.Holding, error) {
+	trades, err := s.loadHoldingTrades(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	prices, err := s.loadMarketPrices(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	holdingsByTicker := computeHoldingsFromTrades(trades, prices)
+	holdings := make([]models.Holding, 0, len(holdingsByTicker))
+	for _, h := range holdingsByTicker {
+		holdings = append(holdings, h)
+	}
+
+	sort.Slice(holdings, func(i, j int) bool {
+		a, aErr := decimal.NewFromString(holdings[i].MarketValue)
+		b, bErr := decimal.NewFromString(holdings[j].MarketValue)
+		if aErr != nil || bErr != nil {
+			return holdings[i].Ticker < holdings[j].Ticker
+		}
+		return b.Cmp(a) < 0
+	})
+
+	return holdings, nil
+}
+
 func (s *AnalyticsService) loadHoldingTrades(ctx context.Context, userID string) ([]holdingTradeRow, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT date, created_at, ticker, asset_type, side, quantity, price, COALESCE(total_fees, 0)
@@ -198,19 +229,19 @@ func computeHoldingsFromTrades(trades []holdingTradeRow, prices map[string]marke
 			}
 		}
 
-		avgCost := pos.costBasis.Div(pos.qty)
-		avgCostWithoutFees := pos.pureCostBasis.Div(pos.qty)
+		avgCost := pos.pureCostBasis.Div(pos.qty)
+		avgCostWithFees := pos.costBasis.Div(pos.qty)
 		marketValue := pos.qty.Mul(marketPrice)
-		unrealizedPL := marketValue.Sub(pos.costBasis)
+		unrealizedPL := marketValue.Sub(pos.pureCostBasis)
 		unrealizedPLPct := decimal.Zero
-		if !pos.costBasis.IsZero() {
-			unrealizedPLPct = unrealizedPL.Div(pos.costBasis).Mul(decimal.NewFromInt(100))
+		if !pos.pureCostBasis.IsZero() {
+			unrealizedPLPct = unrealizedPL.Div(pos.pureCostBasis).Mul(decimal.NewFromInt(100))
 		}
 
 		remainingFees := pos.costBasis.Sub(pos.pureCostBasis)
 		feeImpactPct := decimal.Zero
-		if !pos.costBasis.IsZero() {
-			feeImpactPct = remainingFees.Div(pos.costBasis).Mul(decimal.NewFromInt(100))
+		if !pos.pureCostBasis.IsZero() {
+			feeImpactPct = remainingFees.Div(pos.pureCostBasis).Mul(decimal.NewFromInt(100))
 		}
 
 		holdings[ticker] = models.Holding{
@@ -218,8 +249,10 @@ func computeHoldingsFromTrades(trades []holdingTradeRow, prices map[string]marke
 			AssetType:           pos.assetType,
 			Quantity:            pos.qty.String(),
 			AvgCost:             avgCost.String(),
-			AvgCostWithoutFees:  avgCostWithoutFees.String(),
-			TotalInvested:       pos.costBasis.String(),
+			AvgCostWithFees:     avgCostWithFees.String(),
+			AvgCostWithoutFees:  avgCost.String(),
+			TotalInvested:       pos.pureCostBasis.String(),
+			TotalInvestedWithFees: pos.costBasis.String(),
 			TotalFees:           remainingFees.String(),
 			MarketValue:         marketValue.String(),
 			UnrealizedPL:        unrealizedPL.String(),

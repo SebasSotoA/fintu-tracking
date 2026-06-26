@@ -60,6 +60,9 @@ export interface Holding {
   quantity: string
   avgCost: string
   totalInvested: string
+  avgCostWithFees?: string
+  totalInvestedWithFees?: string
+  totalFees?: string
   currentPrice?: string
   priceAsOf?: string | null
   price_as_of?: string | null
@@ -67,6 +70,7 @@ export interface Holding {
   marketValue: string
   unrealizedPL: string
   unrealizedPLPercent: string
+  feeImpactPercent?: string
 }
 
 export interface NetWorthData {
