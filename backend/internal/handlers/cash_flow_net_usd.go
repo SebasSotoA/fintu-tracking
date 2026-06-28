@@ -4,17 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"fintu-tracking-backend/internal/config"
 	"fintu-tracking-backend/internal/database"
 
 	"github.com/shopspring/decimal"
 )
 
 func computeGrossUsd(currency string, amount decimal.Decimal, fxRate *decimal.Decimal) (decimal.Decimal, error) {
-	if currency == "USD" {
+	if currency == config.BaseCurrency {
 		return amount, nil
 	}
 	if fxRate == nil {
-		return decimal.Zero, fmt.Errorf("FX rate required for COP transactions")
+		return decimal.Zero, fmt.Errorf("FX rate required for %s transactions", config.LocalCurrency)
 	}
 	if fxRate.IsZero() {
 		return decimal.Zero, fmt.Errorf("FX rate must be non-zero")

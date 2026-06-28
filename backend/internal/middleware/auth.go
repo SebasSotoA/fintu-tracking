@@ -194,3 +194,13 @@ func GetUserID(c fiber.Ctx) string {
 	userID, _ := c.Locals("user_id").(string)
 	return userID
 }
+
+// RequireUserID returns the authenticated user ID or a 401 fiber error.
+// Use it to reduce the repetitive empty-user-id check in handlers.
+func RequireUserID(c fiber.Ctx) (string, error) {
+	userID := GetUserID(c)
+	if userID == "" {
+		return "", fiber.NewError(fiber.StatusUnauthorized, "Unauthorized")
+	}
+	return userID, nil
+}

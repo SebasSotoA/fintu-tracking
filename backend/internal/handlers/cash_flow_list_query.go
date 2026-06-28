@@ -83,7 +83,7 @@ func parseCashFlowListFilters(fromStr, toStr, flowType, currency, excludeMirrore
 	if filters.flowType != "" && filters.flowType != "deposit" && filters.flowType != "withdrawal" && filters.flowType != "fee" && filters.flowType != "cash_adjustment" {
 		return filters, fmt.Errorf("invalid type")
 	}
-	if filters.currency != "" && filters.currency != "USD" && filters.currency != "COP" {
+	if filters.currency != "" && !isValidCashFlowCurrency(filters.currency) {
 		return filters, fmt.Errorf("invalid currency")
 	}
 	if strings.TrimSpace(excludeMirroredStr) != "" {

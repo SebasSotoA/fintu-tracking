@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"fintu-tracking-backend/internal/config"
 	"fintu-tracking-backend/internal/models"
 	"github.com/shopspring/decimal"
 )
@@ -114,13 +115,13 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 		summary.XIRR = xirrRate.Mul(decimal.NewFromInt(100)).StringFixed(2)
 	}
 
-	if err := s.pool.QueryRow(ctx, `
+	if err := s.pool.QueryRow(ctx, fmt.Sprintf(`
 		SELECT
-			COALESCE(SUM(CASE WHEN type = 'deposit' AND currency = 'COP' THEN amount ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN type = 'withdrawal' AND currency = 'COP' THEN amount ELSE 0 END), 0)
+			COALESCE(SUM(CASE WHEN type = 'deposit' AND currency = '%s' THEN amount ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN type = 'withdrawal' AND currency = '%s' THEN amount ELSE 0 END), 0)
 		FROM cash_flows WHERE user_id = $1
-	`, userID).Scan(&summary.TotalDepositedCOP, &summary.TotalWithdrawnCOP); err != nil {
-		return summary, fmt.Errorf("failed to sum COP deposits and withdrawals: %w", err)
+	`, config.LocalCurrency, config.LocalCurrency), userID).Scan(&summary.TotalDepositedCOP, &summary.TotalWithdrawnCOP); err != nil {
+		return summary, fmt.Errorf("failed to sum %s deposits and withdrawals: %w", config.LocalCurrency, err)
 	}
 
 	return summary, nil

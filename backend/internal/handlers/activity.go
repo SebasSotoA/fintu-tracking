@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"fintu-tracking-backend/internal/config"
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
@@ -25,7 +27,7 @@ func GetActivityFeed(c fiber.Ctx) error {
 		}
 	}
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, date, kind, sub_kind, ticker, direction, amount_usd, details
 		FROM (
 			(SELECT
@@ -59,8 +61,8 @@ func GetActivityFeed(c fiber.Ctx) error {
 				END AS direction,
 				ABS(usd_amount)::text AS amount_usd,
 				CASE
-					WHEN type = 'deposit' THEN 'Deposit: COP ' || amount
-					WHEN type = 'withdrawal' THEN 'Withdrawal: COP ' || amount
+					WHEN type = 'deposit' THEN 'Deposit: %s ' || amount
+					WHEN type = 'withdrawal' THEN 'Withdrawal: %s ' || amount
 					WHEN type = 'cash_adjustment' THEN 'Cash adjustment: $' || usd_amount
 					WHEN type = 'fee' THEN 'Fee (' || COALESCE(fee_type, 'other') || '): $' || usd_amount
 					ELSE type || ': $' || usd_amount
@@ -72,7 +74,7 @@ func GetActivityFeed(c fiber.Ctx) error {
 		) AS feed
 		ORDER BY date DESC
 		LIMIT $2
-	`
+	`, config.LocalCurrency, config.LocalCurrency)
 
 	rows, err := database.GetPool().Query(c.Context(), query, userID, limit)
 	if err != nil {
