@@ -87,6 +87,14 @@ cd backend && go vet ./... && go test -race ./...
 - Hardcoded absolute user paths — use repo-relative paths
 - Pushing to remote unless user asks
 
+## Security / User Isolation
+
+- The Go backend connects to Supabase Postgres with a **service-role** connection (`DATABASE_URL`), which bypasses Row-Level Security (`auth.uid()` is not set for that role).
+- Therefore, **every handler and service query must include `user_id = $1`** to enforce isolation.
+- RLS policies in `scripts/` are defense-in-depth for direct Supabase client access; they do not protect the Go backend path.
+- When adding a new per-user table, enable RLS and add full CRUD policies using `auth.uid() = user_id`.
+- Integration tests in `backend/internal/handlers/isolation_test.go` and `backend/internal/services/isolation_service_test.go` run only when `TEST_DATABASE_URL` is set; they verify that one user cannot read another user's trades, cash flows, FX rates, or analytics.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
