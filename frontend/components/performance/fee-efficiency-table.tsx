@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency } from "@/lib/decimal"
 import Decimal from "decimal.js"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 type SortKey = "ticker" | "trade_count" | "avg_fee_pct" | "total_fees"
 type SortDirection = "asc" | "desc"
 
@@ -170,7 +171,7 @@ export function FeeEfficiencyTable() {
                   {new Decimal(row.avg_fee_pct || "0").toFixed(2)}%
                 </TableCell>
                 <TableCell className="text-right font-mono tabular-nums">
-                  {formatCurrency(row.total_fees, "USD")}
+                  {formatCurrency(row.total_fees, MARKET_CONFIG.baseCurrency)}
                 </TableCell>
               </TableRow>
             ))}

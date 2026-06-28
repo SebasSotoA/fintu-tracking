@@ -14,6 +14,7 @@ function cashFlow(overrides: Partial<CashFlow>): CashFlow {
     amount: "1.99",
     fx_rate: null,
     usd_amount: "1.99",
+    broker_id: null,
     notes: null,
     fee_type: null,
     related_trade_id: null,

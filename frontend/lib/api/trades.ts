@@ -27,6 +27,7 @@ export interface CreateTradeData {
   closing_fee?: string
   deposit_fee?: string
   trading_fee?: string
+  broker_id?: string | null
   notes?: string | null
   is_opening_position?: boolean
 }
@@ -41,6 +42,7 @@ export interface UpdateTradeData {
   closing_fee?: string
   deposit_fee?: string
   trading_fee?: string
+  broker_id?: string | null
   notes?: string | null
   is_opening_position?: boolean
 }

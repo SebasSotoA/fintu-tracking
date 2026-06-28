@@ -1,4 +1,5 @@
 import Decimal from "decimal.js"
+import { MARKET_CONFIG, type CashFlowCurrency } from "@/lib/market-config/market-config"
 
 // Configure Decimal.js for financial precision
 Decimal.set({ precision: 20, rounding: Decimal.ROUND_HALF_UP })
@@ -26,20 +27,26 @@ export function format(value: string | number, decimals = 2): string {
   return new Decimal(value).toFixed(decimals)
 }
 
-export function formatCurrency(value: string | number, currency: "USD" | "COP"): string {
+function currencyDecimals(currency: CashFlowCurrency): number {
+  return currency === MARKET_CONFIG.localCurrency ? MARKET_CONFIG.copDecimals : MARKET_CONFIG.usdDecimals
+}
+
+export function formatCurrency(value: string | number, currency: CashFlowCurrency): string {
   const num = new Decimal(value).toNumber()
+  const decimals = currencyDecimals(currency)
   const formatted = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: currency === "COP" ? 0 : 2,
-    maximumFractionDigits: currency === "COP" ? 0 : 2,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(num)
-  return currency === "USD" ? `$${formatted}` : `$${formatted} COP`
+  return currency === MARKET_CONFIG.baseCurrency ? `$${formatted}` : `$${formatted} ${MARKET_CONFIG.localCurrency}`
 }
 
 /** Numeric amount for tables that already have a separate currency column. */
-export function formatAmountPlain(value: string | number, currency: "USD" | "COP"): string {
+export function formatAmountPlain(value: string | number, currency: CashFlowCurrency): string {
   const num = new Decimal(value).toNumber()
+  const decimals = currencyDecimals(currency)
   return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: currency === "COP" ? 0 : 2,
-    maximumFractionDigits: currency === "COP" ? 0 : 2,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(num)
 }

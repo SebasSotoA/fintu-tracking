@@ -12,6 +12,7 @@ const mockCashFlows: CashFlow[] = [
     currency: "USD",
     fx_rate: null,
     usd_amount: "100.00",
+    broker_id: null,
     date: "2024-01-01",
     notes: null,
     fee_type: null,

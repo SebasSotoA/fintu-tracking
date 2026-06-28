@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts"
 import { Decimal } from "@/lib/decimal"
 import { formatCurrency } from "@/lib/decimal"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import {
   ChartContainer,
   ChartTooltip,
@@ -87,7 +88,7 @@ export function PerformanceCharts({ cashFlows }: PerformanceChartsProps) {
                     className={TOOLTIP_CLASS}
                     formatter={(value) => (
                       <span className="font-mono font-medium tabular-nums text-foreground">
-                        {formatCurrency(String(value), "USD")}
+                        {formatCurrency(String(value), MARKET_CONFIG.baseCurrency)}
                       </span>
                     )}
                   />

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
 import { render, screen, act } from "@testing-library/react"
 import { LandingSocialProof } from "./landing-social-proof"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 describe("LandingSocialProof", () => {
   let observeCallback: IntersectionObserverCallback | null = null
@@ -69,7 +70,9 @@ describe("LandingSocialProof", () => {
     render(<LandingSocialProof />)
 
     expect(
-      screen.getByText("Every COP deposit reconciled at the trade-date TRM rate"),
+      screen.getByText(
+        `Every ${MARKET_CONFIG.localCurrency} deposit reconciled at the trade-date FX rate`,
+      ),
     ).toBeInTheDocument()
     expect(
       screen.getByText("Fee categories mapped—deposit, transfer, trading, and closing"),

@@ -9,6 +9,7 @@ import { Decimal } from "@/lib/decimal"
 import { formatCurrency } from "@/lib/decimal"
 import { calculateXIRR } from "@/lib/xirr"
 import { calculateHoldings, updateHoldingsWithPrices } from "@/lib/portfolio"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 interface PerformanceMetricsProps {
   trades: Trade[]
@@ -34,12 +35,12 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
   const pricesMap = new Map(safeMarketPrices.map((p) => [p.ticker, p.price]))
   const holdingsWithPrices = updateHoldingsWithPrices(holdings, pricesMap)
 
-  const portfolioValueUSD = Array.from(holdingsWithPrices.values()).reduce(
+  const portfolioValueBase = Array.from(holdingsWithPrices.values()).reduce(
     (sum, h) => sum.add(new Decimal(h.marketValue || 0)),
     new Decimal(0),
   )
 
-  const totalInvestedUSD = new Decimal(netWorth?.total_invested ?? "0")
+  const totalInvestedBase = new Decimal(netWorth?.total_invested ?? "0")
 
   const totalFees = safeCashFlows
     .filter((cf) => cf.type === "fee")
@@ -48,7 +49,7 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
   // Calculate trade fees
   const tradeFees = safeTrades.reduce((sum, t) => sum.add(new Decimal(t.total_fees || 0)), new Decimal(0))
 
-  const totalFeesUSD = totalFees.add(tradeFees)
+  const totalFeesBase = totalFees.add(tradeFees)
 
   // Calculate XIRR
   const xirrCashFlows = [
@@ -60,19 +61,19 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
       })),
     {
       date: new Date(),
-      amount: portfolioValueUSD,
+      amount: portfolioValueBase,
     },
   ]
 
-  const xirrUSD = calculateXIRR(xirrCashFlows)
+  const xirrBase = calculateXIRR(xirrCashFlows)
 
-  // Calculate with COP
+  // Calculate with local currency
   const latestFxRate = safeFxRates.length > 0 ? new Decimal(safeFxRates[0].rate) : null
 
-  const depositsInCOP = safeCashFlows
+  const depositsInLocal = safeCashFlows
     .filter((cf) => cf.type === "deposit")
     .reduce((sum, cf) => {
-      if (cf.currency === "COP") {
+      if (cf.currency === MARKET_CONFIG.localCurrency) {
         return sum.add(new Decimal(cf.amount))
       } else {
         const rate = latestFxRate || new Decimal(1)
@@ -80,19 +81,19 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
       }
     }, new Decimal(0))
 
-  const portfolioValueCOP = latestFxRate ? portfolioValueUSD.mul(latestFxRate) : null
+  const portfolioValueLocal = latestFxRate ? portfolioValueBase.mul(latestFxRate) : null
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
       <Card variant="kpi">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">XIRR (USD)</CardTitle>
+          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">XIRR ({MARKET_CONFIG.baseCurrency})</CardTitle>
         </CardHeader>
         <CardContent>
           <div
-            className={`text-3xl md:text-4xl font-bold font-mono tracking-tight ${new Decimal(xirrUSD).gte(0) ? "text-primary" : "text-destructive"}`}
+            className={`text-3xl md:text-4xl font-bold font-mono tracking-tight ${new Decimal(xirrBase).gte(0) ? "text-primary" : "text-destructive"}`}
           >
-            {new Decimal(xirrUSD).toFixed(2)}%
+            {new Decimal(xirrBase).toFixed(2)}%
           </div>
           <p className="text-sm text-muted-foreground mt-2">Annualized return</p>
         </CardContent>
@@ -106,10 +107,10 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
           <div className="text-xl md:text-2xl font-semibold font-mono">
             {isNetWorthPending
               ? "—"
-              : formatCurrency(totalInvestedUSD.toString(), "USD")}
+              : formatCurrency(totalInvestedBase.toString(), MARKET_CONFIG.baseCurrency)}
           </div>
-          {depositsInCOP && (
-            <p className="text-sm text-muted-foreground mt-2">{formatCurrency(depositsInCOP.toString(), "COP")}</p>
+          {depositsInLocal && (
+            <p className="text-sm text-muted-foreground mt-2">{formatCurrency(depositsInLocal.toString(), MARKET_CONFIG.localCurrency)}</p>
           )}
         </CardContent>
       </Card>
@@ -119,9 +120,9 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
           <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">Portfolio Value</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl md:text-4xl font-bold font-mono tracking-tight">{formatCurrency(portfolioValueUSD.toString(), "USD")}</div>
-          {portfolioValueCOP && (
-            <p className="text-sm text-muted-foreground mt-2">{formatCurrency(portfolioValueCOP.toString(), "COP")}</p>
+          <div className="text-3xl md:text-4xl font-bold font-mono tracking-tight">{formatCurrency(portfolioValueBase.toString(), MARKET_CONFIG.baseCurrency)}</div>
+          {portfolioValueLocal && (
+            <p className="text-sm text-muted-foreground mt-2">{formatCurrency(portfolioValueLocal.toString(), MARKET_CONFIG.localCurrency)}</p>
           )}
         </CardContent>
       </Card>
@@ -132,9 +133,9 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
         </CardHeader>
         <CardContent>
           <div className="text-xl md:text-2xl font-semibold font-mono text-destructive">
-            {formatCurrency(totalFeesUSD.toString(), "USD")}
+            {formatCurrency(totalFeesBase.toString(), MARKET_CONFIG.baseCurrency)}
           </div>
-          <p className="text-sm text-muted-foreground mt-2">Trading: {formatCurrency(tradeFees.toString(), "USD")}</p>
+          <p className="text-sm text-muted-foreground mt-2">Trading: {formatCurrency(tradeFees.toString(), MARKET_CONFIG.baseCurrency)}</p>
         </CardContent>
       </Card>
     </div>

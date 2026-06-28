@@ -5,8 +5,21 @@ if (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === "production") {
 }
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
-export interface ApiError {
+export interface ApiErrorResponse {
   error: string
+  retry_after?: number
+}
+
+export class ApiError extends Error {
+  status: number
+  retryAfter?: number
+
+  constructor(message: string, status: number, retryAfter?: number) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+    this.retryAfter = retryAfter
+  }
 }
 
 export class ApiClient {
@@ -42,10 +55,16 @@ export class ApiClient {
     })
 
     if (!response.ok) {
-      const errorData: ApiError = await response.json().catch(() => ({
+      const errorData: ApiErrorResponse = await response.json().catch(() => ({
         error: response.statusText,
       }))
-      throw new Error(errorData.error || `API error: ${response.status}`)
+      const retryAfterHeader = response.headers.get("Retry-After")
+      const retryAfter = retryAfterHeader ? Number.parseInt(retryAfterHeader, 10) : errorData.retry_after
+      throw new ApiError(
+        errorData.error || `API error: ${response.status}`,
+        response.status,
+        retryAfter !== undefined && Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : undefined,
+      )
     }
 
     return response.json()

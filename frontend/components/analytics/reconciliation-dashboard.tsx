@@ -18,6 +18,7 @@ import { api } from "@/lib/api/client";
 import Decimal from "decimal.js";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { MARKET_CONFIG } from "@/lib/market-config/market-config";
 
 interface ReconciliationIssue {
   trade_id: string;
@@ -77,7 +78,7 @@ export function ReconciliationDashboard() {
     const num = typeof value === "string" ? parseFloat(value) : value.toNumber();
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: MARKET_CONFIG.baseCurrency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(num);

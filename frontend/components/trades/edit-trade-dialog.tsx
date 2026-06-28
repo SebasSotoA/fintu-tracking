@@ -17,6 +17,8 @@ import { Decimal } from "@/lib/decimal"
 import { updateTrade } from "@/lib/api/trades"
 import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
 import { toDateInputValue } from "@/lib/date-utils"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { listBrokerPresetsForCountry } from "@/lib/brokers/broker-presets"
 import {
   buildTradePayload,
   calculateTradeTotal,
@@ -47,6 +49,7 @@ function tradeToFormValues(trade: Trade): TradeFormValues {
     quantity: new Decimal(trade.quantity).toString(),
     price: new Decimal(trade.price).toString(),
     closing_fee: tradeClosingFeeForForm(trade),
+    broker_id: trade.broker_id || (MARKET_CONFIG.defaultBrokerId as string),
     notes: trade.notes || "",
   }
 }
@@ -209,6 +212,25 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="edit-broker">Broker</Label>
+            <Select
+              value={formData.broker_id}
+              onValueChange={(value: string) => setFormData({ ...formData, broker_id: value })}
+            >
+              <SelectTrigger id="edit-broker">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {listBrokerPresetsForCountry(MARKET_CONFIG.defaultCountry).map((preset) => (
+                  <SelectItem key={preset.id} value={preset.id}>
+                    {preset.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="edit-quantity">Quantity</Label>
@@ -251,7 +273,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
           </div>
 
           <div className="space-y-2">
-            <Label>Total (USD)</Label>
+            <Label>Total ({MARKET_CONFIG.baseCurrency})</Label>
             <div className="text-2xl font-bold font-mono">${calculateTradeTotal(formData)}</div>
           </div>
 

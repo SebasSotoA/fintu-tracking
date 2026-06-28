@@ -14,6 +14,7 @@ import { usePersistedVisibleColumns } from "@/hooks/use-persisted-visible-column
 import { formatCurrency, format } from "@/lib/decimal"
 import { Decimal } from "@/lib/decimal"
 import { RefreshPricesButton } from "@/components/dashboard/refresh-prices-button"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import {
   mergePageSearchParams,
   type PageSize,
@@ -156,21 +157,21 @@ export function HoldingsTable({
       {
         key: "avgCost",
         header: "Avg Cost",
-        cell: (holding) => formatCurrency(holding.avgCost, "USD"),
+        cell: (holding) => formatCurrency(holding.avgCost, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
       },
       {
         key: "totalInvested",
         header: "Total Invested",
-        cell: (holding) => formatCurrency(holding.totalInvested, "USD"),
+        cell: (holding) => formatCurrency(holding.totalInvested, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
       },
       {
         key: "marketValue",
         header: "Market Value",
-        cell: (holding) => formatCurrency(holding.marketValue, "USD"),
+        cell: (holding) => formatCurrency(holding.marketValue, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono font-semibold",
       },
@@ -182,7 +183,7 @@ export function HoldingsTable({
           const isPositive = pl.gte(0)
           return (
             <span className={isPositive ? "text-primary" : "text-destructive"}>
-              {formatCurrency(holding.unrealizedPL, "USD")}
+              {formatCurrency(holding.unrealizedPL, MARKET_CONFIG.baseCurrency)}
             </span>
           )
         },

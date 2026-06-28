@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
 import { useCountUp } from "@/hooks/use-count-up"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 interface Stat {
   label: string
@@ -16,7 +17,7 @@ const stats: Stat[] = [
     label: "FX Precision",
     value: 100,
     suffix: "%",
-    description: "Every COP deposit reconciled at the trade-date TRM rate",
+    description: `Every ${MARKET_CONFIG.localCurrency} deposit reconciled at the trade-date FX rate`,
   },
   {
     label: "Fee Tracking",

@@ -3,6 +3,7 @@ import { ArrowUpRight } from "lucide-react"
 import { FintuLogo } from "@/components/brand/fintu-logo"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 const footerLinks = [
   { href: "#features", label: "Features" },
@@ -27,10 +28,10 @@ export function LandingFooter() {
                 "font-sans mt-6 max-w-md text-xl leading-snug tracking-tight text-balance md:text-2xl",
               )}
             >
-              Precision for every peso converted, every fee paid, every return earned.
+              Precision for every {MARKET_CONFIG.localCurrencyLabel.toLowerCase()} converted, every fee paid, every return earned.
             </p>
             <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-              Portfolio tracking for LATAM retail investors holding USD assets—with FX, fees, and
+              Portfolio tracking for LATAM retail investors holding {MARKET_CONFIG.baseCurrency} assets—with FX, fees, and
               real performance built in.
             </p>
           </div>
@@ -59,7 +60,7 @@ export function LandingFooter() {
         <div className="mt-14 flex flex-col gap-3 border-t border-border/30 pt-8 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Fintu. All rights reserved.</p>
           <p className="font-mono tracking-wide text-primary/70">
-            COP ↔ USD · fees · XIRR · cost basis
+            {MARKET_CONFIG.localCurrency} ↔ {MARKET_CONFIG.baseCurrency} · fees · XIRR · cost basis
           </p>
         </div>
       </div>

@@ -24,6 +24,7 @@ import type { ReturnAttribution as ReturnAttributionData } from "@/lib/api/analy
 import Decimal from "decimal.js";
 import { TrendingUpIcon, AlertCircleIcon } from "lucide-react";
 import type React from "react";
+import { MARKET_CONFIG } from "@/lib/market-config/market-config";
 
 const CHART_GAIN = "var(--chart-1)";
 const CHART_START = "var(--chart-2)";
@@ -47,11 +48,11 @@ type WaterfallStep = {
   color: string;
 };
 
-function formatUsd(value: Decimal | string | number): string {
+function formatBaseCurrency(value: Decimal | string | number): string {
   const num = new Decimal(value).toNumber();
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: MARKET_CONFIG.baseCurrency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(num);
@@ -143,11 +144,11 @@ function WaterfallTooltip({
           }`}
         >
           {data.value >= 0 ? "+" : ""}
-          {formatUsd(Math.abs(data.value))}
+          {formatBaseCurrency(Math.abs(data.value))}
         </p>
       )}
       <p className="font-mono tabular-nums text-muted-foreground">
-        Running: {formatUsd(data.displayValue)}
+        Running: {formatBaseCurrency(data.displayValue)}
       </p>
     </div>
   );
@@ -233,24 +234,24 @@ export function ReturnAttribution(): React.JSX.Element {
           <StatCell
             label="Starting Capital"
             tooltip={PERFORMANCE_TOOLTIPS.startingCapital}
-            value={formatUsd(startingCapital)}
+            value={formatBaseCurrency(startingCapital)}
           />
           <StatCell
             label="Market Gains"
             tooltip={PERFORMANCE_TOOLTIPS.marketGains}
-            value={`${isPositiveMarketGains ? "+" : ""}${formatUsd(marketGains)} (${formatPercent(attribution.market_gains_pct)})`}
+            value={`${isPositiveMarketGains ? "+" : ""}${formatBaseCurrency(marketGains)} (${formatPercent(attribution.market_gains_pct)})`}
             valueClassName={isPositiveMarketGains ? "text-primary" : "text-destructive"}
           />
           <StatCell
             label="Total Fees"
             tooltip={PERFORMANCE_TOOLTIPS.totalFeesImpact}
-            value={`-${formatUsd(totalFeesImpact)} (${formatPercent(attribution.total_fees_impact_pct)})`}
+            value={`-${formatBaseCurrency(totalFeesImpact)} (${formatPercent(attribution.total_fees_impact_pct)})`}
             valueClassName="text-destructive"
           />
           <StatCell
             label="Net worth"
             tooltip={PERFORMANCE_TOOLTIPS.netWorth}
-            value={`${formatUsd(netWorth)} (${formatPercent(attribution.net_return_pct)})`}
+            value={`${formatBaseCurrency(netWorth)} (${formatPercent(attribution.net_return_pct)})`}
             valueClassName={isPositiveReturn ? "text-primary" : "text-destructive"}
           />
         </div>
@@ -306,7 +307,7 @@ export function ReturnAttribution(): React.JSX.Element {
                   >
                     <span className="text-sm font-medium">{row.label}</span>
                     <span className="text-sm font-bold font-mono tabular-nums text-destructive">
-                      {formatUsd(row.amount)}
+                      {formatBaseCurrency(row.amount)}
                     </span>
                   </div>
                 ))}

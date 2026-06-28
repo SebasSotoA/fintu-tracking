@@ -26,6 +26,7 @@ import { formatTradeDateRangeLabel } from "@/lib/trades/trade-filters"
 import { toast } from "sonner"
 import { formatCalendarDate } from "@/lib/date-utils"
 import { Decimal, formatAmountPlain, formatCurrency } from "@/lib/decimal"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import {
   getCashFlowTypeLabel,
   getFeeAttributionLabel,
@@ -65,8 +66,7 @@ const TYPE_OPTIONS: { value: CashFlowTypeFilter; label: string }[] = [
 
 const CURRENCY_OPTIONS: { value: CashFlowCurrencyFilter; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "USD", label: "USD" },
-  { value: "COP", label: "COP" },
+  ...MARKET_CONFIG.cashFlowCurrencies.map((currency) => ({ value: currency, label: currency })),
 ]
 
 export function CashFlowsList({
@@ -216,11 +216,11 @@ export function CashFlowsList({
       },
       {
         key: "copWired",
-        header: "COP wired",
+        header: `${MARKET_CONFIG.localCurrency} wired`,
         cell: (cf) => {
           const value =
             cf.type === "deposit" || cf.type === "withdrawal"
-              ? formatAmountPlain(cf.amount, "COP")
+              ? formatAmountPlain(cf.amount, MARKET_CONFIG.localCurrency)
               : "—"
           return <span className="font-mono">{value}</span>
         },
@@ -243,10 +243,10 @@ export function CashFlowsList({
           const value =
             cf.type === "deposit" || cf.type === "withdrawal"
               ? cf.linkedFee
-                ? formatCurrency(cf.linkedFee.amount, "USD")
+                ? formatCurrency(cf.linkedFee.amount, MARKET_CONFIG.baseCurrency)
                 : "—"
               : cf.type === "fee"
-                ? formatCurrency(cf.amount, "USD")
+                ? formatCurrency(cf.amount, MARKET_CONFIG.baseCurrency)
                 : "—"
           return <span className="font-mono">{value}</span>
         },
@@ -254,15 +254,15 @@ export function CashFlowsList({
       },
       {
         key: "usdCredited",
-        header: "USD (net)",
+        header: `${MARKET_CONFIG.baseCurrency} (net)`,
         cell: (cf) => {
           const value =
             cf.type === "withdrawal"
-              ? `-${formatCurrency(new Decimal(cf.usd_amount || "0").abs().toString(), "USD")}`
+              ? `-${formatCurrency(new Decimal(cf.usd_amount || "0").abs().toString(), MARKET_CONFIG.baseCurrency)}`
               : cf.type === "deposit"
-                ? formatCurrency(cf.usd_amount, "USD")
+                ? formatCurrency(cf.usd_amount, MARKET_CONFIG.baseCurrency)
                 : cf.type === "cash_adjustment"
-                  ? formatCurrency(cf.amount, "USD")
+                  ? formatCurrency(cf.amount, MARKET_CONFIG.baseCurrency)
                   : "—"
           return <span className="font-mono font-semibold">{value}</span>
         },

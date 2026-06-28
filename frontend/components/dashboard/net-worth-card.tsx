@@ -11,6 +11,7 @@ import { queryKeys } from "@/lib/api/query-keys"
 import type { NetWorthData } from "@/lib/types"
 import type { PerformancePoint, PerformanceInterval } from "@/lib/api/analytics"
 import { getPerformanceTimeSeries } from "@/lib/api/analytics"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { MetricLabel } from "@/components/analytics/metric-primitives"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,17 +25,17 @@ interface NetWorthCardProps {
 
 export const METRIC_TOOLTIPS = {
   portfolioTotal:
-    "Total portfolio value: current market value of holdings plus available buy power in USD.",
+    `Total portfolio value: current market value of holdings plus available buy power in ${MARKET_CONFIG.baseCurrency}.`,
   cash:
-    "Uninvested USD available to buy (poder de compra on Hapi): deposits − withdrawals − transfer fees − money spent on buys + sell proceeds.",
+    `Uninvested ${MARKET_CONFIG.baseCurrency} available to buy (poder de compra): deposits − withdrawals − transfer fees − money spent on buys + sell proceeds.`,
   unrealizedProxy:
     "Proxy badge based on total gain/loss from analytics. Detailed XIRR and attribution stay in Performance.",
 } as const
 
-function formatUsd(value: Decimal): string {
+function formatBaseCurrency(value: Decimal): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: MARKET_CONFIG.baseCurrency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value.toNumber())
@@ -137,11 +138,11 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-4xl font-bold font-mono tracking-tight tabular-nums md:text-5xl">
-              {formatUsd(portfolioTotal)}
+              {formatBaseCurrency(portfolioTotal)}
             </h2>
             {showUnrealizedProxyBadge && (
               <Badge variant={isPositive ? "default" : "destructive"} className="px-3 py-1 text-sm tabular-nums">
-                Unrealized P/L proxy: {formatUsd(gainLoss)} ({gainLossPct.toFixed(2)}%)
+                Unrealized P/L proxy: {formatBaseCurrency(gainLoss)} ({gainLossPct.toFixed(2)}%)
               </Badge>
             )}
           </div>
@@ -184,7 +185,7 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
 
         <section className="space-y-2 border-t border-border/50 pt-4">
           <MetricLabel label="Buy power" tooltip={METRIC_TOOLTIPS.cash} />
-          <p className="text-2xl font-semibold font-mono tabular-nums">{formatUsd(buyPower)}</p>
+          <p className="text-2xl font-semibold font-mono tabular-nums">{formatBaseCurrency(buyPower)}</p>
           <p className="text-xs text-muted-foreground">
             XIRR and detailed return attribution are available on the Performance page.
           </p>

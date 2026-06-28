@@ -21,6 +21,7 @@ import {
 import { queryKeys } from "@/lib/api/query-keys"
 import { formatCurrency } from "@/lib/decimal"
 import Decimal from "decimal.js"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 const INTERVAL_OPTIONS: { value: PerformanceInterval; label: string }[] = [
   { value: "month", label: "Month" },
@@ -217,7 +218,7 @@ export function PortfolioPerformanceChart() {
                       <span className="font-mono font-medium tabular-nums text-foreground">
                         {name === "spy_indexed"
                           ? Number(value).toFixed(2)
-                          : formatCurrency(String(value), "USD")}
+                          : formatCurrency(String(value), MARKET_CONFIG.baseCurrency)}
                       </span>
                     )}
                   />

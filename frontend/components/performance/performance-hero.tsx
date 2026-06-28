@@ -18,16 +18,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 export interface PerformanceHeroProps {
   initialNetWorth: NetWorthData | null
   cashFlows: CashFlow[]
 }
 
-function formatUsd(value: Decimal): string {
+function formatBaseCurrency(value: Decimal): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: MARKET_CONFIG.baseCurrency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value.toNumber())
@@ -125,7 +126,7 @@ export function PerformanceHero({
                     ) : (
                       <ArrowDownIcon className="size-4" />
                     )}
-                    {formatUsd(gainLoss.abs())} ({formatPct(gainLossPct.abs())})
+                    {formatBaseCurrency(gainLoss.abs())} ({formatPct(gainLossPct.abs())})
                   </span>
                 </Badge>
               </TooltipTrigger>
@@ -135,11 +136,11 @@ export function PerformanceHero({
             </Tooltip>
           </div>
           <p className="text-sm text-muted-foreground font-mono tabular-nums">
-            {formatUsd(gainLoss)} total gain/loss
+            {formatBaseCurrency(gainLoss)} total gain/loss
             {totalInvested.greaterThan(0) && (
               <>
                 {" "}
-                · vs {formatUsd(totalInvested)} invested
+                · vs {formatBaseCurrency(totalInvested)} invested
               </>
             )}
           </p>

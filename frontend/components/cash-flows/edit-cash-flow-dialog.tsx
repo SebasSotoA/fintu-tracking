@@ -21,8 +21,14 @@ import {
 } from "@/lib/cash-flows/deposit-fee-utils"
 import {
   computeCopFromNetUsd,
-  computeHapiDepositBreakdown,
-} from "@/lib/cash-flows/hapi-deposit-calculator"
+  computeDepositBreakdown,
+} from "@/lib/cash-flows/deposit-calculator"
+import {
+  computeBrokerFeeUSD,
+  getBrokerPreset,
+  listBrokerPresetsForCountry,
+} from "@/lib/brokers/broker-presets"
+import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
 import { toDateInputValue } from "@/lib/date-utils"
 import { showToast } from "@/lib/toast"
 
@@ -59,6 +65,7 @@ export function EditCashFlowDialog({
     fx_rate: cashFlow.fx_rate || "",
     deposit_fee_usd: linkedFee?.amount ?? "",
     net_usd: normalizeNetUsd(cashFlow),
+    broker_id: cashFlow.broker_id || MARKET_CONFIG.defaultBrokerId,
     notes: cashFlow.notes || "",
   })
 
@@ -72,24 +79,40 @@ export function EditCashFlowDialog({
       fx_rate: cashFlow.fx_rate || "",
       deposit_fee_usd: fee?.amount ?? "",
       net_usd: normalizeNetUsd(cashFlow),
+      broker_id: cashFlow.broker_id || MARKET_CONFIG.defaultBrokerId,
       notes: cashFlow.notes || "",
     })
   }, [open, cashFlow, cashFlows])
 
   const isTransfer = formData.type === "deposit" || formData.type === "withdrawal"
-  const transferBreakdown = computeHapiDepositBreakdown({
+  const transferBreakdown = computeDepositBreakdown({
     netUsd: formData.net_usd,
     feeUsd: formData.deposit_fee_usd,
     fxRate: formData.fx_rate,
   })
-  const feeLabel = formData.type === "withdrawal" ? "Withdrawal fee USD" : "Deposit fee USD"
+  const feeLabel = formData.type === "withdrawal" ? `Withdrawal fee ${MARKET_CONFIG.baseCurrency}` : `Deposit fee ${MARKET_CONFIG.baseCurrency}`
   const netUsdLabel =
-    formData.type === "withdrawal" ? "USD debited from Hapi" : "Deposit amount"
+    formData.type === "withdrawal" ? `${MARKET_CONFIG.baseCurrency} debited from broker` : "Deposit amount"
   const transferAmount = computeCopFromNetUsd({
     netUsd: formData.net_usd,
     feeUsd: formData.deposit_fee_usd,
     fxRate: formData.fx_rate,
   })
+
+  const applyPresetFee = (netUsd: string, brokerId: string) => {
+    const preset = getBrokerPreset(brokerId)
+    if (!preset || formData.type === "cash_adjustment") return
+    const feeType = formData.type === "withdrawal" ? preset.withdrawalFee : preset.depositFee
+    const fee = computeBrokerFeeUSD(netUsd, feeType)
+    if (fee !== null) {
+      setFormData((prev) => ({ ...prev, deposit_fee_usd: fee }))
+    }
+  }
+
+  useEffect(() => {
+    if (!isTransfer) return
+    applyPresetFee(formData.net_usd, formData.broker_id)
+  }, [formData.broker_id, formData.type, formData.net_usd])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -103,9 +126,10 @@ export function EditCashFlowDialog({
       await updateCashFlow(cashFlow.id, {
         date: formData.date,
         type: formData.type as "deposit" | "withdrawal" | "fee" | "cash_adjustment",
-        currency: isTransfer ? "COP" : "USD",
+        currency: isTransfer ? MARKET_CONFIG.localCurrency : MARKET_CONFIG.baseCurrency,
         amount: isTransfer ? transferAmount : formData.amount,
         fx_rate: isTransfer ? formData.fx_rate : null,
+        broker_id: formData.broker_id,
         fee_type: formData.type === "fee" ? cashFlow.fee_type : null,
         notes: formData.notes || null,
       })
@@ -118,9 +142,10 @@ export function EditCashFlowDialog({
           const feePayload = {
             date: formData.date,
             type: "fee" as const,
-            currency: "USD" as const,
+            currency: MARKET_CONFIG.baseCurrency,
             amount: feeAmount,
             fx_rate: null as null,
+            broker_id: formData.broker_id,
             fee_type: feeTypeForCashFlowType(transferType),
             related_trade_id: null,
             related_cash_flow_id: cashFlow.id,
@@ -172,7 +197,7 @@ export function EditCashFlowDialog({
             {!isTransfer && formData.type !== "fee" && (
               <MoneyHeroInput
                 id="edit-cf-amount"
-                label="Amount (USD)"
+                label={`Amount (${MARKET_CONFIG.baseCurrency})`}
                 value={formData.amount}
                 onChange={(amount) => setFormData({ ...formData, amount })}
                 placeholder="10.00"
@@ -220,6 +245,25 @@ export function EditCashFlowDialog({
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="edit-cf-broker">Broker</Label>
+              <Select
+                value={formData.broker_id}
+                onValueChange={(value: string) => setFormData({ ...formData, broker_id: value })}
+              >
+                <SelectTrigger id="edit-cf-broker">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {listBrokerPresetsForCountry(MARKET_CONFIG.defaultCountry).map((preset) => (
+                    <SelectItem key={preset.id} value={preset.id}>
+                      {preset.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {isTransfer && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -238,7 +282,7 @@ export function EditCashFlowDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-cf-fx-rate">FX rate COP/USD</Label>
+                  <Label htmlFor="edit-cf-fx-rate">FX rate {formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency)}</Label>
                   <Input
                     id="edit-cf-fx-rate"
                     type="number"
@@ -256,12 +300,12 @@ export function EditCashFlowDialog({
             {isTransfer && (
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">
-                  Subtotal USD (net + fee):{" "}
+                  Subtotal {MARKET_CONFIG.baseCurrency} (net + fee):{" "}
                   <span className="font-mono font-semibold text-foreground">${transferBreakdown.subtotalUsd}</span>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  COP to wire:{" "}
-                  <span className="font-mono font-semibold text-foreground">${transferBreakdown.copToWire}</span>
+                  {MARKET_CONFIG.localCurrency} to wire:{" "}
+                  <span className="font-mono font-semibold text-foreground">${transferBreakdown.localAmount}</span>
                 </p>
               </div>
             )}

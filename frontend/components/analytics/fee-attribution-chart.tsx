@@ -24,6 +24,7 @@ import type { FeeBreakdown } from "@/lib/api/analytics";
 import Decimal from "decimal.js";
 import { DollarSignIcon, TrendingDownIcon } from "lucide-react";
 import type React from "react";
+import { MARKET_CONFIG } from "@/lib/market-config/market-config";
 
 const FEE_TYPE_COLORS = [
   "var(--chart-1)",
@@ -50,11 +51,11 @@ const monthlyChartConfig = {
 
 const CHART_HEIGHT_CLASS = "h-[340px]";
 
-function formatCurrency(value: string | number): string {
+function formatBaseCurrency(value: string | number): string {
   const num = typeof value === "string" ? parseFloat(value) : value;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency: MARKET_CONFIG.baseCurrency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(num);
@@ -90,7 +91,7 @@ function FeeTooltip({
     <div className="rounded-lg border border-border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-md">
       <p className="font-medium">{data.name}</p>
       <p className="font-mono font-medium tabular-nums text-destructive">
-        {formatCurrency(data.value)}
+        {formatBaseCurrency(data.value)}
       </p>
       {data.percentage != null && (
         <p className="text-muted-foreground">{data.percentage}% of total fees</p>
@@ -226,7 +227,7 @@ export function FeeAttributionChart(): React.JSX.Element {
           <div className="text-right">
             <div className="text-sm text-muted-foreground">Total Fees Paid</div>
             <div className="text-2xl font-bold font-mono tabular-nums text-destructive">
-              {formatCurrency(totalFees.toString())}
+              {formatBaseCurrency(totalFees.toString())}
             </div>
           </div>
         </div>
@@ -318,7 +319,7 @@ export function FeeAttributionChart(): React.JSX.Element {
                           className={TOOLTIP_CLASS}
                           formatter={(value) => (
                             <span className="font-mono font-medium tabular-nums text-destructive">
-                              {formatCurrency(Number(value))}
+                              {formatBaseCurrency(Number(value))}
                             </span>
                           )}
                         />

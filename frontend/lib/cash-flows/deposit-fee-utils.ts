@@ -1,14 +1,15 @@
 import { Decimal } from "@/lib/decimal"
+import { MARKET_CONFIG, type CashFlowCurrency } from "@/lib/market-config/market-config"
 import type { CashFlow } from "@/lib/types"
 
 export function findLinkedDepositFee(cashFlows: CashFlow[], cashFlowId: string): CashFlow | undefined {
   return cashFlows.find((cf) => cf.type === "fee" && cf.related_cash_flow_id === cashFlowId)
 }
 
-export function computeGrossUsd(currency: "COP" | "USD", amount: string, fxRate: string): string {
+export function computeGrossUsd(currency: CashFlowCurrency, amount: string, fxRate: string): string {
   if (!amount.trim()) return "0"
   const amountDec = new Decimal(amount)
-  if (currency === "USD") {
+  if (currency === MARKET_CONFIG.baseCurrency) {
     return amountDec.toString()
   }
   if (!fxRate.trim()) return "0"

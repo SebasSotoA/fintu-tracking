@@ -14,6 +14,7 @@ import {
 import type { ActivityItem } from "@/lib/api/activity"
 import { formatCurrency } from "@/lib/decimal"
 import { cn } from "@/lib/utils"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 interface IconStyle {
   icon: React.ComponentType<{ className?: string }>
@@ -99,7 +100,7 @@ export function ActivityFeedItem({ item }: ActivityFeedItemProps) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">
           {item.direction === "out" ? "-" : "+"}
-          {formatCurrency(item.amount_usd, "USD")} · {label}
+          {formatCurrency(item.amount_usd, MARKET_CONFIG.baseCurrency)} · {label}
           {item.ticker ? ` · ${item.ticker}` : ""}
         </p>
         <p className="text-xs text-muted-foreground truncate">{item.details}</p>

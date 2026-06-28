@@ -9,6 +9,7 @@ import {
   DollarSign,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 interface DemoStep {
   id: string
@@ -23,9 +24,9 @@ const steps: DemoStep[] = [
   {
     id: "deposit",
     icon: ArrowDownToLine,
-    label: "Deposit COP",
-    detail: "Transfer from Hapi to your brokerage",
-    value: "COP 500,000",
+    label: `Deposit ${MARKET_CONFIG.localCurrency}`,
+    detail: "Transfer from your broker to your brokerage",
+    value: `${MARKET_CONFIG.localCurrency} 500,000`,
     accent: "text-primary",
   },
   {
@@ -33,7 +34,7 @@ const steps: DemoStep[] = [
     icon: ArrowRightLeft,
     label: "FX Conversion",
     detail: "TRM spot rate applied at trade date",
-    value: "COP 4,127.50/USD",
+    value: `${MARKET_CONFIG.localCurrency} 4,127.50/${MARKET_CONFIG.baseCurrency}`,
     accent: "text-primary/80",
   },
   {
@@ -41,7 +42,7 @@ const steps: DemoStep[] = [
     icon: DollarSign,
     label: "Net Buying Power",
     detail: "After fees and FX spread",
-    value: "$119.14 USD",
+    value: `$119.14 ${MARKET_CONFIG.baseCurrency}`,
     accent: "text-primary/70",
   },
   {
@@ -86,7 +87,7 @@ export function LandingDemo() {
             From pesos to positions in four steps
           </h2>
           <p className="mt-4 text-muted-foreground text-pretty">
-            See how Fintu mirrors the Hapi broker flow — every COP deposit, FX conversion, fee,
+            See how Fintu mirrors your broker flow — every {MARKET_CONFIG.localCurrency} deposit, FX conversion, fee,
             and trade tracked with precision.
           </p>
         </div>
@@ -102,7 +103,7 @@ export function LandingDemo() {
             <div className="flex items-center gap-2 border-b border-border/40 bg-surface-container-high/60 px-5 py-3">
               <Building2 className="h-3.5 w-3.5 text-primary/70" />
               <span className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
-                Hapi Broker Flow
+                Broker Flow
               </span>
               <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] text-primary">
                 <span className="size-1.5 rounded-full bg-primary" />

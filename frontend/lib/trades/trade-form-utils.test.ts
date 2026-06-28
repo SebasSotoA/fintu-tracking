@@ -10,6 +10,7 @@ const baseFormValues = {
   quantity: "1",
   price: "100",
   closing_fee: "0.15",
+  broker_id: "hapi-colombia",
   notes: "",
 }
 

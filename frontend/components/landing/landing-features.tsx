@@ -1,13 +1,14 @@
 import { BarChart3, DollarSign, PieChart, TrendingUp } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 const features = [
   {
     id: "multi-currency",
     title: "Multi-Currency",
     description:
-      "Track COP to USD conversions with historical FX rates applied at each trade date—not today's spot rate.",
+      `Track ${MARKET_CONFIG.localCurrency} to ${MARKET_CONFIG.baseCurrency} conversions with historical FX rates applied at each trade date—not today's spot rate.`,
     icon: TrendingUp,
     accent: "from-[var(--landing-gradient-mint-start)] via-[var(--landing-gradient-mint-mid)] to-transparent",
   },
@@ -21,7 +22,7 @@ const features = [
   {
     id: "portfolio",
     title: "Portfolio View",
-    description: "Holdings, allocation, and P/L in both currencies—side by side.",
+    description: `Holdings, allocation, and P/L in ${MARKET_CONFIG.baseCurrency} and ${MARKET_CONFIG.localCurrency}—side by side.`,
     icon: PieChart,
     accent: "from-[var(--landing-gradient-mint-start)] via-[var(--landing-gradient-mint-mid)] to-transparent",
   },

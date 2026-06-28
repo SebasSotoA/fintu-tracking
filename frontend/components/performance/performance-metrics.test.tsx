@@ -32,6 +32,7 @@ const grossDepositOnly: CashFlow = {
   currency: "USD",
   fx_rate: null,
   usd_amount: "400.00",
+  broker_id: null,
   date: "2024-01-01",
   notes: null,
   fee_type: null,

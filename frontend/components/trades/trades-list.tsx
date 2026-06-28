@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Check, ChevronsUpDown, Download, Pencil, Trash2 } from "lucide-react"
 import { Decimal, formatCurrency, format } from "@/lib/decimal"
 import { formatCalendarDate } from "@/lib/date-utils"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { useCallback, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
@@ -264,21 +265,21 @@ export function TradesList({
       {
         key: "price",
         header: "Price",
-        cell: (trade) => formatCurrency(trade.price, "USD"),
+        cell: (trade) => formatCurrency(trade.price, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
       },
       {
         key: "fees",
         header: "Fees",
-        cell: (trade) => formatCurrency(trade.total_fees, "USD"),
+        cell: (trade) => formatCurrency(trade.total_fees, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
       },
       {
         key: "total",
         header: "Total",
-        cell: (trade) => formatCurrency(trade.total, "USD"),
+        cell: (trade) => formatCurrency(trade.total, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono font-semibold",
       },
@@ -292,7 +293,7 @@ export function TradesList({
                 new Decimal(trade.realized_pl).gte(0) ? "text-primary" : "text-destructive"
               }
             >
-              {formatCurrency(trade.realized_pl, "USD")}
+              {formatCurrency(trade.realized_pl, MARKET_CONFIG.baseCurrency)}
             </span>
           ) : (
             <span className="text-muted-foreground">—</span>

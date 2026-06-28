@@ -2,7 +2,7 @@
 
 import type { FormEvent } from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { invalidateAfterCashFlowMutation } from "@/lib/api/query-keys"
@@ -30,8 +30,14 @@ import {
 } from "@/lib/cash-flows/deposit-fee-utils"
 import {
   computeCopFromNetUsd,
-  computeHapiDepositBreakdown,
-} from "@/lib/cash-flows/hapi-deposit-calculator"
+  computeDepositBreakdown,
+} from "@/lib/cash-flows/deposit-calculator"
+import {
+  computeBrokerFeeUSD,
+  getBrokerPreset,
+  listBrokerPresetsForCountry,
+} from "@/lib/brokers/broker-presets"
+import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
 import { showToast } from "@/lib/toast"
 
 const emptyForm = () => ({
@@ -41,6 +47,7 @@ const emptyForm = () => ({
   fx_rate: "",
   deposit_fee_usd: "",
   net_usd: "",
+  broker_id: MARKET_CONFIG.defaultBrokerId as string,
   notes: "",
 })
 
@@ -52,19 +59,34 @@ export function AddCashFlowDialog() {
   const [formData, setFormData] = useState(emptyForm)
 
   const isTransfer = formData.type === "deposit" || formData.type === "withdrawal"
-  const transferBreakdown = computeHapiDepositBreakdown({
+  const transferBreakdown = computeDepositBreakdown({
     netUsd: formData.net_usd,
     feeUsd: formData.deposit_fee_usd,
     fxRate: formData.fx_rate,
   })
-  const feeLabel = formData.type === "withdrawal" ? "Withdrawal fee USD" : "Deposit fee USD"
+  const feeLabel = formData.type === "withdrawal" ? `Withdrawal fee ${MARKET_CONFIG.baseCurrency}` : `Deposit fee ${MARKET_CONFIG.baseCurrency}`
   const netUsdLabel =
-    formData.type === "withdrawal" ? "USD debited from Hapi" : "Deposit amount"
+    formData.type === "withdrawal" ? `${MARKET_CONFIG.baseCurrency} debited from broker` : "Deposit amount"
   const transferAmount = computeCopFromNetUsd({
     netUsd: formData.net_usd,
     feeUsd: formData.deposit_fee_usd,
     fxRate: formData.fx_rate,
   })
+
+  const applyPresetFee = (netUsd: string, brokerId: string) => {
+    const preset = getBrokerPreset(brokerId)
+    if (!preset || formData.type === "cash_adjustment") return
+    const feeType = formData.type === "withdrawal" ? preset.withdrawalFee : preset.depositFee
+    const fee = computeBrokerFeeUSD(netUsd, feeType)
+    if (fee !== null) {
+      setFormData((prev) => ({ ...prev, deposit_fee_usd: fee }))
+    }
+  }
+
+  useEffect(() => {
+    if (!isTransfer) return
+    applyPresetFee(formData.net_usd, formData.broker_id)
+  }, [formData.broker_id, formData.type, formData.net_usd])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -78,9 +100,10 @@ export function AddCashFlowDialog() {
       const deposit = await createCashFlow({
         date: formData.date,
         type: formData.type,
-        currency: isTransfer ? "COP" : "USD",
+        currency: isTransfer ? MARKET_CONFIG.localCurrency : MARKET_CONFIG.baseCurrency,
         amount: isTransfer ? transferAmount : formData.amount,
         fx_rate: isTransfer ? formData.fx_rate : null,
+        broker_id: formData.broker_id,
         fee_type: null,
         notes: formData.notes || null,
       })
@@ -92,9 +115,10 @@ export function AddCashFlowDialog() {
           await createCashFlow({
             date: formData.date,
             type: "fee",
-            currency: "USD",
+            currency: MARKET_CONFIG.baseCurrency,
             amount: feeAmount,
             fx_rate: null,
+            broker_id: formData.broker_id,
             fee_type: feeTypeForCashFlowType(transferType),
             related_trade_id: null,
             related_cash_flow_id: deposit.id,
@@ -151,7 +175,7 @@ export function AddCashFlowDialog() {
           {!isTransfer && (
             <MoneyHeroInput
               id="cf-amount"
-              label="Amount (USD)"
+              label={`Amount (${MARKET_CONFIG.baseCurrency})`}
               value={formData.amount}
               onChange={(amount) => setFormData({ ...formData, amount })}
               placeholder="10.00"
@@ -193,6 +217,25 @@ export function AddCashFlowDialog() {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="cf-broker">Broker</Label>
+            <Select
+              value={formData.broker_id}
+              onValueChange={(value: string) => setFormData({ ...formData, broker_id: value })}
+            >
+              <SelectTrigger id="cf-broker">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {listBrokerPresetsForCountry(MARKET_CONFIG.defaultCountry).map((preset) => (
+                  <SelectItem key={preset.id} value={preset.id}>
+                    {preset.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {isTransfer && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -211,7 +254,7 @@ export function AddCashFlowDialog() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cf-fx-rate">FX rate COP/USD</Label>
+                <Label htmlFor="cf-fx-rate">FX rate {formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency)}</Label>
                 <Input
                   id="cf-fx-rate"
                   type="number"
@@ -229,12 +272,12 @@ export function AddCashFlowDialog() {
           {isTransfer && (
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">
-                Subtotal USD (net + fee):{" "}
+                Subtotal {MARKET_CONFIG.baseCurrency} (net + fee):{" "}
                 <span className="font-mono font-semibold text-foreground">${transferBreakdown.subtotalUsd}</span>
               </p>
               <p className="text-sm text-muted-foreground">
-                COP to wire:{" "}
-                <span className="font-mono font-semibold text-foreground">${transferBreakdown.copToWire}</span>
+                {MARKET_CONFIG.localCurrency} to wire:{" "}
+                <span className="font-mono font-semibold text-foreground">${transferBreakdown.localAmount}</span>
               </p>
             </div>
           )}

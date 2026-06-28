@@ -17,6 +17,7 @@ function makeTrade(overrides: Partial<Trade> = {}): Trade {
     closing_fee: "0",
     total_fees: "1",
     total: "1501",
+    broker_id: null,
     notes: null,
     created_at: "",
     updated_at: "",

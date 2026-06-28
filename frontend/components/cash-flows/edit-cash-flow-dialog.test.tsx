@@ -36,6 +36,7 @@ const depositCashFlow: CashFlow = {
   amount: "400000",
   usd_amount: "100.00",
   fx_rate: "4000",
+  broker_id: null,
   fee_type: null,
   notes: null,
   related_trade_id: null,

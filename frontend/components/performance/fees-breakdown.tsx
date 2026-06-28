@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import type { CashFlow } from "@/lib/types"
 import { Decimal, formatCurrency } from "@/lib/decimal"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 
@@ -37,9 +38,9 @@ function isStandaloneFee(cf: CashFlow): boolean {
   )
 }
 
-function sumUsd(flows: CashFlow[]): string {
+function sumBaseCurrency(flows: CashFlow[]): string {
   const total = flows.reduce((sum, cf) => sum.add(new Decimal(cf.usd_amount || cf.amount || "0")), new Decimal(0))
-  return formatCurrency(total.toString(), "USD")
+  return formatCurrency(total.toString(), MARKET_CONFIG.baseCurrency)
 }
 
 export function FeesBreakdown({ cashFlows }: FeesBreakdownProps) {
@@ -65,11 +66,11 @@ export function FeesBreakdown({ cashFlows }: FeesBreakdownProps) {
           </TabsList>
           <TabsContent value="transfer" className="space-y-2 pt-3">
             <p className="text-sm text-muted-foreground">Deposit and withdrawal transfer fees linked to cash flows.</p>
-            <p className="text-2xl font-semibold font-mono">{sumUsd(transferFees)}</p>
+            <p className="text-2xl font-semibold font-mono">{sumBaseCurrency(transferFees)}</p>
           </TabsContent>
           <TabsContent value="trading" className="space-y-2 pt-3">
             <p className="text-sm text-muted-foreground">Trading commissions linked to trade executions.</p>
-            <p className="text-2xl font-semibold font-mono">{sumUsd(tradingFees)}</p>
+            <p className="text-2xl font-semibold font-mono">{sumBaseCurrency(tradingFees)}</p>
           </TabsContent>
         </Tabs>
       </CardContent>

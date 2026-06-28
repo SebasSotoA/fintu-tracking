@@ -3,6 +3,7 @@
 import type { FxRateChartPoint } from "@/lib/api/fx-rates"
 import { formatTooltipDate } from "@/lib/date-utils"
 import { Decimal } from "@/lib/decimal"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 export { formatTooltipDate } from "@/lib/date-utils"
 import { Spinner } from "@/components/ui/spinner"
@@ -100,7 +101,7 @@ function FxRateTooltip({
       role="status"
     >
       <p className="font-medium tabular-nums text-foreground">
-        {formatRate(rate)} COP {datePart}
+        {formatRate(rate)} {MARKET_CONFIG.localCurrency} {datePart}
       </p>
     </div>
   )

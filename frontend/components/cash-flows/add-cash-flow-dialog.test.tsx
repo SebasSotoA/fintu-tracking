@@ -82,7 +82,7 @@ describe("AddCashFlowDialog", () => {
 
     await selectCashFlowType(user, "withdrawal")
 
-    expect(screen.getByLabelText(/USD debited from Hapi/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/USD debited from broker/i)).toBeInTheDocument()
     expect(screen.queryByText(/USD to receive in Hapi/i)).not.toBeInTheDocument()
   })
 

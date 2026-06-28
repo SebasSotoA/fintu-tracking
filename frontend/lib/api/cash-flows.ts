@@ -1,14 +1,16 @@
 import { apiClient } from "./client"
 import type { PaginatedResult } from "./pagination"
 import type { CashFlow } from "@/lib/types"
+import type { CashFlowCurrency } from "@/lib/market-config/market-config"
 import { EXPORT_PAGE_SIZE } from "@/lib/pagination/table-pagination"
 
 export interface CreateCashFlowData {
   date: string
   type: "deposit" | "withdrawal" | "fee" | "cash_adjustment"
-  currency: "COP" | "USD"
+  currency: CashFlowCurrency
   amount: string
   fx_rate?: string | null
+  broker_id?: string | null
   notes?: string | null
   fee_type?: "deposit" | "trading" | "closing" | "maintenance" | "other" | "withdrawal" | null
   related_trade_id?: string | null
@@ -19,9 +21,10 @@ export interface CreateCashFlowData {
 export interface UpdateCashFlowData {
   date?: string
   type?: "deposit" | "withdrawal" | "fee" | "cash_adjustment"
-  currency?: "COP" | "USD"
+  currency?: CashFlowCurrency
   amount?: string
   fx_rate?: string | null
+  broker_id?: string | null
   notes?: string | null
   fee_type?: "deposit" | "trading" | "closing" | "maintenance" | "other" | "withdrawal" | null
   related_trade_id?: string | null

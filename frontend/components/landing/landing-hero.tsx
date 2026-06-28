@@ -2,11 +2,16 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 const precisionMetrics = [
-  { label: "COP → USD", value: "4,127.50", delta: "TRM spot" },
+  {
+    label: `${MARKET_CONFIG.localCurrency} → ${MARKET_CONFIG.baseCurrency}`,
+    value: "4,127.50",
+    delta: "TRM spot",
+  },
   { label: "XIRR", value: "+12.4%", delta: "annualized" },
-  { label: "Net worth", value: "$48,291", delta: "USD basis" },
+  { label: "Net worth", value: "$48,291", delta: `${MARKET_CONFIG.baseCurrency} basis` },
 ] as const
 
 export function LandingHero() {
@@ -23,12 +28,12 @@ export function LandingHero() {
               "font-sans text-4xl font-bold leading-[1.08] tracking-tight text-balance sm:text-5xl md:text-6xl lg:text-[3.5rem]",
             )}
           >
-            Track your USD investments
+            Track your {MARKET_CONFIG.baseCurrency} investments
             <span className="mt-1 block text-primary">with precision</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground text-pretty">
-            Fintu accounts for COP↔USD FX, fees, and cost basis so you see real performance—not
-            guesswork—across every holding.
+            Fintu accounts for {MARKET_CONFIG.localCurrency}↔{MARKET_CONFIG.baseCurrency} FX, fees,
+            and cost basis so you see real performance—not guesswork—across every holding.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="gap-2">
@@ -43,7 +48,7 @@ export function LandingHero() {
           </div>
           <dl className="mt-10 grid grid-cols-3 gap-4 border-t border-border/40 pt-8">
             {[
-              { term: "FX", desc: "Historical COP rates" },
+              { term: "FX", desc: `Historical ${MARKET_CONFIG.localCurrency} rates` },
               { term: "Fees", desc: "Included in basis" },
               { term: "XIRR", desc: "True returns" },
             ].map((item) => (
@@ -87,7 +92,7 @@ export function LandingHero() {
             </div>
             <div className="border-t border-border/50 bg-surface-container-low/60 px-4 py-3">
               <p className="font-mono text-[10px] leading-relaxed text-muted-foreground">
-                Fees · FX · cost basis reconciled · performance in USD & COP
+                Fees · FX · cost basis reconciled · performance in {MARKET_CONFIG.baseCurrency} & {MARKET_CONFIG.localCurrency}
               </p>
             </div>
           </div>

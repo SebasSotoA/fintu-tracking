@@ -1,4 +1,5 @@
 import { apiClient } from "./client"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import type { FxRate } from "@/lib/types"
 
 export interface CreateFxRateData {
@@ -49,7 +50,8 @@ export async function deleteFxRate(id: string): Promise<{ message: string }> {
 
 /**
  * Fetches the current exchange rate from the backend.
- * Defaults to USD→COP. Pass { from: "COP", to: "USD" } for the inverse.
+ * Defaults to the configured base→local pair. Pass the inverse currency
+ * codes for the reverse direction.
  * The backend applies a two-layer cache (in-memory → Postgres) before
  * hitting ExchangeRate-API, so the inverse is computed from the cached
  * base rate with no extra API call.
@@ -62,7 +64,7 @@ export async function fetchCurrentRate(params?: FetchCurrentRateParams): Promise
   return apiClient.get<CurrentRateResponse>(`/api/fx-rates/current${qs ? `?${qs}` : ""}`)
 }
 
-export async function getFxRateChart(days = 30): Promise<FxRateChartPoint[]> {
+export async function getFxRateChart(days = MARKET_CONFIG.defaultFxRateDays): Promise<FxRateChartPoint[]> {
   return apiClient.get<FxRateChartPoint[]>(`/api/fx-rates/chart?days=${days}`)
 }
 

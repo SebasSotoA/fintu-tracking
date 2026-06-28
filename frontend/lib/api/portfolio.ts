@@ -1,6 +1,8 @@
 import { apiClient } from "./client"
 import type { Holding, MarketPrice } from "@/lib/types"
 
+export { ApiError } from "./client"
+
 export interface PerformanceMetrics {
   totalInvested: string
   totalValue: string

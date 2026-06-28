@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { Decimal } from "@/lib/decimal"
 import { apiClient } from "@/lib/api/client"
 import { queryKeys } from "@/lib/api/query-keys"
+import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
 import type { NetWorthData, Holding } from "@/lib/types"
 import type { FxRateChartPoint } from "@/lib/api/analytics"
 import { getHoldings } from "@/lib/api/portfolio"
@@ -125,7 +126,7 @@ function checkLargeMove(holdings: Holding[]): HealthAlert | null {
         type: "large_move",
         severity: "warning",
         message: `${h.ticker} ${sign}${pct.toFixed(1)}% unrealized — ${isNegative ? "consider reviewing this position." : "consider taking profits."}`,
-        details: `Unrealized ${isNegative ? "loss" : "gain"} on ${h.ticker}: ${formattedPL} USD.`,
+        details: `Unrealized ${isNegative ? "loss" : "gain"} on ${h.ticker}: ${formattedPL} ${MARKET_CONFIG.baseCurrency}.`,
         direction: isNegative ? "down" : "up",
       }
     }
@@ -166,7 +167,7 @@ function checkLowBuyingPower(netWorth: NetWorthData): HealthAlert | null {
   if (pct.lt(LOW_BUYING_POWER_THRESHOLD)) {
     const cashFormatted = new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: MARKET_CONFIG.baseCurrency,
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(cash.toNumber())
@@ -174,7 +175,7 @@ function checkLowBuyingPower(netWorth: NetWorthData): HealthAlert | null {
     return {
       type: "low_buying_power",
       severity: "warning",
-      message: `You have ${cashFormatted} buying power (${pct.toFixed(0)}% of portfolio) — consider depositing more COP to seize opportunities.`,
+      message: `You have ${cashFormatted} buying power (${pct.toFixed(0)}% of portfolio) — consider depositing more ${MARKET_CONFIG.localCurrency} to seize opportunities.`,
       details: `Buying power below ${LOW_BUYING_POWER_THRESHOLD}% limits your ability to act on market moves.`,
     }
   }
@@ -196,10 +197,11 @@ function checkFXMove(fxChart: FxRateChartPoint[]): HealthAlert | null {
   const changePct = latest.sub(oldest).div(oldest).mul(100).abs()
   if (changePct.gte(FX_MOVE_THRESHOLD)) {
     const direction = latest.gte(oldest) ? "strengthened" : "weakened"
+    const pair = formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency)
     return {
       type: "fx_move",
       severity: "info",
-      message: `COP/USD ${direction} ${changePct.toFixed(1)}% this week — your COP-valued returns are affected.`,
+      message: `${pair} ${direction} ${changePct.toFixed(1)}% this week — your ${MARKET_CONFIG.localCurrency}-valued returns are affected.`,
       details: `Rate went from ${oldest.toFixed(2)} to ${latest.toFixed(2)} in ${FX_LOOKBACK_DAYS} days.`,
     }
   }

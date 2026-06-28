@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/components/providers"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import "./globals.css"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
@@ -10,7 +11,7 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 
 export const metadata: Metadata = {
   title: "Fintu",
-  description: "Track your USD investments with precision. Built for LATAM retail investors.",
+  description: `Track your ${MARKET_CONFIG.baseCurrency} investments with precision. Built for LATAM retail investors.`,
   icons: {
     icon: [
       {

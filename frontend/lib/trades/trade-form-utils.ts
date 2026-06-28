@@ -10,10 +10,11 @@ export interface TradeFormValues {
   quantity: string
   price: string
   closing_fee: string
+  broker_id: string
   notes: string
 }
 
-/** Prefill closing fee from Hapi field or legacy trade fee columns. */
+/** Prefill closing fee from broker field or legacy trade fee columns. */
 export function tradeClosingFeeForForm(trade: Trade): string {
   const pick = (raw: string | undefined | null): string => {
     if (!raw) return ""
@@ -54,6 +55,7 @@ export function buildTradePayload(values: TradeFormValues) {
     side: "buy" | "sell"
     quantity: string
     price: string
+    broker_id: string | null
     notes: string | null
     closing_fee?: string
   } = {
@@ -63,6 +65,7 @@ export function buildTradePayload(values: TradeFormValues) {
     side: values.side,
     quantity: values.quantity,
     price: values.price,
+    broker_id: values.broker_id || null,
     notes: values.notes || null,
   }
 

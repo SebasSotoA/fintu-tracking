@@ -1,3 +1,5 @@
+import type { CashFlowCurrency } from "@/lib/market-config/market-config"
+
 export interface FxRate {
   id: string
   user_id: string
@@ -12,10 +14,11 @@ export interface CashFlow {
   user_id: string
   date: string
   type: "deposit" | "withdrawal" | "fee" | "cash_adjustment"
-  currency: "COP" | "USD"
+  currency: CashFlowCurrency
   amount: string
   fx_rate: string | null
   usd_amount: string
+  broker_id: string | null
   notes: string | null
   fee_type: "deposit" | "trading" | "closing" | "maintenance" | "other" | "withdrawal" | null
   related_trade_id: string | null
@@ -39,6 +42,7 @@ export interface Trade {
   closing_fee: string
   total_fees: string
   total: string
+  broker_id: string | null
   notes: string | null
   is_opening_position?: boolean
   realized_pl?: string | null
