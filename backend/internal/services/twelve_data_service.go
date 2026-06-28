@@ -5,17 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 
+	"fintu-tracking-backend/internal/config"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-const defaultTwelveDataBaseURL = "https://api.twelvedata.com"
 
 // RefreshResult summarizes a market price refresh run.
 type RefreshResult struct {
@@ -24,11 +23,12 @@ type RefreshResult struct {
 	Errors  []string `json:"errors"`
 }
 
-// TwelveDataService fetches equity quotes from Twelve Data and upserts market_prices.
+// TwelveDataService fetches equity quotes from Twelve Data and upserts market_prices
+// through the shared Postgres TTL cache.
 type TwelveDataService struct {
 	apiKey     string
 	httpClient *http.Client
-	pool       *pgxpool.Pool
+	store      MarketDataStore
 	baseURL    string
 }
 
@@ -36,9 +36,9 @@ type TwelveDataService struct {
 func NewTwelveDataService(pool *pgxpool.Pool) *TwelveDataService {
 	return &TwelveDataService{
 		apiKey:     os.Getenv("TWELVE_DATA_API_KEY"),
-		pool:       pool,
+		store:      NewPostgresMarketDataStore(pool),
 		httpClient: &http.Client{Timeout: 15 * time.Second},
-		baseURL:    defaultTwelveDataBaseURL,
+		baseURL:    config.TwelveDataBaseURL,
 	}
 }
 
@@ -79,7 +79,7 @@ func (s *TwelveDataService) FetchQuote(ctx context.Context, ticker string) (pric
 
 	base := s.baseURL
 	if base == "" {
-		base = defaultTwelveDataBaseURL
+		base = config.TwelveDataBaseURL
 	}
 
 	apiURL := fmt.Sprintf(
@@ -133,24 +133,25 @@ func (s *TwelveDataService) FetchQuote(ctx context.Context, ticker string) (pric
 	latestDay = strings.TrimSpace(result.Datetime)
 	currency = strings.TrimSpace(result.Currency)
 	if currency == "" {
-		currency = "USD"
+		currency = config.DefaultMarketCurrency
 	}
 
 	return price, latestDay, currency, nil
 }
 
-// RefreshMarketPrices fetches quotes for all currently held tickers and upserts market_prices.
+// RefreshMarketPrices fetches quotes for held tickers whose cached prices are stale or
+// missing, then upserts market_prices. Tickers with fresh cached prices are skipped.
 func (s *TwelveDataService) RefreshMarketPrices(ctx context.Context, userID string) (RefreshResult, error) {
 	result := RefreshResult{
 		Tickers: []string{},
 		Errors:  []string{},
 	}
 
-	if s.pool == nil {
-		return result, fmt.Errorf("database pool is not initialized")
+	if err := s.checkCooldown(ctx, userID); err != nil {
+		return result, err
 	}
 
-	tickers, err := s.listHeldTickers(ctx, userID)
+	tickers, err := s.store.ListHeldTickers(ctx, userID)
 	if err != nil {
 		return result, err
 	}
@@ -159,7 +160,12 @@ func (s *TwelveDataService) RefreshMarketPrices(ctx context.Context, userID stri
 		return result, nil
 	}
 
-	for i, ticker := range tickers {
+	staleTickers, err := s.listStaleTickers(ctx, tickers)
+	if err != nil {
+		return result, err
+	}
+
+	for i, ticker := range staleTickers {
 		if i > 0 {
 			select {
 			case <-ctx.Done():
@@ -177,7 +183,7 @@ func (s *TwelveDataService) RefreshMarketPrices(ctx context.Context, userID stri
 			continue
 		}
 
-		if upsertErr := s.upsertMarketPrice(ctx, ticker, price, currency); upsertErr != nil {
+		if upsertErr := s.store.UpsertMarketPrice(ctx, ticker, price, currency); upsertErr != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", ticker, upsertErr))
 			continue
 		}
@@ -186,49 +192,51 @@ func (s *TwelveDataService) RefreshMarketPrices(ctx context.Context, userID stri
 		result.Tickers = append(result.Tickers, ticker)
 	}
 
+	if recordErr := s.store.RecordMarketPriceRefresh(ctx, userID); recordErr != nil {
+		return result, fmt.Errorf("record refresh: %w", recordErr)
+	}
+
 	return result, nil
 }
 
-func (s *TwelveDataService) listHeldTickers(ctx context.Context, userID string) ([]string, error) {
-	query := `
-		SELECT ticker
-		FROM trades
-		WHERE user_id = $1
-		GROUP BY ticker
-		HAVING SUM(CASE WHEN side = 'buy' THEN quantity ELSE -quantity END) > 0
-		ORDER BY ticker
-	`
+// checkCooldown returns a RateLimitError if the user has refreshed prices too recently.
+func (s *TwelveDataService) checkCooldown(ctx context.Context, userID string) error {
+	lastRefresh, ok, err := s.store.GetLastMarketPriceRefresh(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("check cooldown: %w", err)
+	}
+	if !ok {
+		return nil
+	}
 
-	rows, err := s.pool.Query(ctx, query, userID)
+	elapsed := time.Since(lastRefresh)
+	cooldown := defaultMarketPriceCooldown()
+	if elapsed < cooldown {
+		return &RateLimitError{RetryAfter: cooldown - elapsed}
+	}
+	return nil
+}
+
+// listStaleTickers returns tickers that have no cached market price or whose cached
+// price is older than the configured TTL.
+func (s *TwelveDataService) listStaleTickers(ctx context.Context, tickers []string) ([]string, error) {
+	prices, err := s.store.GetMarketPrices(ctx, tickers)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	tickers := make([]string, 0)
-	for rows.Next() {
-		var ticker string
-		if err := rows.Scan(&ticker); err != nil {
-			return nil, err
+	fresh := make(map[string]bool, len(prices))
+	for _, price := range prices {
+		if isFresh(price.UpdatedAt, defaultCacheTTL()) {
+			fresh[price.Ticker] = true
 		}
-		tickers = append(tickers, ticker)
 	}
-	return tickers, rows.Err()
-}
 
-func (s *TwelveDataService) upsertMarketPrice(ctx context.Context, ticker, price, currency string) error {
-	if currency == "" {
-		currency = "USD"
+	stale := make([]string, 0, len(tickers))
+	for _, ticker := range tickers {
+		if !fresh[ticker] {
+			stale = append(stale, ticker)
+		}
 	}
-	query := `
-		INSERT INTO market_prices (ticker, price, currency, updated_at)
-		VALUES ($1, $2, $3, NOW())
-		ON CONFLICT (ticker) DO UPDATE
-		SET price = EXCLUDED.price, currency = EXCLUDED.currency, updated_at = NOW()
-	`
-	_, err := s.pool.Exec(ctx, query, ticker, price, currency)
-	if err != nil {
-		log.Printf("twelve_data_service: failed to upsert %s: %v", ticker, err)
-	}
-	return err
+	return stale, nil
 }

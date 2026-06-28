@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
+	"math"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -27,6 +30,18 @@ func RefreshMarketPrices(c fiber.Ctx) error {
 
 	result, err := twelveDataSvc.RefreshMarketPrices(context.Background(), userID)
 	if err != nil {
+		var rateLimitErr *services.RateLimitError
+		if errors.As(err, &rateLimitErr) {
+			retryAfterSeconds := int(math.Ceil(rateLimitErr.RetryAfter.Seconds()))
+			c.Set("Retry-After", fmt.Sprintf("%d", retryAfterSeconds))
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error":        err.Error(),
+				"retry_after":  retryAfterSeconds,
+				"updated":      result.Updated,
+				"tickers":      result.Tickers,
+				"errors":       result.Errors,
+			})
+		}
 		if strings.Contains(strings.ToLower(err.Error()), "rate limit") {
 			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
 				"error":   err.Error(),

@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"fmt"
+	"fintu-tracking-backend/internal/config"
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -230,13 +232,14 @@ func GetCurrentRate(c fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 	}
 
-	from := strings.ToUpper(strings.TrimSpace(c.Query("from", "USD")))
-	to := strings.ToUpper(strings.TrimSpace(c.Query("to", "COP")))
+	from := strings.ToUpper(strings.TrimSpace(c.Query("from", config.BaseCurrency)))
+	to := strings.ToUpper(strings.TrimSpace(c.Query("to", config.LocalCurrency)))
 
 	// Validate supported pairs.
-	if !((from == "USD" && to == "COP") || (from == "COP" && to == "USD")) {
+	pair := from + "/" + to
+	if !slices.Contains(config.SupportedCurrencyPairs(), pair) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "unsupported currency pair: only USD/COP and COP/USD are supported",
+			"error": fmt.Sprintf("unsupported currency pair: only %s are supported", strings.Join(config.SupportedCurrencyPairs(), ", ")),
 		})
 	}
 
@@ -250,8 +253,8 @@ func GetCurrentRate(c fiber.Ctx) error {
 
 	rate := base.Rate
 
-	// Compute inverse when COP→USD is requested.
-	if from == "COP" && to == "USD" {
+	// Compute inverse when local→base is requested.
+	if pair == config.InverseCurrencyPair {
 		baseDecimal, parseErr := decimal.NewFromString(base.Rate)
 		if parseErr != nil || baseDecimal.IsZero() {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

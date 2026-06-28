@@ -10,45 +10,30 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/google/uuid"
+	"fintu-tracking-backend/internal/config"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 )
 
-const twelveDataAPISource = "twelve-data"
-
-// exchangeRateCacheEntry holds a fetched rate, its source, and the fetch time for TTL checks.
-type exchangeRateCacheEntry struct {
-	rate      string
-	source    string
-	fetchedAt time.Time
-}
-
-// ExchangeRateService fetches USD/COP rates from Twelve Data with a two-layer cache:
-//  1. In-memory map keyed by date string (resets on restart)
-//  2. Postgres fx_rates table (persists across restarts)
-//
-// The external API is only called when neither cache layer has today's rate.
+// ExchangeRateService fetches USD/COP rates from Twelve Data using a shared
+// Postgres TTL cache backed by the fx_rates table.
 type ExchangeRateService struct {
-	mu         sync.RWMutex
-	cache      map[string]exchangeRateCacheEntry // key: "YYYY-MM-DD"
-	pool       *pgxpool.Pool
+	store      MarketDataStore
 	httpClient *http.Client
+	baseURL    string
 }
 
 // NewExchangeRateService creates a new ExchangeRateService backed by the given DB pool.
 func NewExchangeRateService(pool *pgxpool.Pool) *ExchangeRateService {
 	return &ExchangeRateService{
-		cache:      make(map[string]exchangeRateCacheEntry),
-		pool:       pool,
+		store:      NewPostgresMarketDataStore(pool),
 		httpClient: &http.Client{Timeout: 10 * time.Second},
+		baseURL:    config.TwelveDataBaseURL,
 	}
 }
-
-const cacheTTL = 24 * time.Hour
 
 type twelveDataExchangeRateResponse struct {
 	Symbol  string  `json:"symbol"`
@@ -58,11 +43,13 @@ type twelveDataExchangeRateResponse struct {
 	Message string  `json:"message"`
 }
 
-// RateResult carries the exchange rate, the date it applies to, and which source provided it.
+// RateResult carries the exchange rate, the date it applies to, which source provided it,
+// and when it was cached so callers can evaluate TTL freshness.
 type RateResult struct {
-	Rate   string
-	Date   string
-	Source string
+	Rate     string
+	Date     string
+	Source   string
+	CachedAt time.Time
 }
 
 // FxRateChartPoint is a single daily USD/COP close for charting.
@@ -83,100 +70,35 @@ type twelveDataTimeSeriesBar struct {
 	Close    string `json:"close"`
 }
 
-// FetchCurrentRate returns the USD→COP rate for today using the cache hierarchy:
-//  1. In-memory cache (if entry exists and is within TTL)
-//  2. Postgres fx_rates row for today (populates memory cache on hit)
-//  3. Twelve Data /exchange_rate HTTP call (stores result in both layers)
+// FetchCurrentRate returns the USD→COP rate for today using the shared Postgres TTL cache.
 //
-// If the API call fails, the most recent rate stored in the DB is returned as a fallback.
+//  1. Query fx_rates for a fresh Twelve-Data-sourced row for today.
+//  2. If no fresh cached row exists, call Twelve Data and upsert the result.
+//  3. If the API call fails, fall back to the most recent fx_rates row for the user.
 func (s *ExchangeRateService) FetchCurrentRate(ctx context.Context, userID string) (RateResult, error) {
 	today := time.Now().UTC()
 	dateStr := today.Format("2006-01-02")
 
-	if row, ok := s.fromMemory(dateStr); ok {
-		return row, nil
-	}
-
-	if row, ok := s.fromDB(ctx, userID, dateStr); ok {
-		s.storeMemory(dateStr, row.Rate, row.Source)
+	if row, ok, err := s.store.GetFxRate(ctx, userID, dateStr, config.TwelveDataSource); err != nil {
+		log.Printf("exchange_rate_service: failed to read cached rate: %v", err)
+	} else if ok && isFresh(row.CachedAt, defaultCacheTTL()) {
 		return row, nil
 	}
 
 	rate, err := s.fetchFromAPI(ctx)
 	if err != nil {
-		if row, ok := s.latestFromDB(ctx, userID); ok {
+		if row, ok, fallbackErr := s.store.GetLatestFxRate(ctx, userID); fallbackErr != nil {
+			log.Printf("exchange_rate_service: failed to read fallback rate: %v", fallbackErr)
+		} else if ok {
 			return row, nil
 		}
 		return RateResult{}, fmt.Errorf("twelve data: %w", err)
 	}
 
-	if dbErr := s.storeInDB(ctx, userID, today, rate); dbErr != nil {
+	if dbErr := s.store.UpsertFxRate(ctx, userID, today, rate, config.TwelveDataSource); dbErr != nil {
 		log.Printf("exchange_rate_service: failed to persist rate to DB: %v", dbErr)
 	}
-	s.storeMemory(dateStr, rate, twelveDataAPISource)
-	return RateResult{Rate: rate, Date: dateStr, Source: twelveDataAPISource}, nil
-}
-
-func (s *ExchangeRateService) fromMemory(date string) (RateResult, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	entry, ok := s.cache[date]
-	if !ok || time.Since(entry.fetchedAt) > cacheTTL {
-		return RateResult{}, false
-	}
-	return RateResult{Rate: entry.rate, Date: date, Source: entry.source}, true
-}
-
-func (s *ExchangeRateService) storeMemory(date, rate, source string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.cache[date] = exchangeRateCacheEntry{rate: rate, source: source, fetchedAt: time.Now()}
-}
-
-func (s *ExchangeRateService) fromDB(ctx context.Context, userID, date string) (RateResult, bool) {
-	if s.pool == nil {
-		return RateResult{}, false
-	}
-	var rate, source string
-	query := `
-		SELECT rate, source FROM fx_rates
-		WHERE user_id = $1 AND date = $2 AND source = $3
-		LIMIT 1
-	`
-	err := s.pool.QueryRow(ctx, query, userID, date, twelveDataAPISource).Scan(&rate, &source)
-	if err != nil {
-		return RateResult{}, false
-	}
-	return RateResult{Rate: rate, Date: date, Source: source}, true
-}
-
-func (s *ExchangeRateService) latestFromDB(ctx context.Context, userID string) (RateResult, bool) {
-	if s.pool == nil {
-		return RateResult{}, false
-	}
-	var rate, source string
-	query := `SELECT rate, source FROM fx_rates WHERE user_id = $1 ORDER BY date DESC LIMIT 1`
-	err := s.pool.QueryRow(ctx, query, userID).Scan(&rate, &source)
-	if err != nil {
-		return RateResult{}, false
-	}
-	today := time.Now().UTC().Format("2006-01-02")
-	return RateResult{Rate: rate, Date: today, Source: source}, true
-}
-
-func (s *ExchangeRateService) storeInDB(ctx context.Context, userID string, date time.Time, rate string) error {
-	if s.pool == nil {
-		return fmt.Errorf("database pool is not initialized")
-	}
-	id := uuid.New().String()
-	query := `
-		INSERT INTO fx_rates (id, user_id, date, rate, source)
-		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (user_id, date)
-		DO UPDATE SET rate = $4, source = $5
-	`
-	_, err := s.pool.Exec(ctx, query, id, userID, date, rate, twelveDataAPISource)
-	return err
+	return RateResult{Rate: rate, Date: dateStr, Source: config.TwelveDataSource}, nil
 }
 
 func (s *ExchangeRateService) fetchFromAPI(ctx context.Context) (string, error) {
@@ -185,9 +107,15 @@ func (s *ExchangeRateService) fetchFromAPI(ctx context.Context) (string, error) 
 		return "", fmt.Errorf("TWELVE_DATA_API_KEY environment variable is not set")
 	}
 
+	base := s.baseURL
+	if base == "" {
+		base = config.TwelveDataBaseURL
+	}
+
 	apiURL := fmt.Sprintf(
-		"https://api.twelvedata.com/exchange_rate?symbol=%s&apikey=%s",
-		url.QueryEscape("USD/COP"),
+		"%s/exchange_rate?symbol=%s&apikey=%s",
+		strings.TrimRight(base, "/"),
+		url.QueryEscape(config.DefaultCurrencyPair),
 		url.QueryEscape(apiKey),
 	)
 
@@ -251,10 +179,10 @@ func twelveDataErrorMessage(status string, code int, message string) string {
 // FetchDailyHistory returns daily USD/COP close prices from Twelve Data time_series.
 func (s *ExchangeRateService) FetchDailyHistory(ctx context.Context, days int) ([]FxRateChartPoint, error) {
 	if days <= 0 {
-		days = 30
+		days = config.DefaultFXRateDays
 	}
-	if days > 90 {
-		days = 90
+	if days > config.MaxFXRateDays {
+		days = config.MaxFXRateDays
 	}
 
 	apiKey := os.Getenv("TWELVE_DATA_API_KEY")
@@ -262,9 +190,15 @@ func (s *ExchangeRateService) FetchDailyHistory(ctx context.Context, days int) (
 		return nil, fmt.Errorf("TWELVE_DATA_API_KEY environment variable is not set")
 	}
 
+	base := s.baseURL
+	if base == "" {
+		base = config.TwelveDataBaseURL
+	}
+
 	apiURL := fmt.Sprintf(
-		"https://api.twelvedata.com/time_series?symbol=%s&interval=1day&outputsize=%d&order=asc&apikey=%s",
-		url.QueryEscape("USD/COP"),
+		"%s/time_series?symbol=%s&interval=1day&outputsize=%d&order=asc&apikey=%s",
+		strings.TrimRight(base, "/"),
+		url.QueryEscape(config.DefaultCurrencyPair),
 		days,
 		url.QueryEscape(apiKey),
 	)
