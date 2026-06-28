@@ -148,7 +148,7 @@ func CreateCashFlow(c fiber.Ctx) error {
 	if err := validateFeeLinkage(req.Type, req.RelatedCashFlowID, req.RelatedTradeID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
-	if err := validateBrokerID(context.Background(), userID, req.BrokerID); err != nil {
+	if err := validateBrokerID(c.Context(), userID, req.BrokerID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -288,7 +288,7 @@ func UpdateCashFlow(c fiber.Ctx) error {
 		existingCF.RelatedType = req.RelatedType
 	}
 
-	if err := validateBrokerID(context.Background(), userID, existingCF.BrokerID); err != nil {
+	if err := validateBrokerID(c.Context(), userID, existingCF.BrokerID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -439,13 +439,15 @@ func validateBrokerID(ctx context.Context, userID string, brokerID *string) erro
 		return nil
 	}
 
-	var owner string
-	err := database.GetPool().QueryRow(ctx, `SELECT user_id FROM brokers WHERE id = $1`, *brokerID).Scan(&owner)
+	var found bool
+	err := database.GetPool().QueryRow(ctx,
+		`SELECT true FROM brokers WHERE id = $1 AND user_id = $2`, *brokerID, userID,
+	).Scan(&found)
 	if err != nil {
-		return fmt.Errorf("invalid broker_id")
-	}
-	if owner != userID {
-		return fmt.Errorf("broker does not belong to user")
+		if errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("invalid broker_id")
+		}
+		return fmt.Errorf("validating broker: %w", err)
 	}
 	return nil
 }

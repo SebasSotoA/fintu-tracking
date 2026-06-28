@@ -6,6 +6,20 @@ Decimal.set({ precision: 20, rounding: Decimal.ROUND_HALF_UP })
 
 export { Decimal }
 
+const numberFormatCache = new Map<number, Intl.NumberFormat>()
+
+function getNumberFormat(decimals: number): Intl.NumberFormat {
+  let formatter = numberFormatCache.get(decimals)
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+    numberFormatCache.set(decimals, formatter)
+  }
+  return formatter
+}
+
 // Utility functions for safe decimal operations
 export function add(...values: (string | number)[]): string {
   return values.reduce((acc, val) => acc.add(val), new Decimal(0)).toString()
@@ -28,16 +42,15 @@ export function format(value: string | number, decimals = 2): string {
 }
 
 function currencyDecimals(currency: CashFlowCurrency): number {
-  return currency === MARKET_CONFIG.localCurrency ? MARKET_CONFIG.copDecimals : MARKET_CONFIG.usdDecimals
+  return currency === MARKET_CONFIG.localCurrency
+    ? MARKET_CONFIG.localCurrencyDecimals
+    : MARKET_CONFIG.baseCurrencyDecimals
 }
 
 export function formatCurrency(value: string | number, currency: CashFlowCurrency): string {
   const num = new Decimal(value).toNumber()
   const decimals = currencyDecimals(currency)
-  const formatted = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(num)
+  const formatted = getNumberFormat(decimals).format(num)
   return currency === MARKET_CONFIG.baseCurrency ? `$${formatted}` : `$${formatted} ${MARKET_CONFIG.localCurrency}`
 }
 
@@ -45,8 +58,5 @@ export function formatCurrency(value: string | number, currency: CashFlowCurrenc
 export function formatAmountPlain(value: string | number, currency: CashFlowCurrency): string {
   const num = new Decimal(value).toNumber()
   const decimals = currencyDecimals(currency)
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(num)
+  return getNumberFormat(decimals).format(num)
 }

@@ -237,9 +237,9 @@ func GetCurrentRate(c fiber.Ctx) error {
 
 	// Validate supported pairs.
 	pair := from + "/" + to
-	if !slices.Contains(config.SupportedCurrencyPairs(), pair) {
+	if !slices.Contains(config.SupportedCurrencyPairs, pair) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": fmt.Sprintf("unsupported currency pair: only %s are supported", strings.Join(config.SupportedCurrencyPairs(), ", ")),
+			"error": fmt.Sprintf("unsupported currency pair: only %s are supported", strings.Join(config.SupportedCurrencyPairs, ", ")),
 		})
 	}
 

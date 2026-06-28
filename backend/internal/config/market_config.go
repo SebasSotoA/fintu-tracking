@@ -28,7 +28,5 @@ const (
 	MaxFXRateDays         = 90
 )
 
-// SupportedCurrencyPairs returns the currency pairs the current FX handlers support.
-func SupportedCurrencyPairs() []string {
-	return []string{DefaultCurrencyPair, InverseCurrencyPair}
-}
+// SupportedCurrencyPairs are the currency pairs the current FX handlers support.
+var SupportedCurrencyPairs = []string{DefaultCurrencyPair, InverseCurrencyPair}

@@ -73,56 +73,35 @@ func (s *BrokerService) GetOrCreateBrokerFromPreset(ctx context.Context, userID,
 		return nil, fmt.Errorf("unknown broker preset %q", presetID)
 	}
 
-	existing, err := s.findBrokerByPreset(ctx, userID, presetID)
-	if err != nil {
-		return nil, err
-	}
-	if existing != nil {
-		return existing, nil
-	}
-
-	created, err := s.pool.Query(ctx, `
+	rows, err := s.pool.Query(ctx, `
 		INSERT INTO brokers (
 			user_id, preset_id, name, country, base_currency, local_currency,
 			deposit_fee_type, deposit_fee_value, withdrawal_fee_type, withdrawal_fee_value
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		ON CONFLICT (user_id, preset_id) DO UPDATE SET
+			name = EXCLUDED.name,
+			country = EXCLUDED.country,
+			base_currency = EXCLUDED.base_currency,
+			local_currency = EXCLUDED.local_currency,
+			deposit_fee_type = EXCLUDED.deposit_fee_type,
+			deposit_fee_value = EXCLUDED.deposit_fee_value,
+			withdrawal_fee_type = EXCLUDED.withdrawal_fee_type,
+			withdrawal_fee_value = EXCLUDED.withdrawal_fee_value,
+			updated_at = NOW()
 		RETURNING id, user_id, preset_id, name, country, base_currency, local_currency,
 		          deposit_fee_type, deposit_fee_value, withdrawal_fee_type, withdrawal_fee_value,
 		          created_at, updated_at
 	`, userID, preset.ID, preset.Name, preset.Country, preset.BaseCurrency, preset.LocalCurrency,
 		preset.DepositFee.Type, preset.DepositFee.Value, preset.WithdrawalFee.Type, preset.WithdrawalFee.Value)
 	if err != nil {
-		return nil, fmt.Errorf("inserting broker: %w", err)
+		return nil, fmt.Errorf("upserting broker: %w", err)
 	}
-	defer created.Close()
+	defer rows.Close()
 
-	broker, err := pgx.CollectOneRow(created, pgx.RowToStructByName[models.Broker])
+	broker, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Broker])
 	if err != nil {
-		return nil, fmt.Errorf("collecting created broker: %w", err)
-	}
-	return &broker, nil
-}
-
-func (s *BrokerService) findBrokerByPreset(ctx context.Context, userID, presetID string) (*models.Broker, error) {
-	row, err := s.pool.Query(ctx, `
-		SELECT id, user_id, preset_id, name, country, base_currency, local_currency,
-		       deposit_fee_type, deposit_fee_value, withdrawal_fee_type, withdrawal_fee_value,
-		       created_at, updated_at
-		FROM brokers
-		WHERE user_id = $1 AND preset_id = $2
-	`, userID, presetID)
-	if err != nil {
-		return nil, fmt.Errorf("querying broker by preset: %w", err)
-	}
-	defer row.Close()
-
-	broker, err := pgx.CollectOneRow(row, pgx.RowToStructByName[models.Broker])
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("collecting broker by preset: %w", err)
+		return nil, fmt.Errorf("collecting broker: %w", err)
 	}
 	return &broker, nil
 }

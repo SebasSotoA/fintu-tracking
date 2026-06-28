@@ -26,8 +26,8 @@ export const MARKET_CONFIG = {
   maxFxRateDays: 90,
 
   // Display defaults.
-  copDecimals: 0,
-  usdDecimals: 2,
+  baseCurrencyDecimals: 2,
+  localCurrencyDecimals: 0,
 } as const
 
 export type CashFlowCurrency = (typeof MARKET_CONFIG.cashFlowCurrencies)[number]

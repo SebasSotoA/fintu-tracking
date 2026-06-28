@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   BROKER_PRESETS,
   computeBrokerFeeUSD,
+  computeCashFlowBrokerFeeUSD,
   getBrokerPreset,
   listBrokerPresetsForCountry,
 } from "./broker-presets"
@@ -39,6 +40,13 @@ describe("broker presets", () => {
 
   it("returns null for invalid net amount", () => {
     expect(computeBrokerFeeUSD("", { type: "percentage", value: "0.009" })).toBeNull()
+  })
+
+  it("computes cash-flow fee from preset", () => {
+    expect(computeCashFlowBrokerFeeUSD("deposit", "hapi-colombia", "1000")).toBe("9.00")
+    expect(computeCashFlowBrokerFeeUSD("withdrawal", "etoro", "1000")).toBe("5.00")
+    expect(computeCashFlowBrokerFeeUSD("cash_adjustment", "hapi-colombia", "1000")).toBeNull()
+    expect(computeCashFlowBrokerFeeUSD("deposit", "unknown", "1000")).toBeNull()
   })
 
   it("has no duplicate preset ids", () => {

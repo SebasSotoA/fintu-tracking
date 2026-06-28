@@ -104,6 +104,19 @@ export function computeBrokerFeeUSD(netUsd: string, fee: BrokerFee): string | nu
   return null
 }
 
+/** Computes the preset USD fee for a cash-flow type, or null when not applicable. */
+export function computeCashFlowBrokerFeeUSD(
+  type: "deposit" | "withdrawal" | string,
+  brokerId: string,
+  netUsd: string,
+): string | null {
+  if (type !== "deposit" && type !== "withdrawal") return null
+  const preset = getBrokerPreset(brokerId)
+  if (!preset) return null
+  const fee = type === "withdrawal" ? preset.withdrawalFee : preset.depositFee
+  return computeBrokerFeeUSD(netUsd, fee)
+}
+
 function safeDecimal(value: string): Decimal | null {
   const trimmed = value.trim()
   if (!trimmed) return null

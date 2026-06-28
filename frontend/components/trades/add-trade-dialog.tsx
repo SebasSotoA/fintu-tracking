@@ -23,8 +23,8 @@ import { Plus } from "lucide-react"
 import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
 import { createTrade } from "@/lib/api/trades"
 import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
+import { BrokerSelect } from "@/components/brokers/broker-select"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
-import { listBrokerPresetsForCountry } from "@/lib/brokers/broker-presets"
 import {
   buildTradePayload,
   calculateTradeTotal,
@@ -229,24 +229,11 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="broker">Broker</Label>
-              <Select
-                value={formData.broker_id}
-                onValueChange={(value: string) => setFormData({ ...formData, broker_id: value })}
-              >
-                <SelectTrigger id="broker">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {listBrokerPresetsForCountry(MARKET_CONFIG.defaultCountry).map((preset) => (
-                    <SelectItem key={preset.id} value={preset.id}>
-                      {preset.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <BrokerSelect
+              id="broker"
+              value={formData.broker_id}
+              onChange={(value) => setFormData({ ...formData, broker_id: value })}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

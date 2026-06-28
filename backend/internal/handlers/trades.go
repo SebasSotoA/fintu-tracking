@@ -202,11 +202,11 @@ func CreateTrade(c fiber.Ctx) error {
 	}
 
 	if req.Side == "sell" {
-		if err := validateSellQuantity(context.Background(), userID, req.Ticker, "", quantity); err != nil {
+		if err := validateSellQuantity(c.Context(), userID, req.Ticker, "", quantity); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 	}
-	if err := validateBrokerID(context.Background(), userID, req.BrokerID); err != nil {
+	if err := validateBrokerID(c.Context(), userID, req.BrokerID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -302,7 +302,7 @@ func UpdateTrade(c fiber.Ctx) error {
 	if req.BrokerID != nil {
 		existing.BrokerID = req.BrokerID
 	}
-	if err := validateBrokerID(context.Background(), userID, existing.BrokerID); err != nil {
+	if err := validateBrokerID(c.Context(), userID, existing.BrokerID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	if req.Price != nil {
@@ -359,7 +359,7 @@ func UpdateTrade(c fiber.Ctx) error {
 	}
 
 	if existing.Side == "sell" {
-		if err := validateSellQuantity(context.Background(), userID, existing.Ticker, id, quantity); err != nil {
+		if err := validateSellQuantity(c.Context(), userID, existing.Ticker, id, quantity); err != nil {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 	}

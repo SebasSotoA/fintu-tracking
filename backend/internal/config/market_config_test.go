@@ -20,14 +20,13 @@ func TestInverseCurrencyPair(t *testing.T) {
 }
 
 func TestSupportedCurrencyPairs(t *testing.T) {
-	pairs := SupportedCurrencyPairs()
-	if len(pairs) != 2 {
-		t.Fatalf("len(SupportedCurrencyPairs) = %d, want 2", len(pairs))
+	if len(SupportedCurrencyPairs) != 2 {
+		t.Fatalf("len(SupportedCurrencyPairs) = %d, want 2", len(SupportedCurrencyPairs))
 	}
-	if !slices.Contains(pairs, DefaultCurrencyPair) {
+	if !slices.Contains(SupportedCurrencyPairs, DefaultCurrencyPair) {
 		t.Fatalf("SupportedCurrencyPairs missing default pair %q", DefaultCurrencyPair)
 	}
-	if !slices.Contains(pairs, InverseCurrencyPair) {
+	if !slices.Contains(SupportedCurrencyPairs, InverseCurrencyPair) {
 		t.Fatalf("SupportedCurrencyPairs missing inverse pair %q", InverseCurrencyPair)
 	}
 }

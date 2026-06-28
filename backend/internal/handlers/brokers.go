@@ -21,7 +21,7 @@ var brokerService *services.BrokerService
 func ListBrokers(c fiber.Ctx) error {
 	userID, err := middleware.RequireUserID(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		return err
 	}
 
 	brokers, err := brokerService.ListBrokers(c.Context(), userID)
@@ -44,7 +44,7 @@ type CreateBrokerRequest struct {
 func CreateBroker(c fiber.Ctx) error {
 	userID, err := middleware.RequireUserID(c)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		return err
 	}
 
 	var req CreateBrokerRequest

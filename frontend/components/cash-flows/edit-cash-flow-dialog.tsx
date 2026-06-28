@@ -23,11 +23,8 @@ import {
   computeCopFromNetUsd,
   computeDepositBreakdown,
 } from "@/lib/cash-flows/deposit-calculator"
-import {
-  computeBrokerFeeUSD,
-  getBrokerPreset,
-  listBrokerPresetsForCountry,
-} from "@/lib/brokers/broker-presets"
+import { BrokerSelect } from "@/components/brokers/broker-select"
+import { computeCashFlowBrokerFeeUSD } from "@/lib/brokers/broker-presets"
 import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
 import { toDateInputValue } from "@/lib/date-utils"
 import { showToast } from "@/lib/toast"
@@ -99,19 +96,12 @@ export function EditCashFlowDialog({
     fxRate: formData.fx_rate,
   })
 
-  const applyPresetFee = (netUsd: string, brokerId: string) => {
-    const preset = getBrokerPreset(brokerId)
-    if (!preset || formData.type === "cash_adjustment") return
-    const feeType = formData.type === "withdrawal" ? preset.withdrawalFee : preset.depositFee
-    const fee = computeBrokerFeeUSD(netUsd, feeType)
+  useEffect(() => {
+    if (!isTransfer) return
+    const fee = computeCashFlowBrokerFeeUSD(formData.type, formData.broker_id, formData.net_usd)
     if (fee !== null) {
       setFormData((prev) => ({ ...prev, deposit_fee_usd: fee }))
     }
-  }
-
-  useEffect(() => {
-    if (!isTransfer) return
-    applyPresetFee(formData.net_usd, formData.broker_id)
   }, [formData.broker_id, formData.type, formData.net_usd])
 
   const handleSubmit = async (e: FormEvent) => {
@@ -245,24 +235,11 @@ export function EditCashFlowDialog({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="edit-cf-broker">Broker</Label>
-              <Select
-                value={formData.broker_id}
-                onValueChange={(value: string) => setFormData({ ...formData, broker_id: value })}
-              >
-                <SelectTrigger id="edit-cf-broker">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {listBrokerPresetsForCountry(MARKET_CONFIG.defaultCountry).map((preset) => (
-                    <SelectItem key={preset.id} value={preset.id}>
-                      {preset.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <BrokerSelect
+              id="edit-cf-broker"
+              value={formData.broker_id}
+              onChange={(value) => setFormData({ ...formData, broker_id: value })}
+            />
 
             {isTransfer && (
               <div className="grid grid-cols-2 gap-4">
