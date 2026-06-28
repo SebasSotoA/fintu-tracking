@@ -20,6 +20,7 @@ type FxRate struct {
 	Rate      string    `json:"rate" db:"rate"`
 	Source    string    `json:"source" db:"source"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // CashFlow represents a cash flow transaction with enhanced fee tracking
@@ -32,6 +33,7 @@ type CashFlow struct {
 	Amount            string    `json:"amount" db:"amount"`
 	FxRate            *string   `json:"fx_rate" db:"fx_rate"`
 	UsdAmount         string    `json:"usd_amount" db:"usd_amount"`
+	BrokerID          *string   `json:"broker_id" db:"broker_id"`
 	Notes             *string   `json:"notes" db:"notes"`
 	FeeType           *string   `json:"fee_type" db:"fee_type"` // deposit, trading, closing, maintenance, other, withdrawal
 	RelatedTradeID    *string   `json:"related_trade_id" db:"related_trade_id"`
@@ -39,6 +41,23 @@ type CashFlow struct {
 	RelatedType       *string   `json:"related_type" db:"related_type"` // trade, deposit, withdrawal, standalone
 	CreatedAt         time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// Broker represents a user's chosen broker preset with fee configuration.
+type Broker struct {
+	ID                 string    `json:"id" db:"id"`
+	UserID             string    `json:"user_id" db:"user_id"`
+	PresetID           string    `json:"preset_id" db:"preset_id"`
+	Name               string    `json:"name" db:"name"`
+	Country            string    `json:"country" db:"country"`
+	BaseCurrency       string    `json:"base_currency" db:"base_currency"`
+	LocalCurrency      string    `json:"local_currency" db:"local_currency"`
+	DepositFeeType     string    `json:"deposit_fee_type" db:"deposit_fee_type"`
+	DepositFeeValue    string    `json:"deposit_fee_value" db:"deposit_fee_value"`
+	WithdrawalFeeType  string    `json:"withdrawal_fee_type" db:"withdrawal_fee_type"`
+	WithdrawalFeeValue string    `json:"withdrawal_fee_value" db:"withdrawal_fee_value"`
+	CreatedAt          time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Trade represents a stock, ETF, or crypto trade with detailed fee breakdown
@@ -57,6 +76,7 @@ type Trade struct {
 	ClosingFee        string    `json:"closing_fee" db:"closing_fee"`
 	TotalFees         string    `json:"total_fees" db:"total_fees"`
 	Total             string    `json:"total" db:"total"`
+	BrokerID          *string   `json:"broker_id" db:"broker_id"`
 	Notes             *string   `json:"notes" db:"notes"`
 	RealizedPL        *string   `json:"realized_pl,omitempty"`
 	RealizedPLPct     *string   `json:"realized_pl_pct,omitempty"`
@@ -227,6 +247,7 @@ type CreateCashFlowRequest struct {
 	Currency          string  `json:"currency"`
 	Amount            string  `json:"amount"`
 	FxRate            *string `json:"fx_rate"`
+	BrokerID          *string `json:"broker_id"`
 	Notes             *string `json:"notes"`
 	FeeType           *string `json:"fee_type"`
 	RelatedTradeID    *string `json:"related_trade_id"`
@@ -247,6 +268,7 @@ type CreateTradeRequest struct {
 	DepositFee        *string `json:"deposit_fee"`
 	TradingFee        *string `json:"trading_fee"`
 	ClosingFee        *string `json:"closing_fee"`
+	BrokerID          *string `json:"broker_id"`
 	Notes             *string `json:"notes"`
 }
 
@@ -264,6 +286,7 @@ type UpdateCashFlowRequest struct {
 	Currency          *string `json:"currency"`
 	Amount            *string `json:"amount"`
 	FxRate            *string `json:"fx_rate"`
+	BrokerID          *string `json:"broker_id"`
 	Notes             *string `json:"notes"`
 	FeeType           *string `json:"fee_type"`
 	RelatedTradeID    *string `json:"related_trade_id"`
@@ -284,6 +307,7 @@ type UpdateTradeRequest struct {
 	DepositFee        *string `json:"deposit_fee"`
 	TradingFee        *string `json:"trading_fee"`
 	ClosingFee        *string `json:"closing_fee"`
+	BrokerID          *string `json:"broker_id"`
 	Notes             *string `json:"notes"`
 }
 

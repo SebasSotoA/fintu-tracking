@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"errors"
+	"fintu-tracking-backend/internal/config"
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
@@ -17,7 +18,7 @@ import (
 )
 
 const cashFlowListColumns = `
-	id, user_id, date, type, currency, amount, fx_rate, usd_amount, notes,
+	id, user_id, date, type, currency, amount, fx_rate, usd_amount, broker_id, notes,
 	fee_type, related_trade_id, related_cash_flow_id, related_type, created_at, updated_at
 `
 
@@ -106,7 +107,7 @@ type cashFlowScanner interface {
 func scanCashFlowRow(row cashFlowScanner, cf *models.CashFlow) error {
 	return row.Scan(
 		&cf.ID, &cf.UserID, &cf.Date, &cf.Type, &cf.Currency, &cf.Amount, &cf.FxRate, &cf.UsdAmount,
-		&cf.Notes, &cf.FeeType, &cf.RelatedTradeID, &cf.RelatedCashFlowID, &cf.RelatedType,
+		&cf.BrokerID, &cf.Notes, &cf.FeeType, &cf.RelatedTradeID, &cf.RelatedCashFlowID, &cf.RelatedType,
 		&cf.CreatedAt, &cf.UpdatedAt,
 	)
 }
@@ -130,21 +131,24 @@ func CreateCashFlow(c fiber.Ctx) error {
 	if !isValidCashFlowType(req.Type) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid type"})
 	}
-	if req.Currency != "COP" && req.Currency != "USD" {
+	if !isValidCashFlowCurrency(req.Currency) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid currency"})
 	}
-	if (req.Type == "deposit" || req.Type == "withdrawal") && req.Currency != "COP" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Deposits and withdrawals must use COP"})
+	if (req.Type == "deposit" || req.Type == "withdrawal") && req.Currency != config.LocalCurrency {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Deposits and withdrawals must use %s", config.LocalCurrency)})
 	}
 	if req.Type == "cash_adjustment" {
-		if req.Currency != "USD" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cash adjustments must use USD"})
+		if req.Currency != config.BaseCurrency {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Cash adjustments must use %s", config.BaseCurrency)})
 		}
 		if req.Notes == nil || strings.TrimSpace(*req.Notes) == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for cash adjustments"})
 		}
 	}
 	if err := validateFeeLinkage(req.Type, req.RelatedCashFlowID, req.RelatedTradeID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+	if err := validateBrokerID(context.Background(), userID, req.BrokerID); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 
@@ -159,9 +163,9 @@ func CreateCashFlow(c fiber.Ctx) error {
 	}
 
 	var fxRate *decimal.Decimal
-	if req.Currency == "COP" {
+	if req.Currency == config.LocalCurrency {
 		if req.FxRate == nil || *req.FxRate == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "FX rate required for COP transactions"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("FX rate required for %s transactions", config.LocalCurrency)})
 		}
 		rate, err := decimal.NewFromString(*req.FxRate)
 		if err != nil {
@@ -180,8 +184,8 @@ func CreateCashFlow(c fiber.Ctx) error {
 	id := uuid.New().String()
 
 	query := `
-		INSERT INTO cash_flows (id, user_id, date, type, currency, amount, fx_rate, usd_amount, notes, fee_type, related_trade_id, related_cash_flow_id, related_type)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		INSERT INTO cash_flows (id, user_id, date, type, currency, amount, fx_rate, usd_amount, broker_id, notes, fee_type, related_trade_id, related_cash_flow_id, related_type)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING ` + cashFlowListColumns + `
 	`
 
@@ -193,11 +197,11 @@ func CreateCashFlow(c fiber.Ctx) error {
 	}
 
 	err = database.GetPool().QueryRow(context.Background(), query,
-		id, userID, date, req.Type, req.Currency, req.Amount, fxRateStr, usdAmount.String(), req.Notes,
+		id, userID, date, req.Type, req.Currency, req.Amount, fxRateStr, usdAmount.String(), req.BrokerID, req.Notes,
 		req.FeeType, req.RelatedTradeID, req.RelatedCashFlowID, req.RelatedType).
 		Scan(
 			&cashFlow.ID, &cashFlow.UserID, &cashFlow.Date, &cashFlow.Type, &cashFlow.Currency,
-			&cashFlow.Amount, &cashFlow.FxRate, &cashFlow.UsdAmount, &cashFlow.Notes,
+			&cashFlow.Amount, &cashFlow.FxRate, &cashFlow.UsdAmount, &cashFlow.BrokerID, &cashFlow.Notes,
 			&cashFlow.FeeType, &cashFlow.RelatedTradeID, &cashFlow.RelatedCashFlowID, &cashFlow.RelatedType,
 			&cashFlow.CreatedAt, &cashFlow.UpdatedAt,
 		)
@@ -229,10 +233,10 @@ func UpdateCashFlow(c fiber.Ctx) error {
 	}
 
 	var existingCF models.CashFlow
-	query := `SELECT date, type, currency, amount, fx_rate, fee_type, related_trade_id, related_cash_flow_id, related_type FROM cash_flows WHERE id = $1 AND user_id = $2`
+	query := `SELECT date, type, currency, amount, fx_rate, broker_id, fee_type, related_trade_id, related_cash_flow_id, related_type FROM cash_flows WHERE id = $1 AND user_id = $2`
 	err := database.GetPool().QueryRow(context.Background(), query, id, userID).
 		Scan(&existingCF.Date, &existingCF.Type, &existingCF.Currency, &existingCF.Amount, &existingCF.FxRate,
-			&existingCF.FeeType, &existingCF.RelatedTradeID, &existingCF.RelatedCashFlowID, &existingCF.RelatedType)
+			&existingCF.BrokerID, &existingCF.FeeType, &existingCF.RelatedTradeID, &existingCF.RelatedCashFlowID, &existingCF.RelatedType)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Cash flow not found"})
 	}
@@ -254,7 +258,7 @@ func UpdateCashFlow(c fiber.Ctx) error {
 		existingCF.Type = *req.Type
 	}
 	if req.Currency != nil {
-		if *req.Currency != "COP" && *req.Currency != "USD" {
+		if !isValidCashFlowCurrency(*req.Currency) {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid currency"})
 		}
 		existingCF.Currency = *req.Currency
@@ -264,6 +268,9 @@ func UpdateCashFlow(c fiber.Ctx) error {
 	}
 	if req.FxRate != nil {
 		existingCF.FxRate = req.FxRate
+	}
+	if req.BrokerID != nil {
+		existingCF.BrokerID = req.BrokerID
 	}
 	if req.FeeType != nil {
 		existingCF.FeeType = req.FeeType
@@ -281,12 +288,16 @@ func UpdateCashFlow(c fiber.Ctx) error {
 		existingCF.RelatedType = req.RelatedType
 	}
 
-	if (existingCF.Type == "deposit" || existingCF.Type == "withdrawal") && existingCF.Currency != "COP" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Deposits and withdrawals must use COP"})
+	if err := validateBrokerID(context.Background(), userID, existingCF.BrokerID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	if (existingCF.Type == "deposit" || existingCF.Type == "withdrawal") && existingCF.Currency != config.LocalCurrency {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Deposits and withdrawals must use %s", config.LocalCurrency)})
 	}
 	if existingCF.Type == "cash_adjustment" {
-		if existingCF.Currency != "USD" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Cash adjustments must use USD"})
+		if existingCF.Currency != config.BaseCurrency {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("Cash adjustments must use %s", config.BaseCurrency)})
 		}
 		if existingCF.Notes == nil || strings.TrimSpace(*existingCF.Notes) == "" {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for cash adjustments"})
@@ -301,9 +312,9 @@ func UpdateCashFlow(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid amount format"})
 	}
 	var fxRateDec *decimal.Decimal
-	if existingCF.Currency == "COP" {
+	if existingCF.Currency == config.LocalCurrency {
 		if existingCF.FxRate == nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "FX rate required for COP"})
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": fmt.Sprintf("FX rate required for %s", config.LocalCurrency)})
 		}
 		rate, err := decimal.NewFromString(*existingCF.FxRate)
 		if err != nil {
@@ -327,15 +338,15 @@ func UpdateCashFlow(c fiber.Ctx) error {
 	}
 
 	updateQuery := `
-		UPDATE cash_flows 
-		SET date = $1, type = $2, currency = $3, amount = $4, fx_rate = $5, usd_amount = $6, notes = $7,
-			fee_type = $8, related_trade_id = $9, related_cash_flow_id = $10, related_type = $11, updated_at = NOW()
-		WHERE id = $12 AND user_id = $13
+		UPDATE cash_flows
+		SET date = $1, type = $2, currency = $3, amount = $4, fx_rate = $5, usd_amount = $6, broker_id = $7, notes = $8,
+			fee_type = $9, related_trade_id = $10, related_cash_flow_id = $11, related_type = $12, updated_at = NOW()
+		WHERE id = $13 AND user_id = $14
 	`
 
 	result, err := database.GetPool().Exec(context.Background(), updateQuery,
 		existingCF.Date, existingCF.Type, existingCF.Currency, existingCF.Amount,
-		existingCF.FxRate, usdAmount.String(), existingCF.Notes,
+		existingCF.FxRate, usdAmount.String(), existingCF.BrokerID, existingCF.Notes,
 		existingCF.FeeType, existingCF.RelatedTradeID, existingCF.RelatedCashFlowID, existingCF.RelatedType,
 		id, userID)
 
@@ -412,9 +423,29 @@ func isValidCashFlowType(flowType string) bool {
 	return flowType == "deposit" || flowType == "withdrawal" || flowType == "fee" || flowType == "cash_adjustment"
 }
 
+func isValidCashFlowCurrency(currency string) bool {
+	return currency == config.BaseCurrency || currency == config.LocalCurrency
+}
+
 func validateFeeLinkage(flowType string, relatedCashFlowID *string, relatedTradeID *string) error {
 	if flowType == "fee" && relatedCashFlowID == nil && relatedTradeID == nil {
 		return fmt.Errorf("Standalone fees are not supported; fees must be linked to a deposit, withdrawal, or trade")
+	}
+	return nil
+}
+
+func validateBrokerID(ctx context.Context, userID string, brokerID *string) error {
+	if brokerID == nil || *brokerID == "" {
+		return nil
+	}
+
+	var owner string
+	err := database.GetPool().QueryRow(ctx, `SELECT user_id FROM brokers WHERE id = $1`, *brokerID).Scan(&owner)
+	if err != nil {
+		return fmt.Errorf("invalid broker_id")
+	}
+	if owner != userID {
+		return fmt.Errorf("broker does not belong to user")
 	}
 	return nil
 }

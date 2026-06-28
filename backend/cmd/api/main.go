@@ -29,6 +29,7 @@ func main() {
 	// Wire DB pool into service singletons
 	handlers.InitExchangeRateService()
 	handlers.InitTwelveDataService()
+	handlers.InitBrokerService(database.GetPool())
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -82,6 +83,10 @@ func main() {
 	protected.Post("/cash-flows", handlers.CreateCashFlow)
 	protected.Put("/cash-flows/:id", handlers.UpdateCashFlow)
 	protected.Delete("/cash-flows/:id", handlers.DeleteCashFlow)
+
+	// Brokers endpoints
+	protected.Get("/brokers", handlers.ListBrokers)
+	protected.Post("/brokers", handlers.CreateBroker)
 
 	// Trades endpoints (/trade-tickers avoids GET /trades/tickers matching PUT /trades/:id on some setups)
 	protected.Get("/trade-tickers", handlers.ListTradeTickers)

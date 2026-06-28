@@ -19,7 +19,7 @@ import (
 const tradeListColumns = `
 	id, user_id, date, ticker, asset_type, side, is_opening_position, quantity, price,
 	COALESCE(deposit_fee, 0), COALESCE(trading_fee, 0), COALESCE(closing_fee, 0),
-	COALESCE(total_fees, 0), total, notes, created_at, updated_at
+	COALESCE(total_fees, 0), total, broker_id, notes, created_at, updated_at
 `
 
 // ListTrades returns trades for the authenticated user with optional filters.
@@ -206,15 +206,18 @@ func CreateTrade(c fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 		}
 	}
+	if err := validateBrokerID(context.Background(), userID, req.BrokerID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	}
 
 	id := uuid.New().String()
 
 	query := `
 		INSERT INTO trades (
 			id, user_id, date, ticker, asset_type, side, is_opening_position, quantity, price, notes,
-			deposit_fee, trading_fee, closing_fee
+			deposit_fee, trading_fee, closing_fee, broker_id
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		RETURNING ` + tradeListColumns
 
 	var trade models.Trade
@@ -222,11 +225,12 @@ func CreateTrade(c fiber.Ctx) error {
 		id, userID, date, req.Ticker, req.AssetType, req.Side,
 		isOpeningPosition, req.Quantity, req.Price, req.Notes,
 		depositFee.StringFixed(2), tradingFee.StringFixed(2), closingFee.StringFixed(2),
+		req.BrokerID,
 	).Scan(
 		&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType,
 		&trade.Side, &trade.IsOpeningPosition, &trade.Quantity, &trade.Price,
 		&trade.DepositFee, &trade.TradingFee, &trade.ClosingFee, &trade.TotalFees,
-		&trade.Total, &trade.Notes, &trade.CreatedAt, &trade.UpdatedAt,
+		&trade.Total, &trade.BrokerID, &trade.Notes, &trade.CreatedAt, &trade.UpdatedAt,
 	)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
@@ -254,7 +258,7 @@ func UpdateTrade(c fiber.Ctx) error {
 		&existing.ID, &existing.UserID, &existing.Date, &existing.Ticker, &existing.AssetType,
 		&existing.Side, &existing.IsOpeningPosition, &existing.Quantity, &existing.Price,
 		&existing.DepositFee, &existing.TradingFee, &existing.ClosingFee, &existing.TotalFees,
-		&existing.Total, &existing.Notes, &existing.CreatedAt, &existing.UpdatedAt,
+		&existing.Total, &existing.BrokerID, &existing.Notes, &existing.CreatedAt, &existing.UpdatedAt,
 	)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Trade not found"})
@@ -294,6 +298,12 @@ func UpdateTrade(c fiber.Ctx) error {
 	}
 	if req.Quantity != nil {
 		existing.Quantity = *req.Quantity
+	}
+	if req.BrokerID != nil {
+		existing.BrokerID = req.BrokerID
+	}
+	if err := validateBrokerID(context.Background(), userID, existing.BrokerID); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	if req.Price != nil {
 		price, err := decimal.NewFromString(*req.Price)
@@ -365,15 +375,15 @@ func UpdateTrade(c fiber.Ctx) error {
 	updateQuery := `
 		UPDATE trades
 		SET date = $1, ticker = $2, asset_type = $3, side = $4, is_opening_position = $5, quantity = $6,
-		    price = $7, notes = $8,
-		    deposit_fee = $9, trading_fee = $10, closing_fee = $11,
+		    price = $7, notes = $8, broker_id = $9,
+		    deposit_fee = $10, trading_fee = $11, closing_fee = $12,
 		    updated_at = NOW()
-		WHERE id = $12 AND user_id = $13
+		WHERE id = $13 AND user_id = $14
 	`
 
 	result, err := database.GetPool().Exec(context.Background(), updateQuery,
 		existing.Date, existing.Ticker, existing.AssetType, existing.Side, existing.IsOpeningPosition,
-		existing.Quantity, existing.Price, notes,
+		existing.Quantity, existing.Price, notes, existing.BrokerID,
 		depositFee.StringFixed(2), tradingFee.StringFixed(2), closingFee.StringFixed(2),
 		id, userID,
 	)
@@ -427,7 +437,7 @@ func scanTradeRow(rows pgx.Rows) (models.Trade, error) {
 		&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType,
 		&trade.Side, &trade.IsOpeningPosition, &trade.Quantity, &trade.Price,
 		&trade.DepositFee, &trade.TradingFee, &trade.ClosingFee, &trade.TotalFees,
-		&trade.Total, &trade.Notes, &trade.CreatedAt, &trade.UpdatedAt,
+		&trade.Total, &trade.BrokerID, &trade.Notes, &trade.CreatedAt, &trade.UpdatedAt,
 	)
 	return trade, err
 }
