@@ -104,10 +104,9 @@ backend/tmp/
 nul
 
 # graphify - generated artifacts that should not be committed
-graphify-out/.graphify_python
-graphify-out/.graphify_root
-graphify-out/.graphify_uncached.txt
-graphify-out/cache/
-graphify-out/cost.json
-graphify-out/manifest.json
-graphify-out/20*-*-*
+graphify-out/
+backend/graphify-out/
+frontend/graphify-out/
+
+# Teach mode / session scratch
+tmp/
