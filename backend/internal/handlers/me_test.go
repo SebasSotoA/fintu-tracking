@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -129,16 +128,9 @@ func TestUpdateOnboarding_Success(t *testing.T) {
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("read body: %v", err)
-	}
-
-	respStr := string(body)
-	assertStringContains(t, respStr, `"onboarding_completed":true`)
-	assertStringContains(t, respStr, `"broker_preset_id":"hapi-colombia"`)
-	assertStringContains(t, respStr, `"country":"co"`)
+	assertBodyContains(t, resp, `"onboarding_completed":true`)
+	assertBodyContains(t, resp, `"broker_preset_id":"hapi-colombia"`)
+	assertBodyContains(t, resp, `"country":"co"`)
 
 	t.Cleanup(func() {
 		execSQL(t, "DELETE FROM profiles WHERE user_id = $1", userID)
@@ -187,9 +179,3 @@ func TestUpdateOnboarding_isolation(t *testing.T) {
 	})
 }
 
-func assertStringContains(t *testing.T, s, want string) {
-	t.Helper()
-	if !strings.Contains(s, want) {
-		t.Errorf("string = %q, want substring %q", s, want)
-	}
-}

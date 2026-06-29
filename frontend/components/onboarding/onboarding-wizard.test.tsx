@@ -11,6 +11,8 @@ vi.mock("@/lib/market-config/market-config", () => ({
     defaultBrokerId: "hapi-colombia",
     baseCurrency: "USD",
   },
+  SUPPORTED_COUNTRIES: ["co", "mx"],
+  countryLabel: (country: string) => (country === "co" ? "Colombia" : country === "mx" ? "Mexico" : country.toUpperCase()),
 }))
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -95,9 +97,4 @@ describe("OnboardingWizard", () => {
     })
   })
 
-  it("renders completion message when already onboarded", () => {
-    render(<OnboardingWizard initialProfile={{ ...baseProfile, onboarding_completed: true }} />)
-
-    expect(screen.getByText("You're all set")).toBeInTheDocument()
-  })
 })

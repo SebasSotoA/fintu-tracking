@@ -57,10 +57,8 @@ type Profile struct {
 
 // UpdateOnboardingRequest is the body for PATCH /api/me/onboarding.
 type UpdateOnboardingRequest struct {
-	Country        string  `json:"country"`
-	BrokerPresetID string  `json:"broker_preset_id"`
-	Step           *string `json:"step,omitempty"`
-	Completed      *bool   `json:"completed,omitempty"`
+	Country        string `json:"country"`
+	BrokerPresetID string `json:"broker_preset_id"`
 }
 
 // Broker represents a user's chosen broker preset with fee configuration.

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
@@ -12,8 +12,11 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BrokerSelect } from "@/components/brokers/broker-select"
 import { useCompleteOnboarding } from "@/hooks/use-onboarding"
-import { listAllBrokerPresets } from "@/lib/brokers/broker-presets"
-import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import {
+  MARKET_CONFIG,
+  SUPPORTED_COUNTRIES,
+  countryLabel,
+} from "@/lib/market-config/market-config"
 import type { Profile } from "@/lib/api/me"
 
 const onboardingSchema = z.object({
@@ -22,7 +25,7 @@ const onboardingSchema = z.object({
 })
 
 type OnboardingForm = z.infer<typeof onboardingSchema>
-type WizardStep = "welcome" | "country" | "broker" | "complete"
+type WizardStep = "welcome" | "country" | "broker"
 
 interface OnboardingWizardProps {
   initialProfile: Profile
@@ -31,13 +34,11 @@ interface OnboardingWizardProps {
 export function OnboardingWizard({ initialProfile }: OnboardingWizardProps) {
   const router = useRouter()
   const complete = useCompleteOnboarding()
-  const [step, setStep] = useState<WizardStep>(
-    initialProfile.onboarding_completed ? "complete" : "welcome",
-  )
+  const [step, setStep] = useState<WizardStep>("welcome")
 
   const {
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors },
   } = useForm<OnboardingForm>({
@@ -48,7 +49,8 @@ export function OnboardingWizard({ initialProfile }: OnboardingWizardProps) {
     },
   })
 
-  const countries = Array.from(new Set(listAllBrokerPresets().map((preset) => preset.country)))
+  const country = useWatch({ control, name: "country" })
+  const brokerPresetId = useWatch({ control, name: "brokerPresetId" })
 
   const onSubmit = async (values: OnboardingForm) => {
     try {
@@ -88,7 +90,7 @@ export function OnboardingWizard({ initialProfile }: OnboardingWizardProps) {
       </CardHeader>
       <CardContent>
         <Select
-          value={watch("country")}
+          value={country}
           onValueChange={(value) => {
             setValue("country", value)
             setValue("brokerPresetId", "")
@@ -98,9 +100,9 @@ export function OnboardingWizard({ initialProfile }: OnboardingWizardProps) {
             <SelectValue placeholder="Choose a country" />
           </SelectTrigger>
           <SelectContent>
-            {countries.map((country) => (
-              <SelectItem key={country} value={country}>
-                {countryLabel(country)}
+            {SUPPORTED_COUNTRIES.map((c) => (
+              <SelectItem key={c} value={c}>
+                {countryLabel(c)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -109,7 +111,7 @@ export function OnboardingWizard({ initialProfile }: OnboardingWizardProps) {
       <CardFooter className="flex justify-between">
         <Button variant="ghost" onClick={() => setStep("welcome")}>Back</Button>
         <Button
-          disabled={!watch("country")}
+          disabled={!country}
           onClick={() => setStep("broker")}
         >
           Continue
@@ -132,9 +134,9 @@ export function OnboardingWizard({ initialProfile }: OnboardingWizardProps) {
             <Label htmlFor="brokerPresetId">Broker</Label>
             <BrokerSelect
               id="brokerPresetId"
-              value={watch("brokerPresetId")}
+              value={brokerPresetId}
               onChange={(value) => setValue("brokerPresetId", value)}
-              country={watch("country")}
+              country={country}
             />
             {errors.brokerPresetId && (
               <p className="text-destructive text-sm">{errors.brokerPresetId.message}</p>
@@ -153,34 +155,11 @@ export function OnboardingWizard({ initialProfile }: OnboardingWizardProps) {
     </form>
   )
 
-  const renderComplete = () => (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>You&apos;re all set</CardTitle>
-        <CardDescription>
-          Your profile is configured. Redirecting to your dashboard...
-        </CardDescription>
-      </CardHeader>
-    </Card>
-  )
-
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-4">
       {step === "welcome" && renderWelcome()}
       {step === "country" && renderCountry()}
       {step === "broker" && renderBroker()}
-      {step === "complete" && renderComplete()}
     </div>
   )
-}
-
-function countryLabel(country: string): string {
-  switch (country) {
-    case "co":
-      return "Colombia"
-    case "mx":
-      return "Mexico"
-    default:
-      return country.toUpperCase()
-  }
 }

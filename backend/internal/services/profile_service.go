@@ -40,33 +40,22 @@ func (s *ProfileService) GetOrCreateProfile(ctx context.Context, userID string) 
 	return &profile, nil
 }
 
-// UpdateOnboarding writes the onboarding selection and optionally marks completion.
+// UpdateOnboarding stores the selected country and broker preset and marks onboarding completed.
 func (s *ProfileService) UpdateOnboarding(ctx context.Context, userID string, req models.UpdateOnboardingRequest) (*models.Profile, error) {
 	if _, err := s.GetOrCreateProfile(ctx, userID); err != nil {
 		return nil, err
-	}
-
-	completed := false
-	if req.Completed != nil {
-		completed = *req.Completed
-	}
-	step := "welcome"
-	if req.Step != nil {
-		step = *req.Step
-	} else if completed {
-		step = "completed"
 	}
 
 	rows, err := s.pool.Query(ctx, `
 		UPDATE profiles
 		SET country = $2,
 		    broker_preset_id = $3,
-		    onboarding_completed = $4,
-		    onboarding_step = $5,
+		    onboarding_completed = true,
+		    onboarding_step = 'completed',
 		    updated_at = NOW()
 		WHERE user_id = $1
 		RETURNING id, user_id, country, broker_preset_id, onboarding_completed, onboarding_step, created_at, updated_at
-	`, userID, req.Country, req.BrokerPresetID, completed, step)
+	`, userID, req.Country, req.BrokerPresetID)
 	if err != nil {
 		return nil, fmt.Errorf("updating onboarding: %w", err)
 	}

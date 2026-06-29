@@ -52,18 +52,10 @@ func UpdateOnboarding(c fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Unknown broker preset"})
 	}
 
-	completed := true
-	p, err := profileService.UpdateOnboarding(c.Context(), userID, models.UpdateOnboardingRequest{
-		Country:        req.Country,
-		BrokerPresetID: req.BrokerPresetID,
-		Step:           stringPtr("completed"),
-		Completed:      &completed,
-	})
+	p, err := profileService.UpdateOnboarding(c.Context(), userID, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
 	return c.JSON(p)
 }
-
-func stringPtr(s string) *string { return &s }

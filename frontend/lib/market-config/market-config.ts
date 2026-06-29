@@ -30,6 +30,21 @@ export const MARKET_CONFIG = {
   localCurrencyDecimals: 0,
 } as const
 
+export const SUPPORTED_COUNTRIES = ["co", "mx"] as const
+
+export type SupportedCountry = (typeof SUPPORTED_COUNTRIES)[number]
+
+export function countryLabel(country: string): string {
+  switch (country) {
+    case "co":
+      return "Colombia"
+    case "mx":
+      return "Mexico"
+    default:
+      return country.toUpperCase()
+  }
+}
+
 export type CashFlowCurrency = (typeof MARKET_CONFIG.cashFlowCurrencies)[number]
 
 export function isCashFlowCurrency(value: string): value is CashFlowCurrency {
