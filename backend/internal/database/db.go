@@ -2,11 +2,13 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 )
 
 var pool *pgxpool.Pool
@@ -55,5 +57,30 @@ func Close() {
 	if pool != nil {
 		pool.Close()
 	}
+}
+
+// OpenMigrationDB returns a *sql.DB configured with the same connection URL as
+// the runtime pool but using pgx/stdlib. This is the connection golang-migrate
+// uses; it disables prepared statements to stay compatible with the Supabase
+// transaction pooler.
+func OpenMigrationDB() (*sql.DB, error) {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		return nil, fmt.Errorf("DATABASE_URL environment variable not set")
+	}
+
+	config, err := pgx.ParseConfig(dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse database URL: %w", err)
+	}
+	config.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+
+	db := stdlib.OpenDB(*config)
+	if err := db.PingContext(context.Background()); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	return db, nil
 }
 

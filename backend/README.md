@@ -13,7 +13,14 @@ This is the Go REST API backend for Fintu Tracking.
    ```bash
    go mod download
    ```
-4. Run the server:
+4. Run migrations:
+   ```bash
+   make migrate
+   ```
+   (Migrations live in `backend/migrations/` and are applied automatically when
+   the backend starts, but running `make migrate` explicitly is useful for
+   CI/production.)
+5. Run the server:
    ```bash
    go run cmd/api/main.go
    ```
@@ -38,6 +45,17 @@ air
 ## API Endpoints
 
 See the main README.md for full API documentation.
+
+## Database Migrations
+
+Migrations are managed with [`golang-migrate`](https://github.com/golang-migrate/migrate):
+
+- Apply migrations: `make migrate`
+- Check status: `make migrate-status`
+- Roll back one migration: `make migrate-down`
+- Create a new migration: `make migrate-create NAME=add_notifications_table`
+
+Historical SQL scripts are kept in `scripts/archive/` for audit history only.
 
 ## Building for Production
 

@@ -4,6 +4,7 @@ import (
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/handlers"
 	"fintu-tracking-backend/internal/middleware"
+	"fintu-tracking-backend/internal/migrations"
 	"fmt"
 	"log"
 	"os"
@@ -25,6 +26,17 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer database.Close()
+
+	// Run migrations before the app accepts traffic.
+	migrationDB, err := database.OpenMigrationDB()
+	if err != nil {
+		log.Fatalf("Failed to open migration database: %v", err)
+	}
+	if err := migrations.Up(migrationDB, "migrations"); err != nil {
+		migrationDB.Close()
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
+	migrationDB.Close()
 
 	// Wire DB pool into service singletons
 	handlers.InitExchangeRateService()
