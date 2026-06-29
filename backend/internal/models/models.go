@@ -43,6 +43,26 @@ type CashFlow struct {
 	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
 }
 
+// Profile holds per-user onboarding state and UI preferences.
+type Profile struct {
+	ID                  string    `json:"id" db:"id"`
+	UserID              string    `json:"user_id" db:"user_id"`
+	Country             string    `json:"country" db:"country"`
+	BrokerPresetID      *string   `json:"broker_preset_id,omitempty" db:"broker_preset_id"`
+	OnboardingCompleted bool      `json:"onboarding_completed" db:"onboarding_completed"`
+	OnboardingStep      string    `json:"onboarding_step" db:"onboarding_step"`
+	CreatedAt           time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
+}
+
+// UpdateOnboardingRequest is the body for PATCH /api/me/onboarding.
+type UpdateOnboardingRequest struct {
+	Country        string  `json:"country"`
+	BrokerPresetID string  `json:"broker_preset_id"`
+	Step           *string `json:"step,omitempty"`
+	Completed      *bool   `json:"completed,omitempty"`
+}
+
 // Broker represents a user's chosen broker preset with fee configuration.
 type Broker struct {
 	ID                 string    `json:"id" db:"id"`

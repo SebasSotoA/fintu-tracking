@@ -10,9 +10,11 @@ interface BrokerSelectProps {
   value: string
   onChange: (value: string) => void
   label?: string
+  country?: string
 }
 
-export function BrokerSelect({ id, value, onChange, label = "Broker" }: BrokerSelectProps) {
+export function BrokerSelect({ id, value, onChange, label = "Broker", country }: BrokerSelectProps) {
+  const effectiveCountry = country ?? MARKET_CONFIG.defaultCountry
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
@@ -21,7 +23,7 @@ export function BrokerSelect({ id, value, onChange, label = "Broker" }: BrokerSe
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {listBrokerPresetsForCountry(MARKET_CONFIG.defaultCountry).map((preset) => (
+          {listBrokerPresetsForCountry(effectiveCountry).map((preset) => (
             <SelectItem key={preset.id} value={preset.id}>
               {preset.name}
             </SelectItem>

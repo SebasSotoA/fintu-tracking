@@ -70,6 +70,13 @@ export async function serverPut<T>(endpoint: string, data: unknown): Promise<T> 
   })
 }
 
+export async function serverPatch<T>(endpoint: string, data: unknown): Promise<T> {
+  return serverRequest<T>(endpoint, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+}
+
 export async function serverDelete<T>(endpoint: string): Promise<T> {
   return serverRequest<T>(endpoint, {
     method: "DELETE",

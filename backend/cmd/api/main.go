@@ -30,6 +30,7 @@ func main() {
 	handlers.InitExchangeRateService()
 	handlers.InitTwelveDataService()
 	handlers.InitBrokerService(database.GetPool())
+	handlers.InitProfileService(database.GetPool())
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -53,7 +54,7 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: allowedOrigins,
 		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 	}))
 
 	// Health check
@@ -83,6 +84,10 @@ func main() {
 	protected.Post("/cash-flows", handlers.CreateCashFlow)
 	protected.Put("/cash-flows/:id", handlers.UpdateCashFlow)
 	protected.Delete("/cash-flows/:id", handlers.DeleteCashFlow)
+
+	// Current user / onboarding endpoints
+	protected.Get("/me", handlers.GetMe)
+	protected.Patch("/me/onboarding", handlers.UpdateOnboarding)
 
 	// Brokers endpoints
 	protected.Get("/brokers", handlers.ListBrokers)

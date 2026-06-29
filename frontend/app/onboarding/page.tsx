@@ -1,17 +1,12 @@
-import type React from "react"
-import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { AppShell } from "@/components/layout/app-shell"
+import { createClient } from "@/lib/supabase/server"
 import { serverGet } from "@/lib/api/server-client"
 import type { Profile } from "@/lib/api/me"
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard"
 
 export const dynamic = "force-dynamic"
 
-export default async function AppLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function OnboardingPage() {
   const supabase = await createClient()
   const {
     data: { user },
@@ -21,7 +16,7 @@ export default async function AppLayout({
   if (error || !user) redirect("/auth/login")
 
   const profile = await serverGet<Profile>("/api/me")
-  if (!profile.onboarding_completed) redirect("/onboarding")
+  if (profile.onboarding_completed) redirect("/dashboard")
 
-  return <AppShell>{children}</AppShell>
+  return <OnboardingWizard initialProfile={profile} />
 }

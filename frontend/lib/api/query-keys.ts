@@ -12,6 +12,8 @@ export const queryKeys = {
   cashFlowsExport: () => ["cash-flows-export"] as const,
   fxCurrentRate: () => ["fx-current-rate"] as const,
   activityFeed: (limit = 8) => ["activity-feed", limit] as const,
+  me: () => ["me"] as const,
+  brokers: () => ["brokers"] as const,
 }
 
 export async function invalidatePortfolioCaches(queryClient: QueryClient) {
