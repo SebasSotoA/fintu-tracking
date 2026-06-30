@@ -9,18 +9,19 @@ import { invalidateAfterCashFlowMutation } from "@/lib/api/query-keys"
 import { SingleDatePicker } from "@/components/filters/single-date-picker"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog"
 import { MoneyHeroInput } from "@/components/cash-flows/money-hero-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
+import { ResponsiveFormGrid } from "@/components/ui/responsive-form-grid"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { Plus } from "lucide-react"
 import { createCashFlow } from "@/lib/api/cash-flows"
@@ -48,10 +49,10 @@ const emptyForm = () => ({
   notes: "",
 })
 
-export function AddCashFlowDialog() {
+export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: boolean; children?: React.ReactNode }) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(autoOpen)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState(emptyForm)
 
@@ -138,18 +139,18 @@ export function AddCashFlowDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
+    <ResponsiveDialog open={open} onOpenChange={setOpen}>
+      <ResponsiveDialogTrigger asChild>
+        <Button className="gap-2 w-full md:w-auto">
           <Plus className="h-4 w-4" />
-          Add Cash Flow
+          {children ?? "Add Cash Flow"}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="flex max-h-[90vh] max-w-[calc(100%-2rem)] flex-col gap-0 p-0 sm:max-w-3xl">
-        <DialogHeader className="shrink-0 px-6 pt-6">
-          <DialogTitle>Add Cash Flow</DialogTitle>
-          <DialogDescription>Record a deposit, withdrawal, or cash adjustment</DialogDescription>
-        </DialogHeader>
+      </ResponsiveDialogTrigger>
+      <ResponsiveDialogContent className="flex max-h-[100dvh] md:max-h-[90vh] max-w-[calc(100%-2rem)] flex-col gap-0 p-0 sm:max-w-3xl">
+        <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
+          <ResponsiveDialogTitle>Add Cash Flow</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Record a deposit, withdrawal, or cash adjustment</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form onSubmit={handleSubmit} className="space-y-4">
           {isTransfer && (
@@ -173,7 +174,7 @@ export function AddCashFlowDialog() {
             />
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <ResponsiveFormGrid>
             <div className="space-y-2">
               <Label htmlFor="cf-type">Type</Label>
               <Select
@@ -205,7 +206,7 @@ export function AddCashFlowDialog() {
               onChange={(date) => setFormData({ ...formData, date })}
               required
             />
-          </div>
+          </ResponsiveFormGrid>
 
           <BrokerSelect
             id="cf-broker"
@@ -214,7 +215,7 @@ export function AddCashFlowDialog() {
           />
 
           {isTransfer && (
-            <div className="grid grid-cols-2 gap-4">
+            <ResponsiveFormGrid>
               <div className="space-y-2">
                 <Label htmlFor="cf-deposit-fee">
                   {feeLabel}{" "}
@@ -243,7 +244,7 @@ export function AddCashFlowDialog() {
                   required
                 />
               </div>
-            </div>
+            </ResponsiveFormGrid>
           )}
 
           {isTransfer && (
@@ -281,17 +282,17 @@ export function AddCashFlowDialog() {
             )}
           </div>
 
-          <div className="flex gap-3 justify-end">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
               {isLoading ? "Adding..." : "Add Cash Flow"}
             </Button>
           </div>
           </form>
         </DialogScrollBody>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

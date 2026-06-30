@@ -5,11 +5,18 @@ import type React from "react"
 import type { Trade } from "@/lib/types"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
+import { ResponsiveFormGrid } from "@/components/ui/responsive-form-grid"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { SingleDatePicker } from "@/components/filters/single-date-picker"
 import { SellTickerSelect } from "@/components/trades/sell-ticker-select"
@@ -116,15 +123,15 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-2xl">
-        <DialogHeader className="shrink-0 px-6 pt-6">
-          <DialogTitle>Edit Trade</DialogTitle>
-          <DialogDescription>Update the trade details</DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent className="flex max-h-[100dvh] md:max-h-[90vh] flex-col gap-0 p-0 sm:max-w-2xl">
+        <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
+          <ResponsiveDialogTitle>Edit Trade</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Update the trade details</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <ResponsiveFormGrid>
               <SingleDatePicker
                 id="edit-date"
                 label="Date"
@@ -168,9 +175,9 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 {priceWarning && <p className="text-xs text-destructive">{priceWarning}</p>}
               </div>
             )}
-          </div>
+          </ResponsiveFormGrid>
 
-          <div className="grid grid-cols-2 gap-4">
+          <ResponsiveFormGrid>
             <div className="space-y-2">
               <Label htmlFor="edit-asset_type">Asset Type</Label>
               <Select
@@ -210,7 +217,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </ResponsiveFormGrid>
 
           <BrokerSelect
             id="edit-broker"
@@ -218,7 +225,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
             onChange={(value) => setFormData({ ...formData, broker_id: value })}
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <ResponsiveFormGrid>
             <div className="space-y-2">
               <Label htmlFor="edit-quantity">Quantity</Label>
               <Input
@@ -243,7 +250,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 required
               />
             </div>
-          </div>
+          </ResponsiveFormGrid>
 
           <div className="space-y-2">
             <Label htmlFor="edit-closing_fee">Commission</Label>
@@ -276,17 +283,17 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <div className="flex gap-3 justify-end">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
               {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>
           </form>
         </DialogScrollBody>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

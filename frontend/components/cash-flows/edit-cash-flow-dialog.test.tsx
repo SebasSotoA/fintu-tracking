@@ -63,6 +63,39 @@ describe("EditCashFlowDialog", () => {
     vi.clearAllMocks()
   })
 
+  it("uses ResponsiveDialog and ResponsiveDialogContent", () => {
+    renderEditDialog()
+
+    const content = screen.getByRole("dialog")
+    expect(content).toHaveAttribute("data-slot", "dialog-content")
+    expect(content).toHaveClass("max-h-[100dvh]")
+    expect(content).toHaveClass("md:max-h-[90vh]")
+  })
+
+  it("renders form fields in ResponsiveFormGrid with mobile-first grid classes", () => {
+    renderEditDialog()
+
+    const content = screen.getByRole("dialog")
+    const grids = within(content).getAllByTestId("responsive-form-grid")
+    expect(grids.length).toBeGreaterThan(0)
+    grids.forEach((grid) => {
+      expect(grid).toHaveClass("grid-cols-1")
+      expect(grid).toHaveClass("md:grid-cols-2")
+      expect(grid).toHaveClass("gap-4")
+    })
+  })
+
+  it("stacks footer buttons on mobile and rows them on desktop", () => {
+    renderEditDialog()
+
+    const form = screen.getByRole("dialog").querySelector("form")
+    expect(form).toBeTruthy()
+    const footer = form!.lastElementChild as HTMLElement
+    expect(footer).toHaveClass("flex-col")
+    expect(footer).toHaveClass("sm:flex-row")
+    expect(footer).toHaveClass("sm:justify-end")
+  })
+
   it("shows hero net USD input with deposit amount label for deposits", () => {
     renderEditDialog()
 
@@ -84,7 +117,7 @@ describe("EditCashFlowDialog", () => {
 
     const feeInput = screen.getByLabelText(/Deposit fee USD/i)
     const fxInput = screen.getByLabelText(/FX rate COP\/USD/i)
-    const feeRow = feeInput.closest(".grid")
+    const feeRow = feeInput.closest("[data-testid='responsive-form-grid']")
     expect(feeRow).toBeTruthy()
     expect(within(feeRow as HTMLElement).getByLabelText(/FX rate COP\/USD/i)).toBe(fxInput)
   })

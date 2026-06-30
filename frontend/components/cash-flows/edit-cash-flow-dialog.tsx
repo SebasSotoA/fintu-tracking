@@ -6,12 +6,19 @@ import type { CashFlow } from "@/lib/types"
 import { useEffect, useMemo, useState } from "react"
 import { SingleDatePicker } from "@/components/filters/single-date-picker"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog"
 import { MoneyHeroInput } from "@/components/cash-flows/money-hero-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
+import { ResponsiveFormGrid } from "@/components/ui/responsive-form-grid"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { createCashFlow, deleteCashFlow, updateCashFlow } from "@/lib/api/cash-flows"
 import {
@@ -166,12 +173,12 @@ export function EditCashFlowDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-[calc(100%-2rem)] flex-col gap-0 p-0 sm:max-w-3xl">
-        <DialogHeader className="shrink-0 px-6 pt-6">
-          <DialogTitle>Edit Cash Flow</DialogTitle>
-          <DialogDescription>Update the cash flow details</DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent className="flex max-h-[100dvh] md:max-h-[90vh] max-w-[calc(100%-2rem)] flex-col gap-0 p-0 sm:max-w-3xl">
+        <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
+          <ResponsiveDialogTitle>Edit Cash Flow</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Update the cash flow details</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form onSubmit={handleSubmit} className="space-y-4">
             {isTransfer && (
@@ -195,7 +202,7 @@ export function EditCashFlowDialog({
               />
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <ResponsiveFormGrid>
               <div className="space-y-2">
                 <Label htmlFor="edit-cf-type">Type</Label>
                 {formData.type === "fee" ? (
@@ -233,7 +240,7 @@ export function EditCashFlowDialog({
                 onChange={(date) => setFormData({ ...formData, date })}
                 required
               />
-            </div>
+            </ResponsiveFormGrid>
 
             <BrokerSelect
               id="edit-cf-broker"
@@ -242,7 +249,7 @@ export function EditCashFlowDialog({
             />
 
             {isTransfer && (
-              <div className="grid grid-cols-2 gap-4">
+              <ResponsiveFormGrid>
                 <div className="space-y-2">
                   <Label htmlFor="edit-cf-deposit-fee">
                     {feeLabel}{" "}
@@ -271,7 +278,7 @@ export function EditCashFlowDialog({
                     required
                   />
                 </div>
-              </div>
+              </ResponsiveFormGrid>
             )}
 
             {isTransfer && (
@@ -309,17 +316,17 @@ export function EditCashFlowDialog({
               )}
             </div>
 
-            <div className="flex gap-3 justify-end">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>
         </DialogScrollBody>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

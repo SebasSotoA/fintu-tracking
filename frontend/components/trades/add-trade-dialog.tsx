@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog"
 import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
+import { ResponsiveFormGrid } from "@/components/ui/responsive-form-grid"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
@@ -55,9 +56,10 @@ interface AddTradeDialogProps {
   initialSide?: "buy" | "sell"
   /** When true, auto-opens the dialog and hides the trigger button. Use for programmatic quick-trade. */
   autoOpen?: boolean
+  children?: React.ReactNode
 }
 
-export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, autoOpen }: AddTradeDialogProps = {}) {
+export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, autoOpen, children }: AddTradeDialogProps = {}) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(autoOpen ?? false)
@@ -117,7 +119,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
   }
 
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onOpenChange={(next) => {
         if (next) setFormData(emptyForm(overrides))
@@ -125,21 +127,21 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
       }}
     >
       {!autoOpen && (
-        <DialogTrigger asChild>
-          <Button className="gap-2">
+        <ResponsiveDialogTrigger asChild>
+          <Button className="gap-2 w-full md:w-auto">
             <Plus className="h-4 w-4" />
-            Add Trade
+            {children ?? "Add Trade"}
           </Button>
-        </DialogTrigger>
+        </ResponsiveDialogTrigger>
       )}
-      <DialogContent className="flex max-h-[90vh] flex-col gap-0 p-0 sm:max-w-2xl">
-        <DialogHeader className="shrink-0 px-6 pt-6">
-          <DialogTitle>Add Trade</DialogTitle>
-          <DialogDescription>Record a buy or sell for a stock, ETF, or crypto</DialogDescription>
-        </DialogHeader>
+      <ResponsiveDialogContent className="flex max-h-[100dvh] md:max-h-[90vh] flex-col gap-0 p-0 sm:max-w-2xl">
+        <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
+          <ResponsiveDialogTitle>Add Trade</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>Record a buy or sell for a stock, ETF, or crypto</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <ResponsiveFormGrid>
               <SingleDatePicker
                 id="date"
                 label="Date"
@@ -185,9 +187,9 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   )}
                 </div>
               )}
-            </div>
+            </ResponsiveFormGrid>
 
-            <div className="grid grid-cols-2 gap-4">
+            <ResponsiveFormGrid>
               <div className="space-y-2">
                 <Label htmlFor="asset_type">Asset Type</Label>
                 <Select
@@ -227,7 +229,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   </SelectContent>
                 </Select>
               </div>
-            </div>
+            </ResponsiveFormGrid>
 
             <BrokerSelect
               id="broker"
@@ -235,7 +237,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
               onChange={(value) => setFormData({ ...formData, broker_id: value })}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <ResponsiveFormGrid>
               <div className="space-y-2">
                 <Label htmlFor="quantity">Quantity</Label>
                 <Input
@@ -260,7 +262,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   required
                 />
               </div>
-            </div>
+            </ResponsiveFormGrid>
 
             <div className="space-y-2">
               <Label htmlFor="closing_fee">Commission</Label>
@@ -293,17 +295,17 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <div className="flex gap-3 justify-end">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading ? "Adding..." : "Add Trade"}
               </Button>
             </div>
           </form>
         </DialogScrollBody>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }
