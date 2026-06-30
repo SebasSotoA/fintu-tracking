@@ -3,6 +3,8 @@
 import type { Trade } from "@/lib/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { MobileActions } from "@/components/ui/mobile-actions"
 import { Label } from "@/components/ui/label"
 import { FilterSelect } from "@/components/filters/filter-select"
 import {
@@ -14,6 +16,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { MobileFilterDrawer } from "@/components/ui/mobile-filter-drawer"
 import { Check, ChevronsUpDown, Download, Pencil, Trash2 } from "lucide-react"
 import { Decimal, formatCurrency, format } from "@/lib/decimal"
 import { formatCalendarDate } from "@/lib/date-utils"
@@ -83,8 +86,8 @@ function TradeTickerFilter({
   const label = value ?? "All tickers"
 
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor="trade-filter-ticker" className="text-xs text-muted-foreground">
+    <div className="space-y-1.5 md:w-auto">
+      <Label htmlFor="trade-filter-ticker" className="text-xs text-muted-foreground md:hidden">
         Ticker
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
@@ -97,7 +100,7 @@ function TradeTickerFilter({
             aria-expanded={open}
             aria-label="Filter trades by ticker"
             className={cn(
-              "h-9 w-[9.5rem] justify-between px-3 text-sm font-normal",
+              "h-9 w-full justify-between px-3 text-sm font-normal md:w-[9.5rem]",
               !value && "text-muted-foreground",
             )}
           >
@@ -141,6 +144,48 @@ function TradeTickerFilter({
           </Command>
         </PopoverContent>
       </Popover>
+    </div>
+  )
+}
+
+function TradeFiltersForm({
+  filters,
+  tickers,
+  onChange,
+}: {
+  filters: TradeFilters
+  tickers: string[]
+  onChange: (patch: Partial<TradeFilters>) => void
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:flex md:flex-wrap md:items-end">
+      <FilterSelect
+        id="trade-filter-side"
+        label="Side"
+        ariaLabel="Filter trades by side"
+        value={filters.side}
+        options={SIDE_OPTIONS}
+        onChange={(side) => onChange({ side })}
+        triggerClassName="h-9 w-full md:w-[7.5rem]"
+      />
+      <FilterSelect
+        id="trade-filter-asset"
+        label="Asset"
+        ariaLabel="Filter trades by asset"
+        value={filters.assetType}
+        options={ASSET_OPTIONS}
+        onChange={(assetType) => onChange({ assetType })}
+        triggerClassName="h-9 w-full md:w-[7.5rem]"
+      />
+      <TradeTickerFilter
+        tickers={tickers}
+        value={filters.ticker}
+        onChange={(ticker) => onChange({ ticker })}
+      />
+      <TradeDateFilter
+        value={filters.dateRange}
+        onChange={(dateRange) => onChange({ dateRange })}
+      />
     </div>
   )
 }
@@ -207,6 +252,8 @@ export function TradesList({
   const [exporting, setExporting] = useState(false)
 
   const filtersActive = hasActiveFilters(filters)
+  const activeFilterCount =
+    [filters.side !== "all", filters.assetType !== "all", filters.ticker !== null, filters.dateRange.from !== null].filter(Boolean).length
 
   const handleTradeMutated = async () => {
     await invalidateAfterTradeMutation(queryClient)
@@ -224,6 +271,64 @@ export function TradesList({
       setExporting(false)
     }
   }
+
+  const renderMobileCard = useCallback(
+    (trade: Trade) => (
+      <Card className="p-4 gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono font-semibold">{trade.ticker}</span>
+            <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
+            <Badge variant={trade.side === "buy" ? "default" : "secondary"}>
+              {trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}
+            </Badge>
+          </div>
+          <MobileActions
+            actions={[
+              { label: "Edit", icon: Pencil, onClick: () => setEditingTrade(trade) },
+              { label: "Delete", icon: Trash2, destructive: true, onClick: () => setDeletingTrade(trade) },
+            ]}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+          <div className="space-y-0.5">
+            <p className="text-xs text-muted-foreground">Date</p>
+            <p className="text-sm">{formatCalendarDate(trade.date)}</p>
+          </div>
+          <div className="space-y-0.5 text-right">
+            <p className="text-xs text-muted-foreground">Qty</p>
+            <p className="text-sm font-mono">{format(trade.quantity, 4)}</p>
+          </div>
+          <div className="space-y-0.5 text-right">
+            <p className="text-xs text-muted-foreground">Price</p>
+            <p className="text-sm font-mono">{formatCurrency(trade.price, MARKET_CONFIG.baseCurrency)}</p>
+          </div>
+          <div className="space-y-0.5 text-right">
+            <p className="text-xs text-muted-foreground">Fees</p>
+            <p className="text-sm font-mono">{formatCurrency(trade.total_fees, MARKET_CONFIG.baseCurrency)}</p>
+          </div>
+          <div className="col-span-2 space-y-0.5 text-right">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-sm font-mono font-semibold">{formatCurrency(trade.total, MARKET_CONFIG.baseCurrency)}</p>
+          </div>
+          {trade.side === "sell" && trade.realized_pl != null && trade.realized_pl !== "" && (
+            <div className="col-span-2 space-y-0.5 text-right">
+              <p className="text-xs text-muted-foreground">Realized P/L</p>
+              <p
+                className={cn(
+                  "text-sm font-mono",
+                  new Decimal(trade.realized_pl).gte(0) ? "text-primary" : "text-destructive",
+                )}
+              >
+                {formatCurrency(trade.realized_pl, MARKET_CONFIG.baseCurrency)}
+              </p>
+            </div>
+          )}
+        </div>
+      </Card>
+    ),
+    [setEditingTrade, setDeletingTrade],
+  )
 
   const columns = useMemo<DataTableColumn<Trade>[]>(
     () => [
@@ -351,33 +456,18 @@ export function TradesList({
   return (
     <>
       <section className="space-y-4">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <FilterSelect
-              id="trade-filter-side"
-              label="Side"
-              value={filters.side}
-              options={SIDE_OPTIONS}
-              onChange={(side) => patchFilters({ side })}
-            />
-            <FilterSelect
-              id="trade-filter-asset"
-              label="Asset"
-              value={filters.assetType}
-              options={ASSET_OPTIONS}
-              onChange={(assetType) => patchFilters({ assetType })}
-            />
-            <TradeTickerFilter
-              tickers={tickers}
-              value={filters.ticker}
-              onChange={(ticker) => patchFilters({ ticker })}
-            />
-            <TradeDateFilter
-              value={filters.dateRange}
-              onChange={(dateRange) => patchFilters({ dateRange })}
-            />
+        <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-end md:justify-between">
+          <div className="hidden md:flex md:flex-wrap md:items-end md:gap-3">
+            <TradeFiltersForm filters={filters} tickers={tickers} onChange={patchFilters} />
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <MobileFilterDrawer
+            activeCount={activeFilterCount}
+            description="Adjust the filters to narrow your trades"
+            triggerAriaLabel="Open trade filters"
+          >
+            <TradeFiltersForm filters={filters} tickers={tickers} onChange={patchFilters} />
+          </MobileFilterDrawer>
+          <div className="flex flex-col items-start gap-2 md:items-end">
             <p className="text-sm text-muted-foreground" title="Filter URLs can be shared or bookmarked">
               Showing {trades.length} of {total} trades
             </p>
@@ -398,6 +488,7 @@ export function TradesList({
                 visibleKeys={visibleKeys}
                 defaultVisibleKeys={defaultKeys}
                 onChange={setVisibleKeys}
+                className="hidden md:block"
               />
             </div>
           </div>
@@ -412,6 +503,7 @@ export function TradesList({
               columns={visibleColumns}
               keyExtractor={(trade) => trade.id}
               emptyState={emptyState}
+              renderMobileCard={renderMobileCard}
             />
             <TablePagination
               page={page}

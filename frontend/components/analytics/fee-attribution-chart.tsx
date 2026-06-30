@@ -25,6 +25,7 @@ import Decimal from "decimal.js";
 import { DollarSignIcon, TrendingDownIcon } from "lucide-react";
 import type React from "react";
 import { MARKET_CONFIG } from "@/lib/market-config/market-config";
+import { CHART_HEIGHT_MEDIUM } from "@/lib/chart-sizes";
 
 const FEE_TYPE_COLORS = [
   "var(--chart-1)",
@@ -49,7 +50,6 @@ const monthlyChartConfig = {
   value: { label: "Monthly fees", color: "var(--chart-3)" },
 } satisfies ChartConfig;
 
-const CHART_HEIGHT_CLASS = "h-[340px]";
 
 function formatBaseCurrency(value: string | number): string {
   const num = typeof value === "string" ? parseFloat(value) : value;
@@ -103,7 +103,7 @@ function FeeTooltip({
 function ChartEmptyState({ message }: { message: string }): React.JSX.Element {
   return (
     <div
-      className={`flex ${CHART_HEIGHT_CLASS} flex-col items-center justify-center rounded-lg border border-dashed border-border/50 text-center text-muted-foreground`}
+      className={`flex ${CHART_HEIGHT_MEDIUM} flex-col items-center justify-center rounded-lg border border-dashed border-border/50 text-center text-muted-foreground`}
     >
       <p className="text-sm">{message}</p>
     </div>
@@ -140,8 +140,8 @@ export function FeeAttributionChart(): React.JSX.Element {
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2">
-            <Skeleton className={`${CHART_HEIGHT_CLASS} w-full`} />
-            <Skeleton className={`${CHART_HEIGHT_CLASS} w-full`} />
+            <Skeleton className={`${CHART_HEIGHT_MEDIUM} w-full`} />
+            <Skeleton className={`${CHART_HEIGHT_MEDIUM} w-full`} />
           </div>
         </CardContent>
       </Card>
@@ -240,7 +240,7 @@ export function FeeAttributionChart(): React.JSX.Element {
               {feeTypeData.length > 0 ? (
                 <ChartContainer
                   config={feeTypeChartConfig}
-                  className={`${CHART_HEIGHT_CLASS} w-full shrink-0 aspect-auto [&_.recharts-responsive-container]:!h-[340px] [&_.recharts-responsive-container]:!w-full`}
+                  className={`${CHART_HEIGHT_MEDIUM} w-full shrink-0 aspect-auto [&_.recharts-responsive-container]:!h-[260px] md:[&_.recharts-responsive-container]:!h-[340px] [&_.recharts-responsive-container]:!w-full`}
                 >
                   <BarChart data={feeTypeData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                     <CartesianGrid
@@ -285,7 +285,7 @@ export function FeeAttributionChart(): React.JSX.Element {
               {hasMonthlyFees ? (
                 <ChartContainer
                   config={monthlyChartConfig}
-                  className={`${CHART_HEIGHT_CLASS} w-full shrink-0 aspect-auto [&_.recharts-responsive-container]:!h-[340px] [&_.recharts-responsive-container]:!w-full`}
+                  className={`${CHART_HEIGHT_MEDIUM} w-full shrink-0 aspect-auto [&_.recharts-responsive-container]:!h-[260px] md:[&_.recharts-responsive-container]:!h-[340px] [&_.recharts-responsive-container]:!w-full`}
                 >
                   <BarChart
                     data={monthlyFeeData}
@@ -339,7 +339,7 @@ export function FeeAttributionChart(): React.JSX.Element {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-[350px] text-muted-foreground">
+          <div className={`flex flex-col items-center justify-center ${CHART_HEIGHT_MEDIUM} text-muted-foreground`}>
             <DollarSignIcon className="h-12 w-12 mb-2 opacity-50" />
             <p>No fee data available</p>
           </div>

@@ -6,6 +6,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts"
 import { Decimal } from "@/lib/decimal"
 import { formatCurrency } from "@/lib/decimal"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { CHART_HEIGHT_SHORT } from "@/lib/chart-sizes"
 import {
   ChartContainer,
   ChartTooltip,
@@ -63,7 +64,7 @@ export function PerformanceCharts({ cashFlows }: PerformanceChartsProps) {
       </CardHeader>
       <CardContent>
         {cumulativeData.length > 0 ? (
-          <ChartContainer config={chartConfig} className="h-[320px] w-full aspect-auto">
+          <ChartContainer config={chartConfig} className={`${CHART_HEIGHT_SHORT} w-full aspect-auto`}>
             <LineChart data={cumulativeData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--muted-foreground)" strokeOpacity={0.1} />
               <XAxis
@@ -104,7 +105,7 @@ export function PerformanceCharts({ cashFlows }: PerformanceChartsProps) {
             </LineChart>
           </ChartContainer>
         ) : (
-          <div className="flex h-[320px] items-center justify-center text-muted-foreground">
+          <div className={`flex ${CHART_HEIGHT_SHORT} items-center justify-center text-muted-foreground`}>
             No data available
           </div>
         )}

@@ -25,6 +25,7 @@ import Decimal from "decimal.js";
 import { TrendingUpIcon, AlertCircleIcon } from "lucide-react";
 import type React from "react";
 import { MARKET_CONFIG } from "@/lib/market-config/market-config";
+import { CHART_HEIGHT_TALL } from "@/lib/chart-sizes";
 
 const CHART_GAIN = "var(--chart-1)";
 const CHART_START = "var(--chart-2)";
@@ -261,7 +262,7 @@ export function ReturnAttribution(): React.JSX.Element {
             <h3 className="mb-4 text-sm font-medium">Return Decomposition Waterfall</h3>
             <ChartContainer
               config={waterfallChartConfig}
-              className="h-[420px] min-h-[380px] w-full aspect-auto"
+              className={`${CHART_HEIGHT_TALL} min-h-[260px] md:min-h-[380px] w-full aspect-auto`}
             >
               <ComposedChart data={waterfallData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid

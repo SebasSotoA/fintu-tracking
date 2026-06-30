@@ -6,13 +6,18 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table"
 import { DataTableColumnToggle } from "@/components/ui/data-table-column-toggle"
 import { EmptyState } from "@/components/ui/empty-state"
+import { EmptyStateActions, EmptyStateAction } from "@/components/ui/empty-state-actions"
 import { TablePagination } from "@/components/ui/table-pagination"
 import { usePersistedVisibleColumns } from "@/hooks/use-persisted-visible-columns"
+import { AddTradeDialog } from "@/components/trades/add-trade-dialog"
+import { AddCashFlowDialog } from "@/components/cash-flows/add-cash-flow-dialog"
 import { formatCurrency, format } from "@/lib/decimal"
 import { Decimal } from "@/lib/decimal"
+import { cn } from "@/lib/utils"
 import { RefreshPricesButton } from "@/components/dashboard/refresh-prices-button"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import {
@@ -119,6 +124,66 @@ export function HoldingsTable({
     [replaceQuery, searchParams],
   )
 
+  const renderMobileCard = useCallback(
+    (holding: Holding) => {
+      const pl = new Decimal(holding.unrealizedPL || 0)
+      const isPositive = pl.gte(0)
+      return (
+        <Card className="p-4 gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/trades?ticker=${encodeURIComponent(holding.ticker)}`}
+                className="font-mono font-semibold hover:underline"
+              >
+                {holding.ticker}
+              </Link>
+              {onQuickTrade && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="min-h-11 min-w-11"
+                  onClick={() => onQuickTrade(holding.ticker, holding.assetType ?? "stock")}
+                  aria-label={`Quick buy ${holding.ticker}`}
+                  title={`Add buy for ${holding.ticker}`}
+                >
+                  <Plus className="size-5" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <div className="space-y-0.5 text-right">
+              <p className="text-xs text-muted-foreground">Quantity</p>
+              <p className="text-sm font-mono">{format(holding.quantity, 4)}</p>
+            </div>
+            <div className="space-y-0.5 text-right">
+              <p className="text-xs text-muted-foreground">Avg Cost</p>
+              <p className="text-sm font-mono">{formatCurrency(holding.avgCost, MARKET_CONFIG.baseCurrency)}</p>
+            </div>
+            <div className="space-y-0.5 text-right">
+              <p className="text-xs text-muted-foreground">Total Invested</p>
+              <p className="text-sm font-mono">{formatCurrency(holding.totalInvested, MARKET_CONFIG.baseCurrency)}</p>
+            </div>
+            <div className="space-y-0.5 text-right">
+              <p className="text-xs text-muted-foreground">Market Value</p>
+              <p className="text-sm font-mono font-semibold">{formatCurrency(holding.marketValue, MARKET_CONFIG.baseCurrency)}</p>
+            </div>
+            <div className="col-span-2 space-y-0.5 text-right">
+              <p className="text-xs text-muted-foreground">Unrealized P/L</p>
+              <p className={cn("text-sm font-mono", isPositive ? "text-primary" : "text-destructive")}>
+                {formatCurrency(holding.unrealizedPL, MARKET_CONFIG.baseCurrency)}
+                {" "}
+                ({format(holding.unrealizedPLPercent, 2)}%)
+              </p>
+            </div>
+          </div>
+        </Card>
+      )
+    },
+    [onQuickTrade],
+  )
+
   const columns = useMemo<DataTableColumn<Holding>[]>(
     () => [
       {
@@ -222,6 +287,16 @@ export function HoldingsTable({
         <EmptyState
           title="No holdings yet"
           description="Add trades to build your portfolio, then use Refresh Prices to load market values."
+          action={
+            <EmptyStateActions>
+              <AddTradeDialog>
+                <EmptyStateAction>Add Trade</EmptyStateAction>
+              </AddTradeDialog>
+              <AddCashFlowDialog>
+                <EmptyStateAction>Add Cash Flow</EmptyStateAction>
+              </AddCashFlowDialog>
+            </EmptyStateActions>
+          }
         />
       </section>
     )
@@ -238,6 +313,7 @@ export function HoldingsTable({
             visibleKeys={visibleKeys}
             defaultVisibleKeys={defaultKeys}
             onChange={setVisibleKeys}
+            className="hidden md:block"
           />
         </div>
       </div>
@@ -256,6 +332,7 @@ export function HoldingsTable({
         columns={visibleColumns}
         keyExtractor={(holding) => holding.ticker}
         rowClassName="group"
+        renderMobileCard={renderMobileCard}
       />
 
       {total > 0 && (

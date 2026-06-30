@@ -22,6 +22,7 @@ import { queryKeys } from "@/lib/api/query-keys"
 import { formatCurrency } from "@/lib/decimal"
 import Decimal from "decimal.js"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { CHART_HEIGHT_SHORT } from "@/lib/chart-sizes"
 
 const INTERVAL_OPTIONS: { value: PerformanceInterval; label: string }[] = [
   { value: "month", label: "Month" },
@@ -120,7 +121,7 @@ export function PortfolioPerformanceChart() {
           <Skeleton className="h-6 w-64" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-[320px] w-full" />
+          <Skeleton className={`${CHART_HEIGHT_SHORT} w-full`} />
         </CardContent>
       </Card>
     )
@@ -135,7 +136,7 @@ export function PortfolioPerformanceChart() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex min-h-[320px] flex-col items-center justify-center text-muted-foreground">
+          <div className="flex min-h-[260px] md:min-h-[320px] flex-col items-center justify-center text-muted-foreground">
             <AlertCircleIcon className="mb-3 h-10 w-10 opacity-40" />
             <p className="font-medium">Unable to load performance history</p>
             <p className="mt-1 text-sm">Try refreshing the page or check back later.</p>
@@ -176,13 +177,13 @@ export function PortfolioPerformanceChart() {
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
-          <div className="flex min-h-[320px] flex-col items-center justify-center text-muted-foreground">
+          <div className="flex min-h-[260px] md:min-h-[320px] flex-col items-center justify-center text-muted-foreground">
             <AlertCircleIcon className="mb-3 h-10 w-10 opacity-40" />
             <p className="font-medium">No performance history yet</p>
             <p className="mt-1 text-sm">Add trades or cash flows to see portfolio value over time.</p>
           </div>
         ) : (
-          <ChartContainer config={chartConfig} className="h-[320px] w-full aspect-auto">
+          <ChartContainer config={chartConfig} className={`${CHART_HEIGHT_SHORT} w-full aspect-auto`}>
             <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--muted-foreground)" strokeOpacity={0.1} />
               <XAxis
