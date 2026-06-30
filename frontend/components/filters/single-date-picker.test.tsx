@@ -3,22 +3,35 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { SingleDatePicker } from "./single-date-picker"
 
-describe("SingleDatePicker", () => {
-  it("applies selected calendar day on Apply", async () => {
-    const user = userEvent.setup()
-    const onChange = vi.fn()
-    const today = new Date()
-    const currentYear = today.getFullYear()
+const useIsMobileMock = vi.fn()
 
-    render(
+vi.mock("@/hooks/use-mobile", () => ({
+  useIsMobile: () => useIsMobileMock(),
+}))
+
+function renderPicker({ isMobile = false, value = "" }: { isMobile?: boolean; value?: string } = {}) {
+  useIsMobileMock.mockReturnValue(isMobile)
+  const onChange = vi.fn()
+  return {
+    onChange,
+    ...render(
       <SingleDatePicker
         id="trade-date"
         label="Date"
         ariaLabel="Trade date"
-        value=""
+        value={value}
         onChange={onChange}
       />,
-    )
+    ),
+  }
+}
+
+describe("SingleDatePicker", () => {
+  it("applies selected calendar day on Apply", async () => {
+    const user = userEvent.setup()
+    const { onChange } = renderPicker()
+    const today = new Date()
+    const currentYear = today.getFullYear()
 
     await user.click(screen.getByRole("button", { name: "Trade date" }))
     await user.click(screen.getByRole("button", { name: `Select year ${currentYear}` }))
@@ -30,21 +43,31 @@ describe("SingleDatePicker", () => {
     expect(onChange).toHaveBeenCalledWith("2024-06-15")
   })
 
+  it("renders a popover on desktop", async () => {
+    const user = userEvent.setup()
+    renderPicker({ isMobile: false })
+
+    await user.click(screen.getByRole("button", { name: "Trade date" }))
+    expect(document.querySelector("[data-slot='popover-content']")).toBeInTheDocument()
+    expect(document.querySelector("[data-slot='drawer-content']")).not.toBeInTheDocument()
+  })
+
+  it("renders a drawer on mobile", async () => {
+    const user = userEvent.setup()
+    renderPicker({ isMobile: true })
+
+    await user.click(screen.getByRole("button", { name: "Trade date" }))
+    expect(document.querySelector("[data-slot='drawer-content']")).toBeInTheDocument()
+    expect(document.querySelector("[data-slot='popover-content']")).not.toBeInTheDocument()
+  })
+
   it("navigates year and month drill-down before returning to day view", async () => {
     const user = userEvent.setup()
     const today = new Date()
     const currentYear = today.getFullYear()
     const targetYear = currentYear - 1
 
-    render(
-      <SingleDatePicker
-        id="trade-date"
-        label="Date"
-        ariaLabel="Trade date"
-        value=""
-        onChange={vi.fn()}
-      />,
-    )
+    renderPicker()
 
     await user.click(screen.getByRole("button", { name: "Trade date" }))
 
@@ -67,15 +90,7 @@ describe("SingleDatePicker", () => {
     const today = new Date()
     const currentYear = today.getFullYear()
 
-    render(
-      <SingleDatePicker
-        id="trade-date"
-        label="Date"
-        ariaLabel="Trade date"
-        value=""
-        onChange={vi.fn()}
-      />,
-    )
+    renderPicker()
 
     await user.click(screen.getByRole("button", { name: "Trade date" }))
     await user.click(screen.getByRole("button", { name: `Select year ${currentYear}` }))

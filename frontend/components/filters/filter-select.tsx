@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export function FilterSelect<T extends string>({
   id,
   label,
+  ariaLabel,
   value,
   options,
   onChange,
@@ -13,6 +14,7 @@ export function FilterSelect<T extends string>({
 }: {
   id: string
   label: string
+  ariaLabel?: string
   value: T
   options: { value: T; label: string }[]
   onChange: (value: T) => void
@@ -24,7 +26,7 @@ export function FilterSelect<T extends string>({
         {label}
       </Label>
       <Select value={value} onValueChange={(next) => onChange(next as T)}>
-        <SelectTrigger id={id} className={triggerClassName ?? "h-8 w-[7.5rem]"} aria-label={label}>
+        <SelectTrigger id={id} className={triggerClassName ?? "h-8 w-[7.5rem]"} aria-label={ariaLabel ?? label}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

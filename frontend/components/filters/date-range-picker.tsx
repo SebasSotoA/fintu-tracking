@@ -7,9 +7,18 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { parseCalendarDay, toCalendarDay } from "@/lib/date/calendar-day"
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
 import {
   applyTradeDatePreset,
   EMPTY_TRADE_DATE_RANGE,
@@ -33,6 +42,123 @@ export interface DateRangePickerProps {
   formatLabel: (range: TradeDateRange) => string
 }
 
+function DateRangePickerContent({
+  mode,
+  setMode,
+  singleDay,
+  setSingleDay,
+  rangeSelection,
+  setRangeSelection,
+  draft,
+  setDraft,
+}: {
+  mode: "day" | "range"
+  setMode: (mode: "day" | "range") => void
+  singleDay: Date | undefined
+  setSingleDay: (date: Date | undefined) => void
+  rangeSelection: DateRange | undefined
+  setRangeSelection: (range: DateRange | undefined) => void
+  draft: TradeDateRange
+  setDraft: (draft: TradeDateRange) => void
+}) {
+  const handleModeChange = (next: string) => {
+    const nextMode = next as "day" | "range"
+    setMode(nextMode)
+    if (nextMode === "day") {
+      setDraft({ from: draft.from, to: null })
+      setSingleDay(parseCalendarDay(draft.from))
+      setRangeSelection(undefined)
+    } else if (draft.from) {
+      setRangeSelection({
+        from: parseCalendarDay(draft.from),
+        to: parseCalendarDay(draft.to ?? draft.from),
+      })
+      if (draft.from && !draft.to) {
+        setDraft({ from: draft.from, to: draft.from })
+      }
+    }
+  }
+
+  const handlePreset = (preset: TradeDatePreset) => {
+    const next = applyTradeDatePreset(preset)
+    setMode("range")
+    setDraft(next)
+    setRangeSelection({
+      from: parseCalendarDay(next.from),
+      to: parseCalendarDay(next.to),
+    })
+    setSingleDay(undefined)
+  }
+
+  return (
+    <>
+      <div className="border-b border-border p-3">
+        <Tabs value={mode} onValueChange={handleModeChange}>
+          <TabsList className="grid h-8 w-full grid-cols-2">
+            <TabsTrigger value="day" className="text-xs">
+              Day
+            </TabsTrigger>
+            <TabsTrigger value="range" className="text-xs">
+              Range
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {mode === "day" ? (
+        <Calendar
+          mode="single"
+          selected={singleDay}
+          onSelect={(date) => {
+            setSingleDay(date)
+            if (date) {
+              setDraft({ from: toCalendarDay(date), to: null })
+            } else {
+              setDraft(EMPTY_TRADE_DATE_RANGE)
+            }
+          }}
+          defaultMonth={singleDay}
+          className="mx-auto"
+        />
+      ) : (
+        <Calendar
+          mode="range"
+          numberOfMonths={2}
+          selected={rangeSelection}
+          onSelect={(range) => {
+            setRangeSelection(range)
+            if (!range?.from) {
+              setDraft(EMPTY_TRADE_DATE_RANGE)
+              return
+            }
+            setDraft({
+              from: toCalendarDay(range.from),
+              to: range.to ? toCalendarDay(range.to) : null,
+            })
+          }}
+          defaultMonth={rangeSelection?.from ?? singleDay}
+          className="mx-auto"
+        />
+      )}
+
+      <div className="flex flex-wrap gap-1.5 border-t border-border px-3 py-2">
+        {PRESETS.map((preset) => (
+          <Button
+            key={preset.id}
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={() => handlePreset(preset.id)}
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
+    </>
+  )
+}
+
 export function DateRangePicker({
   id,
   label,
@@ -41,6 +167,7 @@ export function DateRangePicker({
   onChange,
   formatLabel,
 }: DateRangePickerProps) {
+  const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<"day" | "range">("day")
   const [draft, setDraft] = useState<TradeDateRange>(value)
@@ -75,33 +202,83 @@ export function DateRangePicker({
     setOpen(false)
   }
 
-  const handlePreset = (preset: TradeDatePreset) => {
-    const next = applyTradeDatePreset(preset)
-    setMode("range")
-    setDraft(next)
-    setRangeSelection({
-      from: parseCalendarDay(next.from),
-      to: parseCalendarDay(next.to),
-    })
-    setSingleDay(undefined)
+  const TriggerButton = (
+    <Button
+      id={id}
+      type="button"
+      variant="outline"
+      aria-label={ariaLabel}
+      className={cn(
+        "h-8 min-w-[11rem] justify-start gap-2 px-2.5 font-normal md:h-9",
+        isEmpty && "text-muted-foreground",
+      )}
+    >
+      <CalendarIcon className="size-3.5 shrink-0 opacity-70" />
+      <span className="truncate">{triggerLabel}</span>
+    </Button>
+  )
+
+  const Footer = (
+    <div className="flex items-center justify-end gap-2 border-t border-border p-3">
+      <Button type="button" variant="ghost" size="sm" onClick={handleClear}>
+        Clear
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        onClick={handleApply}
+        disabled={mode === "day" ? !draft.from : !draft.from || !draft.to}
+      >
+        Apply
+      </Button>
+    </div>
+  )
+
+  if (isMobile === undefined) {
+    return (
+      <div className="space-y-1.5">
+        <Label htmlFor={id} className="text-xs text-muted-foreground">
+          {label}
+        </Label>
+        {TriggerButton}
+      </div>
+    )
   }
 
-  const handleModeChange = (next: string) => {
-    const nextMode = next as "day" | "range"
-    setMode(nextMode)
-    if (nextMode === "day") {
-      setDraft({ from: draft.from, to: null })
-      setSingleDay(parseCalendarDay(draft.from))
-      setRangeSelection(undefined)
-    } else if (draft.from) {
-      setRangeSelection({
-        from: parseCalendarDay(draft.from),
-        to: parseCalendarDay(draft.to ?? draft.from),
-      })
-      if (draft.from && !draft.to) {
-        setDraft({ from: draft.from, to: draft.from })
-      }
-    }
+  if (isMobile) {
+    return (
+      <div className="space-y-1.5">
+        <Label htmlFor={id} className="text-xs text-muted-foreground md:hidden">
+          {label}
+        </Label>
+        <Drawer open={open} onOpenChange={setOpen}>
+          <DrawerTrigger asChild>{TriggerButton}</DrawerTrigger>
+          <DrawerContent className="px-4 pb-safe" aria-describedby={`${id}-description`}>
+            <DrawerHeader className="pb-2 text-left">
+              <DrawerTitle>{label}</DrawerTitle>
+              <p id={`${id}-description`} className="text-sm text-muted-foreground">
+                Select a day or a range of dates
+              </p>
+            </DrawerHeader>
+            <div className="px-4 py-2">
+              <DateRangePickerContent
+                mode={mode}
+                setMode={setMode}
+                singleDay={singleDay}
+                setSingleDay={setSingleDay}
+                rangeSelection={rangeSelection}
+                setRangeSelection={setRangeSelection}
+                draft={draft}
+                setDraft={setDraft}
+              />
+            </div>
+            <DrawerFooter className="px-4 pb-6">
+              {Footer}
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      </div>
+    )
   }
 
   return (
@@ -110,97 +287,19 @@ export function DateRangePicker({
         {label}
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            id={id}
-            type="button"
-            variant="outline"
-            aria-label={ariaLabel}
-            className={cn(
-              "h-8 min-w-[11rem] justify-start gap-2 px-2.5 font-normal",
-              isEmpty && "text-muted-foreground",
-            )}
-          >
-            <CalendarIcon className="size-3.5 shrink-0 opacity-70" />
-            <span className="truncate">{triggerLabel}</span>
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger asChild>{TriggerButton}</PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="border-b border-border p-3">
-            <Tabs value={mode} onValueChange={handleModeChange}>
-              <TabsList className="grid h-8 w-full grid-cols-2">
-                <TabsTrigger value="day" className="text-xs">
-                  Day
-                </TabsTrigger>
-                <TabsTrigger value="range" className="text-xs">
-                  Range
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-
-          {mode === "day" ? (
-            <Calendar
-              mode="single"
-              selected={singleDay}
-              onSelect={(date) => {
-                setSingleDay(date)
-                if (date) {
-                  setDraft({ from: toCalendarDay(date), to: null })
-                } else {
-                  setDraft(EMPTY_TRADE_DATE_RANGE)
-                }
-              }}
-              defaultMonth={singleDay}
-            />
-          ) : (
-            <Calendar
-              mode="range"
-              numberOfMonths={2}
-              selected={rangeSelection}
-              onSelect={(range) => {
-                setRangeSelection(range)
-                if (!range?.from) {
-                  setDraft(EMPTY_TRADE_DATE_RANGE)
-                  return
-                }
-                setDraft({
-                  from: toCalendarDay(range.from),
-                  to: range.to ? toCalendarDay(range.to) : null,
-                })
-              }}
-              defaultMonth={rangeSelection?.from ?? singleDay}
-            />
-          )}
-
-          <div className="flex flex-wrap gap-1.5 border-t border-border px-3 py-2">
-            {PRESETS.map((preset) => (
-              <Button
-                key={preset.id}
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => handlePreset(preset.id)}
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-end gap-2 border-t border-border p-3">
-            <Button type="button" variant="ghost" size="sm" onClick={handleClear}>
-              Clear
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleApply}
-              disabled={mode === "day" ? !draft.from : !draft.from || !draft.to}
-            >
-              Apply
-            </Button>
-          </div>
+          <DateRangePickerContent
+            mode={mode}
+            setMode={setMode}
+            singleDay={singleDay}
+            setSingleDay={setSingleDay}
+            rangeSelection={rangeSelection}
+            setRangeSelection={setRangeSelection}
+            draft={draft}
+            setDraft={setDraft}
+          />
+          {Footer}
         </PopoverContent>
       </Popover>
     </div>
