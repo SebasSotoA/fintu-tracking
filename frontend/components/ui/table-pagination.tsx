@@ -75,7 +75,7 @@ export function TablePagination({
           type="button"
           variant="outline"
           size="icon"
-          className="size-8"
+          className="min-h-11 min-w-11 md:size-8"
           aria-label="First page"
           disabled={atFirst}
           onClick={() => onPageChange(1)}
@@ -86,7 +86,7 @@ export function TablePagination({
           type="button"
           variant="outline"
           size="icon"
-          className="size-8"
+          className="min-h-11 min-w-11 md:size-8"
           aria-label="Previous page"
           disabled={atFirst}
           onClick={() => onPageChange(page - 1)}
@@ -97,7 +97,7 @@ export function TablePagination({
           type="button"
           variant="outline"
           size="icon"
-          className="size-8"
+          className="min-h-11 min-w-11 md:size-8"
           aria-label="Next page"
           disabled={atLast}
           onClick={() => onPageChange(page + 1)}
@@ -108,7 +108,7 @@ export function TablePagination({
           type="button"
           variant="outline"
           size="icon"
-          className="size-8"
+          className="min-h-11 min-w-11 md:size-8"
           aria-label="Last page"
           disabled={atLast}
           onClick={() => onPageChange(pages)}

@@ -210,6 +210,14 @@
 }
 
 @layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   .scrollbar-minimal {
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;

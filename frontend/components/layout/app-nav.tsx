@@ -8,6 +8,7 @@ import {
   TrendingUp,
   DollarSign,
   BarChart3,
+  CreditCard,
   LogOut,
   User,
   PanelLeftClose,
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/trades", label: "Trades", icon: TrendingUp },
   { href: "/cash-flows", label: "Cash Flows", icon: DollarSign },
   { href: "/performance", label: "Performance", icon: BarChart3 },
+  { href: "/subscription", label: "Subscription", icon: CreditCard },
 ]
 
 interface AppNavProps {
@@ -231,7 +233,7 @@ export function AppNav({ collapsed, onToggleCollapsed }: AppNavProps) {
         </div>
       </aside>
 
-      <nav className="md:hidden fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-border/20 bg-background/90 px-4 pt-3 pb-6 backdrop-blur-xl">
+      <nav className="md:hidden fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-border/20 bg-background/90 px-4 pt-3 pb-6 pb-safe backdrop-blur-xl">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive =
@@ -241,7 +243,7 @@ export function AppNav({ collapsed, onToggleCollapsed }: AppNavProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-xl px-3 py-1 transition-colors duration-75",
+                "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors duration-75",
                 isActive
                   ? "bg-primary-container/20 text-primary"
                   : "text-foreground/40 hover:text-primary",
@@ -257,10 +259,11 @@ export function AppNav({ collapsed, onToggleCollapsed }: AppNavProps) {
         <button
           type="button"
           onClick={handleSignOut}
-          className="flex flex-col items-center gap-1 rounded-xl px-3 py-1 text-foreground/40 transition-colors duration-75 hover:text-primary"
+          aria-label="Sign out"
+          className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 text-foreground/40 transition-colors duration-75 hover:text-primary"
         >
           <LogOut className="size-5" />
-          <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">Out</span>
+          <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">Sign out</span>
         </button>
       </nav>
     </>

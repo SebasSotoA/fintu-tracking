@@ -17,4 +17,11 @@ describe("EmptyState", () => {
     render(<EmptyState title="No items" action={<button type="button">Create</button>} />)
     expect(screen.getByRole("button", { name: "Create" })).toBeInTheDocument()
   })
+
+  it("wraps action full-width on mobile", () => {
+    render(<EmptyState title="No items" action={<button type="button">Create</button>} />)
+    const wrapper = screen.getByRole("button", { name: "Create" }).parentElement
+    expect(wrapper).toHaveClass("w-full")
+    expect(wrapper).toHaveClass("md:w-auto")
+  })
 })

@@ -23,5 +23,13 @@ export default async function AppLayout({
   const profile = await serverGet<Profile>("/api/me")
   if (!profile.onboarding_completed) redirect("/onboarding")
 
+  // Users without an active subscription must resolve their billing state first.
+  if (
+    profile.subscription_status !== "active" &&
+    profile.subscription_status !== "trialing"
+  ) {
+    redirect("/subscription")
+  }
+
   return <AppShell>{children}</AppShell>
 }

@@ -39,7 +39,7 @@ export function AppShell({ children }: AppShellProps) {
       />
       <main
         className={cn(
-          "h-dvh overflow-y-auto scrollbar-minimal pb-28 md:pb-0 transition-[margin-left] duration-200 ease-linear",
+          "h-dvh overflow-y-auto scrollbar-minimal pb-28 md:pb-0 pb-safe transition-[margin-left] duration-200 ease-linear",
           collapsed ? SIDEBAR_MAIN_OFFSET_COLLAPSED : SIDEBAR_MAIN_OFFSET_EXPANDED,
         )}
       >
