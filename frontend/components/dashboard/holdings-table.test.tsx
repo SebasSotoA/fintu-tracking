@@ -1,6 +1,6 @@
 import type { ReactElement } from "react"
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { render, screen, fireEvent, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { Holding } from "@/lib/types"
 import { HoldingsTable } from "./holdings-table"
@@ -44,11 +44,13 @@ beforeEach(() => {
 })
 
 describe("HoldingsTable", () => {
-  it("renders empty state when there are no holdings", () => {
+  it("renders empty state with CTAs when there are no holdings", () => {
     renderWithProviders(
       <HoldingsTable holdings={[]} total={0} page={1} pageSize={10} />,
     )
     expect(screen.getByText("No holdings yet")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /add trade/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /add cash flow/i })).toBeInTheDocument()
   })
 
   it("renders holdings rows", () => {
@@ -60,7 +62,8 @@ describe("HoldingsTable", () => {
         pageSize={10}
       />,
     )
-    expect(screen.getByText("AAPL")).toBeInTheDocument()
+    const table = screen.getByTestId("data-table-table")
+    expect(within(table).getByText("AAPL")).toBeInTheDocument()
     expect(screen.getByText("Current Holdings")).toBeInTheDocument()
   })
 
@@ -73,7 +76,8 @@ describe("HoldingsTable", () => {
         pageSize={10}
       />,
     )
-    const link = screen.getByRole("link", { name: "AAPL" })
+    const table = screen.getByTestId("data-table-table")
+    const link = within(table).getByRole("link", { name: "AAPL" })
     expect(link).toHaveAttribute("href", "/trades?ticker=AAPL")
   })
 
@@ -149,9 +153,35 @@ describe("HoldingsTable", () => {
         onQuickTrade={onQuickTrade}
       />,
     )
-    const button = screen.getByRole("button", { name: "Quick buy AAPL" })
+    const table = screen.getByTestId("data-table-table")
+    const button = within(table).getByRole("button", { name: "Quick buy AAPL" })
     fireEvent.click(button)
     expect(onQuickTrade).toHaveBeenCalledWith("AAPL", "stock")
+  })
+
+  it("renders mobile cards below md and hides the table", () => {
+    renderWithProviders(
+      <HoldingsTable holdings={[sampleHolding]} total={1} page={1} pageSize={10} />,
+    )
+
+    expect(screen.getByTestId("data-table-cards")).toHaveClass("md:hidden")
+    expect(screen.getByTestId("data-table-table")).toHaveClass("hidden", "md:block")
+  })
+
+  it("renders the quick-trade button as a large mobile tap target in the card", () => {
+    renderWithProviders(
+      <HoldingsTable
+        holdings={[sampleHolding]}
+        total={1}
+        page={1}
+        pageSize={10}
+        onQuickTrade={vi.fn()}
+      />,
+    )
+
+    const cards = screen.getByTestId("data-table-cards")
+    const button = within(cards).getByRole("button", { name: "Quick buy AAPL" })
+    expect(button).toHaveClass("min-h-11", "min-w-11")
   })
 })
 
@@ -169,7 +199,8 @@ describe("HoldingsTableServer", () => {
       page: 1,
       page_size: 10,
     })
-    expect(screen.getByText("AAPL")).toBeInTheDocument()
+    const table = screen.getByTestId("data-table-table")
+    expect(within(table).getByText("AAPL")).toBeInTheDocument()
   })
 
   it("renders empty state when fetch fails", async () => {

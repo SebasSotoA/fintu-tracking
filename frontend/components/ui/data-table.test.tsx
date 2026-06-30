@@ -18,6 +18,13 @@ const rows: Row[] = [
   { id: "2", name: "B", amount: 200 },
 ]
 
+const renderMobileCard = (row: Row) => (
+  <div>
+    <p data-testid="card-name">{row.name}</p>
+    <p data-testid="card-amount">{row.amount}</p>
+  </div>
+)
+
 describe("DataTable", () => {
   it("renders header cells", () => {
     render(<DataTable data={rows} columns={columns} keyExtractor={(row) => row.id} />)
@@ -56,5 +63,42 @@ describe("DataTable", () => {
     render(<DataTable data={rows} columns={cols} keyExtractor={(row) => row.id} />)
     expect(screen.getByRole("columnheader", { name: "Name" })).toBeInTheDocument()
     expect(screen.getByRole("columnheader", { name: "Amount" })).toBeInTheDocument()
+  })
+
+  it("renders mobile cards below md when renderMobileCard is provided", () => {
+    render(
+      <DataTable
+        data={rows}
+        columns={columns}
+        keyExtractor={(row) => row.id}
+        renderMobileCard={renderMobileCard}
+      />,
+    )
+
+    const cardList = screen.getByTestId("data-table-cards")
+    expect(cardList).toBeInTheDocument()
+    expect(cardList).toHaveClass("md:hidden")
+    expect(screen.getAllByTestId("card-name")).toHaveLength(2)
+    expect(screen.getByTestId("data-table-table")).toHaveClass("hidden", "md:block")
+  })
+
+  it("does not render mobile cards when renderMobileCard is omitted", () => {
+    render(<DataTable data={rows} columns={columns} keyExtractor={(row) => row.id} />)
+    expect(screen.queryByTestId("data-table-cards")).not.toBeInTheDocument()
+    expect(screen.getByTestId("data-table-table")).not.toHaveClass("hidden", "md:block")
+  })
+
+  it("renders empty state when data is empty even with renderMobileCard", () => {
+    render(
+      <DataTable
+        data={[]}
+        columns={columns}
+        emptyState={<p>No cards</p>}
+        renderMobileCard={renderMobileCard}
+      />,
+    )
+    expect(screen.getByText("No cards")).toBeInTheDocument()
+    expect(screen.queryByTestId("data-table-cards")).not.toBeInTheDocument()
+    expect(screen.queryByRole("table")).not.toBeInTheDocument()
   })
 })

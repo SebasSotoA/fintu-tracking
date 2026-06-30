@@ -20,6 +20,7 @@ interface DataTableColumnToggleProps<T> {
   visibleKeys: string[]
   defaultVisibleKeys: string[]
   onChange: (visibleKeys: string[]) => void
+  className?: string
 }
 
 function getColumnLabel<T>(column: DataTableColumn<T>): string {
@@ -33,6 +34,7 @@ export function DataTableColumnToggle<T>({
   visibleKeys,
   defaultVisibleKeys,
   onChange,
+  className,
 }: DataTableColumnToggleProps<T>) {
   const [open, setOpen] = useState(false)
 
@@ -60,7 +62,7 @@ export function DataTableColumnToggle<T>({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className="gap-2">
+        <Button type="button" variant="outline" size="sm" className={cn("gap-2", className)}>
           <Columns3 className="size-4" />
           <span>View</span>
         </Button>

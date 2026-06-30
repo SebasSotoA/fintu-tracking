@@ -29,6 +29,7 @@ interface DataTableProps<T> {
   rowClassName?: string | ((row: T) => string | undefined)
   emptyState?: React.ReactNode
   className?: string
+  renderMobileCard?: (row: T) => React.ReactNode
 }
 
 function getCellClassName<T>(column: DataTableColumn<T>): string {
@@ -46,48 +47,66 @@ export function DataTable<T>({
   rowClassName,
   emptyState,
   className,
+  renderMobileCard,
 }: DataTableProps<T>) {
+  const hasMobileCards = typeof renderMobileCard === "function"
+
   if (data.length === 0 && emptyState) {
     return emptyState
   }
 
   return (
-    <div className={cn("w-full overflow-x-auto", className)}>
-      <Table className="table-fixed w-full">
-        <TableHeader>
-          <TableRow>
-            {columns.map((column) => (
-              <TableHead
-                key={column.key}
-                className={getCellClassName(column)}
-              >
-                {column.header}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((row, rowIndex) => {
-            const derivedRowClassName =
-              typeof rowClassName === "function" ? rowClassName(row) : rowClassName
-            return (
-              <TableRow
-                key={keyExtractor ? keyExtractor(row) : rowIndex}
-                className={derivedRowClassName}
-              >
-                {columns.map((column) => (
-                  <TableCell
-                    key={`${rowIndex}-${column.key}`}
-                    className={getCellClassName(column)}
-                  >
-                    {column.cell(row)}
-                  </TableCell>
-                ))}
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+    <div className={cn("w-full", className)}>
+      <div
+        data-testid="data-table-table"
+        className={cn("w-full overflow-x-auto", hasMobileCards && "hidden md:block")}
+      >
+        <Table className="table-fixed w-full">
+          <TableHeader>
+            <TableRow>
+              {columns.map((column) => (
+                <TableHead
+                  key={column.key}
+                  className={getCellClassName(column)}
+                >
+                  {column.header}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.map((row, rowIndex) => {
+              const derivedRowClassName =
+                typeof rowClassName === "function" ? rowClassName(row) : rowClassName
+              return (
+                <TableRow
+                  key={keyExtractor ? keyExtractor(row) : rowIndex}
+                  className={derivedRowClassName}
+                >
+                  {columns.map((column) => (
+                    <TableCell
+                      key={`${rowIndex}-${column.key}`}
+                      className={getCellClassName(column)}
+                    >
+                      {column.cell(row)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {hasMobileCards && (
+        <div data-testid="data-table-cards" className="md:hidden space-y-3">
+          {data.map((row, rowIndex) => (
+            <div key={keyExtractor ? keyExtractor(row) : rowIndex}>
+              {renderMobileCard!(row)}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
