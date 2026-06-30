@@ -141,8 +141,10 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
               {formatBaseCurrency(portfolioTotal)}
             </h2>
             {showUnrealizedProxyBadge && (
-              <Badge variant={isPositive ? "default" : "destructive"} className="px-3 py-1 text-sm tabular-nums">
-                Unrealized P/L proxy: {formatBaseCurrency(gainLoss)} ({gainLossPct.toFixed(2)}%)
+              <Badge variant={isPositive ? "default" : "destructive"} className="max-w-full truncate px-3 py-1 text-sm tabular-nums">
+                <span className="max-w-full truncate">
+                  Unrealized P/L proxy: {formatBaseCurrency(gainLoss)} ({gainLossPct.toFixed(2)}%)
+                </span>
               </Badge>
             )}
           </div>

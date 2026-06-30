@@ -30,4 +30,10 @@ describe("LandingHero", () => {
     expect(getStarted).toHaveAttribute("href", "/auth/sign-up")
     expect(login).toHaveAttribute("href", "/auth/login")
   })
+
+  it("uses a single-column stats grid on mobile", () => {
+    const { container } = render(<LandingHero />)
+    const stats = container.querySelector("dl")
+    expect(stats).toHaveClass("grid-cols-1", "sm:grid-cols-3")
+  })
 })

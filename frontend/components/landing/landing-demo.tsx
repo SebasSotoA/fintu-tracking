@@ -149,13 +149,13 @@ export function LandingDemo() {
                     key={step.id}
                     type="button"
                     onClick={() => setActiveIndex(i)}
-                    className="group flex flex-1 flex-col gap-1.5 py-1"
+                    className="group flex flex-1 flex-col gap-1.5 py-1 min-h-10"
                     aria-label={`Go to step ${i + 1}: ${step.label}`}
                   >
                     <div className="flex items-center gap-1.5">
                       <div
                         className={cn(
-                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-mono font-semibold transition-colors",
+                          "flex h-6 w-6 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-[10px] font-mono font-semibold transition-colors",
                           i === activeIndex
                             ? "border-primary bg-primary text-primary-foreground"
                             : i < activeIndex

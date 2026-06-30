@@ -68,6 +68,7 @@ describe("FeeAttributionChart", () => {
     const chartGrid = container.querySelector(".md\\:grid-cols-2")
     expect(chartGrid).toBeTruthy()
     expect(chartGrid?.className).toContain("md:items-stretch")
+    expect(container.querySelector(".h-\\[260px\\].md\\:h-\\[340px\\]")).toBeTruthy()
     expect(screen.getAllByTestId("bar-chart")).toHaveLength(2)
   })
 

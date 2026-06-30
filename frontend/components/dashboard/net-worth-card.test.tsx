@@ -76,7 +76,9 @@ describe("NetWorthCard", () => {
   })
 
   it("renders unrealized proxy badge when gain/loss is non-zero", () => {
-    renderCard()
+    const { container } = renderCard()
+    const badge = container.querySelector(".max-w-full.truncate")
+    expect(badge).toBeInTheDocument()
     expect(screen.getByText(/Unrealized P\/L proxy/i)).toBeInTheDocument()
   })
 

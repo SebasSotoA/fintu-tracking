@@ -83,4 +83,14 @@ describe("LandingDemo", () => {
     expect(screen.getByText("Step 4 of 4")).toBeInTheDocument()
     expect(screen.getByText("Buy 1 VOO @ $453.79")).toBeInTheDocument()
   })
+
+  it("uses at least 40px tap targets for step buttons", () => {
+    render(<LandingDemo />)
+
+    const step4Button = screen.getByRole("button", { name: /Go to step 4/i })
+    expect(step4Button).toHaveClass("min-h-10")
+    const stepDot = step4Button.querySelector(".min-h-10")
+    expect(stepDot).toBeInTheDocument()
+    expect(stepDot).toHaveClass("min-w-10")
+  })
 })

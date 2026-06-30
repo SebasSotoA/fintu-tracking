@@ -153,7 +153,7 @@ describe("ReturnAttribution", () => {
       expect(screen.getByTestId("composed-chart")).toBeInTheDocument()
     })
 
-    const chartWrapper = container.querySelector(".h-\\[420px\\], .min-h-\\[380px\\]")
+    const chartWrapper = container.querySelector(".h-\\[260px\\], .md\\:h-\\[420px\\], .min-h-\\[260px\\], .md\\:min-h-\\[380px\\]")
     expect(chartWrapper).toBeInTheDocument()
   })
 })

@@ -46,7 +46,7 @@ export function LandingHero() {
               <Link href="/auth/login">Login</Link>
             </Button>
           </div>
-          <dl className="mt-10 grid grid-cols-3 gap-4 border-t border-border/40 pt-8">
+          <dl className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/40 pt-8">
             {[
               { term: "FX", desc: `Historical ${MARKET_CONFIG.localCurrency} rates` },
               { term: "Fees", desc: "Included in basis" },
