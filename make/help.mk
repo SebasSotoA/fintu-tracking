@@ -61,6 +61,14 @@ help:
 	@echo "  deps-frontend       Install frontend dependencies"
 	@echo "  deps-all            Install all dependencies"
 	@echo ""
+	@echo "Headroom (optional AI context compression):"
+	@echo "  make headroom-install    Install headroom via uv"
+	@echo "  make headroom-uninstall  Remove headroom"
+	@echo "  make headroom-doctor     Verify headroom installation"
+	@echo "  make headroom-mcp        Register headroom MCP server with Claude Code"
+	@echo "  make headroom-learn      Mine sessions and write CLAUDE.local.md"
+	@echo "  make headroom-proxy      Start headroom proxy on :$(HEADROOM_PORT)"
+	@echo ""
 
 help-short:
 	@echo "Quick Commands:"

@@ -37,6 +37,9 @@ FRONTEND_PORT := 3000
 # Backend configuration
 BACKEND_PORT := 8080
 
+# Headroom (optional AI context compression)
+HEADROOM_PORT := 8787
+
 # Dev log files - use /tmp for bash compatibility on both Unix and Windows (Git Bash)
 LOG_DIR := /tmp
 LOG_BACKEND := $(LOG_DIR)/fintu-backend.log

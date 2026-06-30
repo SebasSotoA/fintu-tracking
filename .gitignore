@@ -110,3 +110,8 @@ frontend/graphify-out/
 
 # Teach mode / session scratch
 tmp/
+
+# Headroom - AI context compression (dev-only)
+CLAUDE.local.md
+.headroom/
+.headroom-cache/

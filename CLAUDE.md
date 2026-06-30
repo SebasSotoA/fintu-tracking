@@ -80,6 +80,17 @@ cd frontend && pnpm lint && pnpm exec tsc --noEmit && pnpm test
 cd backend && go vet ./... && go test -race ./...
 ```
 
+## Optional: Headroom context compression
+
+Headroom is a developer-only AI context-compression assistant. It is not required to build or run the app.
+
+- Install: `make headroom-install`
+- Verify: `make headroom-doctor`
+- Register with Claude Code: `make headroom-mcp`
+- Mine corrections: `make headroom-learn`
+
+Headroom may write `CLAUDE.local.md` with per-machine corrections. That file is gitignored and should not be committed.
+
 ## Forbidden
 - MUI, react-hot-toast, react-toastify, axios — use shadcn/ui, sonner, ApiClient
 - Raw fetch in components — use ApiClient
