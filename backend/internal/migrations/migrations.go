@@ -5,7 +5,6 @@ package migrations
 import (
 	"database/sql"
 	"fmt"
-	"io/fs"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -40,51 +39,51 @@ func newMigrator(dir string, db *sql.DB) (*migrate.Migrate, error) {
 	return m, nil
 }
 
-// Up applies all pending migrations.
-func Up(db *sql.DB, dir string) error {
+// withMigrator creates a migrator for dir and db, runs fn, and ensures it is closed.
+func withMigrator(dir string, db *sql.DB, fn func(*migrate.Migrate) error) error {
 	m, err := newMigrator(dir, db)
 	if err != nil {
 		return err
 	}
 	defer m.Close()
+	return fn(m)
+}
 
-	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("apply migrations: %w", err)
-	}
-	return nil
+// Up applies all pending migrations.
+func Up(db *sql.DB, dir string) error {
+	return withMigrator(dir, db, func(m *migrate.Migrate) error {
+		err := m.Up()
+		if err != nil && err != migrate.ErrNoChange {
+			return fmt.Errorf("apply migrations: %w", err)
+		}
+		return nil
+	})
 }
 
 // Down rolls back migrations. If steps > 0 it rolls back that many versions;
 // otherwise it rolls back all applied migrations.
 func Down(db *sql.DB, dir string, steps int) error {
-	m, err := newMigrator(dir, db)
-	if err != nil {
-		return err
-	}
-	defer m.Close()
-
-	if steps > 0 {
-		err = m.Steps(-steps)
-	} else {
-		err = m.Down()
-	}
-	if err != nil && err != migrate.ErrNoChange {
-		return fmt.Errorf("rollback migrations: %w", err)
-	}
-	return nil
+	return withMigrator(dir, db, func(m *migrate.Migrate) error {
+		var err error
+		if steps > 0 {
+			err = m.Steps(-steps)
+		} else {
+			err = m.Down()
+		}
+		if err != nil && err != migrate.ErrNoChange {
+			return fmt.Errorf("rollback migrations: %w", err)
+		}
+		return nil
+	})
 }
 
 // Status returns the current migration version and dirty flag.
 // When no migrations have been applied, version is 0 and dirty is false.
 func Status(db *sql.DB, dir string) (version uint, dirty bool, err error) {
-	m, err := newMigrator(dir, db)
-	if err != nil {
-		return 0, false, err
-	}
-	defer m.Close()
-
-	version, dirty, err = m.Version()
+	err = withMigrator(dir, db, func(m *migrate.Migrate) error {
+		version, dirty, err = m.Version()
+		return err
+	})
 	if err == migrate.ErrNilVersion {
 		return 0, false, nil
 	}
@@ -112,17 +111,20 @@ func Create(dir, name string) error {
 	}
 
 	prefix := fmt.Sprintf("%06d_%s", next, clean)
-	upPath := filepath.Join(dir, prefix+".up.sql")
-	downPath := filepath.Join(dir, prefix+".down.sql")
-
-	upStub := fmt.Sprintf("-- Migration: %s\n-- Add your up migration here\n", clean)
-	downStub := fmt.Sprintf("-- Migration: %s\n-- Add your down migration here\n", clean)
-
-	if err := os.WriteFile(upPath, []byte(upStub), 0644); err != nil {
-		return fmt.Errorf("write %s: %w", upPath, err)
+	stub := fmt.Sprintf("-- Migration: %s\n-- Add your %%s migration here\n", clean)
+	files := []struct {
+		suffix string
+		label  string
+	}{
+		{"up", "up"},
+		{"down", "down"},
 	}
-	if err := os.WriteFile(downPath, []byte(downStub), 0644); err != nil {
-		return fmt.Errorf("write %s: %w", downPath, err)
+	for _, f := range files {
+		path := filepath.Join(dir, fmt.Sprintf("%s.%s.sql", prefix, f.suffix))
+		content := fmt.Sprintf(stub, f.label)
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			return fmt.Errorf("write %s: %w", path, err)
+		}
 	}
 
 	return nil
@@ -132,32 +134,29 @@ func Create(dir, name string) error {
 // next unused version number. The first migration is version 1.
 func nextVersion(dir string) (int, error) {
 	max := 0
-	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0, err
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
 		}
-		if d.IsDir() {
-			return nil
-		}
-		name := d.Name()
+		name := entry.Name()
 		if !strings.HasSuffix(name, ".up.sql") {
-			return nil
+			continue
 		}
 		parts := strings.SplitN(name, "_", 2)
 		if len(parts) < 2 {
-			return nil
+			continue
 		}
 		n, err := strconv.Atoi(parts[0])
 		if err != nil {
-			return nil
+			continue
 		}
 		if n > max {
 			max = n
 		}
-		return nil
-	})
-	if err != nil {
-		return 0, err
 	}
 	return max + 1, nil
 }

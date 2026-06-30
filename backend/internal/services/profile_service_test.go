@@ -19,7 +19,8 @@ func TestProfileService_GetOrCreateProfile_CreatesDefaultForNewUser(t *testing.T
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewProfileService(database.GetPool())
+	billingSvc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewProfileService(database.GetPool(), billingSvc)
 
 	profile, err := svc.GetOrCreateProfile(context.Background(), userID)
 	if err != nil {
@@ -35,8 +36,15 @@ func TestProfileService_GetOrCreateProfile_CreatesDefaultForNewUser(t *testing.T
 	if profile.OnboardingCompleted {
 		t.Error("OnboardingCompleted = true, want false")
 	}
+	if profile.PlanID == nil || *profile.PlanID != "closed_beta" {
+		t.Errorf("PlanID = %v, want %q", profile.PlanID, "closed_beta")
+	}
+	if profile.SubscriptionStatus == nil || *profile.SubscriptionStatus != "active" {
+		t.Errorf("SubscriptionStatus = %v, want %q", profile.SubscriptionStatus, "active")
+	}
 
 	t.Cleanup(func() {
+		execSvcSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userID)
 		execSvcSQL(t, "DELETE FROM profiles WHERE user_id = $1", userID)
 	})
 }
@@ -45,7 +53,8 @@ func TestProfileService_UpdateOnboarding_MarksCompleted(t *testing.T) {
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewProfileService(database.GetPool())
+	billingSvc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewProfileService(database.GetPool(), billingSvc)
 
 	profile, err := svc.UpdateOnboarding(context.Background(), userID, models.UpdateOnboardingRequest{
 		Country:        "mx",
@@ -69,6 +78,7 @@ func TestProfileService_UpdateOnboarding_MarksCompleted(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
+		execSvcSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userID)
 		execSvcSQL(t, "DELETE FROM profiles WHERE user_id = $1", userID)
 	})
 }
@@ -78,7 +88,8 @@ func TestProfileService_UpdateOnboarding_DoesNotAffectOtherUsers(t *testing.T) {
 
 	userA := newTestUserID(t)
 	userB := newTestUserID(t)
-	svc := NewProfileService(database.GetPool())
+	billingSvc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewProfileService(database.GetPool(), billingSvc)
 
 	if _, err := svc.UpdateOnboarding(context.Background(), userA, models.UpdateOnboardingRequest{
 		Country:        "co",
@@ -96,6 +107,8 @@ func TestProfileService_UpdateOnboarding_DoesNotAffectOtherUsers(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
+		execSvcSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userA)
+		execSvcSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userB)
 		execSvcSQL(t, "DELETE FROM profiles WHERE user_id = $1", userA)
 		execSvcSQL(t, "DELETE FROM profiles WHERE user_id = $1", userB)
 	})

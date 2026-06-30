@@ -14,6 +14,8 @@ export const queryKeys = {
   activityFeed: (limit = 8) => ["activity-feed", limit] as const,
   me: () => ["me"] as const,
   brokers: () => ["brokers"] as const,
+  plans: () => ["plans"] as const,
+  subscription: () => ["subscription"] as const,
 }
 
 export async function invalidatePortfolioCaches(queryClient: QueryClient) {

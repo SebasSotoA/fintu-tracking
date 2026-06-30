@@ -5,6 +5,7 @@ import (
 	"fintu-tracking-backend/internal/handlers"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/migrations"
+	"fintu-tracking-backend/internal/services"
 	"fmt"
 	"log"
 	"os"
@@ -28,17 +29,14 @@ func main() {
 	defer database.Close()
 
 	// Run migrations before the app accepts traffic.
-	migrationDB, err := database.OpenMigrationDB()
-	if err != nil {
-		log.Fatalf("Failed to open migration database: %v", err)
-	}
-	if err := migrations.Up(migrationDB, "migrations"); err != nil {
-		migrationDB.Close()
+	if err := runMigrations(); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
-	migrationDB.Close()
 
 	// Wire DB pool into service singletons
+	billingProvider := services.NewNoOpBillingProvider()
+	billingSvc := services.NewBillingService(database.GetPool(), billingProvider)
+	handlers.InitBillingService(billingSvc)
 	handlers.InitExchangeRateService()
 	handlers.InitTwelveDataService()
 	handlers.InitBrokerService(database.GetPool())
@@ -80,8 +78,21 @@ func main() {
 	// API routes
 	api := app.Group("/api")
 
-	// Protected routes - require authentication
-	protected := api.Group("", middleware.AuthMiddleware())
+	// Authenticated routes that do not require an active subscription.
+	authOnly := api.Group("", middleware.AuthMiddleware())
+
+	// Current user / onboarding endpoints
+	authOnly.Get("/me", handlers.GetMe)
+	authOnly.Patch("/me/onboarding", handlers.UpdateOnboarding)
+
+	// Billing endpoints
+	authOnly.Get("/plans", handlers.ListPlans)
+	authOnly.Get("/subscriptions/current", handlers.GetSubscription)
+	authOnly.Post("/subscriptions", handlers.CreateSubscription)
+	authOnly.Patch("/subscriptions/:id/cancel", handlers.CancelSubscription)
+
+	// Protected routes - require authentication and an active subscription.
+	protected := authOnly.Group("", middleware.RequireActivePlan(billingSvc))
 
 	// FX Rates endpoints
 	protected.Get("/fx-rates/current", handlers.GetCurrentRate)
@@ -96,10 +107,6 @@ func main() {
 	protected.Post("/cash-flows", handlers.CreateCashFlow)
 	protected.Put("/cash-flows/:id", handlers.UpdateCashFlow)
 	protected.Delete("/cash-flows/:id", handlers.DeleteCashFlow)
-
-	// Current user / onboarding endpoints
-	protected.Get("/me", handlers.GetMe)
-	protected.Patch("/me/onboarding", handlers.UpdateOnboarding)
 
 	// Brokers endpoints
 	protected.Get("/brokers", handlers.ListBrokers)
@@ -132,8 +139,8 @@ func main() {
 	protected.Get("/analytics/net-worth", handlers.GetNetWorth)
 	protected.Get("/analytics/cash-reconciliation", handlers.GetCashReconciliation)
 
-		// Activity feed
-		protected.Get("/activity/feed", handlers.GetActivityFeed)
+	// Activity feed
+	protected.Get("/activity/feed", handlers.GetActivityFeed)
 
 		// Start server
 	port := os.Getenv("PORT")
@@ -143,4 +150,17 @@ func main() {
 
 	fmt.Printf("Server starting on port %s\n", port)
 	log.Fatal(app.Listen(":" + port))
+}
+
+// runMigrations opens a dedicated migration database connection, applies all
+// pending migrations, and closes the connection. Errors are fatal to startup
+// so the app never serves traffic against an out-of-date schema.
+func runMigrations() error {
+	migrationDB, err := database.OpenMigrationDB()
+	if err != nil {
+		return err
+	}
+	defer migrationDB.Close()
+
+	return migrations.Up(migrationDB, "migrations")
 }

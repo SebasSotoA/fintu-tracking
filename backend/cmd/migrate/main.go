@@ -77,15 +77,10 @@ func usage() {
 
 func migrationsDir() string {
 	cwd, _ := os.Getwd()
-	base := filepath.Base(cwd)
-	switch base {
-	case "backend":
-		return "migrations"
-	case "fintu-tracking":
+	if filepath.Base(cwd) == "fintu-tracking" {
 		return "backend/migrations"
-	default:
-		return "migrations"
 	}
+	return "migrations"
 }
 
 func runMigrate(dir string, fn func(*sql.DB) error) error {

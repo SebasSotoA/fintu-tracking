@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -43,7 +44,7 @@ type CashFlow struct {
 	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
 }
 
-// Profile holds per-user onboarding state and UI preferences.
+// Profile holds per-user onboarding state, UI preferences, and cached subscription info.
 type Profile struct {
 	ID                  string    `json:"id" db:"id"`
 	UserID              string    `json:"user_id" db:"user_id"`
@@ -51,6 +52,8 @@ type Profile struct {
 	BrokerPresetID      *string   `json:"broker_preset_id,omitempty" db:"broker_preset_id"`
 	OnboardingCompleted bool      `json:"onboarding_completed" db:"onboarding_completed"`
 	OnboardingStep      string    `json:"onboarding_step" db:"onboarding_step"`
+	PlanID              *string   `json:"plan_id,omitempty" db:"plan_id"`
+	SubscriptionStatus  *string   `json:"subscription_status,omitempty" db:"subscription_status"`
 	CreatedAt           time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -59,6 +62,45 @@ type Profile struct {
 type UpdateOnboardingRequest struct {
 	Country        string `json:"country"`
 	BrokerPresetID string `json:"broker_preset_id"`
+}
+
+// Plan represents a subscription tier and its feature limits.
+type Plan struct {
+	ID              string          `json:"id" db:"id"`
+	Name            string          `json:"name" db:"name"`
+	Description     *string         `json:"description,omitempty" db:"description"`
+	Tier            string          `json:"tier" db:"tier"`
+	PriceMonthlyUSD *string         `json:"price_monthly_usd,omitempty" db:"price_monthly_usd"`
+	PriceAnnualUSD  *string         `json:"price_annual_usd,omitempty" db:"price_annual_usd"`
+	Currency        string          `json:"currency" db:"currency"`
+	Features        json.RawMessage `json:"features" db:"features"`
+	IsPublic        bool            `json:"is_public" db:"is_public"`
+	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt       time.Time       `json:"updated_at" db:"updated_at"`
+}
+
+// Subscription represents a user's billing subscription.
+type Subscription struct {
+	ID                     string     `json:"id" db:"id"`
+	UserID                 string     `json:"user_id" db:"user_id"`
+	PlanID                 string     `json:"plan_id" db:"plan_id"`
+	Status                 string     `json:"status" db:"status"`
+	BillingProvider        string     `json:"billing_provider" db:"billing_provider"`
+	ProviderSubscriptionID *string    `json:"provider_subscription_id,omitempty" db:"provider_subscription_id"`
+	TrialStart             *time.Time `json:"trial_start,omitempty" db:"trial_start"`
+	TrialEnd               *time.Time `json:"trial_end,omitempty" db:"trial_end"`
+	CurrentPeriodStart     *time.Time `json:"current_period_start,omitempty" db:"current_period_start"`
+	CurrentPeriodEnd       *time.Time `json:"current_period_end,omitempty" db:"current_period_end"`
+	CancelAtPeriodEnd      bool       `json:"cancel_at_period_end" db:"cancel_at_period_end"`
+	Plan                   *Plan      `json:"plan,omitempty"`
+	CreatedAt              time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at" db:"updated_at"`
+}
+
+// CreateSubscriptionRequest is the body for POST /api/subscriptions.
+type CreateSubscriptionRequest struct {
+	PlanID          string `json:"plan_id"`
+	BillingProvider string `json:"billing_provider"`
 }
 
 // Broker represents a user's chosen broker preset with fee configuration.

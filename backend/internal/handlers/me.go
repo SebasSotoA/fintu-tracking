@@ -16,7 +16,7 @@ var profileService *services.ProfileService
 
 // InitProfileService sets the package-level profile service used by handlers.
 func InitProfileService(pool *pgxpool.Pool) {
-	profileService = services.NewProfileService(pool)
+	profileService = services.NewProfileService(pool, billingService)
 }
 
 // GetMe returns the current user's profile. Creates a default profile row if missing.

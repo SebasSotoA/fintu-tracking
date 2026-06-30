@@ -7,6 +7,8 @@ export interface Profile {
   broker_preset_id: string | null
   onboarding_completed: boolean
   onboarding_step: string
+  plan_id?: string | null
+  subscription_status?: string | null
   created_at: string
   updated_at: string
 }
