@@ -5,6 +5,7 @@ describe("sidebarLabelClass", () => {
   it("hides labels when collapsed", () => {
     expect(sidebarLabelClass(true)).toContain("max-w-0")
     expect(sidebarLabelClass(true)).toContain("opacity-0")
+    expect(sidebarLabelClass(true)).toContain("ease-in-out")
   })
 
   it("shows labels when expanded", () => {

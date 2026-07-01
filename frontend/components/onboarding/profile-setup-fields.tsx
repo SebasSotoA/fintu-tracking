@@ -11,8 +11,8 @@ import {
 } from "@/lib/market-config/market-config"
 
 export const profileSetupSchema = z.object({
-  country: z.string().min(1, "Selecciona un país"),
-  brokerPresetId: z.string().min(1, "Selecciona un broker"),
+  country: z.string().min(1, "Select a country"),
+  brokerPresetId: z.string().min(1, "Select a broker"),
 })
 
 export type ProfileSetupForm = z.infer<typeof profileSetupSchema>
@@ -39,7 +39,7 @@ export function ProfileSetupFields({
     <div className="space-y-4">
       {showCountry && (
         <div className="space-y-2">
-          <Label htmlFor="country">País</Label>
+          <Label htmlFor="country">Country</Label>
           <Select
             value={country}
             onValueChange={(value) => {
@@ -48,7 +48,7 @@ export function ProfileSetupFields({
             }}
           >
             <SelectTrigger id="country">
-              <SelectValue placeholder="Elige tu país" />
+              <SelectValue placeholder="Choose your country" />
             </SelectTrigger>
             <SelectContent>
               {SUPPORTED_COUNTRIES.map((c) => (

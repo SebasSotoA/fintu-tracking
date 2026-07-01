@@ -72,7 +72,7 @@ describe("ProfileSetupFields", () => {
   it("renders country field on country step", () => {
     render(<TestHarness step="country" />)
 
-    expect(screen.getByText("País")).toBeInTheDocument()
+    expect(screen.getByText("Country")).toBeInTheDocument()
     expect(screen.queryByTestId("broker-select")).not.toBeInTheDocument()
   })
 
@@ -80,13 +80,13 @@ describe("ProfileSetupFields", () => {
     render(<TestHarness step="broker" />)
 
     expect(screen.getByTestId("broker-select")).toBeInTheDocument()
-    expect(screen.queryByText("País")).not.toBeInTheDocument()
+    expect(screen.queryByText("Country")).not.toBeInTheDocument()
   })
 
   it("renders both fields on all step", () => {
     render(<TestHarness step="all" />)
 
-    expect(screen.getByText("País")).toBeInTheDocument()
+    expect(screen.getByText("Country")).toBeInTheDocument()
     expect(screen.getByTestId("broker-select")).toBeInTheDocument()
   })
 })

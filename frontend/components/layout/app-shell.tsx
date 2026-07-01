@@ -19,22 +19,27 @@ interface AppShellProps {
 
 export function AppShell({ children, initialProfile }: AppShellProps) {
   const { data: profile } = useMe(initialProfile)
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false
-    try {
-      return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true"
-    } catch {
-      return false
-    }
-  })
+  const [collapsed, setCollapsed] = useState(false)
+  const [sidebarHydrated, setSidebarHydrated] = useState(false)
 
   useEffect(() => {
+    try {
+      setCollapsed(localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === "true")
+    } catch {
+      /* ignore storage errors */
+    } finally {
+      setSidebarHydrated(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!sidebarHydrated) return
     try {
       localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, collapsed ? "true" : "false")
     } catch {
       /* ignore quota */
     }
-  }, [collapsed])
+  }, [collapsed, sidebarHydrated])
 
   return (
     <div className="min-h-screen">
@@ -47,7 +52,7 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
       )}
       <main
         className={cn(
-          "h-dvh overflow-y-auto scrollbar-minimal pb-28 md:pb-0 pb-safe transition-[margin-left] duration-200 ease-linear",
+          "h-dvh overflow-y-auto scrollbar-minimal pb-28 md:pb-0 pb-safe transition-[margin-left] duration-200 ease-in-out",
           collapsed ? SIDEBAR_MAIN_OFFSET_COLLAPSED : SIDEBAR_MAIN_OFFSET_EXPANDED,
         )}
       >

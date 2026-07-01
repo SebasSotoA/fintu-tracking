@@ -58,7 +58,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
         country: values.country,
         broker_preset_id: values.brokerPresetId,
       })
-      toast.success("¡Configuración completada!")
+      toast.success("Setup complete!")
       setOpen(false)
 
       const needsSubscription =
@@ -71,7 +71,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
         router.refresh()
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "No se pudo completar la configuración")
+      toast.error(err instanceof Error ? err.message : "Could not complete setup")
     }
   }
 
@@ -96,11 +96,11 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>Configura tu cuenta</ResponsiveDialogTitle>
+          <ResponsiveDialogTitle>Set up your account</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
             {step === 1
-              ? "Selecciona tu país para personalizar moneda y brokers disponibles."
-              : `Elige el broker que usas para invertir en activos en ${MARKET_CONFIG.baseCurrency}.`}
+              ? "Select your country to customize currency and available brokers."
+              : `Choose the broker you use to invest in ${MARKET_CONFIG.baseCurrency} assets.`}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -137,18 +137,18 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
               onClick={() => setStep(1)}
               disabled={complete.isPending}
             >
-              Atrás
+              Back
             </Button>
           ) : (
             <div className="hidden sm:block" aria-hidden />
           )}
           {step === 1 ? (
             <Button type="button" onClick={handleContinue} disabled={!country}>
-              Continuar
+              Continue
             </Button>
           ) : (
             <Button type="submit" form="setup-form" disabled={complete.isPending}>
-              {complete.isPending ? "Guardando..." : "Finalizar configuración"}
+              {complete.isPending ? "Saving..." : "Finish setup"}
             </Button>
           )}
         </div>

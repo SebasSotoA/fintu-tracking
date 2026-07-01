@@ -5,7 +5,7 @@ import { DashboardEmptyState } from "./dashboard-empty-state"
 vi.mock("@/components/trades/add-trade-dialog", () => ({
   AddTradeDialog: ({ children }: { children?: React.ReactNode }) => (
     <button type="button" data-testid="add-trade-dialog-trigger">
-      {children ?? "Agregar operación"}
+      {children ?? "Add trade"}
     </button>
   ),
 }))
@@ -25,9 +25,9 @@ describe("DashboardEmptyState", () => {
     render(<DashboardEmptyState />)
 
     expect(screen.getByTestId("empty-state")).toBeInTheDocument()
-    expect(screen.getByTestId("empty-state-title")).toHaveTextContent("Aún no hay datos en tu portafolio")
+    expect(screen.getByTestId("empty-state-title")).toHaveTextContent("No portfolio data yet")
     expect(screen.getByTestId("empty-state-description")).toHaveTextContent(
-      "Agrega tu primera operación o importa tu historial para empezar a hacer seguimiento.",
+      "Add your first trade or import your history to start tracking.",
     )
   })
 

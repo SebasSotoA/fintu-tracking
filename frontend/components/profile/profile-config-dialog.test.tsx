@@ -7,6 +7,9 @@ import { useUpdateProfile } from "@/hooks/use-update-profile"
 import type { Profile } from "@/lib/api/me"
 
 vi.mock("@/hooks/use-update-profile")
+vi.mock("@/hooks/use-sign-out", () => ({
+  useSignOut: () => vi.fn(),
+}))
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
@@ -96,10 +99,11 @@ describe("ProfileConfigDialog", () => {
   it("renders profile fields and save button", () => {
     renderDialog()
 
-    expect(screen.getByText("Mi cuenta")).toBeInTheDocument()
-    expect(screen.getByText("País")).toBeInTheDocument()
+    expect(screen.getByText("My account")).toBeInTheDocument()
+    expect(screen.getByText("Country")).toBeInTheDocument()
     expect(screen.getByTestId("broker-select")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Guardar cambios" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument()
   })
 
   it("submits profile update on save", async () => {
@@ -110,7 +114,7 @@ describe("ProfileConfigDialog", () => {
 
     await user.selectOptions(screen.getByTestId("country-select"), "mx")
     await user.selectOptions(screen.getByTestId("broker-select"), "hapi-colombia")
-    await user.click(screen.getByRole("button", { name: "Guardar cambios" }))
+    await user.click(screen.getByRole("button", { name: "Save changes" }))
 
     expect(mockMutateAsync).toHaveBeenCalledWith({
       country: "mx",

@@ -48,7 +48,7 @@ vi.mock("@/components/ui/select", () => ({
 vi.mock("@/components/brokers/broker-select", () => ({
   BrokerSelect: ({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) => (
     <select id={id} value={value} onChange={(e) => onChange(e.target.value)} data-testid="broker-select">
-      <option value="">Elige broker</option>
+      <option value="">Choose broker</option>
       <option value="hapi-colombia">Hapi</option>
     </select>
   ),
@@ -108,9 +108,9 @@ describe("SetupModal", () => {
   it("starts on step 1 with progress bar", () => {
     renderModal()
 
-    expect(screen.getByText("Paso 1 de 2")).toBeInTheDocument()
-    expect(screen.getByText("Configura tu cuenta")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Continuar" })).toBeInTheDocument()
+    expect(screen.getByText("Step 1 of 2")).toBeInTheDocument()
+    expect(screen.getByText("Set up your account")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument()
   })
 
   it("navigates to step 2 and submits onboarding", async () => {
@@ -124,12 +124,12 @@ describe("SetupModal", () => {
     renderModal()
 
     await user.selectOptions(screen.getByTestId("country-select"), "co")
-    await user.click(screen.getByRole("button", { name: "Continuar" }))
+    await user.click(screen.getByRole("button", { name: "Continue" }))
 
-    expect(screen.getByText("Paso 2 de 2")).toBeInTheDocument()
+    expect(screen.getByText("Step 2 of 2")).toBeInTheDocument()
 
     await user.selectOptions(screen.getByTestId("broker-select"), "hapi-colombia")
-    await user.click(screen.getByRole("button", { name: "Finalizar configuración" }))
+    await user.click(screen.getByRole("button", { name: "Finish setup" }))
 
     expect(mockComplete).toHaveBeenCalledWith({
       country: "co",
@@ -142,9 +142,9 @@ describe("SetupModal", () => {
     renderModal()
 
     await user.selectOptions(screen.getByTestId("country-select"), "co")
-    await user.click(screen.getByRole("button", { name: "Continuar" }))
+    await user.click(screen.getByRole("button", { name: "Continue" }))
 
-    expect(screen.getByRole("button", { name: "Atrás" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument()
   })
 
   it("redirects to subscription when onboarding completes without active subscription", async () => {
@@ -158,9 +158,9 @@ describe("SetupModal", () => {
     renderModal()
 
     await user.selectOptions(screen.getByTestId("country-select"), "co")
-    await user.click(screen.getByRole("button", { name: "Continuar" }))
+    await user.click(screen.getByRole("button", { name: "Continue" }))
     await user.selectOptions(screen.getByTestId("broker-select"), "hapi-colombia")
-    await user.click(screen.getByRole("button", { name: "Finalizar configuración" }))
+    await user.click(screen.getByRole("button", { name: "Finish setup" }))
 
     expect(mockPush).toHaveBeenCalledWith("/subscription")
   })

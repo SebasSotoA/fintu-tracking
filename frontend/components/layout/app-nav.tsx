@@ -3,19 +3,17 @@
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   TrendingUp,
   DollarSign,
   BarChart3,
   CreditCard,
-  LogOut,
   User,
   PanelLeftClose,
   PanelRightOpen,
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import {
   navActive,
@@ -46,16 +44,8 @@ interface AppNavProps {
 
 export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const label = sidebarLabelClass(collapsed)
   const [profileOpen, setProfileOpen] = useState(false)
-
-  const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push("/auth/login")
-    router.refresh()
-  }
 
   return (
     <>
@@ -63,7 +53,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
         className={cn(
           "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col h-full overflow-hidden",
           "border-r border-sidebar-border bg-background",
-          "transition-[width] duration-200 ease-linear",
+          "transition-[width] duration-200 ease-in-out",
           collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED,
         )}
         aria-label="App navigation"
@@ -123,14 +113,16 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                     priority
                   />
                 </span>
-                <Image
-                  src="/fintu-logo.svg"
-                  alt="Fintu"
-                  width={80}
-                  height={20}
-                  className={cn("h-5 w-auto shrink-0", label)}
-                  priority
-                />
+                <span className={cn("min-w-0 overflow-hidden", label)}>
+                  <Image
+                    src="/fintu-logo.svg"
+                    alt="Fintu"
+                    width={80}
+                    height={20}
+                    className="h-5 w-auto shrink-0"
+                    priority
+                  />
+                </span>
               </Link>
               <button
                 type="button"
@@ -149,45 +141,6 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
             </>
           )}
         </div>
-
-        <div
-          className={cn(
-            "flex w-full shrink-0 border-b border-border/10 py-3",
-            RAIL_PL,
-            RAIL_PR,
-            collapsed ? "flex-col items-start" : "flex-row items-center",
-          )}
-        >
-          <button
-            type="button"
-            onClick={() => setProfileOpen(true)}
-            aria-label={collapsed ? "Mi cuenta" : undefined}
-            data-testid="my-account-button"
-            className={cn(
-              "flex h-9 min-h-9 max-h-9 w-full items-center gap-1 rounded-lg text-left",
-              navIdle,
-              collapsed ? "justify-start" : "min-w-0 flex-1 gap-3",
-            )}
-          >
-            <span className={navIconCellClass}>
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary-container/30">
-                <User className="size-4 text-primary" aria-hidden />
-              </div>
-            </span>
-            <div className={cn("min-w-0 leading-none", label)} aria-hidden={collapsed}>
-              <p className="truncate font-sans text-sm font-bold text-primary">Mi cuenta</p>
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Portafolio
-              </p>
-            </div>
-          </button>
-        </div>
-
-        <ProfileConfigDialog
-          profile={profile}
-          open={profileOpen}
-          onOpenChange={setProfileOpen}
-        />
 
         <nav
           className={cn(
@@ -214,7 +167,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                 <span className={navIconCellClass}>
                   <Icon className="size-4 shrink-0" aria-hidden />
                 </span>
-                <span className={label} aria-hidden={collapsed}>
+                <span className={cn("overflow-hidden", label)} aria-hidden={collapsed}>
                   {item.label}
                 </span>
               </Link>
@@ -224,7 +177,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
 
         <div
           className={cn(
-            "flex w-full shrink-0 border-t border-border/10 py-3",
+            "mt-auto flex w-full shrink-0 border-t border-border/10 py-3",
             RAIL_PL,
             RAIL_PR,
             collapsed ? "flex-col items-start" : "flex-row items-center",
@@ -232,19 +185,26 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
         >
           <button
             type="button"
-            onClick={handleSignOut}
-            aria-label={collapsed ? "Sign out" : undefined}
+            onClick={() => setProfileOpen(true)}
+            aria-label={collapsed ? "My account" : undefined}
+            data-testid="my-account-button"
             className={cn(
-              "flex h-9 min-h-9 w-full items-center gap-1 rounded-lg text-left text-sm font-medium",
+              "flex h-9 min-h-9 max-h-9 w-full items-center gap-1 rounded-lg text-left",
               navIdle,
+              collapsed ? "justify-start" : "min-w-0 flex-1 gap-3",
             )}
           >
             <span className={navIconCellClass}>
-              <LogOut className="size-4 shrink-0" aria-hidden />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-primary-container/30">
+                <User className="size-4 text-primary" aria-hidden />
+              </div>
             </span>
-            <span className={label} aria-hidden={collapsed}>
-              Sign Out
-            </span>
+            <div className={cn("min-w-0 overflow-hidden leading-none", label)} aria-hidden={collapsed}>
+              <p className="truncate font-sans text-sm font-bold text-primary">My account</p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Portfolio
+              </p>
+            </div>
           </button>
         </div>
       </aside>
@@ -253,7 +213,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
         <button
           type="button"
           onClick={() => setProfileOpen(true)}
-          aria-label="Mi cuenta"
+          aria-label="My account"
           data-testid="my-account-button-mobile"
           className={cn(
             "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 transition-colors duration-75",
@@ -263,7 +223,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
           )}
         >
           <User className="size-5" />
-          <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">Cuenta</span>
+          <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">Account</span>
         </button>
         {navItems.map((item) => {
           const Icon = item.icon
@@ -287,16 +247,13 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
             </Link>
           )
         })}
-        <button
-          type="button"
-          onClick={handleSignOut}
-          aria-label="Sign out"
-          className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 text-foreground/40 transition-colors duration-75 hover:text-primary"
-        >
-          <LogOut className="size-5" />
-          <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">Sign out</span>
-        </button>
       </nav>
+
+      <ProfileConfigDialog
+        profile={profile}
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+      />
     </>
   )
 }

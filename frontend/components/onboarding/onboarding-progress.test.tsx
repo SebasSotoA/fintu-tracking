@@ -3,18 +3,18 @@ import { render, screen } from "@testing-library/react"
 import { OnboardingProgress } from "./onboarding-progress"
 
 describe("OnboardingProgress", () => {
-  it("shows Paso 1 de 2 on step 1", () => {
+  it("shows Step 1 of 2 on step 1", () => {
     render(<OnboardingProgress step={1} />)
 
-    expect(screen.getByText("Paso 1 de 2")).toBeInTheDocument()
-    expect(screen.getByText("Tu país")).toBeInTheDocument()
+    expect(screen.getByText("Step 1 of 2")).toBeInTheDocument()
+    expect(screen.getByText("Your country")).toBeInTheDocument()
   })
 
-  it("shows Paso 2 de 2 on step 2", () => {
+  it("shows Step 2 of 2 on step 2", () => {
     render(<OnboardingProgress step={2} />)
 
-    expect(screen.getByText("Paso 2 de 2")).toBeInTheDocument()
-    expect(screen.getByText("Tu broker")).toBeInTheDocument()
+    expect(screen.getByText("Step 2 of 2")).toBeInTheDocument()
+    expect(screen.getByText("Your broker")).toBeInTheDocument()
   })
 
   it("renders progress bar with correct fill width", () => {

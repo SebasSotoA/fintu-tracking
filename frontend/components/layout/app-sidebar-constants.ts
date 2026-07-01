@@ -29,7 +29,7 @@ export const navActive = cn(
 
 export function sidebarLabelClass(collapsed: boolean) {
   return cn(
-    "min-w-0 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-200 ease-out",
+    "min-w-0 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-200 ease-in-out",
     collapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-[200px] opacity-100",
   )
 }

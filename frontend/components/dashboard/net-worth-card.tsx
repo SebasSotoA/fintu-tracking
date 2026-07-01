@@ -188,9 +188,6 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
         <section className="space-y-2 border-t border-border/50 pt-4">
           <MetricLabel label="Buy power" tooltip={METRIC_TOOLTIPS.cash} />
           <p className="text-2xl font-semibold font-mono tabular-nums">{formatBaseCurrency(buyPower)}</p>
-          <p className="text-xs text-muted-foreground">
-            XIRR and detailed return attribution are available on the Performance page.
-          </p>
         </section>
 
         <section className="space-y-3 border-t border-border/50 pt-4">
