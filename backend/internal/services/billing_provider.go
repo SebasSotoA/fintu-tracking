@@ -1,6 +1,9 @@
 package services
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // BillingProvider abstracts the external payment gateway used for subscriptions.
 // Milestone 1 uses a no-op provider; later milestones will add Wompi, MercadoPago, etc.
@@ -22,9 +25,10 @@ func NewNoOpBillingProvider() *NoOpBillingProvider {
 	return &NoOpBillingProvider{}
 }
 
-// CreateSubscription returns an empty provider ID.
-func (p *NoOpBillingProvider) CreateSubscription(_ context.Context, _, _ string) (string, error) {
-	return "", nil
+// CreateSubscription returns a sentinel provider ID so the subscription row can be
+// reconciled back to a user and plan even when no live gateway is wired.
+func (p *NoOpBillingProvider) CreateSubscription(_ context.Context, userID, planID string) (string, error) {
+	return fmt.Sprintf("manual:%s:%s", planID, userID), nil
 }
 
 // CancelSubscription does nothing and returns no error.

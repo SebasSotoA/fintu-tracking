@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"fintu-tracking-backend/internal/models"
@@ -9,6 +10,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// ErrSubscriptionNotFound is returned when a subscription does not exist or does
+// not belong to the requesting user.
+var ErrSubscriptionNotFound = errors.New("subscription not found")
 
 // BillingService manages subscription plans and per-user subscriptions.
 type BillingService struct {
@@ -102,12 +107,12 @@ func (s *BillingService) GetOrCreateClosedBetaSubscription(ctx context.Context, 
 
 	rows, err := s.pool.Query(ctx, `
 		INSERT INTO subscriptions (user_id, plan_id, status, billing_provider)
-		VALUES ($1, 'closed_beta', 'active', 'manual')
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT (user_id) DO UPDATE SET updated_at = NOW()
 		RETURNING id, user_id, plan_id, status, billing_provider, provider_subscription_id,
 		          trial_start, trial_end, current_period_start, current_period_end,
 		          cancel_at_period_end, created_at, updated_at
-	`, userID)
+	`, userID, models.PlanIDClosedBeta, models.SubscriptionStatusActive, models.BillingProviderManual)
 	if err != nil {
 		return nil, fmt.Errorf("creating closed_beta subscription: %w", err)
 	}
@@ -126,7 +131,8 @@ func (s *BillingService) GetOrCreateClosedBetaSubscription(ctx context.Context, 
 }
 
 // CreateSubscription creates or updates a user's subscription with the chosen plan.
-// In Milestone 1 only the manual provider is supported.
+// In Milestone 1 only the manual provider is supported, and paid plans cannot be
+// activated through it.
 func (s *BillingService) CreateSubscription(ctx context.Context, userID string, req models.CreateSubscriptionRequest) (*models.Subscription, error) {
 	if req.PlanID == "" {
 		return nil, fmt.Errorf("plan_id is required")
@@ -136,17 +142,20 @@ func (s *BillingService) CreateSubscription(ctx context.Context, userID string, 
 	}
 
 	// Milestone 1 only supports manual provider.
-	if req.BillingProvider != "manual" {
+	if req.BillingProvider != models.BillingProviderManual {
 		return nil, fmt.Errorf("billing provider %q is not supported in Milestone 1", req.BillingProvider)
 	}
 
-	// Verify the plan exists.
-	var planExists bool
-	if err := s.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM plans WHERE id = $1)`, req.PlanID).Scan(&planExists); err != nil {
+	// Verify the plan exists and whether it is a paid plan.
+	var priceMonthly, priceAnnual *float64
+	if err := s.pool.QueryRow(ctx, `SELECT price_monthly_usd, price_annual_usd FROM plans WHERE id = $1`, req.PlanID).Scan(&priceMonthly, &priceAnnual); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, fmt.Errorf("plan %q does not exist", req.PlanID)
+		}
 		return nil, fmt.Errorf("checking plan: %w", err)
 	}
-	if !planExists {
-		return nil, fmt.Errorf("plan %q does not exist", req.PlanID)
+	if (priceMonthly != nil && *priceMonthly > 0) || (priceAnnual != nil && *priceAnnual > 0) {
+		return nil, fmt.Errorf("paid plans cannot be activated with the manual billing provider")
 	}
 
 	providerSubID, err := s.provider.CreateSubscription(ctx, userID, req.PlanID)
@@ -205,7 +214,7 @@ func (s *BillingService) CancelSubscription(ctx context.Context, userID, subscri
 	})
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, fmt.Errorf("subscription not found")
+			return nil, ErrSubscriptionNotFound
 		}
 		return nil, fmt.Errorf("collecting subscription for cancel: %w", err)
 	}
@@ -218,12 +227,12 @@ func (s *BillingService) CancelSubscription(ctx context.Context, userID, subscri
 
 	updateRows, err := s.pool.Query(ctx, `
 		UPDATE subscriptions
-		SET status = 'canceled', cancel_at_period_end = true, updated_at = NOW()
+		SET status = $4, cancel_at_period_end = true, updated_at = NOW()
 		WHERE id = $1 AND user_id = $2
 		RETURNING id, user_id, plan_id, status, billing_provider, provider_subscription_id,
 		          trial_start, trial_end, current_period_start, current_period_end,
 		          cancel_at_period_end, created_at, updated_at
-	`, subscriptionID, userID)
+	`, subscriptionID, userID, models.SubscriptionStatusCanceled)
 	if err != nil {
 		return nil, fmt.Errorf("canceling subscription: %w", err)
 	}
@@ -261,9 +270,9 @@ func (s *BillingService) HasActiveSubscription(ctx context.Context, userID strin
 	if err := s.pool.QueryRow(ctx, `
 		SELECT EXISTS(
 		  SELECT 1 FROM subscriptions
-		  WHERE user_id = $1 AND status IN ('active', 'trialing')
+		  WHERE user_id = $1 AND status IN ($2, $3)
 		)
-	`, userID).Scan(&active); err != nil {
+	`, userID, models.SubscriptionStatusActive, models.SubscriptionStatusTrialing).Scan(&active); err != nil {
 		return false, fmt.Errorf("checking active subscription: %w", err)
 	}
 	return active, nil

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
@@ -85,7 +86,7 @@ func CancelSubscription(c fiber.Ctx) error {
 	subscription, err := billingService.CancelSubscription(c.Context(), userID, id)
 	if err != nil {
 		status := fiber.StatusBadRequest
-		if err.Error() == "subscription not found" {
+		if errors.Is(err, services.ErrSubscriptionNotFound) {
 			status = fiber.StatusNotFound
 		}
 		return c.Status(status).JSON(fiber.Map{"error": err.Error()})

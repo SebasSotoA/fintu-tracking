@@ -90,7 +90,7 @@ func (s *ProfileService) UpdateOnboarding(ctx context.Context, userID string, re
 		    onboarding_step = 'completed',
 		    updated_at = NOW()
 		WHERE user_id = $1
-		RETURNING id, user_id, country, broker_preset_id, onboarding_completed, onboarding_step, created_at, updated_at
+		RETURNING id, user_id, country, broker_preset_id, onboarding_completed, onboarding_step, plan_id, subscription_status, created_at, updated_at
 	`, userID, req.Country, req.BrokerPresetID)
 	if err != nil {
 		return nil, fmt.Errorf("updating onboarding: %w", err)

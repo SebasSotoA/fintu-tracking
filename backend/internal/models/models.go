@@ -5,6 +5,29 @@ import (
 	"time"
 )
 
+// Billing plan and subscription constants.
+const (
+	PlanIDClosedBeta = "closed_beta"
+	PlanIDFree       = "free"
+	PlanIDProMonthly = "pro_monthly"
+	PlanIDProAnnual  = "pro_annual"
+)
+
+// Billing provider constants.
+const (
+	BillingProviderManual = "manual"
+)
+
+// Subscription status constants.
+const (
+	SubscriptionStatusActive            = "active"
+	SubscriptionStatusTrialing          = "trialing"
+	SubscriptionStatusPastDue           = "past_due"
+	SubscriptionStatusCanceled          = "canceled"
+	SubscriptionStatusIncomplete        = "incomplete"
+	SubscriptionStatusIncompleteExpired = "incomplete_expired"
+)
+
 // PaginatedResponse is the envelope for paginated list endpoints.
 type PaginatedResponse[T any] struct {
 	Items    []T `json:"items"`
@@ -172,12 +195,12 @@ type Holding struct {
 	Ticker                string  `json:"ticker"`
 	AssetType             string  `json:"assetType"`
 	Quantity              string  `json:"quantity"`
-	AvgCost               string  `json:"avgCost"`             // Pure price average (no fees)
-	AvgCostWithFees       string  `json:"avgCostWithFees"`     // Includes pro-rated fees
-	AvgCostWithoutFees    string  `json:"avgCostWithoutFees"`  // Deprecated: same as AvgCost
-	TotalInvested         string  `json:"totalInvested"`       // Pure capital invested (no fees)
+	AvgCost               string  `json:"avgCost"`               // Pure price average (no fees)
+	AvgCostWithFees       string  `json:"avgCostWithFees"`       // Includes pro-rated fees
+	AvgCostWithoutFees    string  `json:"avgCostWithoutFees"`    // Deprecated: same as AvgCost
+	TotalInvested         string  `json:"totalInvested"`         // Pure capital invested (no fees)
 	TotalInvestedWithFees string  `json:"totalInvestedWithFees"` // Includes pro-rated fees
-	TotalFees             string  `json:"totalFees"` // Cumulative fees for this ticker
+	TotalFees             string  `json:"totalFees"`             // Cumulative fees for this ticker
 	MarketValue           string  `json:"marketValue"`
 	UnrealizedPL          string  `json:"unrealizedPL"`
 	UnrealizedPLPercent   string  `json:"unrealizedPLPercent"`

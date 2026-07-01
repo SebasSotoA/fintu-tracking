@@ -91,6 +91,11 @@ func main() {
 	authOnly.Post("/subscriptions", handlers.CreateSubscription)
 	authOnly.Patch("/subscriptions/:id/cancel", handlers.CancelSubscription)
 
+	// Broker endpoints are auth-only (not subscription-gated) so onboarding can
+	// create the user's first broker before a plan is selected.
+	authOnly.Get("/brokers", handlers.ListBrokers)
+	authOnly.Post("/brokers", handlers.CreateBroker)
+
 	// Protected routes - require authentication and an active subscription.
 	protected := authOnly.Group("", middleware.RequireActivePlan(billingSvc))
 
@@ -108,13 +113,8 @@ func main() {
 	protected.Put("/cash-flows/:id", handlers.UpdateCashFlow)
 	protected.Delete("/cash-flows/:id", handlers.DeleteCashFlow)
 
-	// Brokers endpoints
-	protected.Get("/brokers", handlers.ListBrokers)
-	protected.Post("/brokers", handlers.CreateBroker)
-
-	// Trades endpoints (/trade-tickers avoids GET /trades/tickers matching PUT /trades/:id on some setups)
+	// Trades endpoints
 	protected.Get("/trade-tickers", handlers.ListTradeTickers)
-	protected.Get("/trades/tickers", handlers.ListTradeTickers)
 	protected.Get("/trades", handlers.ListTrades)
 	protected.Post("/trades", handlers.CreateTrade)
 	protected.Put("/trades/:id", handlers.UpdateTrade)
@@ -142,7 +142,7 @@ func main() {
 	// Activity feed
 	protected.Get("/activity/feed", handlers.GetActivityFeed)
 
-		// Start server
+	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

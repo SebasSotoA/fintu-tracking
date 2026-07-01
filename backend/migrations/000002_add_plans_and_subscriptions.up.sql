@@ -50,6 +50,9 @@ ALTER TABLE profiles
 
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_plan_id ON subscriptions(plan_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_status ON subscriptions(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_provider_id ON subscriptions(provider_subscription_id)
+  WHERE provider_subscription_id IS NOT NULL;
 
 -- ============================================================================
 -- Seed plans
@@ -81,10 +84,23 @@ SELECT id, 'closed_beta', 'active', 'manual'
 FROM auth.users
 ON CONFLICT (user_id) DO NOTHING;
 
+-- Sync the denormalized profile cache from the closed_beta subscriptions we just
+-- ensured. This remains idempotent across rollback/re-apply because it joins
+-- against subscriptions rather than relying on plan_id IS NULL.
 UPDATE profiles
 SET plan_id = 'closed_beta',
     subscription_status = 'active'
-WHERE plan_id IS NULL;
+WHERE user_id IN (
+  SELECT s.user_id
+  FROM subscriptions s
+  WHERE s.plan_id = 'closed_beta'
+    AND s.status = 'active'
+    AND s.billing_provider = 'manual'
+)
+AND (
+  profiles.plan_id IS DISTINCT FROM 'closed_beta'
+  OR profiles.subscription_status IS DISTINCT FROM 'active'
+);
 
 -- ============================================================================
 -- Row Level Security
