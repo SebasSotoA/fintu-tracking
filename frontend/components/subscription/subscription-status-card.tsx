@@ -1,10 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import type { Subscription } from "@/lib/api/subscription"
 
 interface SubscriptionStatusCardProps {
   subscription: Subscription
+  onCancel?: () => void
+  isCancelPending?: boolean
 }
 
 function statusLabel(status: string): string {
@@ -40,7 +42,42 @@ function statusVariant(status: string): "default" | "secondary" | "destructive" 
   }
 }
 
-export function SubscriptionStatusCard({ subscription }: SubscriptionStatusCardProps) {
+function statusDescription(subscription: Subscription): string {
+  const isClosedBeta = subscription.plan?.tier === "closed_beta"
+  const isPaid = !isClosedBeta && subscription.plan?.tier !== "free"
+
+  switch (subscription.status) {
+    case "canceled":
+      return "Your subscription has been canceled. Renew to regain full access."
+    case "past_due":
+      return "Your subscription is past due. Update your payment method to restore access."
+    case "trialing":
+      return isPaid
+        ? "Your paid plan is in trial. Subscribe before the trial ends to keep full access."
+        : "You are on a trial plan."
+    case "incomplete":
+      return "Your subscription requires payment confirmation."
+    case "incomplete_expired":
+      return "Your subscription expired before payment confirmation."
+    case "active":
+    default:
+      return isClosedBeta
+        ? "Your closed-beta subscription is active. Enjoy unlimited tracking while we prepare paid plans."
+        : isPaid
+          ? "Your paid subscription is active."
+          : "Your free plan is active."
+  }
+}
+
+function showCancelButton(status: Subscription["status"]): boolean {
+  return status === "active" || status === "trialing" || status === "past_due"
+}
+
+export function SubscriptionStatusCard({
+  subscription,
+  onCancel,
+  isCancelPending = false,
+}: SubscriptionStatusCardProps) {
   const planName = subscription.plan?.name ?? subscription.plan_id
 
   return (
@@ -50,17 +87,22 @@ export function SubscriptionStatusCard({ subscription }: SubscriptionStatusCardP
           <CardTitle>Current plan</CardTitle>
           <CardDescription>{planName}</CardDescription>
         </div>
-        <Badge variant={statusVariant(subscription.status)} className={cn("shrink-0")}>
+        <Badge variant={statusVariant(subscription.status)} className="shrink-0">
           {statusLabel(subscription.status)}
         </Badge>
       </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
-        {subscription.status === "canceled" ? (
-          <p>Your subscription has been canceled. Renew to regain full access.</p>
-        ) : subscription.status === "past_due" ? (
-          <p>Your subscription is past due. Update your payment method to restore access.</p>
-        ) : (
-          <p>Your closed-beta subscription is active. Enjoy unlimited tracking while we prepare paid plans.</p>
+      <CardContent className="space-y-4 text-sm text-muted-foreground">
+        <p>{statusDescription(subscription)}</p>
+        {showCancelButton(subscription.status) && onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full md:w-auto"
+            disabled={isCancelPending}
+            onClick={onCancel}
+          >
+            {isCancelPending ? "Canceling…" : "Cancel subscription"}
+          </Button>
         )}
       </CardContent>
     </Card>

@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { SubscriptionStatusCard } from "./subscription-status-card"
 import type { Subscription } from "@/lib/api/subscription"
 
@@ -64,11 +65,59 @@ describe("SubscriptionStatusCard", () => {
     ).toBeInTheDocument()
   })
 
-  it("renders the closed beta message for active subscriptions", () => {
-    render(<SubscriptionStatusCard subscription={makeSubscription({ status: "active" })} />)
+  it("renders the closed beta message for active closed beta subscriptions", () => {
+    render(
+      <SubscriptionStatusCard
+        subscription={makeSubscription({
+          status: "active",
+          plan: { id: "closed_beta", name: "Closed Beta", tier: "closed_beta", currency: "USD", features: {}, is_public: true, created_at: "", updated_at: "" },
+        })}
+      />,
+    )
 
     expect(
       screen.getByText("Your closed-beta subscription is active. Enjoy unlimited tracking while we prepare paid plans."),
     ).toBeInTheDocument()
+  })
+
+  it("renders the paid message for active paid subscriptions", () => {
+    render(
+      <SubscriptionStatusCard
+        subscription={makeSubscription({
+          status: "active",
+          plan: { id: "pro", name: "Pro", tier: "pro", currency: "USD", features: {}, is_public: true, created_at: "", updated_at: "" },
+        })}
+      />,
+    )
+
+    expect(screen.getByText("Your paid subscription is active.")).toBeInTheDocument()
+  })
+
+  it("renders the free plan message for active free subscriptions", () => {
+    render(
+      <SubscriptionStatusCard
+        subscription={makeSubscription({
+          status: "active",
+          plan: { id: "free", name: "Free", tier: "free", currency: "USD", features: {}, is_public: true, created_at: "", updated_at: "" },
+        })}
+      />,
+    )
+
+    expect(screen.getByText("Your free plan is active.")).toBeInTheDocument()
+  })
+
+  it("calls onCancel when the cancel button is clicked", async () => {
+    const onCancel = vi.fn()
+    render(<SubscriptionStatusCard subscription={makeSubscription({ status: "active" })} onCancel={onCancel} />)
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancel subscription" }))
+
+    expect(onCancel).toHaveBeenCalled()
+  })
+
+  it("does not show the cancel button for canceled subscriptions", () => {
+    render(<SubscriptionStatusCard subscription={makeSubscription({ status: "canceled" })} onCancel={() => {}} />)
+
+    expect(screen.queryByRole("button", { name: "Cancel subscription" })).not.toBeInTheDocument()
   })
 })

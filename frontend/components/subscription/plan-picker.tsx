@@ -1,12 +1,14 @@
 import { CheckIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { Plan } from "@/lib/api/subscription"
 
 interface PlanPickerProps {
   plans: Plan[]
   currentPlanId: string
+  onSelect?: (plan: Plan) => void
 }
 
 function formatPrice(plan: Plan): string | null {
@@ -22,7 +24,7 @@ function formatPrice(plan: Plan): string | null {
   return null
 }
 
-export function PlanPicker({ plans, currentPlanId }: PlanPickerProps) {
+export function PlanPicker({ plans, currentPlanId, onSelect }: PlanPickerProps) {
   if (plans.length === 0) {
     return <p className="text-sm text-muted-foreground">No plans available.</p>
   }
@@ -61,6 +63,22 @@ export function PlanPicker({ plans, currentPlanId }: PlanPickerProps) {
                   <li>CSV/PDF exports</li>
                 )}
               </ul>
+              <div className="mt-4">
+                {isCurrent ? (
+                  <Button variant="outline" className="w-full" disabled>
+                    Current plan
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    className="w-full"
+                    onClick={() => onSelect?.(plan)}
+                    disabled={!onSelect}
+                  >
+                    Choose plan
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         )

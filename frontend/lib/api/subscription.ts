@@ -1,5 +1,11 @@
 import { apiClient } from "./client"
 
+export interface PlanFeatures {
+  max_trades?: number
+  max_brokers?: number
+  supports_exports?: boolean
+}
+
 export interface Plan {
   id: string
   name: string
@@ -8,7 +14,7 @@ export interface Plan {
   price_monthly_usd?: string | null
   price_annual_usd?: string | null
   currency: string
-  features: Record<string, unknown>
+  features: Record<string, unknown> & PlanFeatures
   is_public: boolean
   created_at: string
   updated_at: string
@@ -51,3 +57,5 @@ export function createSubscription(data: CreateSubscriptionData): Promise<Subscr
 export function cancelSubscription(id: string): Promise<Subscription> {
   return apiClient.patch<Subscription>(`/api/subscriptions/${id}/cancel`, {})
 }
+
+export const billingProvider = "manual" as const
