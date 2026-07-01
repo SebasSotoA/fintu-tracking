@@ -127,7 +127,6 @@ func main() {
 
 	// Portfolio endpoints
 	protected.Get("/portfolio/holdings", handlers.GetHoldings)
-	protected.Get("/portfolio/performance", handlers.GetPerformance)
 
 	// Analytics endpoints
 	protected.Get("/analytics/fee-breakdown", handlers.GetFeeBreakdown)

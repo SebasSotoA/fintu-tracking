@@ -100,27 +100,6 @@ func GetHoldings(c fiber.Ctx) error {
 	return c.JSON(paginateHoldings(holdings, params.page, params.pageSize))
 }
 
-// GetPerformance calculates and returns performance metrics
-func GetPerformance(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
-	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
-	}
-
-	// This is a placeholder for performance metrics
-	// You would need to implement XIRR calculation with cash flows
-	// For now, return basic structure
-	metrics := models.PerformanceMetrics{
-		TotalInvested:  "0",
-		TotalValue:     "0",
-		TotalReturn:    "0",
-		TotalReturnPct: "0",
-		XIRR:           "0",
-	}
-
-	return c.JSON(metrics)
-}
-
 // ListMarketPrices returns all market prices
 func ListMarketPrices(c fiber.Ctx) error {
 	query := `SELECT ticker, price, currency, updated_at FROM market_prices ORDER BY ticker`

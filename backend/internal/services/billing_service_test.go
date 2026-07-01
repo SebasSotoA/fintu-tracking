@@ -19,14 +19,14 @@ func TestBillingService_GetOrCreateClosedBetaSubscription_CreatesPlanAndSubscrip
 		t.Fatalf("GetOrCreateClosedBetaSubscription: %v", err)
 	}
 
-	if sub.PlanID != "closed_beta" {
-		t.Errorf("PlanID = %q, want %q", sub.PlanID, "closed_beta")
+	if sub.PlanID != models.PlanIDClosedBeta {
+		t.Errorf("PlanID = %q, want %q", sub.PlanID, models.PlanIDClosedBeta)
 	}
-	if sub.Status != "active" {
-		t.Errorf("Status = %q, want %q", sub.Status, "active")
+	if sub.Status != models.SubscriptionStatusActive {
+		t.Errorf("Status = %q, want %q", sub.Status, models.SubscriptionStatusActive)
 	}
-	if sub.BillingProvider != "manual" {
-		t.Errorf("BillingProvider = %q, want %q", sub.BillingProvider, "manual")
+	if sub.BillingProvider != models.BillingProviderManual {
+		t.Errorf("BillingProvider = %q, want %q", sub.BillingProvider, models.BillingProviderManual)
 	}
 
 	t.Cleanup(func() {
@@ -84,7 +84,7 @@ func TestBillingService_GetSubscription_Isolation(t *testing.T) {
 	})
 }
 
-func TestBillingService_CreateSubscription_ManualProviderOnly(t *testing.T) {
+func TestBillingService_CreateSubscription_ProviderAndPaidPlanGates(t *testing.T) {
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
@@ -95,25 +95,70 @@ func TestBillingService_CreateSubscription_ManualProviderOnly(t *testing.T) {
 	}
 
 	_, err := svc.CreateSubscription(context.Background(), userID, models.CreateSubscriptionRequest{
-		PlanID:          "pro_monthly",
+		PlanID:          models.PlanIDProMonthly,
 		BillingProvider: "wompi",
 	})
 	if err == nil {
 		t.Fatal("expected error for non-manual provider in Milestone 1")
 	}
 
+	_, err = svc.CreateSubscription(context.Background(), userID, models.CreateSubscriptionRequest{
+		PlanID:          models.PlanIDProMonthly,
+		BillingProvider: models.BillingProviderManual,
+	})
+	if err == nil {
+		t.Fatal("expected error for paid plan with manual provider")
+	}
+
 	sub, err := svc.CreateSubscription(context.Background(), userID, models.CreateSubscriptionRequest{
-		PlanID:          "pro_monthly",
-		BillingProvider: "manual",
+		PlanID:          models.PlanIDClosedBeta,
+		BillingProvider: models.BillingProviderManual,
 	})
 	if err != nil {
-		t.Fatalf("CreateSubscription manual: %v", err)
+		t.Fatalf("CreateSubscription manual closed_beta: %v", err)
 	}
-	if sub.PlanID != "pro_monthly" {
-		t.Errorf("PlanID = %q, want %q", sub.PlanID, "pro_monthly")
+	if sub.PlanID != models.PlanIDClosedBeta {
+		t.Errorf("PlanID = %q, want %q", sub.PlanID, models.PlanIDClosedBeta)
 	}
-	if sub.Status != "active" {
-		t.Errorf("Status = %q, want %q", sub.Status, "active")
+	if sub.Status != models.SubscriptionStatusActive {
+		t.Errorf("Status = %q, want %q", sub.Status, models.SubscriptionStatusActive)
+	}
+
+	t.Cleanup(func() {
+		execSvcSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userID)
+	})
+}
+
+func TestBillingService_ListPlans_IncludesCurrentPrivatePlan(t *testing.T) {
+	skipIfNoSvcTestDB(t)
+
+	userID := newTestUserID(t)
+	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+
+	if _, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID); err != nil {
+		t.Fatalf("create closed_beta subscription: %v", err)
+	}
+
+	plans, err := svc.ListPlans(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("ListPlans: %v", err)
+	}
+
+	hasPublic := false
+	hasPrivate := false
+	for _, p := range plans {
+		if p.IsPublic {
+			hasPublic = true
+		}
+		if p.ID == models.PlanIDClosedBeta {
+			hasPrivate = true
+		}
+	}
+	if !hasPublic {
+		t.Error("expected at least one public plan")
+	}
+	if !hasPrivate {
+		t.Errorf("expected current private plan %q to be included", models.PlanIDClosedBeta)
 	}
 
 	t.Cleanup(func() {
@@ -147,8 +192,8 @@ func TestBillingService_CancelSubscription_UpdatesProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetOrCreateProfile: %v", err)
 	}
-	if profile.PlanID == nil || *profile.PlanID != "closed_beta" {
-		t.Fatalf("PlanID = %v, want %q", profile.PlanID, "closed_beta")
+	if profile.PlanID == nil || *profile.PlanID != models.PlanIDClosedBeta {
+		t.Fatalf("PlanID = %v, want %q", profile.PlanID, models.PlanIDClosedBeta)
 	}
 
 	var subID string
@@ -161,16 +206,16 @@ func TestBillingService_CancelSubscription_UpdatesProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CancelSubscription: %v", err)
 	}
-	if canceled.Status != "canceled" {
-		t.Errorf("Status = %q, want %q", canceled.Status, "canceled")
+	if canceled.Status != models.SubscriptionStatusCanceled {
+		t.Errorf("Status = %q, want %q", canceled.Status, models.SubscriptionStatusCanceled)
 	}
 
 	refreshed, err := profileSvc.GetProfile(context.Background(), userID)
 	if err != nil {
 		t.Fatalf("GetProfile: %v", err)
 	}
-	if refreshed.SubscriptionStatus == nil || *refreshed.SubscriptionStatus != "canceled" {
-		t.Errorf("SubscriptionStatus = %v, want %q", refreshed.SubscriptionStatus, "canceled")
+	if refreshed.SubscriptionStatus == nil || *refreshed.SubscriptionStatus != models.SubscriptionStatusCanceled {
+		t.Errorf("SubscriptionStatus = %v, want %q", refreshed.SubscriptionStatus, models.SubscriptionStatusCanceled)
 	}
 
 	t.Cleanup(func() {

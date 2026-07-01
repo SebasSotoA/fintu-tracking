@@ -47,6 +47,7 @@ func TestGetMe_CreatesProfileForNewUser(t *testing.T) {
 	assertBodyContains(t, resp, `"country":"co"`)
 
 	t.Cleanup(func() {
+		execSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userID)
 		execSQL(t, "DELETE FROM profiles WHERE user_id = $1", userID)
 	})
 }
@@ -104,6 +105,7 @@ func TestUpdateOnboarding_Validation(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
+		execSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userID)
 		execSQL(t, "DELETE FROM profiles WHERE user_id = $1", userID)
 	})
 }
@@ -133,6 +135,7 @@ func TestUpdateOnboarding_Success(t *testing.T) {
 	assertBodyContains(t, resp, `"country":"co"`)
 
 	t.Cleanup(func() {
+		execSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userID)
 		execSQL(t, "DELETE FROM profiles WHERE user_id = $1", userID)
 	})
 }
@@ -178,4 +181,3 @@ func TestUpdateOnboarding_isolation(t *testing.T) {
 		execSQL(t, "DELETE FROM profiles WHERE user_id = $1", userB)
 	})
 }
-
