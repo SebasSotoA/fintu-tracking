@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -10,7 +9,6 @@ import {
   DollarSign,
   BarChart3,
   CreditCard,
-  User,
   PanelLeftClose,
   PanelRightOpen,
 } from "lucide-react"
@@ -25,7 +23,7 @@ import {
   SIDEBAR_WIDTH_COLLAPSED,
   SIDEBAR_WIDTH_EXPANDED,
 } from "@/components/layout/app-sidebar-constants"
-import { ProfileConfigDialog } from "@/components/profile/profile-config-dialog"
+import { AccountMenu } from "@/components/profile/account-menu"
 import type { Profile } from "@/lib/api/me"
 
 const navItems = [
@@ -45,7 +43,6 @@ interface AppNavProps {
 export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
   const pathname = usePathname()
   const label = sidebarLabelClass(collapsed)
-  const [profileOpen, setProfileOpen] = useState(false)
 
   return (
     <>
@@ -183,48 +180,12 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
             collapsed ? "flex-col items-start" : "flex-row items-center",
           )}
         >
-          <button
-            type="button"
-            onClick={() => setProfileOpen(true)}
-            aria-label={collapsed ? "My account" : undefined}
-            data-testid="my-account-button"
-            className={cn(
-              "flex h-9 min-h-9 max-h-9 w-full items-center gap-1 rounded-lg text-left",
-              navIdle,
-              collapsed ? "justify-start" : "min-w-0 flex-1 gap-3",
-            )}
-          >
-            <span className={navIconCellClass}>
-              <div className="flex size-8 items-center justify-center rounded-lg bg-primary-container/30">
-                <User className="size-4 text-primary" aria-hidden />
-              </div>
-            </span>
-            <div className={cn("min-w-0 overflow-hidden leading-none", label)} aria-hidden={collapsed}>
-              <p className="truncate font-sans text-sm font-bold text-primary">My account</p>
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Portfolio
-              </p>
-            </div>
-          </button>
+          <AccountMenu profile={profile} collapsed={collapsed} variant="sidebar" />
         </div>
       </aside>
 
       <nav className="md:hidden fixed bottom-0 left-0 z-50 flex w-full items-center justify-around border-t border-border/20 bg-background/90 px-2 pt-3 pb-6 pb-safe backdrop-blur-xl">
-        <button
-          type="button"
-          onClick={() => setProfileOpen(true)}
-          aria-label="My account"
-          data-testid="my-account-button-mobile"
-          className={cn(
-            "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 transition-colors duration-75",
-            profileOpen
-              ? "bg-primary-container/20 text-primary"
-              : "text-foreground/40 hover:text-primary",
-          )}
-        >
-          <User className="size-5" />
-          <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">Account</span>
-        </button>
+        <AccountMenu profile={profile} collapsed={false} variant="mobile" />
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive =
@@ -248,12 +209,6 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
           )
         })}
       </nav>
-
-      <ProfileConfigDialog
-        profile={profile}
-        open={profileOpen}
-        onOpenChange={setProfileOpen}
-      />
     </>
   )
 }

@@ -7,9 +7,6 @@ import { useUpdateProfile } from "@/hooks/use-update-profile"
 import type { Profile } from "@/lib/api/me"
 
 vi.mock("@/hooks/use-update-profile")
-vi.mock("@/hooks/use-sign-out", () => ({
-  useSignOut: () => vi.fn(),
-}))
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
@@ -103,7 +100,7 @@ describe("ProfileConfigDialog", () => {
     expect(screen.getByText("Country")).toBeInTheDocument()
     expect(screen.getByTestId("broker-select")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument()
   })
 
   it("submits profile update on save", async () => {

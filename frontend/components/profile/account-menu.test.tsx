@@ -1,20 +1,11 @@
-import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
+import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { AppNav } from "./app-nav"
+import { AccountMenu } from "./account-menu"
 import type { Profile } from "@/lib/api/me"
 
 const mockSignOut = vi.fn()
-
-vi.mock("next/navigation", () => ({
-  usePathname: () => "/dashboard",
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
-}))
-
-vi.mock("next/image", () => ({
-  default: ({ alt }: { alt: string }) => <img alt={alt} />,
-}))
 
 vi.mock("@/hooks/use-sign-out", () => ({
   useSignOut: () => mockSignOut,
@@ -84,13 +75,20 @@ const baseProfile: Profile = {
   updated_at: "",
 }
 
-function renderAppNav(collapsed = false) {
+function renderAccountMenu(
+  props: Partial<React.ComponentProps<typeof AccountMenu>> = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return render(
     <QueryClientProvider client={queryClient}>
-      <AppNav collapsed={collapsed} onToggleCollapsed={vi.fn()} profile={baseProfile} />
+      <AccountMenu
+        profile={baseProfile}
+        collapsed={false}
+        variant="sidebar"
+        {...props}
+      />
     </QueryClientProvider>,
   )
 }
@@ -101,60 +99,40 @@ beforeAll(() => {
   HTMLElement.prototype.releasePointerCapture = vi.fn()
 })
 
-describe("AppNav", () => {
+describe("AccountMenu", () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it("shows My account and Portfolio labels in English on desktop sidebar", () => {
-    renderAppNav(false)
+  it("shows My account trigger with Portfolio subtitle in expanded sidebar", () => {
+    renderAccountMenu({ variant: "sidebar", collapsed: false })
 
-    const sidebar = screen.getByTestId("app-sidebar")
-    expect(within(sidebar).getByText("My account")).toBeInTheDocument()
-    expect(within(sidebar).getByText("Portfolio")).toBeInTheDocument()
+    expect(screen.getByTestId("my-account-button")).toHaveTextContent("My account")
+    expect(screen.getByTestId("my-account-button")).toHaveTextContent("Portfolio")
   })
 
-  it("places My account at the bottom of the desktop sidebar", () => {
-    renderAppNav(false)
+  it("shows icon-only trigger when sidebar is collapsed", () => {
+    renderAccountMenu({ variant: "sidebar", collapsed: true })
 
-    const sidebar = screen.getByTestId("app-sidebar")
-    const children = Array.from(sidebar.children)
-    const lastChild = children[children.length - 1]
-
-    expect(within(lastChild as HTMLElement).getByText("My account")).toBeInTheDocument()
+    const trigger = screen.getByTestId("my-account-button")
+    expect(trigger).toHaveAttribute("aria-label", "My account")
+    const labelContainer = within(trigger).getByText("My account").parentElement
+    expect(labelContainer).toHaveAttribute("aria-hidden", "true")
   })
 
-  it("does not render standalone Sign Out in desktop sidebar", () => {
-    renderAppNav(false)
-
-    const sidebar = screen.getByTestId("app-sidebar")
-    expect(within(sidebar).queryByRole("button", { name: "Sign Out" })).not.toBeInTheDocument()
-    expect(within(sidebar).queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument()
-  })
-
-  it("shows Account label in English on mobile bottom nav", () => {
-    renderAppNav(false)
-
-    expect(screen.getByTestId("my-account-button-mobile")).toHaveTextContent("Account")
-  })
-
-  it("does not render Sign out in mobile bottom nav", () => {
-    renderAppNav(false)
-
-    expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument()
-  })
-
-  it("uses duration-200 ease-in-out for sidebar width transition", () => {
-    renderAppNav(false)
-
-    const sidebar = screen.getByTestId("app-sidebar")
-    expect(sidebar.className).toContain("duration-200")
-    expect(sidebar.className).toContain("ease-in-out")
-  })
-
-  it("opens profile config dialog when Configuration is selected from account menu", async () => {
+  it("opens menu with Configuration and Log out items", async () => {
     const user = userEvent.setup()
-    renderAppNav(false)
+    renderAccountMenu()
+
+    await user.click(screen.getByTestId("my-account-button"))
+
+    expect(screen.getByRole("menuitem", { name: "Configuration" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Log out" })).toBeInTheDocument()
+  })
+
+  it("opens profile config dialog when Configuration is selected", async () => {
+    const user = userEvent.setup()
+    renderAccountMenu()
 
     await user.click(screen.getByTestId("my-account-button"))
     await user.click(screen.getByRole("menuitem", { name: "Configuration" }))
@@ -163,14 +141,30 @@ describe("AppNav", () => {
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument()
   })
 
-  it("calls signOut when Log out is selected from account menu", async () => {
+  it("calls signOut when Log out is selected", async () => {
     const user = userEvent.setup()
     mockSignOut.mockResolvedValueOnce(undefined)
-    renderAppNav(false)
+    renderAccountMenu()
 
     await user.click(screen.getByTestId("my-account-button"))
     await user.click(screen.getByRole("menuitem", { name: "Log out" }))
 
     expect(mockSignOut).toHaveBeenCalledTimes(1)
+  })
+
+  it("renders mobile variant with Account label", () => {
+    renderAccountMenu({ variant: "mobile" })
+
+    expect(screen.getByTestId("my-account-button-mobile")).toHaveTextContent("Account")
+  })
+
+  it("opens mobile menu with Configuration and Log out items", async () => {
+    const user = userEvent.setup()
+    renderAccountMenu({ variant: "mobile" })
+
+    await user.click(screen.getByTestId("my-account-button-mobile"))
+
+    expect(screen.getByRole("menuitem", { name: "Configuration" })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Log out" })).toBeInTheDocument()
   })
 })

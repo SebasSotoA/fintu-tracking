@@ -18,7 +18,6 @@ import {
   type ProfileSetupForm,
 } from "@/components/onboarding/profile-setup-fields"
 import { useUpdateProfile } from "@/hooks/use-update-profile"
-import { useSignOut } from "@/hooks/use-sign-out"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import type { Profile } from "@/lib/api/me"
 
@@ -30,7 +29,6 @@ interface ProfileConfigDialogProps {
 
 export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConfigDialogProps) {
   const updateProfile = useUpdateProfile()
-  const signOut = useSignOut()
 
   const {
     handleSubmit,
@@ -74,15 +72,6 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
     onOpenChange(next)
   }
 
-  const handleSignOut = async () => {
-    try {
-      await signOut()
-      onOpenChange(false)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not sign out")
-    }
-  }
-
   return (
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
       <ResponsiveDialogContent className="max-h-[100dvh] md:max-h-[90vh] sm:max-w-md">
@@ -113,17 +102,6 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
             </Button>
           </div>
         </form>
-
-        <div className="border-t border-border pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full text-destructive hover:text-destructive"
-            onClick={handleSignOut}
-          >
-            Sign out
-          </Button>
-        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )
