@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { serverGet } from "@/lib/api/server-client"
+import { serverGet, ApiError, handleServerAuthError } from "@/lib/api/server-client"
 import { serverListPlans, serverGetCurrentSubscription } from "@/lib/api/server-subscription"
 import type { Profile } from "@/lib/api/me"
 import { SubscriptionPage } from "@/components/subscription/subscription-page"
@@ -23,7 +23,12 @@ export default async function SubscriptionPageServer() {
     redirect("/auth/login")
   }
 
-  const profile = await serverGet<Profile>("/api/me")
+  let profile: Profile
+  try {
+    profile = await serverGet<Profile>("/api/me")
+  } catch (error) {
+    handleServerAuthError(error)
+  }
 
   // If onboarding is incomplete, finish that first.
   if (!profile.onboarding_completed) {
@@ -35,10 +40,30 @@ export default async function SubscriptionPageServer() {
     redirect("/dashboard")
   }
 
-  const [plans, subscription] = await Promise.all([
-    serverListPlans(),
-    serverGetCurrentSubscription().catch(() => null),
-  ])
+  let plans: Awaited<ReturnType<typeof serverListPlans>>
+  try {
+    plans = await serverListPlans()
+  } catch (error) {
+    if (error instanceof ApiError) {
+      handleServerAuthError(error)
+    }
+    throw error
+  }
+
+  let subscription: Awaited<ReturnType<typeof serverGetCurrentSubscription>> | null = null
+  try {
+    subscription = await serverGetCurrentSubscription()
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.status === 404) {
+        subscription = null
+      } else {
+        handleServerAuthError(error)
+      }
+    } else {
+      throw error
+    }
+  }
 
   return <SubscriptionPage plans={plans} subscription={subscription} />
 }

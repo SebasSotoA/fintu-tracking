@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { serverGet } from "@/lib/api/server-client"
+import { serverGet, handleServerAuthError } from "@/lib/api/server-client"
 import type { Profile } from "@/lib/api/me"
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard"
 
@@ -15,7 +15,13 @@ export default async function OnboardingPage() {
 
   if (error || !user) redirect("/auth/login")
 
-  const profile = await serverGet<Profile>("/api/me")
+  let profile: Profile
+  try {
+    profile = await serverGet<Profile>("/api/me")
+  } catch (error) {
+    handleServerAuthError(error)
+  }
+
   if (profile.onboarding_completed) redirect("/dashboard")
 
   return <OnboardingWizard initialProfile={profile} />

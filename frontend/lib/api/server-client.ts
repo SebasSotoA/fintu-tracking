@@ -1,4 +1,5 @@
 import { cache } from "react"
+import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 
 if (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === "production") {
@@ -6,8 +7,30 @@ if (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === "production") {
 }
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
-export interface ApiError {
+export interface ApiErrorResponse {
   error: string
+}
+
+export class ApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+    this.name = "ApiError"
+  }
+}
+
+export function handleServerAuthError(error: unknown): never {
+  if (error instanceof ApiError) {
+    if (error.status === 401) {
+      redirect("/auth/login")
+    }
+    if (error.status === 402 || error.status === 403) {
+      redirect("/subscription")
+    }
+  }
+  throw error
 }
 
 const getAuthToken = cache(async (): Promise<string | null> => {
@@ -41,10 +64,10 @@ async function serverRequest<T>(endpoint: string, options: RequestInit = {}): Pr
   })
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json().catch(() => ({
+    const errorData: ApiErrorResponse = await response.json().catch(() => ({
       error: response.statusText,
     }))
-    throw new Error(errorData.error || `API error: ${response.status}`)
+    throw new ApiError(errorData.error || `API error: ${response.status}`, response.status)
   }
 
   return response.json()
