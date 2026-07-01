@@ -31,14 +31,13 @@ export default async function AppLayout({
     redirect("/subscription")
   }
 
-  if (!profile.onboarding_completed) redirect("/onboarding")
-
   if (
+    profile.onboarding_completed &&
     profile.subscription_status !== "active" &&
     profile.subscription_status !== "trialing"
   ) {
     redirect("/subscription")
   }
 
-  return <AppShell>{children}</AppShell>
+  return <AppShell initialProfile={profile}>{children}</AppShell>
 }

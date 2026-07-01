@@ -1,15 +1,25 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { act } from "react"
-import DashboardPage from "./page"
 import { ApiError } from "@/lib/api/server-client"
 
-const mockNetWorthCard = vi.fn()
-const mockActivityFeed = vi.fn()
-const mockDashboardQuickTrade = vi.fn()
-const mockSkeleton = vi.fn()
-const mockGetNetWorth = vi.fn()
-const mockHandleServerAuthError = vi.fn()
+const {
+  mockNetWorthCard,
+  mockActivityFeed,
+  mockDashboardQuickTrade,
+  mockSkeleton,
+  mockGetNetWorth,
+  mockHandleServerAuthError,
+  mockFetchHoldingsData,
+} = vi.hoisted(() => ({
+  mockNetWorthCard: vi.fn(),
+  mockActivityFeed: vi.fn(),
+  mockDashboardQuickTrade: vi.fn(),
+  mockSkeleton: vi.fn(),
+  mockGetNetWorth: vi.fn(),
+  mockHandleServerAuthError: vi.fn(),
+  mockFetchHoldingsData: vi.fn(),
+}))
 
 vi.mock("@/components/dashboard/net-worth-card", () => ({
   NetWorthCard: (props: { initialData?: unknown }) => {
@@ -30,6 +40,10 @@ vi.mock("@/components/dashboard/dashboard-quick-trade", () => ({
     mockDashboardQuickTrade(props)
     return <div data-testid="dashboard-quick-trade">DashboardQuickTrade</div>
   },
+}))
+
+vi.mock("@/components/dashboard/dashboard-empty-state", () => ({
+  DashboardEmptyState: () => <div data-testid="dashboard-empty-state">DashboardEmptyState</div>,
 }))
 
 vi.mock("@/components/dashboard/dashboard-card-skeleton", () => ({
@@ -60,18 +74,11 @@ vi.mock("@/lib/api/server-client", async (importOriginal) => {
 })
 
 vi.mock("@/components/dashboard/holdings-table-server", () => ({
-  fetchHoldingsData: () =>
-    Promise.resolve({
-      holdings: [],
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      priceUpdatedAtByTicker: {},
-      lastPriceRefreshAt: null,
-    }),
+  fetchHoldingsData: (...args: unknown[]) => mockFetchHoldingsData(...args),
 }))
 
 async function renderPage() {
+  const { default: DashboardPage } = await import("./page")
   const ui = await DashboardPage({ searchParams: Promise.resolve({}) })
   await act(async () => {
     render(ui)
@@ -82,6 +89,14 @@ describe("DashboardPage", () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockGetNetWorth.mockResolvedValue({})
+    mockFetchHoldingsData.mockResolvedValue({
+      holdings: [{ ticker: "AAPL" }],
+      total: 1,
+      page: 1,
+      pageSize: 10,
+      priceUpdatedAtByTicker: {},
+      lastPriceRefreshAt: null,
+    })
     mockHandleServerAuthError.mockImplementation(() => {
       throw new Error("AUTH_REDIRECT")
     })
@@ -112,5 +127,20 @@ describe("DashboardPage", () => {
   it("renders DashboardQuickTrade below the top grid", async () => {
     await renderPage()
     expect(screen.getByTestId("dashboard-quick-trade")).toBeInTheDocument()
+  })
+
+  it("renders DashboardEmptyState when there are no holdings", async () => {
+    mockFetchHoldingsData.mockResolvedValue({
+      holdings: [],
+      total: 0,
+      page: 1,
+      pageSize: 10,
+      priceUpdatedAtByTicker: {},
+      lastPriceRefreshAt: null,
+    })
+
+    vi.resetModules()
+    await renderPage()
+    expect(screen.getByTestId("dashboard-empty-state")).toBeInTheDocument()
   })
 })

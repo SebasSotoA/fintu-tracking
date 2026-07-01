@@ -1,8 +1,5 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { serverGet, handleServerAuthError } from "@/lib/api/server-client"
-import type { Profile } from "@/lib/api/me"
-import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard"
 
 export const dynamic = "force-dynamic"
 
@@ -15,19 +12,5 @@ export default async function OnboardingPage() {
 
   if (error || !user) redirect("/auth/login")
 
-  let profile: Profile
-  try {
-    profile = await serverGet<Profile>("/api/me")
-  } catch (error) {
-    handleServerAuthError(error)
-  }
-
-  if (profile.onboarding_completed) {
-    if (profile.subscription_status === "active" || profile.subscription_status === "trialing") {
-      redirect("/dashboard")
-    }
-    redirect("/subscription")
-  }
-
-  return <OnboardingWizard initialProfile={profile} />
+  redirect("/dashboard")
 }

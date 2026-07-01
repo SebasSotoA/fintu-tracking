@@ -18,10 +18,19 @@ export interface UpdateOnboardingData {
   broker_preset_id: string
 }
 
+export interface UpdateProfileData {
+  country: string
+  broker_preset_id: string
+}
+
 export async function getMe(): Promise<Profile> {
   return apiClient.get<Profile>("/api/me")
 }
 
 export async function updateOnboarding(data: UpdateOnboardingData): Promise<Profile> {
   return apiClient.patch<Profile>("/api/me/onboarding", data)
+}
+
+export async function updateProfile(data: UpdateProfileData): Promise<Profile> {
+  return apiClient.patch<Profile>("/api/me/profile", data)
 }

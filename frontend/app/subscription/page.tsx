@@ -31,9 +31,9 @@ export default async function SubscriptionPageServer() {
     handleServerAuthError(error)
   }
 
-  // If onboarding is incomplete, finish that first.
+  // Incomplete onboarding is handled by the setup modal on /dashboard.
   if (!profile.onboarding_completed) {
-    redirect("/onboarding")
+    redirect("/dashboard")
   }
 
   // Active/trialing users do not need to be on this page.

@@ -12,6 +12,7 @@ import {
   HoldingsTableCardSkeleton,
   NetWorthCardSkeleton,
 } from "@/components/dashboard/dashboard-card-skeleton"
+import { DashboardEmptyState } from "@/components/dashboard/dashboard-empty-state"
 
 interface DashboardPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>
@@ -37,6 +38,11 @@ async function DashboardQuickTradeServer({
   pageSize: PageSize
 }) {
   const data = await fetchHoldingsData(page, pageSize)
+
+  if (data.total === 0) {
+    return <DashboardEmptyState />
+  }
+
   return (
     <DashboardQuickTrade
       holdings={data.holdings}

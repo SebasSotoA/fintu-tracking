@@ -45,9 +45,10 @@ interface ResponsiveDialogProps {
   children?: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  dismissible?: boolean
 }
 
-function ResponsiveDialog({ children, open, onOpenChange }: ResponsiveDialogProps) {
+function ResponsiveDialog({ children, open, onOpenChange, dismissible = true }: ResponsiveDialogProps) {
   const isMobile = useIsMobile()
 
   // Prevent hydration / test mismatch: default to desktop until mounted.
@@ -58,7 +59,7 @@ function ResponsiveDialog({ children, open, onOpenChange }: ResponsiveDialogProp
   return (
     <ResponsiveDialogContext.Provider value={{ isMobile }}>
       {isMobile ? (
-        <Drawer open={open} onOpenChange={onOpenChange}>
+        <Drawer open={open} onOpenChange={onOpenChange} dismissible={dismissible}>
           {children}
         </Drawer>
       ) : (
@@ -79,13 +80,22 @@ function ResponsiveDialogTrigger({
 
 function ResponsiveDialogContent({
   className,
+  showCloseButton,
+  onInteractOutside,
+  onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof DialogContent>) {
   const { isMobile } = useResponsiveDialogContext()
   return isMobile ? (
     <DrawerContent className={className} {...props} />
   ) : (
-    <DialogContent className={className} {...props} />
+    <DialogContent
+      className={className}
+      showCloseButton={showCloseButton}
+      onInteractOutside={onInteractOutside}
+      onEscapeKeyDown={onEscapeKeyDown}
+      {...props}
+    />
   )
 }
 

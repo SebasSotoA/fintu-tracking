@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { getMe, updateOnboarding } from "./me"
+import { getMe, updateOnboarding, updateProfile } from "./me"
 import { apiClient } from "./client"
 
 vi.mock("./client", () => ({
@@ -44,5 +44,17 @@ describe("me API", () => {
       broker_preset_id: "hapi-colombia",
     })
     expect(result.onboarding_completed).toBe(true)
+  })
+
+  it("updateProfile patches /api/me/profile", async () => {
+    vi.mocked(apiClient.patch).mockResolvedValueOnce({ ...mockProfile, country: "mx" })
+
+    const result = await updateProfile({ country: "mx", broker_preset_id: "hapi-colombia" })
+
+    expect(apiClient.patch).toHaveBeenCalledWith("/api/me/profile", {
+      country: "mx",
+      broker_preset_id: "hapi-colombia",
+    })
+    expect(result.country).toBe("mx")
   })
 })

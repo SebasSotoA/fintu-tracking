@@ -1,0 +1,30 @@
+import { describe, expect, it } from "vitest"
+import { render, screen } from "@testing-library/react"
+import { OnboardingProgress } from "./onboarding-progress"
+
+describe("OnboardingProgress", () => {
+  it("shows Paso 1 de 2 on step 1", () => {
+    render(<OnboardingProgress step={1} />)
+
+    expect(screen.getByText("Paso 1 de 2")).toBeInTheDocument()
+    expect(screen.getByText("Tu país")).toBeInTheDocument()
+  })
+
+  it("shows Paso 2 de 2 on step 2", () => {
+    render(<OnboardingProgress step={2} />)
+
+    expect(screen.getByText("Paso 2 de 2")).toBeInTheDocument()
+    expect(screen.getByText("Tu broker")).toBeInTheDocument()
+  })
+
+  it("renders progress bar with correct fill width", () => {
+    const { rerender } = render(<OnboardingProgress step={1} />)
+
+    const bar = screen.getByRole("progressbar")
+    expect(bar).toHaveAttribute("aria-valuenow", "1")
+    expect(bar).toHaveAttribute("aria-valuemax", "2")
+
+    rerender(<OnboardingProgress step={2} />)
+    expect(bar).toHaveAttribute("aria-valuenow", "2")
+  })
+})

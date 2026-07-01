@@ -32,7 +32,9 @@ vi.mock("@/lib/api/server-client", async (importOriginal) => {
 })
 
 vi.mock("@/components/layout/app-shell", () => ({
-  AppShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AppShell: ({ children, initialProfile }: { children: React.ReactNode; initialProfile?: Profile }) => (
+    <div data-testid="app-shell" data-profile={initialProfile?.id}>{children}</div>
+  ),
 }))
 
 const baseProfile: Profile = {
@@ -86,5 +88,34 @@ describe("AppLayout", () => {
 
     expect(result).toBeTruthy()
     expect(mockRedirect).not.toHaveBeenCalled()
+  })
+
+  it("renders children when onboarding is incomplete", async () => {
+    mockServerGet.mockResolvedValue({
+      ...baseProfile,
+      onboarding_completed: false,
+      subscription_status: "canceled",
+    })
+
+    const { default: AppLayout } = await import("./layout")
+    const result = await AppLayout({ children: <div>child</div> })
+
+    expect(result).toBeTruthy()
+    expect(mockRedirect).not.toHaveBeenCalled()
+  })
+
+  it("redirects to subscription when onboarding is complete but subscription is inactive", async () => {
+    mockServerGet.mockResolvedValue({
+      ...baseProfile,
+      onboarding_completed: true,
+      subscription_status: "canceled",
+    })
+
+    const { default: AppLayout } = await import("./layout")
+
+    await expect(AppLayout({ children: <div>child</div> })).rejects.toThrow(
+      "NEXT_REDIRECT:/subscription",
+    )
+    expect(mockRedirect).toHaveBeenCalledWith("/subscription")
   })
 })

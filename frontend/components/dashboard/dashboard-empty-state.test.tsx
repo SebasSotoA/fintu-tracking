@@ -5,15 +5,7 @@ import { DashboardEmptyState } from "./dashboard-empty-state"
 vi.mock("@/components/trades/add-trade-dialog", () => ({
   AddTradeDialog: ({ children }: { children?: React.ReactNode }) => (
     <button type="button" data-testid="add-trade-dialog-trigger">
-      {children ?? "Add Trade"}
-    </button>
-  ),
-}))
-
-vi.mock("@/components/cash-flows/add-cash-flow-dialog", () => ({
-  AddCashFlowDialog: ({ children }: { children?: React.ReactNode }) => (
-    <button type="button" data-testid="add-cash-flow-dialog-trigger">
-      {children ?? "Add Cash Flow"}
+      {children ?? "Agregar operación"}
     </button>
   ),
 }))
@@ -33,16 +25,17 @@ describe("DashboardEmptyState", () => {
     render(<DashboardEmptyState />)
 
     expect(screen.getByTestId("empty-state")).toBeInTheDocument()
-    expect(screen.getByTestId("empty-state-title")).toHaveTextContent("No portfolio data yet")
-    expect(screen.getByTestId("empty-state-description")).toHaveTextContent("Add your first trade or deposit to start tracking your portfolio.")
+    expect(screen.getByTestId("empty-state-title")).toHaveTextContent("Aún no hay datos en tu portafolio")
+    expect(screen.getByTestId("empty-state-description")).toHaveTextContent(
+      "Agrega tu primera operación o importa tu historial para empezar a hacer seguimiento.",
+    )
   })
 
-  it("provides CTAs to add a trade and add a cash flow", () => {
+  it("provides CTA to add a trade", () => {
     render(<DashboardEmptyState />)
 
     const action = screen.getByTestId("empty-state-action")
     expect(action).toBeInTheDocument()
     expect(screen.getByTestId("add-trade-dialog-trigger")).toBeInTheDocument()
-    expect(screen.getByTestId("add-cash-flow-dialog-trigger")).toBeInTheDocument()
   })
 })
