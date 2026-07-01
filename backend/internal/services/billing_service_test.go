@@ -215,7 +215,7 @@ func TestBillingService_CancelSubscription_ManualKeepsActiveWithCancelAtPeriodEn
 
 	userID := newTestUserID(t)
 	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
-	profileSvc := NewProfileService(database.GetPool(), svc)
+	profileSvc := NewProfileService(database.GetPool(), svc, nil)
 
 	profile, err := profileSvc.GetOrCreateProfile(context.Background(), userID)
 	if err != nil {
@@ -261,7 +261,7 @@ func TestBillingService_GetOrCreateClosedBetaSubscription_ReactivatesCanceled(t 
 
 	userID := newTestUserID(t)
 	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
-	profileSvc := NewProfileService(database.GetPool(), svc)
+	profileSvc := NewProfileService(database.GetPool(), svc, nil)
 
 	sub, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID)
 	if err != nil {

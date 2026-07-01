@@ -87,6 +87,12 @@ type UpdateOnboardingRequest struct {
 	BrokerPresetID string `json:"broker_preset_id"`
 }
 
+// UpdateProfileRequest is the body for PATCH /api/me/profile.
+type UpdateProfileRequest struct {
+	Country        string `json:"country"`
+	BrokerPresetID string `json:"broker_preset_id"`
+}
+
 // Plan represents a subscription tier and its feature limits.
 type Plan struct {
 	ID              string          `json:"id" db:"id"`

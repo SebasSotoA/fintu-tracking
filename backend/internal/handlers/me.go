@@ -16,7 +16,7 @@ var profileService *services.ProfileService
 
 // InitProfileService sets the package-level profile service used by handlers.
 func InitProfileService(pool *pgxpool.Pool) {
-	profileService = services.NewProfileService(pool, billingService)
+	profileService = services.NewProfileService(pool, billingService, services.NewBrokerService(pool))
 }
 
 // GetMe returns the current user's profile. Creates a default profile row if missing.
@@ -53,6 +53,32 @@ func UpdateOnboarding(c fiber.Ctx) error {
 	}
 
 	p, err := profileService.UpdateOnboarding(c.Context(), userID, req)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(p)
+}
+
+// UpdateProfile updates country and broker preset without altering onboarding state.
+func UpdateProfile(c fiber.Ctx) error {
+	userID, err := middleware.RequireUserID(c)
+	if err != nil {
+		return err
+	}
+
+	var req models.UpdateProfileRequest
+	if err := c.Bind().JSON(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	}
+	if req.Country == "" || req.BrokerPresetID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "country and broker_preset_id are required"})
+	}
+	if config.GetBrokerPreset(req.BrokerPresetID) == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Unknown broker preset"})
+	}
+
+	p, err := profileService.UpdateProfile(c.Context(), userID, req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}

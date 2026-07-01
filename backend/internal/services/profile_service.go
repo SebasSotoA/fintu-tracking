@@ -14,11 +14,12 @@ import (
 type ProfileService struct {
 	pool    *pgxpool.Pool
 	billing *BillingService
+	brokers *BrokerService
 }
 
-// NewProfileService creates a ProfileService backed by the given DB pool and billing service.
-func NewProfileService(pool *pgxpool.Pool, billing *BillingService) *ProfileService {
-	return &ProfileService{pool: pool, billing: billing}
+// NewProfileService creates a ProfileService backed by the given DB pool, billing, and broker services.
+func NewProfileService(pool *pgxpool.Pool, billing *BillingService, brokers *BrokerService) *ProfileService {
+	return &ProfileService{pool: pool, billing: billing, brokers: brokers}
 }
 
 // GetOrCreateProfile returns the user's profile, inserting a default row if missing
@@ -94,6 +95,40 @@ func (s *ProfileService) UpdateOnboarding(ctx context.Context, userID string, re
 	`, userID, req.Country, req.BrokerPresetID)
 	if err != nil {
 		return nil, fmt.Errorf("updating onboarding: %w", err)
+	}
+	defer rows.Close()
+
+	profile, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Profile])
+	if err != nil {
+		return nil, fmt.Errorf("collecting updated profile: %w", err)
+	}
+	return &profile, nil
+}
+
+// UpdateProfile updates country and broker preset without changing onboarding state.
+func (s *ProfileService) UpdateProfile(ctx context.Context, userID string, req models.UpdateProfileRequest) (*models.Profile, error) {
+	current, err := s.GetOrCreateProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	presetChanged := current.BrokerPresetID == nil || *current.BrokerPresetID != req.BrokerPresetID
+	if presetChanged && s.brokers != nil {
+		if _, err := s.brokers.GetOrCreateBrokerFromPreset(ctx, userID, req.BrokerPresetID); err != nil {
+			return nil, fmt.Errorf("creating broker from preset: %w", err)
+		}
+	}
+
+	rows, err := s.pool.Query(ctx, `
+		UPDATE profiles
+		SET country = $2,
+		    broker_preset_id = $3,
+		    updated_at = NOW()
+		WHERE user_id = $1
+		RETURNING id, user_id, country, broker_preset_id, onboarding_completed, onboarding_step, plan_id, subscription_status, created_at, updated_at
+	`, userID, req.Country, req.BrokerPresetID)
+	if err != nil {
+		return nil, fmt.Errorf("updating profile: %w", err)
 	}
 	defer rows.Close()
 

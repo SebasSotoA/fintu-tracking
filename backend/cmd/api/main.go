@@ -84,6 +84,7 @@ func main() {
 	// Current user / onboarding endpoints
 	authOnly.Get("/me", handlers.GetMe)
 	authOnly.Patch("/me/onboarding", handlers.UpdateOnboarding)
+	authOnly.Patch("/me/profile", handlers.UpdateProfile)
 
 	// Billing endpoints
 	authOnly.Get("/plans", handlers.ListPlans)
