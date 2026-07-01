@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -43,6 +45,19 @@ func execSvcSQL(t *testing.T, query string, args ...any) {
 	if _, err := database.GetPool().Exec(context.Background(), query, args...); err != nil {
 		t.Fatalf("execSQL: %v", err)
 	}
+}
+
+func seedSvcAuthUser(t *testing.T, userID string) {
+	t.Helper()
+	email := fmt.Sprintf("test-%s@example.com", strings.ReplaceAll(userID, "-", "")[:16])
+	execSvcSQL(t, `
+		INSERT INTO auth.users (
+			id, instance_id, aud, role, email, encrypted_password,
+			email_confirmed_at, created_at, updated_at
+		)
+		VALUES ($1, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', $2, '', NOW(), NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING
+	`, userID, email)
 }
 
 func seedSvcTrade(t *testing.T, userID, ticker, quantity, price string) {

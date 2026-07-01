@@ -50,6 +50,10 @@ func TestGetSubscription_ReturnsClosedBeta(t *testing.T) {
 	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
+	if _, err := billingSvc.GetOrCreateClosedBetaSubscription(context.Background(), userID); err != nil {
+		t.Fatalf("create closed_beta subscription: %v", err)
+	}
+
 	app := fiber.New()
 	app.Use(withUser(userID))
 	app.Get("/subscriptions/current", GetSubscription)
@@ -158,8 +162,12 @@ func TestCancelSubscription_Success(t *testing.T) {
 
 	assertStatus(t, resp, http.StatusOK)
 	body, _ := io.ReadAll(resp.Body)
-	if !strings.Contains(string(body), "canceled") {
-		t.Errorf("body = %q, want canceled", string(body))
+	bodyStr := string(body)
+	if !strings.Contains(bodyStr, "active") {
+		t.Errorf("body = %q, want active status for manual provider cancel", bodyStr)
+	}
+	if !strings.Contains(bodyStr, "cancel_at_period_end") {
+		t.Errorf("body = %q, want cancel_at_period_end set", bodyStr)
 	}
 
 	t.Cleanup(func() {

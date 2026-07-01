@@ -86,7 +86,7 @@ func (s *BillingService) GetSubscription(ctx context.Context, userID string) (*m
 		return subscription, nil
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("collecting subscription: %w", err)
@@ -102,17 +102,31 @@ func (s *BillingService) GetOrCreateClosedBetaSubscription(ctx context.Context, 
 		return nil, err
 	}
 	if existing != nil {
+		if existing.PlanID == models.PlanIDClosedBeta && existing.Status == models.SubscriptionStatusCanceled {
+			return s.reactivateClosedBetaSubscription(ctx, userID)
+		}
 		return existing, nil
 	}
 
 	rows, err := s.pool.Query(ctx, `
 		INSERT INTO subscriptions (user_id, plan_id, status, billing_provider)
 		VALUES ($1, $2, $3, $4)
-		ON CONFLICT (user_id) DO UPDATE SET updated_at = NOW()
+		ON CONFLICT (user_id) DO UPDATE SET
+		  status = CASE
+		    WHEN subscriptions.plan_id = $2 AND subscriptions.status = $5
+		    THEN EXCLUDED.status
+		    ELSE subscriptions.status
+		  END,
+		  cancel_at_period_end = CASE
+		    WHEN subscriptions.plan_id = $2 AND subscriptions.status = $5
+		    THEN false
+		    ELSE subscriptions.cancel_at_period_end
+		  END,
+		  updated_at = NOW()
 		RETURNING id, user_id, plan_id, status, billing_provider, provider_subscription_id,
 		          trial_start, trial_end, current_period_start, current_period_end,
 		          cancel_at_period_end, created_at, updated_at
-	`, userID, models.PlanIDClosedBeta, models.SubscriptionStatusActive, models.BillingProviderManual)
+	`, userID, models.PlanIDClosedBeta, models.SubscriptionStatusActive, models.BillingProviderManual, models.SubscriptionStatusCanceled)
 	if err != nil {
 		return nil, fmt.Errorf("creating closed_beta subscription: %w", err)
 	}
@@ -149,7 +163,7 @@ func (s *BillingService) CreateSubscription(ctx context.Context, userID string, 
 	// Verify the plan exists and whether it is a paid plan.
 	var priceMonthly, priceAnnual *float64
 	if err := s.pool.QueryRow(ctx, `SELECT price_monthly_usd, price_annual_usd FROM plans WHERE id = $1`, req.PlanID).Scan(&priceMonthly, &priceAnnual); err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("plan %q does not exist", req.PlanID)
 		}
 		return nil, fmt.Errorf("checking plan: %w", err)
@@ -195,10 +209,11 @@ func (s *BillingService) CreateSubscription(ctx context.Context, userID string, 
 }
 
 // CancelSubscription cancels the user's subscription and updates the profile cache.
+// For the manual provider (Milestone 1 closed_beta), access stays active until period
+// end: status remains active and cancel_at_period_end is set.
 func (s *BillingService) CancelSubscription(ctx context.Context, userID, subscriptionID string) (*models.Subscription, error) {
-	// Fetch the subscription and verify ownership.
 	rows, err := s.pool.Query(ctx, `
-		SELECT id, provider_subscription_id
+		SELECT id, provider_subscription_id, billing_provider
 		FROM subscriptions
 		WHERE id = $1 AND user_id = $2
 	`, subscriptionID, userID)
@@ -209,11 +224,11 @@ func (s *BillingService) CancelSubscription(ctx context.Context, userID, subscri
 
 	sub, err := pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (models.Subscription, error) {
 		var s models.Subscription
-		err := row.Scan(&s.ID, &s.ProviderSubscriptionID)
+		err := row.Scan(&s.ID, &s.ProviderSubscriptionID, &s.BillingProvider)
 		return s, err
 	})
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrSubscriptionNotFound
 		}
 		return nil, fmt.Errorf("collecting subscription for cancel: %w", err)
@@ -225,14 +240,19 @@ func (s *BillingService) CancelSubscription(ctx context.Context, userID, subscri
 		}
 	}
 
+	cancelStatus := models.SubscriptionStatusCanceled
+	if sub.BillingProvider == models.BillingProviderManual {
+		cancelStatus = models.SubscriptionStatusActive
+	}
+
 	updateRows, err := s.pool.Query(ctx, `
 		UPDATE subscriptions
-		SET status = $4, cancel_at_period_end = true, updated_at = NOW()
+		SET status = $3, cancel_at_period_end = true, updated_at = NOW()
 		WHERE id = $1 AND user_id = $2
 		RETURNING id, user_id, plan_id, status, billing_provider, provider_subscription_id,
 		          trial_start, trial_end, current_period_start, current_period_end,
 		          cancel_at_period_end, created_at, updated_at
-	`, subscriptionID, userID, models.SubscriptionStatusCanceled)
+	`, subscriptionID, userID, cancelStatus)
 	if err != nil {
 		return nil, fmt.Errorf("canceling subscription: %w", err)
 	}
@@ -276,4 +296,30 @@ func (s *BillingService) HasActiveSubscription(ctx context.Context, userID strin
 		return false, fmt.Errorf("checking active subscription: %w", err)
 	}
 	return active, nil
+}
+
+func (s *BillingService) reactivateClosedBetaSubscription(ctx context.Context, userID string) (*models.Subscription, error) {
+	rows, err := s.pool.Query(ctx, `
+		UPDATE subscriptions
+		SET status = $3, cancel_at_period_end = false, updated_at = NOW()
+		WHERE user_id = $1 AND plan_id = $2
+		RETURNING id, user_id, plan_id, status, billing_provider, provider_subscription_id,
+		          trial_start, trial_end, current_period_start, current_period_end,
+		          cancel_at_period_end, created_at, updated_at
+	`, userID, models.PlanIDClosedBeta, models.SubscriptionStatusActive)
+	if err != nil {
+		return nil, fmt.Errorf("reactivating closed_beta subscription: %w", err)
+	}
+	defer rows.Close()
+
+	subscription, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Subscription])
+	if err != nil {
+		return nil, fmt.Errorf("collecting reactivated closed_beta subscription: %w", err)
+	}
+
+	if err := s.updateProfileCache(ctx, userID, subscription.PlanID, subscription.Status); err != nil {
+		return nil, err
+	}
+
+	return &subscription, nil
 }

@@ -12,7 +12,12 @@ import (
 
 func newTestUserID(t *testing.T) string {
 	t.Helper()
-	return uuid.New().String()
+	userID := uuid.New().String()
+	seedSvcAuthUser(t, userID)
+	t.Cleanup(func() {
+		execSvcSQL(t, "DELETE FROM auth.users WHERE id = $1", userID)
+	})
+	return userID
 }
 
 func TestProfileService_GetOrCreateProfile_CreatesDefaultForNewUser(t *testing.T) {

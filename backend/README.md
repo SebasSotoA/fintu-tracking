@@ -37,7 +37,8 @@ air
 ## Environment Variables
 
 - `DATABASE_URL`: PostgreSQL connection string (Supabase)
-- `SUPABASE_JWT_SECRET`: JWT secret from Supabase project settings
+- `SUPABASE_URL`: Supabase project URL (required for ES256 JWT validation via JWKS)
+- `SUPABASE_JWT_SECRET`: JWT secret from Supabase project settings (required for HS256 JWT validation)
 - `PORT`: Port to run the server on (default: 8080)
 - `FRONTEND_URL`: Frontend URL for CORS (default: http://localhost:3000)
 - `TWELVE_DATA_API_KEY`: API key from [Twelve Data](https://twelvedata.com/) used to refresh stock/ETF market prices (`/quote`) and fetch the USD/COP exchange rate (`/exchange_rate`)

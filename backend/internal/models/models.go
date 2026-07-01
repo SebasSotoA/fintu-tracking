@@ -115,7 +115,7 @@ type Subscription struct {
 	CurrentPeriodStart     *time.Time `json:"current_period_start,omitempty" db:"current_period_start"`
 	CurrentPeriodEnd       *time.Time `json:"current_period_end,omitempty" db:"current_period_end"`
 	CancelAtPeriodEnd      bool       `json:"cancel_at_period_end" db:"cancel_at_period_end"`
-	Plan                   *Plan      `json:"plan,omitempty"`
+	Plan                   *Plan      `json:"plan,omitempty" db:"-"`
 	CreatedAt              time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at" db:"updated_at"`
 }

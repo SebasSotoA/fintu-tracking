@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/services"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
@@ -47,7 +49,25 @@ func skipIfNoTestDB(t *testing.T) {
 
 func newTestUserID(t *testing.T) string {
 	t.Helper()
-	return uuid.New().String()
+	userID := uuid.New().String()
+	seedAuthUser(t, userID)
+	t.Cleanup(func() {
+		execSQL(t, "DELETE FROM auth.users WHERE id = $1", userID)
+	})
+	return userID
+}
+
+func seedAuthUser(t *testing.T, userID string) {
+	t.Helper()
+	email := fmt.Sprintf("test-%s@example.com", strings.ReplaceAll(userID, "-", "")[:16])
+	execSQL(t, `
+		INSERT INTO auth.users (
+			id, instance_id, aud, role, email, encrypted_password,
+			email_confirmed_at, created_at, updated_at
+		)
+		VALUES ($1, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', $2, '', NOW(), NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING
+	`, userID, email)
 }
 
 func execSQL(t *testing.T, query string, args ...any) {
@@ -257,6 +277,73 @@ func TestActivityFeed_isolation(t *testing.T) {
 	if got := jsonLen(t, resp); got != 1 {
 		t.Errorf("returned %d activity items, want 1", got)
 	}
+}
+
+func seedSubscription(t *testing.T, userID string) string {
+	t.Helper()
+	id := uuid.New().String()
+	execSQL(t, `
+		INSERT INTO subscriptions (id, user_id, plan_id, status, billing_provider)
+		VALUES ($1, $2, $3, $4, $5)
+	`, id, userID, models.PlanIDClosedBeta, models.SubscriptionStatusActive, models.BillingProviderManual)
+	t.Cleanup(func() {
+		execSQL(t, "DELETE FROM subscriptions WHERE id = $1", id)
+	})
+	return id
+}
+
+func TestGetSubscription_isolation(t *testing.T) {
+	skipIfNoTestDB(t)
+
+	userA := newTestUserID(t)
+	userB := newTestUserID(t)
+	subA := seedSubscription(t, userA)
+
+	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	InitBillingService(billingSvc)
+
+	app := fiber.New()
+	app.Use(withUser(userB))
+	app.Get("/subscriptions/current", GetSubscription)
+
+	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/subscriptions/current", nil))
+	if err != nil {
+		t.Fatalf("app.Test: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatus(t, resp, http.StatusNotFound)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read body: %v", err)
+	}
+	if strings.Contains(string(body), subA) {
+		t.Errorf("body leaked userA subscription id %q", subA)
+	}
+}
+
+func TestCancelSubscription_isolation(t *testing.T) {
+	skipIfNoTestDB(t)
+
+	userA := newTestUserID(t)
+	userB := newTestUserID(t)
+	subA := seedSubscription(t, userA)
+
+	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	InitBillingService(billingSvc)
+
+	app := fiber.New()
+	app.Use(withUser(userB))
+	app.Patch("/subscriptions/:id/cancel", CancelSubscription)
+
+	resp, err := app.Test(httptest.NewRequest(http.MethodPatch, "/subscriptions/"+subA+"/cancel", nil))
+	if err != nil {
+		t.Fatalf("app.Test: %v", err)
+	}
+	defer resp.Body.Close()
+
+	assertStatus(t, resp, http.StatusNotFound)
+	assertBodyContains(t, resp, "subscription not found")
 }
 
 func TestRefreshMarketPrices_cooldownIsPerUser(t *testing.T) {
