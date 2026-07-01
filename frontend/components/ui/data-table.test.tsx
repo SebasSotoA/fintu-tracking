@@ -82,6 +82,40 @@ describe("DataTable", () => {
     expect(screen.getByTestId("data-table-table")).toHaveClass("hidden", "md:block")
   })
 
+  it("applies rowClassName to mobile card wrappers", () => {
+    render(
+      <DataTable
+        data={rows}
+        columns={columns}
+        keyExtractor={(row) => row.id}
+        rowClassName="highlight-row"
+        renderMobileCard={renderMobileCard}
+      />,
+    )
+
+    const wrappers = screen.getByTestId("data-table-cards").children
+    expect(wrappers).toHaveLength(2)
+    Array.from(wrappers).forEach((wrapper) => {
+      expect(wrapper).toHaveClass("highlight-row")
+    })
+  })
+
+  it("applies function rowClassName to mobile card wrappers", () => {
+    render(
+      <DataTable
+        data={rows}
+        columns={columns}
+        keyExtractor={(row) => row.id}
+        rowClassName={(row) => (row.amount > 100 ? "high" : "low")}
+        renderMobileCard={renderMobileCard}
+      />,
+    )
+
+    const wrappers = screen.getByTestId("data-table-cards").children
+    expect(wrappers[0]).toHaveClass("low")
+    expect(wrappers[1]).toHaveClass("high")
+  })
+
   it("does not render mobile cards when renderMobileCard is omitted", () => {
     render(<DataTable data={rows} columns={columns} keyExtractor={(row) => row.id} />)
     expect(screen.queryByTestId("data-table-cards")).not.toBeInTheDocument()

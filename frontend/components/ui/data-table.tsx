@@ -100,11 +100,15 @@ export function DataTable<T>({
 
       {hasMobileCards && (
         <div data-testid="data-table-cards" className="md:hidden space-y-3">
-          {data.map((row, rowIndex) => (
-            <div key={keyExtractor ? keyExtractor(row) : rowIndex}>
-              {renderMobileCard!(row)}
-            </div>
-          ))}
+          {data.map((row, rowIndex) => {
+            const derivedRowClassName =
+              typeof rowClassName === "function" ? rowClassName(row) : rowClassName
+            return (
+              <div key={keyExtractor ? keyExtractor(row) : rowIndex} className={derivedRowClassName}>
+                {renderMobileCard!(row)}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
