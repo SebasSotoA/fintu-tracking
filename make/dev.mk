@@ -67,11 +67,22 @@ dev: install check-env ensure-ports-free
 		echo "   Frontend PID: $$FRONTEND_PID"; \
 		echo "   Frontend logs: tail -f /tmp/fintu-frontend.log"; \
 		echo ""; \
-		sleep 8; \
+		port_listening() { \
+			local p=$$1; \
+			netstat -ano 2>/dev/null | grep -qi ":$$p.*LISTENING" || lsof -i:$$p > /dev/null 2>&1; \
+		}; \
 		BACKEND_UP=false; \
 		FRONTEND_UP=false; \
-		if netstat -ano 2>/dev/null | grep -qi ":$(BACKEND_PORT).*LISTENING" || lsof -i:$(BACKEND_PORT) > /dev/null 2>&1; then BACKEND_UP=true; fi; \
-		if netstat -ano 2>/dev/null | grep -qi ":$(FRONTEND_PORT).*LISTENING" || lsof -i:$(FRONTEND_PORT) > /dev/null 2>&1; then FRONTEND_UP=true; fi; \
+		_elapsed=0; \
+		_max_wait=30; \
+		_interval=4; \
+		while [ $$_elapsed -lt $$_max_wait ]; do \
+			if [ "$$BACKEND_UP" = false ] && port_listening $(BACKEND_PORT); then BACKEND_UP=true; fi; \
+			if [ "$$FRONTEND_UP" = false ] && port_listening $(FRONTEND_PORT); then FRONTEND_UP=true; fi; \
+			if [ "$$BACKEND_UP" = true ] && [ "$$FRONTEND_UP" = true ]; then break; fi; \
+			sleep $$_interval; \
+			_elapsed=$$((_elapsed + _interval)); \
+		done; \
 		if [ "$$BACKEND_UP" = true ] && [ "$$FRONTEND_UP" = true ]; then \
 			echo "Development servers started successfully"; \
 		elif [ "$$BACKEND_UP" = false ] && [ "$$FRONTEND_UP" = false ]; then \
