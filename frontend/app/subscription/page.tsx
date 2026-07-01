@@ -1,7 +1,8 @@
 import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { serverGet, ApiError, handleServerAuthError } from "@/lib/api/server-client"
+import { serverGet, handleServerAuthError } from "@/lib/api/server-client"
+import { isApiError } from "@/lib/api/errors"
 import { serverListPlans, serverGetCurrentSubscription } from "@/lib/api/server-subscription"
 import type { Profile } from "@/lib/api/me"
 import { SubscriptionPage } from "@/components/subscription/subscription-page"
@@ -44,7 +45,7 @@ export default async function SubscriptionPageServer() {
   try {
     plans = await serverListPlans()
   } catch (error) {
-    if (error instanceof ApiError) {
+    if (isApiError(error)) {
       handleServerAuthError(error)
     }
     throw error
@@ -54,7 +55,7 @@ export default async function SubscriptionPageServer() {
   try {
     subscription = await serverGetCurrentSubscription()
   } catch (error) {
-    if (error instanceof ApiError) {
+    if (isApiError(error)) {
       if (error.status === 404) {
         subscription = null
       } else {

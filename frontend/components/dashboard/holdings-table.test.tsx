@@ -203,10 +203,9 @@ describe("HoldingsTableServer", () => {
     expect(within(table).getByText("AAPL")).toBeInTheDocument()
   })
 
-  it("renders empty state when fetch fails", async () => {
+  it("rethrows when fetch fails with a non-auth error", async () => {
     mockGetHoldingsPaginated.mockRejectedValue(new Error("network"))
-    const ui = await HoldingsTableServer({ page: 1, pageSize: 10 })
-    renderWithProviders(ui)
-    expect(screen.getByText("No holdings yet")).toBeInTheDocument()
+
+    await expect(HoldingsTableServer({ page: 1, pageSize: 10 })).rejects.toThrow("network")
   })
 })

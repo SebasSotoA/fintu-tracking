@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { PlanPicker } from "./plan-picker"
 import type { Plan } from "@/lib/api/subscription"
 
@@ -73,5 +74,42 @@ describe("PlanPicker", () => {
     render(<PlanPicker plans={plans} currentPlanId="free" />)
 
     expect(screen.getByText("Basic plan for getting started")).toBeInTheDocument()
+  })
+
+  it("shows enabled Reactivate button for canceled current plan", async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const plans = [makePlan({ id: "pro", name: "Pro", tier: "pro", price_monthly_usd: "9" })]
+
+    render(
+      <PlanPicker
+        plans={plans}
+        currentPlanId="pro"
+        subscriptionStatus="canceled"
+        onSelect={onSelect}
+      />,
+    )
+
+    const reactivateButton = screen.getByRole("button", { name: "Reactivate" })
+    expect(reactivateButton).toBeEnabled()
+
+    await user.click(reactivateButton)
+    expect(onSelect).toHaveBeenCalledWith(plans[0])
+  })
+
+  it("shows disabled Current plan for active current plan", () => {
+    const plans = [makePlan({ id: "pro", name: "Pro", tier: "pro", price_monthly_usd: "9" })]
+
+    render(
+      <PlanPicker
+        plans={plans}
+        currentPlanId="pro"
+        subscriptionStatus="active"
+        onSelect={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole("button", { name: "Current plan" })).toBeDisabled()
+    expect(screen.queryByRole("button", { name: "Reactivate" })).not.toBeInTheDocument()
   })
 })

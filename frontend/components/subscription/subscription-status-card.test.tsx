@@ -120,4 +120,38 @@ describe("SubscriptionStatusCard", () => {
 
     expect(screen.queryByRole("button", { name: "Cancel subscription" })).not.toBeInTheDocument()
   })
+
+  it("does not show the cancel button for closed beta subscriptions", () => {
+    render(
+      <SubscriptionStatusCard
+        subscription={makeSubscription({
+          status: "active",
+          plan: {
+            id: "closed_beta",
+            name: "Closed Beta",
+            tier: "closed_beta",
+            currency: "USD",
+            features: {},
+            is_public: true,
+            created_at: "",
+            updated_at: "",
+          },
+        })}
+        onCancel={() => {}}
+      />,
+    )
+
+    expect(screen.queryByRole("button", { name: "Cancel subscription" })).not.toBeInTheDocument()
+  })
+
+  it("does not show the cancel button for past due subscriptions", () => {
+    render(
+      <SubscriptionStatusCard
+        subscription={makeSubscription({ status: "past_due" })}
+        onCancel={() => {}}
+      />,
+    )
+
+    expect(screen.queryByRole("button", { name: "Cancel subscription" })).not.toBeInTheDocument()
+  })
 })

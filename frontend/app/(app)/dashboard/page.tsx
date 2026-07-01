@@ -4,6 +4,8 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { DashboardQuickTrade } from "@/components/dashboard/dashboard-quick-trade"
 import { fetchHoldingsData } from "@/components/dashboard/holdings-table-server"
 import { getNetWorth } from "@/lib/api/server-analytics"
+import { handleServerAuthError } from "@/lib/api/server-client"
+import { isApiError, isSubscriptionRequiredError } from "@/lib/api/errors"
 import { parsePageParams, type PageSize } from "@/lib/pagination/table-pagination"
 import {
   ActivityFeedCardSkeleton,
@@ -16,8 +18,15 @@ interface DashboardPageProps {
 }
 
 async function NetWorthCardServer() {
-  const data = await getNetWorth().catch(() => null)
-  return <NetWorthCard initialData={data} />
+  try {
+    const data = await getNetWorth()
+    return <NetWorthCard initialData={data} />
+  } catch (error) {
+    if (isApiError(error) && (error.status === 401 || isSubscriptionRequiredError(error))) {
+      handleServerAuthError(error)
+    }
+    return <NetWorthCard initialData={null} />
+  }
 }
 
 async function DashboardQuickTradeServer({

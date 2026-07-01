@@ -69,8 +69,12 @@ function statusDescription(subscription: Subscription): string {
   }
 }
 
-function showCancelButton(status: Subscription["status"]): boolean {
-  return status === "active" || status === "trialing" || status === "past_due"
+function showCancelButton(subscription: Subscription): boolean {
+  if (subscription.plan?.tier === "closed_beta") {
+    return false
+  }
+
+  return subscription.status === "active" || subscription.status === "trialing"
 }
 
 export function SubscriptionStatusCard({
@@ -93,7 +97,7 @@ export function SubscriptionStatusCard({
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-muted-foreground">
         <p>{statusDescription(subscription)}</p>
-        {showCancelButton(subscription.status) && onCancel && (
+        {showCancelButton(subscription) && onCancel && (
           <Button
             type="button"
             variant="outline"

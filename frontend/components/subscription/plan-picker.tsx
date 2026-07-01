@@ -3,11 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { Plan } from "@/lib/api/subscription"
+import type { Plan, Subscription } from "@/lib/api/subscription"
 
 interface PlanPickerProps {
   plans: Plan[]
   currentPlanId: string
+  subscriptionStatus?: Subscription["status"]
   onSelect?: (plan: Plan) => void
 }
 
@@ -24,7 +25,7 @@ function formatPrice(plan: Plan): string | null {
   return null
 }
 
-export function PlanPicker({ plans, currentPlanId, onSelect }: PlanPickerProps) {
+export function PlanPicker({ plans, currentPlanId, subscriptionStatus, onSelect }: PlanPickerProps) {
   if (plans.length === 0) {
     return <p className="text-sm text-muted-foreground">No plans available.</p>
   }
@@ -33,6 +34,7 @@ export function PlanPicker({ plans, currentPlanId, onSelect }: PlanPickerProps) 
     <div className="grid gap-4 sm:grid-cols-2">
       {plans.map((plan) => {
         const isCurrent = plan.id === currentPlanId
+        const canReactivate = isCurrent && subscriptionStatus === "canceled"
         const price = formatPrice(plan)
 
         return (
@@ -64,7 +66,16 @@ export function PlanPicker({ plans, currentPlanId, onSelect }: PlanPickerProps) 
                 )}
               </ul>
               <div className="mt-4">
-                {isCurrent ? (
+                {canReactivate ? (
+                  <Button
+                    variant="default"
+                    className="w-full"
+                    onClick={() => onSelect?.(plan)}
+                    disabled={!onSelect}
+                  >
+                    Reactivate
+                  </Button>
+                ) : isCurrent ? (
                   <Button variant="outline" className="w-full" disabled>
                     Current plan
                   </Button>

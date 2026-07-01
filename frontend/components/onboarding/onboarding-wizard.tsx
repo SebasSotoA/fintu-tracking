@@ -54,12 +54,17 @@ export function OnboardingWizard({ initialProfile }: OnboardingWizardProps) {
 
   const onSubmit = async (values: OnboardingForm) => {
     try {
-      await complete.mutateAsync({
+      const updatedProfile = await complete.mutateAsync({
         country: values.country,
         broker_preset_id: values.brokerPresetId,
       })
       toast.success("Welcome to Fintu!")
-      router.push("/dashboard")
+      const destination =
+        updatedProfile.subscription_status === "active" ||
+        updatedProfile.subscription_status === "trialing"
+          ? "/dashboard"
+          : "/subscription"
+      router.push(destination)
       router.refresh()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to complete onboarding")
@@ -148,7 +153,7 @@ export function OnboardingWizard({ initialProfile }: OnboardingWizardProps) {
             Back
           </Button>
           <Button type="submit" disabled={complete.isPending}>
-            {complete.isPending ? "Saving..." : "Go to dashboard"}
+            {complete.isPending ? "Saving..." : "Finish setup"}
           </Button>
         </CardFooter>
       </Card>

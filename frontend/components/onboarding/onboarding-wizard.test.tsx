@@ -14,10 +14,15 @@ vi.mock("@/lib/market-config/market-config", () => ({
   SUPPORTED_COUNTRIES: ["co", "mx"],
   countryLabel: (country: string) => (country === "co" ? "Colombia" : country === "mx" ? "Mexico" : country.toUpperCase()),
 }))
+const { mockPush, mockRefresh } = vi.hoisted(() => ({
+  mockPush: vi.fn(),
+  mockRefresh: vi.fn(),
+}))
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: vi.fn(),
-    refresh: vi.fn(),
+    push: mockPush,
+    refresh: mockRefresh,
   }),
 }))
 
@@ -61,6 +66,8 @@ describe("OnboardingWizard", () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+    mockPush.mockReset()
+    mockRefresh.mockReset()
     vi.mocked(useCompleteOnboarding).mockReturnValue(mockUseCompleteOnboarding)
   })
 
@@ -89,7 +96,7 @@ describe("OnboardingWizard", () => {
     const brokerSelect = screen.getByTestId("select")
     await user.selectOptions(brokerSelect, "hapi-colombia")
 
-    await user.click(screen.getByRole("button", { name: "Go to dashboard" }))
+    await user.click(screen.getByRole("button", { name: "Finish setup" }))
 
     expect(mockComplete).toHaveBeenCalledWith({
       country: "co",
@@ -97,4 +104,41 @@ describe("OnboardingWizard", () => {
     })
   })
 
+  it("redirects to subscription when onboarding completes without active subscription", async () => {
+    const user = userEvent.setup()
+    mockComplete.mockResolvedValueOnce({
+      ...baseProfile,
+      onboarding_completed: true,
+      subscription_status: "canceled",
+    })
+
+    render(<OnboardingWizard initialProfile={baseProfile} />)
+
+    await user.click(screen.getByRole("button", { name: "Get started" }))
+    await user.selectOptions(screen.getByTestId("select"), "co")
+    await user.click(screen.getByRole("button", { name: "Continue" }))
+    await user.selectOptions(screen.getByTestId("select"), "hapi-colombia")
+    await user.click(screen.getByRole("button", { name: "Finish setup" }))
+
+    expect(mockPush).toHaveBeenCalledWith("/subscription")
+  })
+
+  it("redirects to dashboard when onboarding completes with active subscription", async () => {
+    const user = userEvent.setup()
+    mockComplete.mockResolvedValueOnce({
+      ...baseProfile,
+      onboarding_completed: true,
+      subscription_status: "active",
+    })
+
+    render(<OnboardingWizard initialProfile={baseProfile} />)
+
+    await user.click(screen.getByRole("button", { name: "Get started" }))
+    await user.selectOptions(screen.getByTestId("select"), "co")
+    await user.click(screen.getByRole("button", { name: "Continue" }))
+    await user.selectOptions(screen.getByTestId("select"), "hapi-colombia")
+    await user.click(screen.getByRole("button", { name: "Finish setup" }))
+
+    expect(mockPush).toHaveBeenCalledWith("/dashboard")
+  })
 })

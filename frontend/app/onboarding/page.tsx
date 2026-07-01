@@ -22,7 +22,12 @@ export default async function OnboardingPage() {
     handleServerAuthError(error)
   }
 
-  if (profile.onboarding_completed) redirect("/dashboard")
+  if (profile.onboarding_completed) {
+    if (profile.subscription_status === "active" || profile.subscription_status === "trialing") {
+      redirect("/dashboard")
+    }
+    redirect("/subscription")
+  }
 
   return <OnboardingWizard initialProfile={profile} />
 }

@@ -1,7 +1,16 @@
-import type { Holding, MarketPrice } from "@/lib/types"
+import type { Holding } from "@/lib/types"
 import { getHoldingsPaginated, listMarketPrices } from "@/lib/api/server-portfolio"
+import { handleServerAuthError } from "@/lib/api/server-client"
+import { isApiError, isSubscriptionRequiredError } from "@/lib/api/errors"
 import { HoldingsTable } from "@/components/dashboard/holdings-table"
 import type { PageSize } from "@/lib/pagination/table-pagination"
+
+function handlePortfolioFetchError(error: unknown): never {
+  if (isApiError(error) && (error.status === 401 || isSubscriptionRequiredError(error))) {
+    handleServerAuthError(error)
+  }
+  throw error
+}
 
 interface HoldingsTableServerProps {
   page: number
@@ -23,13 +32,10 @@ export async function fetchHoldingsData(
   pageSize: PageSize,
 ): Promise<HoldingsTableData> {
   const [holdingsResult, marketPrices] = await Promise.all([
-    getHoldingsPaginated({ page, page_size: pageSize }).catch(() => ({
-      items: [] as Holding[],
-      total: 0,
-      page,
-      page_size: pageSize,
-    })),
-    listMarketPrices().catch<MarketPrice[]>(() => []),
+    getHoldingsPaginated({ page, page_size: pageSize }).catch((error) =>
+      handlePortfolioFetchError(error),
+    ),
+    listMarketPrices().catch((error) => handlePortfolioFetchError(error)),
   ])
 
   const priceUpdatedAtByTicker: Record<string, string | null> = {}

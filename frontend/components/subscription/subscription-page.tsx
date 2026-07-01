@@ -12,15 +12,11 @@ import { PlanPicker } from "./plan-picker"
 import { createSubscription, cancelSubscription, billingProvider, type Plan, type Subscription } from "@/lib/api/subscription"
 import { queryKeys } from "@/lib/api/query-keys"
 import { showToast } from "@/lib/toast"
-import { ApiError } from "@/lib/api/client"
+import { isApiError } from "@/lib/api/errors"
 
 interface SubscriptionPageProps {
   plans: Plan[]
   subscription: Subscription | null
-}
-
-function isApiError(err: unknown): err is ApiError {
-  return err instanceof ApiError
 }
 
 export function SubscriptionPage({ plans, subscription }: SubscriptionPageProps) {
@@ -117,6 +113,7 @@ export function SubscriptionPage({ plans, subscription }: SubscriptionPageProps)
             <PlanPicker
               plans={plans}
               currentPlanId={subscription.plan_id}
+              subscriptionStatus={subscription.status}
               onSelect={handleSelectPlan}
             />
           )}
