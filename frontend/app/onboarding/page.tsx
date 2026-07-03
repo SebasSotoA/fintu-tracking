@@ -1,16 +1,27 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+"use client"
 
-export const dynamic = "force-dynamic"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
+import { Spinner } from "@/components/ui/spinner"
 
-export default async function OnboardingPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
+export default function OnboardingPage() {
+  const router = useRouter()
 
-  if (error || !user) redirect("/auth/login")
+  useEffect(() => {
+    const supabase = createClient()
+    void supabase.auth.getUser().then(({ data: { user }, error }) => {
+      if (error || !user) {
+        router.replace("/auth/login")
+        return
+      }
+      router.replace("/dashboard")
+    })
+  }, [router])
 
-  redirect("/dashboard")
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <Spinner className="size-8" />
+    </div>
+  )
 }

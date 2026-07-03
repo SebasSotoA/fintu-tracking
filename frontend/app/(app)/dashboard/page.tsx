@@ -1,81 +1,72 @@
-import { Suspense } from "react"
+"use client"
+
+import { Suspense, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { NetWorthCard } from "@/components/dashboard/net-worth-card"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { DashboardQuickTrade } from "@/components/dashboard/dashboard-quick-trade"
-import { fetchHoldingsData } from "@/components/dashboard/holdings-table-server"
-import { getNetWorth } from "@/lib/api/server-analytics"
-import { handleServerAuthError } from "@/lib/api/server-client"
-import { isApiError, isSubscriptionRequiredError } from "@/lib/api/errors"
-import { parsePageParams, type PageSize } from "@/lib/pagination/table-pagination"
+import { DashboardEmptyState } from "@/components/dashboard/dashboard-empty-state"
 import {
-  ActivityFeedCardSkeleton,
   HoldingsTableCardSkeleton,
   NetWorthCardSkeleton,
 } from "@/components/dashboard/dashboard-card-skeleton"
-import { DashboardEmptyState } from "@/components/dashboard/dashboard-empty-state"
+import { useHoldingsData } from "@/hooks/use-holdings-data"
+import { getNetWorth } from "@/lib/api/analytics"
+import { queryKeys } from "@/lib/api/query-keys"
+import { parsePageParams } from "@/lib/pagination/table-pagination"
 
-interface DashboardPageProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}
-
-async function NetWorthCardServer() {
-  try {
-    const data = await getNetWorth()
-    return <NetWorthCard initialData={data} />
-  } catch (error) {
-    if (isApiError(error) && (error.status === 401 || isSubscriptionRequiredError(error))) {
-      handleServerAuthError(error)
-    }
-    return <NetWorthCard initialData={null} />
-  }
-}
-
-async function DashboardQuickTradeServer({
-  page,
-  pageSize,
-}: {
-  page: number
-  pageSize: PageSize
-}) {
-  const data = await fetchHoldingsData(page, pageSize)
-
-  if (data.total === 0) {
-    return <DashboardEmptyState />
-  }
-
+export default function DashboardPage() {
   return (
-    <DashboardQuickTrade
-      holdings={data.holdings}
-      total={data.total}
-      page={data.page}
-      pageSize={data.pageSize}
-      priceUpdatedAtByTicker={data.priceUpdatedAtByTicker}
-      lastPriceRefreshAt={data.lastPriceRefreshAt}
-    />
+    <Suspense fallback={<HoldingsTableCardSkeleton />}>
+      <DashboardPageContent />
+    </Suspense>
   )
 }
 
-export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const params = await searchParams
-  const { page, pageSize } = parsePageParams(params)
+function DashboardPageContent() {
+  const searchParams = useSearchParams()
+  const { page, pageSize } = useMemo(
+    () => parsePageParams(Object.fromEntries(searchParams.entries())),
+    [searchParams],
+  )
+
+  const netWorthQuery = useQuery({
+    queryKey: queryKeys.netWorth(),
+    queryFn: getNetWorth,
+    retry: false,
+  })
+
+  const holdingsQuery = useHoldingsData(page, pageSize)
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 items-stretch">
         <div className="flex flex-col">
-          <Suspense fallback={<NetWorthCardSkeleton />}>
-            <NetWorthCardServer />
-          </Suspense>
+          {netWorthQuery.isLoading ? (
+            <NetWorthCardSkeleton />
+          ) : (
+            <NetWorthCard initialData={netWorthQuery.data ?? null} />
+          )}
         </div>
         <div className="flex flex-col">
-          <Suspense fallback={<ActivityFeedCardSkeleton />}>
-            <ActivityFeed />
-          </Suspense>
+          <ActivityFeed />
         </div>
       </div>
-      <Suspense fallback={<HoldingsTableCardSkeleton />}>
-        <DashboardQuickTradeServer page={page} pageSize={pageSize} />
-      </Suspense>
+      {holdingsQuery.isLoading ? (
+        <HoldingsTableCardSkeleton />
+      ) : holdingsQuery.data?.total === 0 ? (
+        <DashboardEmptyState />
+      ) : holdingsQuery.data ? (
+        <DashboardQuickTrade
+          holdings={holdingsQuery.data.holdings}
+          total={holdingsQuery.data.total}
+          page={holdingsQuery.data.page}
+          pageSize={holdingsQuery.data.pageSize}
+          priceUpdatedAtByTicker={holdingsQuery.data.priceUpdatedAtByTicker}
+          lastPriceRefreshAt={holdingsQuery.data.lastPriceRefreshAt}
+        />
+      ) : null}
     </div>
   )
 }

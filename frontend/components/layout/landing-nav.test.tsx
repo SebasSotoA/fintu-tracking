@@ -4,12 +4,12 @@ import { LandingNav } from "./landing-nav"
 
 const mockGetUser = vi.fn()
 
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: vi.fn(async () => ({
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
     auth: {
       getUser: mockGetUser,
     },
-  })),
+  }),
 }))
 
 describe("LandingNav", () => {
@@ -20,9 +20,12 @@ describe("LandingNav", () => {
   it("shows login and get started when logged out", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
-    render(await LandingNav())
+    render(<LandingNav />)
 
-    expect(screen.getByRole("link", { name: "Login" })).toHaveAttribute("href", "/auth/login")
+    expect(await screen.findByRole("link", { name: "Login" })).toHaveAttribute(
+      "href",
+      "/auth/login",
+    )
     expect(screen.getByRole("link", { name: "Get Started" })).toHaveAttribute(
       "href",
       "/auth/sign-up",
@@ -33,7 +36,8 @@ describe("LandingNav", () => {
   it("uses glass header styling that merges with the hero gradient", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null } })
 
-    const { container } = render(await LandingNav())
+    const { container } = render(<LandingNav />)
+    await screen.findByRole("link", { name: "Login" })
     const header = container.querySelector("header")
 
     expect(header).toHaveClass("sticky", "backdrop-blur-md", "border-border/10")
@@ -46,9 +50,12 @@ describe("LandingNav", () => {
       data: { user: { id: "user-1", email: "investor@example.com" } },
     })
 
-    render(await LandingNav())
+    render(<LandingNav />)
 
-    expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute("href", "/dashboard")
+    expect(await screen.findByRole("link", { name: "Dashboard" })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    )
     expect(screen.queryByRole("link", { name: "Login" })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Get Started" })).not.toBeInTheDocument()
   })

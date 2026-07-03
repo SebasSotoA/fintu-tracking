@@ -1,15 +1,24 @@
+"use client"
+
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { FintuLogo } from "@/components/brand/fintu-logo"
 import { Button } from "@/components/ui/button"
 import { LayoutDashboard } from "lucide-react"
 import { LandingNavMobile } from "@/components/layout/landing-nav-mobile"
 
-export async function LandingNav() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+export function LandingNav() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+    void supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(Boolean(user))
+      setHydrated(true)
+    })
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/10 bg-background/35 backdrop-blur-md supports-[backdrop-filter]:bg-background/25">
@@ -33,7 +42,7 @@ export async function LandingNav() {
 
         <div className="flex items-center gap-2">
           <div className="hidden items-center gap-3 md:flex">
-            {user ? (
+            {hydrated && isAuthenticated ? (
               <Button asChild size="sm" className="gap-2">
                 <Link href="/dashboard">
                   <LayoutDashboard className="h-4 w-4" />
@@ -51,7 +60,7 @@ export async function LandingNav() {
               </>
             )}
           </div>
-          <LandingNavMobile isAuthenticated={Boolean(user)} />
+          <LandingNavMobile isAuthenticated={hydrated && isAuthenticated} />
         </div>
       </div>
     </header>

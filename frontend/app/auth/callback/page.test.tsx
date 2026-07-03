@@ -1,19 +1,20 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import OnboardingPage from "./page"
+import AuthCallbackPage from "./page"
 
 const mockReplace = vi.fn()
-const mockGetUser = vi.fn()
+const mockExchangeCodeForSession = vi.fn()
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
+  useSearchParams: () => new URLSearchParams("code=abc123&next=/dashboard"),
 }))
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
     auth: {
-      getUser: mockGetUser,
+      exchangeCodeForSession: mockExchangeCodeForSession,
     },
   }),
 }))
@@ -22,31 +23,22 @@ function renderPage() {
   const queryClient = new QueryClient()
   return render(
     <QueryClientProvider client={queryClient}>
-      <OnboardingPage />
+      <AuthCallbackPage />
     </QueryClientProvider>,
   )
 }
 
-describe("OnboardingPage", () => {
+describe("AuthCallbackPage", () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null })
+    mockExchangeCodeForSession.mockResolvedValue({ error: null })
   })
 
-  it("redirects unauthenticated users to login", async () => {
-    mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
-
+  it("exchanges code for session and redirects to next", async () => {
     renderPage()
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith("/auth/login")
-    })
-  })
-
-  it("redirects authenticated users to dashboard", async () => {
-    renderPage()
-
-    await waitFor(() => {
+      expect(mockExchangeCodeForSession).toHaveBeenCalledWith("abc123")
       expect(mockReplace).toHaveBeenCalledWith("/dashboard")
     })
   })

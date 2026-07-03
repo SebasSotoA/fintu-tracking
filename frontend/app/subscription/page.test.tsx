@@ -1,15 +1,21 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { ApiError } from "@/lib/api/server-client"
+import { render, screen, waitFor } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { ApiError } from "@/lib/api/client"
 import type { Profile } from "@/lib/api/me"
+import SubscriptionPageClient from "./page"
 
+const mockReplace = vi.fn()
 const mockGetUser = vi.fn()
-const mockRedirect = vi.fn()
-const mockServerGet = vi.fn()
-const mockServerListPlans = vi.fn()
-const mockServerGetCurrentSubscription = vi.fn()
-const mockHandleServerAuthError = vi.fn()
+const mockGetMe = vi.fn()
+const mockListPlans = vi.fn()
+const mockGetCurrentSubscription = vi.fn()
 
-vi.mock("@/lib/supabase/server", () => ({
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: mockReplace }),
+}))
+
+vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
     auth: {
       getUser: mockGetUser,
@@ -17,25 +23,13 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }))
 
-vi.mock("next/navigation", () => ({
-  redirect: (url: string) => {
-    mockRedirect(url)
-    throw new Error(`NEXT_REDIRECT:${url}`)
-  },
+vi.mock("@/lib/api/me", () => ({
+  getMe: () => mockGetMe(),
 }))
 
-vi.mock("@/lib/api/server-client", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@/lib/api/server-client")>()
-  return {
-    ...original,
-    serverGet: (endpoint: string) => mockServerGet(endpoint),
-    handleServerAuthError: (error: unknown) => mockHandleServerAuthError(error),
-  }
-})
-
-vi.mock("@/lib/api/server-subscription", () => ({
-  serverListPlans: () => mockServerListPlans(),
-  serverGetCurrentSubscription: () => mockServerGetCurrentSubscription(),
+vi.mock("@/lib/api/subscription", () => ({
+  listPlans: () => mockListPlans(),
+  getCurrentSubscription: () => mockGetCurrentSubscription(),
 }))
 
 vi.mock("@/components/subscription/subscription-page", () => ({
@@ -54,35 +48,48 @@ const baseProfile: Profile = {
   updated_at: "",
 }
 
-describe("SubscriptionPageServer", () => {
+function renderPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <SubscriptionPageClient />
+    </QueryClientProvider>,
+  )
+}
+
+describe("SubscriptionPageClient", () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null })
-    mockServerGet.mockResolvedValue(baseProfile)
-    mockServerListPlans.mockResolvedValue([])
-    mockServerGetCurrentSubscription.mockResolvedValue(null)
-    mockHandleServerAuthError.mockImplementation(() => {
-      throw new Error("AUTH_REDIRECT")
+    mockGetMe.mockResolvedValue(baseProfile)
+    mockListPlans.mockResolvedValue([])
+    mockGetCurrentSubscription.mockResolvedValue(null)
+  })
+
+  it("renders SubscriptionPage when profile and plans load", async () => {
+    renderPage()
+    expect(await screen.findByText("SubscriptionPage")).toBeInTheDocument()
+  })
+
+  it("redirects to dashboard when subscription is active", async () => {
+    mockGetMe.mockResolvedValue({
+      ...baseProfile,
+      subscription_status: "active",
+    })
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith("/dashboard")
     })
   })
 
-  it("uses isApiError path for plan fetch auth failures", async () => {
-    const plansError = new ApiError("Forbidden", 403)
-    mockServerListPlans.mockRejectedValue(plansError)
+  it("handles 404 subscription as null", async () => {
+    mockGetCurrentSubscription.mockRejectedValue(new ApiError("Not found", 404))
 
-    const { default: SubscriptionPageServer } = await import("./page")
-
-    await expect(SubscriptionPageServer()).rejects.toThrow("AUTH_REDIRECT")
-    expect(mockHandleServerAuthError).toHaveBeenCalledWith(plansError)
-  })
-
-  it("uses isApiError path for subscription fetch non-404 failures", async () => {
-    const subscriptionError = new ApiError("Forbidden", 403)
-    mockServerGetCurrentSubscription.mockRejectedValue(subscriptionError)
-
-    const { default: SubscriptionPageServer } = await import("./page")
-
-    await expect(SubscriptionPageServer()).rejects.toThrow("AUTH_REDIRECT")
-    expect(mockHandleServerAuthError).toHaveBeenCalledWith(subscriptionError)
+    renderPage()
+    expect(await screen.findByText("SubscriptionPage")).toBeInTheDocument()
   })
 })

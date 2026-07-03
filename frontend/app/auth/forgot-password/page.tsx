@@ -1,18 +1,32 @@
 "use client"
 
 import type React from "react"
-
+import { Suspense, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
+import { Spinner } from "@/components/ui/spinner"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { useState } from "react"
 
 export default function ForgotPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-48 items-center justify-center">
+          <Spinner className="size-8" />
+        </div>
+      }
+    >
+      <ForgotPasswordContent />
+    </Suspense>
+  )
+}
+
+function ForgotPasswordContent() {
   const searchParams = useSearchParams()
   const initialError = searchParams.get("error")
 

@@ -13,3 +13,7 @@ export function isApiError(error: unknown): error is ApiErrorLike {
 export function isSubscriptionRequiredError(error: unknown): boolean {
   return isApiError(error) && (error.status === 402 || error.status === 403)
 }
+
+export function isUnauthorizedError(error: unknown): boolean {
+  return isApiError(error) && error.status === 401
+}

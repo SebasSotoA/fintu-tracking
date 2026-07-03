@@ -1,68 +1,83 @@
-import { Suspense } from "react"
+"use client"
+
+import { Suspense, useMemo } from "react"
+import { useSearchParams } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
 import { TradesList } from "@/components/trades/trades-list"
 import { AddTradeDialog } from "@/components/trades/add-trade-dialog"
-import { listTradeTickers, listTradesPaginated } from "@/lib/api/server-trades"
+import { listTradeTickers, listTradesPaginated } from "@/lib/api/trades"
 import {
   parseTradeFiltersFromSearchParams,
   tradeFiltersToApiParams,
 } from "@/lib/trades/trade-filters"
 import { parsePageParams } from "@/lib/pagination/table-pagination"
-import type { Trade } from "@/lib/types"
 import type { PageSize } from "@/lib/pagination/table-pagination"
+import { Spinner } from "@/components/ui/spinner"
 
-interface TradesPageProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+export default function TradesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-96 items-center justify-center">
+          <Spinner className="size-8" />
+        </div>
+      }
+    >
+      <TradesPageContent />
+    </Suspense>
+  )
 }
 
-export default async function TradesPage({ searchParams }: TradesPageProps) {
-  const params = await searchParams
-  const filters = parseTradeFiltersFromSearchParams(params)
-  const { page, pageSize } = parsePageParams(params)
+function TradesPageContent() {
+  const searchParams = useSearchParams()
+  const paramsRecord = useMemo(
+    () => Object.fromEntries(searchParams.entries()),
+    [searchParams],
+  )
+  const filters = useMemo(() => parseTradeFiltersFromSearchParams(paramsRecord), [paramsRecord])
+  const { page, pageSize } = useMemo(() => parsePageParams(paramsRecord), [paramsRecord])
 
-  let trades: Trade[] = []
-  let total = 0
-  let currentPage = page
-  let currentPageSize: PageSize = pageSize
-  let tickers: string[] = []
+  const tradesQuery = useQuery({
+    queryKey: ["trades", filters, page, pageSize],
+    queryFn: () =>
+      listTradesPaginated({
+        ...tradeFiltersToApiParams(filters),
+        page,
+        page_size: pageSize,
+      }),
+  })
 
-  const [tradesResult, tickersResult] = await Promise.allSettled([
-    listTradesPaginated({
-      ...tradeFiltersToApiParams(filters),
-      page,
-      page_size: pageSize,
-    }),
-    listTradeTickers(),
-  ])
+  const tickersQuery = useQuery({
+    queryKey: ["trade-tickers"],
+    queryFn: listTradeTickers,
+  })
 
-  if (tradesResult.status === "fulfilled") {
-    trades = tradesResult.value.items
-    total = tradesResult.value.total
-    currentPage = tradesResult.value.page
-    currentPageSize = tradesResult.value.page_size as PageSize
-  } else {
-    console.error("Failed to fetch trades:", tradesResult.reason)
+  if (tradesQuery.isLoading) {
+    return (
+      <div className="flex min-h-96 items-center justify-center">
+        <Spinner className="size-8" />
+      </div>
+    )
   }
 
-  if (tickersResult.status === "fulfilled") {
-    tickers = tickersResult.value
-  } else {
-    console.error("Failed to fetch trade tickers:", tickersResult.reason)
-  }
+  const trades = tradesQuery.data?.items ?? []
+  const total = tradesQuery.data?.total ?? 0
+  const currentPage = tradesQuery.data?.page ?? page
+  const currentPageSize = (tradesQuery.data?.page_size ?? pageSize) as PageSize
+  const tickers = tickersQuery.data ?? []
 
   return (
     <>
       <div className="flex justify-end mb-8">
         <AddTradeDialog />
       </div>
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-lg bg-muted" />}>
-        <TradesList
-          trades={trades}
-          total={total}
-          page={currentPage}
-          pageSize={currentPageSize}
-          tickers={tickers}
-        />
-      </Suspense>
+      <TradesList
+        trades={trades}
+        total={total}
+        page={currentPage}
+        pageSize={currentPageSize}
+        tickers={tickers}
+      />
     </>
   )
 }

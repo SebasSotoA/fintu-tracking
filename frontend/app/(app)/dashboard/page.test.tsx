@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
-import { act } from "react"
-import { ApiError } from "@/lib/api/server-client"
+import { render, screen, waitFor } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import DashboardPage from "./page"
 
 const {
   mockNetWorthCard,
@@ -9,16 +9,18 @@ const {
   mockDashboardQuickTrade,
   mockSkeleton,
   mockGetNetWorth,
-  mockHandleServerAuthError,
-  mockFetchHoldingsData,
+  mockUseHoldingsData,
 } = vi.hoisted(() => ({
   mockNetWorthCard: vi.fn(),
   mockActivityFeed: vi.fn(),
   mockDashboardQuickTrade: vi.fn(),
   mockSkeleton: vi.fn(),
   mockGetNetWorth: vi.fn(),
-  mockHandleServerAuthError: vi.fn(),
-  mockFetchHoldingsData: vi.fn(),
+  mockUseHoldingsData: vi.fn(),
+}))
+
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(),
 }))
 
 vi.mock("@/components/dashboard/net-worth-card", () => ({
@@ -61,86 +63,83 @@ vi.mock("@/components/dashboard/dashboard-card-skeleton", () => ({
   },
 }))
 
-vi.mock("@/lib/api/server-analytics", () => ({
+vi.mock("@/lib/api/analytics", () => ({
   getNetWorth: () => mockGetNetWorth(),
 }))
 
-vi.mock("@/lib/api/server-client", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@/lib/api/server-client")>()
-  return {
-    ...original,
-    handleServerAuthError: (error: unknown) => mockHandleServerAuthError(error),
-  }
-})
-
-vi.mock("@/components/dashboard/holdings-table-server", () => ({
-  fetchHoldingsData: (...args: unknown[]) => mockFetchHoldingsData(...args),
+vi.mock("@/hooks/use-holdings-data", () => ({
+  useHoldingsData: (...args: unknown[]) => mockUseHoldingsData(...args),
 }))
 
-async function renderPage() {
-  const { default: DashboardPage } = await import("./page")
-  const ui = await DashboardPage({ searchParams: Promise.resolve({}) })
-  await act(async () => {
-    render(ui)
+function renderPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <DashboardPage />
+    </QueryClientProvider>,
+  )
 }
 
 describe("DashboardPage", () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockGetNetWorth.mockResolvedValue({})
-    mockFetchHoldingsData.mockResolvedValue({
-      holdings: [{ ticker: "AAPL" }],
-      total: 1,
-      page: 1,
-      pageSize: 10,
-      priceUpdatedAtByTicker: {},
-      lastPriceRefreshAt: null,
+    mockUseHoldingsData.mockReturnValue({
+      isLoading: false,
+      data: {
+        holdings: [{ ticker: "AAPL" }],
+        total: 1,
+        page: 1,
+        pageSize: 10,
+        priceUpdatedAtByTicker: {},
+        lastPriceRefreshAt: null,
+      },
     })
-    mockHandleServerAuthError.mockImplementation(() => {
-      throw new Error("AUTH_REDIRECT")
-    })
-  })
-
-  it("calls handleServerAuthError when net worth fetch returns 402", async () => {
-    mockGetNetWorth.mockRejectedValue(new ApiError("Payment required", 402))
-
-    await expect(renderPage()).rejects.toThrow("AUTH_REDIRECT")
-    expect(mockHandleServerAuthError).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 402 }),
-    )
   })
 
   it("renders the top grid with responsive gap", async () => {
-    await renderPage()
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByTestId("net-worth-card")).toBeInTheDocument()
+    })
     const grid = screen.getByTestId("net-worth-card").parentElement?.parentElement
     expect(grid).toHaveClass("gap-4")
     expect(grid).toHaveClass("md:gap-6")
   })
 
   it("renders NetWorthCard and ActivityFeed in the top grid", async () => {
-    await renderPage()
-    expect(screen.getByTestId("net-worth-card")).toBeInTheDocument()
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByTestId("net-worth-card")).toBeInTheDocument()
+    })
     expect(screen.getByTestId("activity-feed")).toBeInTheDocument()
   })
 
   it("renders DashboardQuickTrade below the top grid", async () => {
-    await renderPage()
-    expect(screen.getByTestId("dashboard-quick-trade")).toBeInTheDocument()
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByTestId("dashboard-quick-trade")).toBeInTheDocument()
+    })
   })
 
   it("renders DashboardEmptyState when there are no holdings", async () => {
-    mockFetchHoldingsData.mockResolvedValue({
-      holdings: [],
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      priceUpdatedAtByTicker: {},
-      lastPriceRefreshAt: null,
+    mockUseHoldingsData.mockReturnValue({
+      isLoading: false,
+      data: {
+        holdings: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+        priceUpdatedAtByTicker: {},
+        lastPriceRefreshAt: null,
+      },
     })
 
-    vi.resetModules()
-    await renderPage()
-    expect(screen.getByTestId("dashboard-empty-state")).toBeInTheDocument()
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByTestId("dashboard-empty-state")).toBeInTheDocument()
+    })
   })
 })

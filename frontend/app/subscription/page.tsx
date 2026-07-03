@@ -1,70 +1,87 @@
-import type { Metadata } from "next"
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { serverGet, handleServerAuthError } from "@/lib/api/server-client"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useQuery } from "@tanstack/react-query"
+import { createClient } from "@/lib/supabase/client"
+import { getMe } from "@/lib/api/me"
+import { listPlans, getCurrentSubscription } from "@/lib/api/subscription"
+import { queryKeys } from "@/lib/api/query-keys"
+import { ApiError } from "@/lib/api/client"
 import { isApiError } from "@/lib/api/errors"
-import { serverListPlans, serverGetCurrentSubscription } from "@/lib/api/server-subscription"
-import type { Profile } from "@/lib/api/me"
 import { SubscriptionPage } from "@/components/subscription/subscription-page"
+import { Spinner } from "@/components/ui/spinner"
 
-export const dynamic = "force-dynamic"
+export default function SubscriptionPageClient() {
+  const router = useRouter()
 
-export const metadata: Metadata = {
-  title: "Subscription | Fintu",
-}
+  useEffect(() => {
+    const supabase = createClient()
+    void supabase.auth.getUser().then(({ data: { user }, error }) => {
+      if (error || !user) {
+        router.replace("/auth/login")
+      }
+    })
+  }, [router])
 
-export default async function SubscriptionPageServer() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
+  const profileQuery = useQuery({
+    queryKey: queryKeys.me(),
+    queryFn: getMe,
+  })
 
-  if (error || !user) {
-    redirect("/auth/login")
+  const plansQuery = useQuery({
+    queryKey: queryKeys.plans(),
+    queryFn: listPlans,
+    enabled: profileQuery.isSuccess,
+  })
+
+  const subscriptionQuery = useQuery({
+    queryKey: queryKeys.subscription(),
+    queryFn: getCurrentSubscription,
+    enabled: profileQuery.isSuccess,
+    retry: (_count, error) => !(error instanceof ApiError && error.status === 404),
+  })
+
+  useEffect(() => {
+    const profile = profileQuery.data
+    if (!profile) return
+
+    if (!profile.onboarding_completed) {
+      router.replace("/dashboard")
+      return
+    }
+
+    if (profile.subscription_status === "active" || profile.subscription_status === "trialing") {
+      router.replace("/dashboard")
+    }
+  }, [profileQuery.data, router])
+
+  if (profileQuery.isLoading || plansQuery.isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner className="size-8" />
+      </div>
+    )
   }
 
-  let profile: Profile
-  try {
-    profile = await serverGet<Profile>("/api/me")
-  } catch (error) {
-    handleServerAuthError(error)
-  }
-
-  // Incomplete onboarding is handled by the setup modal on /dashboard.
-  if (!profile.onboarding_completed) {
-    redirect("/dashboard")
-  }
-
-  // Active/trialing users do not need to be on this page.
-  if (profile.subscription_status === "active" || profile.subscription_status === "trialing") {
-    redirect("/dashboard")
-  }
-
-  let plans: Awaited<ReturnType<typeof serverListPlans>>
-  try {
-    plans = await serverListPlans()
-  } catch (error) {
-    if (isApiError(error)) {
-      handleServerAuthError(error)
+  if (profileQuery.isError || plansQuery.isError) {
+    const error = profileQuery.error ?? plansQuery.error
+    if (isApiError(error) && (error.status === 401 || error.status === 402 || error.status === 403)) {
+      return null
     }
     throw error
   }
 
-  let subscription: Awaited<ReturnType<typeof serverGetCurrentSubscription>> | null = null
-  try {
-    subscription = await serverGetCurrentSubscription()
-  } catch (error) {
-    if (isApiError(error)) {
-      if (error.status === 404) {
-        subscription = null
-      } else {
-        handleServerAuthError(error)
-      }
-    } else {
-      throw error
-    }
+  const subscription =
+    subscriptionQuery.isError &&
+    subscriptionQuery.error instanceof ApiError &&
+    subscriptionQuery.error.status === 404
+      ? null
+      : subscriptionQuery.data ?? null
+
+  if (!profileQuery.data || !plansQuery.data) {
+    return null
   }
 
-  return <SubscriptionPage plans={plans} subscription={subscription} />
+  return <SubscriptionPage plans={plansQuery.data} subscription={subscription} />
 }

@@ -5,6 +5,6 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: [".next/**", "node_modules/**"],
+    ignores: [".next/**", "out/**", "node_modules/**"],
   },
 )

@@ -1,32 +1,33 @@
-import { Suspense } from "react"
+"use client"
+
+import { useQuery } from "@tanstack/react-query"
 import { PerformanceContent } from "@/components/performance/performance-content"
 import { PerformanceEmptyState } from "@/components/performance/performance-empty-state"
-import { fetchHoldingsData } from "@/components/dashboard/holdings-table-server"
-import { getNetWorth } from "@/lib/api/server-analytics"
-import type { NetWorthSummary } from "@/lib/api/analytics"
-import PerformanceLoading from "./loading"
+import { useHoldingsData } from "@/hooks/use-holdings-data"
+import { getNetWorth } from "@/lib/api/analytics"
+import { queryKeys } from "@/lib/api/query-keys"
+import { Spinner } from "@/components/ui/spinner"
 
-async function PerformancePageContent({
-  netWorthPromise,
-}: {
-  netWorthPromise: Promise<NetWorthSummary | null>
-}) {
-  const holdingsData = await fetchHoldingsData(1, 10)
+export default function PerformancePage() {
+  const holdingsQuery = useHoldingsData(1, 10)
+  const netWorthQuery = useQuery({
+    queryKey: queryKeys.netWorth(),
+    queryFn: getNetWorth,
+    retry: false,
+    enabled: (holdingsQuery.data?.total ?? 0) > 0,
+  })
 
-  if (holdingsData.total === 0) {
+  if (holdingsQuery.isLoading) {
+    return (
+      <div className="flex min-h-96 items-center justify-center">
+        <Spinner className="size-8" />
+      </div>
+    )
+  }
+
+  if (holdingsQuery.data?.total === 0) {
     return <PerformanceEmptyState />
   }
 
-  const netWorth = await netWorthPromise
-  return <PerformanceContent netWorth={netWorth} />
-}
-
-export default function PerformancePage() {
-  const netWorthPromise = getNetWorth().catch(() => null)
-
-  return (
-    <Suspense fallback={<PerformanceLoading />}>
-      <PerformancePageContent netWorthPromise={netWorthPromise} />
-    </Suspense>
-  )
+  return <PerformanceContent netWorth={netWorthQuery.data ?? null} />
 }

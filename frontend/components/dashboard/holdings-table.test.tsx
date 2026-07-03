@@ -4,16 +4,19 @@ import { render, screen, fireEvent, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { Holding } from "@/lib/types"
 import { HoldingsTable } from "./holdings-table"
-import { HoldingsTableServer } from "./holdings-table-server"
 
 const mockGetHoldingsPaginated = vi.fn()
 const mockListMarketPrices = vi.fn()
 const mockReplace = vi.fn()
 
-vi.mock("@/lib/api/server-portfolio", () => ({
-  getHoldingsPaginated: (params: unknown) => mockGetHoldingsPaginated(params),
-  listMarketPrices: () => mockListMarketPrices(),
-}))
+vi.mock("@/lib/api/portfolio", async (importOriginal) => {
+  const original = await importOriginal<typeof import("@/lib/api/portfolio")>()
+  return {
+    ...original,
+    getHoldingsPaginated: (params: unknown) => mockGetHoldingsPaginated(params),
+    listMarketPrices: () => mockListMarketPrices(),
+  }
+})
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
@@ -182,30 +185,5 @@ describe("HoldingsTable", () => {
     const cards = screen.getByTestId("data-table-cards")
     const button = within(cards).getByRole("button", { name: "Quick buy AAPL" })
     expect(button).toHaveClass("min-h-11", "min-w-11")
-  })
-})
-
-describe("HoldingsTableServer", () => {
-  it("fetches paginated holdings and renders the table", async () => {
-    mockGetHoldingsPaginated.mockResolvedValue({
-      items: [sampleHolding],
-      total: 1,
-      page: 1,
-      page_size: 10,
-    })
-    const ui = await HoldingsTableServer({ page: 1, pageSize: 10 })
-    renderWithProviders(ui)
-    expect(mockGetHoldingsPaginated).toHaveBeenCalledWith({
-      page: 1,
-      page_size: 10,
-    })
-    const table = screen.getByTestId("data-table-table")
-    expect(within(table).getByText("AAPL")).toBeInTheDocument()
-  })
-
-  it("rethrows when fetch fails with a non-auth error", async () => {
-    mockGetHoldingsPaginated.mockRejectedValue(new Error("network"))
-
-    await expect(HoldingsTableServer({ page: 1, pageSize: 10 })).rejects.toThrow("network")
   })
 })

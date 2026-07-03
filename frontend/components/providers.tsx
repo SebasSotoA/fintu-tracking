@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Toaster } from "@/components/ui/sonner"
-import { isSubscriptionRequiredError } from "@/lib/api/errors"
+import { isSubscriptionRequiredError, isUnauthorizedError } from "@/lib/api/errors"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -12,6 +12,13 @@ const queryClient = new QueryClient({
       staleTime: 60 * 1000,
       gcTime: 5 * 60 * 1000,
       refetchOnWindowFocus: false,
+    },
+    mutations: {
+      onError: (error) => {
+        if (isUnauthorizedError(error)) {
+          window.location.href = "/auth/login"
+        }
+      },
     },
   },
 })
@@ -25,6 +32,8 @@ function QueryErrorHandler() {
         const error = event.query.state.error
         if (isSubscriptionRequiredError(error)) {
           router.push("/subscription")
+        } else if (isUnauthorizedError(error)) {
+          router.push("/auth/login")
         }
       }
     })

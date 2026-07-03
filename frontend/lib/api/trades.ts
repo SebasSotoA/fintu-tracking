@@ -1,8 +1,18 @@
 import { apiClient } from "./client"
 import type { PaginatedResult } from "./pagination"
 import type { Trade } from "@/lib/types"
+import type { PageSize } from "@/lib/pagination/table-pagination"
 import { EXPORT_PAGE_SIZE } from "@/lib/pagination/table-pagination"
-import type { TradeListQueryParams } from "./server-trades"
+
+export interface TradeListQueryParams {
+  from?: string
+  to?: string
+  side?: "buy" | "sell"
+  asset_type?: "stock" | "etf" | "crypto"
+  ticker?: string
+  page?: number
+  page_size?: PageSize | typeof EXPORT_PAGE_SIZE
+}
 
 function buildTradesQuery(params: TradeListQueryParams): string {
   const search = new URLSearchParams()
@@ -47,8 +57,36 @@ export interface UpdateTradeData {
   is_opening_position?: boolean
 }
 
-export async function listTrades(): Promise<Trade[]> {
-  return apiClient.get<Trade[]>("/api/trades")
+export async function listTrades(
+  params?: Omit<TradeListQueryParams, "page" | "page_size">,
+): Promise<Trade[]> {
+  return apiClient.get<Trade[]>(`/api/trades${buildTradesQuery(params ?? {})}`)
+}
+
+export async function listTradesPaginated(
+  params: TradeListQueryParams & { page: number; page_size: PageSize | typeof EXPORT_PAGE_SIZE },
+): Promise<PaginatedResult<Trade>> {
+  const data = await apiClient.get<PaginatedResult<Trade> | Trade[]>(
+    `/api/trades${buildTradesQuery(params)}`,
+  )
+  if (Array.isArray(data)) {
+    const start = (params.page - 1) * params.page_size
+    return {
+      items: data.slice(start, start + params.page_size),
+      total: data.length,
+      page: params.page,
+      page_size: params.page_size,
+    }
+  }
+  return data
+}
+
+export async function listTradeTickers(): Promise<string[]> {
+  try {
+    return await apiClient.get<string[]>("/api/trade-tickers")
+  } catch {
+    return apiClient.get<string[]>("/api/trades/tickers")
+  }
 }
 
 export async function listTradesForExport(

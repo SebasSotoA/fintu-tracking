@@ -1,17 +1,10 @@
 import { describe, it, expect } from "vitest"
-import { ApiError as ClientApiError } from "./client"
-import { ApiError as ServerApiError } from "./server-client"
-import { isApiError, isSubscriptionRequiredError } from "./errors"
+import { ApiError } from "./client"
+import { isApiError, isSubscriptionRequiredError, isUnauthorizedError } from "./errors"
 
 describe("isApiError", () => {
   it("returns true for client ApiError instances", () => {
-    const error = new ClientApiError("Payment required", 402)
-
-    expect(isApiError(error)).toBe(true)
-  })
-
-  it("returns true for server ApiError instances", () => {
-    const error = new ServerApiError("Forbidden", 403)
+    const error = new ApiError("Payment required", 402)
 
     expect(isApiError(error)).toBe(true)
   })
@@ -25,20 +18,25 @@ describe("isApiError", () => {
 
 describe("isSubscriptionRequiredError", () => {
   it("returns true for client 402 errors", () => {
-    expect(isSubscriptionRequiredError(new ClientApiError("Payment required", 402))).toBe(true)
+    expect(isSubscriptionRequiredError(new ApiError("Payment required", 402))).toBe(true)
   })
 
   it("returns true for client 403 errors", () => {
-    expect(isSubscriptionRequiredError(new ClientApiError("Forbidden", 403))).toBe(true)
-  })
-
-  it("returns true for server 402/403 errors", () => {
-    expect(isSubscriptionRequiredError(new ServerApiError("Payment required", 402))).toBe(true)
-    expect(isSubscriptionRequiredError(new ServerApiError("Forbidden", 403))).toBe(true)
+    expect(isSubscriptionRequiredError(new ApiError("Forbidden", 403))).toBe(true)
   })
 
   it("returns false for other API errors", () => {
-    expect(isSubscriptionRequiredError(new ClientApiError("Unauthorized", 401))).toBe(false)
-    expect(isSubscriptionRequiredError(new ClientApiError("Not found", 404))).toBe(false)
+    expect(isSubscriptionRequiredError(new ApiError("Unauthorized", 401))).toBe(false)
+    expect(isSubscriptionRequiredError(new ApiError("Not found", 404))).toBe(false)
+  })
+})
+
+describe("isUnauthorizedError", () => {
+  it("returns true for 401 errors", () => {
+    expect(isUnauthorizedError(new ApiError("Unauthorized", 401))).toBe(true)
+  })
+
+  it("returns false for other API errors", () => {
+    expect(isUnauthorizedError(new ApiError("Forbidden", 403))).toBe(false)
   })
 })

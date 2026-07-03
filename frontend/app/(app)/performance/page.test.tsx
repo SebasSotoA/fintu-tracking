@@ -1,13 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
-import { act } from "react"
+import { render, screen, waitFor } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import PerformancePage from "./page"
 
-const { mockPerformanceContent, mockPerformanceEmptyState, mockGetNetWorth, mockFetchHoldingsData } =
+const { mockPerformanceContent, mockPerformanceEmptyState, mockGetNetWorth, mockUseHoldingsData } =
   vi.hoisted(() => ({
     mockPerformanceContent: vi.fn(),
     mockPerformanceEmptyState: vi.fn(),
     mockGetNetWorth: vi.fn(),
-    mockFetchHoldingsData: vi.fn(),
+    mockUseHoldingsData: vi.fn(),
   }))
 
 vi.mock("@/components/performance/performance-content", () => ({
@@ -24,59 +25,67 @@ vi.mock("@/components/performance/performance-empty-state", () => ({
   },
 }))
 
-vi.mock("@/lib/api/server-analytics", () => ({
+vi.mock("@/lib/api/analytics", () => ({
   getNetWorth: () => mockGetNetWorth(),
 }))
 
-vi.mock("@/components/dashboard/holdings-table-server", () => ({
-  fetchHoldingsData: (...args: unknown[]) => mockFetchHoldingsData(...args),
+vi.mock("@/hooks/use-holdings-data", () => ({
+  useHoldingsData: (...args: unknown[]) => mockUseHoldingsData(...args),
 }))
 
-vi.mock("./loading", () => ({
-  default: () => <div data-testid="performance-loading">PerformanceLoading</div>,
-}))
-
-async function renderPage() {
-  const { default: PerformancePage } = await import("./page")
-  const ui = PerformancePage()
-  await act(async () => {
-    render(ui)
+function renderPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   })
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <PerformancePage />
+    </QueryClientProvider>,
+  )
 }
 
 describe("PerformancePage", () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockGetNetWorth.mockResolvedValue({})
-    mockFetchHoldingsData.mockResolvedValue({
-      holdings: [{ ticker: "AAPL" }],
-      total: 1,
-      page: 1,
-      pageSize: 10,
-      priceUpdatedAtByTicker: {},
-      lastPriceRefreshAt: null,
+    mockUseHoldingsData.mockReturnValue({
+      isLoading: false,
+      data: {
+        holdings: [{ ticker: "AAPL" }],
+        total: 1,
+        page: 1,
+        pageSize: 10,
+        priceUpdatedAtByTicker: {},
+        lastPriceRefreshAt: null,
+      },
     })
   })
 
   it("renders PerformanceContent when holdings exist", async () => {
-    await renderPage()
-    expect(screen.getByTestId("performance-content")).toBeInTheDocument()
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByTestId("performance-content")).toBeInTheDocument()
+    })
     expect(mockPerformanceContent).toHaveBeenCalled()
   })
 
   it("renders PerformanceEmptyState when there are no holdings", async () => {
-    mockFetchHoldingsData.mockResolvedValue({
-      holdings: [],
-      total: 0,
-      page: 1,
-      pageSize: 10,
-      priceUpdatedAtByTicker: {},
-      lastPriceRefreshAt: null,
+    mockUseHoldingsData.mockReturnValue({
+      isLoading: false,
+      data: {
+        holdings: [],
+        total: 0,
+        page: 1,
+        pageSize: 10,
+        priceUpdatedAtByTicker: {},
+        lastPriceRefreshAt: null,
+      },
     })
 
-    vi.resetModules()
-    await renderPage()
-    expect(screen.getByTestId("performance-empty-state")).toBeInTheDocument()
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByTestId("performance-empty-state")).toBeInTheDocument()
+    })
     expect(mockPerformanceEmptyState).toHaveBeenCalled()
   })
 })

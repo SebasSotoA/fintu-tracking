@@ -1,6 +1,6 @@
 import { formatCalendarDate } from "@/lib/date-utils"
 import type { Trade } from "@/lib/types"
-import type { TradeListQueryParams } from "@/lib/api/server-trades"
+import type { TradeListQueryParams } from "@/lib/api/trades"
 import { startOfYear, subDays, subMonths } from "date-fns"
 
 export type TradeSideFilter = "all" | "buy" | "sell"
