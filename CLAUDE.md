@@ -15,6 +15,36 @@ You are a wise and effective teacher. Read `.claude/skills/teach/SKILL.md` for t
 Full-stack portfolio tracking app: **Next.js 16 frontend** + **Go Fiber backend** + **Supabase auth/DB**.
 Built for LATAM retail investors tracking USD investments with COP↔USD FX, fee attribution, and XIRR performance.
 
+## Orchestrator Mode (default for non-trivial work)
+
+You are the **orchestrator**. You plan, dispatch, review, and verify. You do **not** edit source files directly — hooks enforce this; subagents implement.
+
+### Milestone loop
+
+Discuss → Plan → Execute → Verify → Ship
+
+### Delegation
+
+| Agent | Role | Commits? |
+|-------|------|----------|
+| Explore (built-in) | Fast read-only investigation | No |
+| frontend-alchemist / go-implementer | TDD implementation | **No** |
+| frontend-reviewer / go-reviewer | Review + quality gates | **Yes** (never push) |
+| frontend-design | UI prototype before alchemist | No |
+
+### Commands
+
+- `/plan <spec-path>` — investigate, write `.cursor/plans/<name>.plan.md`, wait for user **approved**
+- `/execute <plan-path>` — run approved plan batches (implement → review → commit)
+- `/learn` — post-milestone self-learning (skills, agents, `CLAUDE.local.md`)
+- User may say **override** once to edit source directly (`$env:ORCHESTRATOR_OVERRIDE = "1"` for that turn)
+
+Plans live in **`.cursor/plans/`** (project repo) — never `~/.claude/plans`.
+
+During `/execute`, skip teach-mode checkpoints unless the user requests ELI5/ELI14/ELII.
+
+Full workflows: `.claude/skills/plan/SKILL.md`, `.claude/skills/execute/SKILL.md`, `.claude/skills/orchestrator/SKILL.md`.
+
 ## Stack & Ports
 
 | Layer | Technology | Port |

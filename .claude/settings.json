@@ -1,32 +1,71 @@
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "CMD=$(python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('tool_input',d).get('command',''))\" 2>/dev/null || true); case \"$CMD\" in *grep*|*rg\\ *|*ripgrep*|*find\\ *|*fd\\ *|*ack\\ *|*ag\\ *)   [ -f graphify-out/graph.json ] &&   echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"MANDATORY: graphify-out/graph.json exists. You MUST run `graphify query \\\"<question>\\\"` before grepping raw files. Only grep after graphify has oriented you, or to modify/debug specific lines.\"}}'   || true ;; esac"
-          }
-        ]
-      },
-      {
-        "matcher": "Read|Glob",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "HIT=$(python3 -c \"import json,sys;d=json.load(sys.stdin);t=d.get('tool_input',d);s=(str(t.get('file_path') or '')+' '+str(t.get('pattern') or '')+' '+str(t.get('path') or '')).lower().replace(chr(92),'/');exts=('.py','.js','.ts','.tsx','.jsx','.go','.rs','.java','.rb','.c','.h','.cpp','.hpp','.cc','.cs','.kt','.swift','.php','.scala','.lua','.sh','.md','.rst','.txt','.mdx');sys.stdout.write('1' if 'graphify-out/' not in s and any(e in s for e in exts) else '')\" 2>/dev/null || true); if [ \"$HIT\" = 1 ] && [ -f graphify-out/graph.json ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"MANDATORY: graphify-out/graph.json exists. You MUST run graphify before reading source files. Use: `graphify query \\\"<question>\\\"` (scoped subgraph), `graphify explain \\\"<concept>\\\"`, or `graphify path \\\"<A>\\\" \\\"<B>\\\"`. Only read raw files after graphify has oriented you, or to modify/debug specific lines. This rule applies to subagents too \u2014 include it in every subagent prompt involving code exploration.\"}}'; fi || true"
-          }
-        ]
-      }
-    ]
-  },
-  "env": {
-    "CLAUDE_CODE_USE_POWERSHELL_TOOL": "1"
-  },
-  "permissions": {
-    "allow": [
-      "PowerShell(*)"
-    ]
-  }
+﻿{
+    "hooks":  {
+                  "PreToolUse":  [
+                                     {
+                                         "hooks":  [
+                                                       {
+                                                           "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/enforce-orchestrator.ps1",
+                                                           "type":  "command"
+                                                       }
+                                                   ],
+                                         "matcher":  "Edit|Write"
+                                     },
+                                     {
+                                         "matcher":  "Bash",
+                                         "hooks":  [
+                                                       {
+                                                           "type":  "command",
+                                                           "command":  "CMD=$(python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get(\u0027tool_input\u0027,d).get(\u0027command\u0027,\u0027\u0027))\" 2\u003e/dev/null || true); case \"$CMD\" in *grep*|*rg\\ *|*ripgrep*|*find\\ *|*fd\\ *|*ack\\ *|*ag\\ *)   [ -f graphify-out/graph.json ] \u0026\u0026   echo \u0027{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"MANDATORY: graphify-out/graph.json exists. You MUST run `graphify query \\\"\u003cquestion\u003e\\\"` before grepping raw files. Only grep after graphify has oriented you, or to modify/debug specific lines.\"}}\u0027   || true ;; esac"
+                                                       }
+                                                   ]
+                                     },
+                                     {
+                                         "matcher":  "Read|Glob",
+                                         "hooks":  [
+                                                       {
+                                                           "type":  "command",
+                                                           "command":  "HIT=$(python3 -c \"import json,sys;d=json.load(sys.stdin);t=d.get(\u0027tool_input\u0027,d);s=(str(t.get(\u0027file_path\u0027) or \u0027\u0027)+\u0027 \u0027+str(t.get(\u0027pattern\u0027) or \u0027\u0027)+\u0027 \u0027+str(t.get(\u0027path\u0027) or \u0027\u0027)).lower().replace(chr(92),\u0027/\u0027);exts=(\u0027.py\u0027,\u0027.js\u0027,\u0027.ts\u0027,\u0027.tsx\u0027,\u0027.jsx\u0027,\u0027.go\u0027,\u0027.rs\u0027,\u0027.java\u0027,\u0027.rb\u0027,\u0027.c\u0027,\u0027.h\u0027,\u0027.cpp\u0027,\u0027.hpp\u0027,\u0027.cc\u0027,\u0027.cs\u0027,\u0027.kt\u0027,\u0027.swift\u0027,\u0027.php\u0027,\u0027.scala\u0027,\u0027.lua\u0027,\u0027.sh\u0027,\u0027.md\u0027,\u0027.rst\u0027,\u0027.txt\u0027,\u0027.mdx\u0027);sys.stdout.write(\u00271\u0027 if \u0027graphify-out/\u0027 not in s and any(e in s for e in exts) else \u0027\u0027)\" 2\u003e/dev/null || true); if [ \"$HIT\" = 1 ] \u0026\u0026 [ -f graphify-out/graph.json ]; then echo \u0027{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"MANDATORY: graphify-out/graph.json exists. You MUST run graphify before reading source files. Use: `graphify query \\\"\u003cquestion\u003e\\\"` (scoped subgraph), `graphify explain \\\"\u003cconcept\u003e\\\"`, or `graphify path \\\"\u003cA\u003e\\\" \\\"\u003cB\u003e\\\"`. Only read raw files after graphify has oriented you, or to modify/debug specific lines. This rule applies to subagents too — include it in every subagent prompt involving code exploration.\"}}\u0027; fi || true"
+                                                       }
+                                                   ]
+                                     }
+                                 ],
+                  "TaskCompleted":  [
+                                        {
+                                            "hooks":  [
+                                                          {
+                                                              "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/verify-task.ps1",
+                                                              "type":  "command"
+                                                          }
+                                                      ]
+                                        }
+                                    ],
+                  "SubagentStop":  [
+                                       {
+                                           "hooks":  [
+                                                         {
+                                                             "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/suggest-next.ps1",
+                                                             "type":  "command"
+                                                         }
+                                                     ]
+                                       }
+                                   ],
+                  "Stop":  [
+                               {
+                                   "hooks":  [
+                                                 {
+                                                     "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/suggest-next.ps1",
+                                                     "type":  "command"
+                                                 }
+                                             ]
+                               }
+                           ]
+              },
+    "env":  {
+                "CLAUDE_CODE_USE_POWERSHELL_TOOL":  "1"
+            },
+    "permissions":  {
+                        "allow":  [
+                                      "PowerShell(*)"
+                                  ]
+                    }
 }

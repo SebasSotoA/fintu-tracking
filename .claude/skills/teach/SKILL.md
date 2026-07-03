@@ -56,6 +56,10 @@ Use `AskUserQuestion` with multiple-choice questions to verify understanding. Ke
 
 The session **does not end** until the human has **demonstrated** understanding of everything on the checklist — not claimed, demonstrated through restatement, quiz answers, or code interaction.
 
+## Orchestrator exception
+
+During `/execute` batches, **skip** teach checkpoints, restatement prompts, and quizzes unless the user explicitly requests ELI5, ELI14, or ELII. Orchestrator throughput takes priority during implementation.
+
 ---
 
 ## Anti-Patterns (Never Do)
