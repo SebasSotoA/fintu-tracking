@@ -6,9 +6,9 @@ import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 const precisionMetrics = [
   {
-    label: `${MARKET_CONFIG.localCurrency} → ${MARKET_CONFIG.baseCurrency}`,
+    label: `Local currency → ${MARKET_CONFIG.baseCurrency}`,
     value: "4,127.50",
-    delta: "TRM spot",
+    delta: "trade-date FX",
   },
   { label: "XIRR", value: "+12.4%", delta: "annualized" },
   { label: "Net worth", value: "$48,291", delta: `${MARKET_CONFIG.baseCurrency} basis` },
@@ -28,12 +28,12 @@ export function LandingHero() {
               "font-sans text-4xl font-bold leading-[1.08] tracking-tight text-balance sm:text-5xl md:text-6xl lg:text-[3.5rem]",
             )}
           >
-            Track your {MARKET_CONFIG.baseCurrency} investments
-            <span className="mt-1 block text-primary">with precision</span>
+            US assets through your local broker
+            <span className="mt-1 block text-primary">tracked with precision</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground text-pretty">
-            Fintu accounts for {MARKET_CONFIG.localCurrency}↔{MARKET_CONFIG.baseCurrency} FX, fees,
-            and cost basis so you see real performance—not guesswork—across every holding.
+            Fintu accounts for local-currency↔{MARKET_CONFIG.baseCurrency} FX, broker fees,
+            and cost basis so you see real performance—not guesswork—across every US holding.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Button asChild size="lg" className="gap-2">
@@ -48,8 +48,8 @@ export function LandingHero() {
           </div>
           <dl className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-border/40 pt-8">
             {[
-              { term: "FX", desc: `Historical ${MARKET_CONFIG.localCurrency} rates` },
-              { term: "Fees", desc: "Included in basis" },
+              { term: "FX", desc: "Historical local FX rates" },
+              { term: "Fees", desc: "Broker fees in basis" },
               { term: "XIRR", desc: "True returns" },
             ].map((item) => (
               <div key={item.term}>
@@ -92,7 +92,7 @@ export function LandingHero() {
             </div>
             <div className="border-t border-border/50 bg-surface-container-low/60 px-4 py-3">
               <p className="font-mono text-[10px] leading-relaxed text-muted-foreground">
-                Fees · FX · cost basis reconciled · performance in {MARKET_CONFIG.baseCurrency} & {MARKET_CONFIG.localCurrency}
+                Fees · FX · cost basis reconciled · performance in {MARKET_CONFIG.baseCurrency} & local currency
               </p>
             </div>
           </div>

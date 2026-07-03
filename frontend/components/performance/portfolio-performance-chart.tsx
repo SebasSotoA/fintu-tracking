@@ -179,8 +179,8 @@ export function PortfolioPerformanceChart() {
         {chartData.length === 0 ? (
           <div className="flex min-h-[260px] md:min-h-[320px] flex-col items-center justify-center text-muted-foreground">
             <AlertCircleIcon className="mb-3 h-10 w-10 opacity-40" />
-            <p className="font-medium">No performance history yet</p>
-            <p className="mt-1 text-sm">Add trades or cash flows to see portfolio value over time.</p>
+            <p className="font-medium">No performance data yet</p>
+            <p className="mt-1 text-sm">Add trades and cash flows to calculate returns, fees, and XIRR.</p>
           </div>
         ) : (
           <ChartContainer config={chartConfig} className={`${CHART_HEIGHT_SHORT} w-full aspect-auto`}>

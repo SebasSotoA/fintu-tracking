@@ -99,8 +99,8 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
           <ResponsiveDialogTitle>Set up your account</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
             {step === 1
-              ? "Select your country to customize currency and available brokers."
-              : `Choose the broker you use to invest in ${MARKET_CONFIG.baseCurrency} assets.`}
+              ? "Select your country to set your local currency and available brokers."
+              : `Choose the local broker you use to invest in ${MARKET_CONFIG.baseCurrency} assets.`}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 

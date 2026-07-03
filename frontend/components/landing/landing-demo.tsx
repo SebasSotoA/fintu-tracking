@@ -9,7 +9,8 @@ import {
   DollarSign,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { BROKER_PRESETS } from "@/lib/brokers/broker-presets"
+import { countryLabel, MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 interface DemoStep {
   id: string
@@ -20,12 +21,18 @@ interface DemoStep {
   accent: string
 }
 
+function localBrokerExample(): string {
+  const preset = BROKER_PRESETS.find((broker) => broker.id === MARKET_CONFIG.defaultBrokerId)
+  if (!preset) return "your local broker"
+  return `${preset.name} in ${countryLabel(preset.country)}`
+}
+
 const steps: DemoStep[] = [
   {
     id: "deposit",
     icon: ArrowDownToLine,
-    label: `Deposit ${MARKET_CONFIG.localCurrency}`,
-    detail: "Transfer from your broker to your brokerage",
+    label: "Deposit local currency",
+    detail: `Fund your account via your local broker — e.g. ${localBrokerExample()}`,
     value: `${MARKET_CONFIG.localCurrency} 500,000`,
     accent: "text-primary",
   },
@@ -33,7 +40,7 @@ const steps: DemoStep[] = [
     id: "fx",
     icon: ArrowRightLeft,
     label: "FX Conversion",
-    detail: "TRM spot rate applied at trade date",
+    detail: "Trade-date FX rate applied at conversion",
     value: `${MARKET_CONFIG.localCurrency} 4,127.50/${MARKET_CONFIG.baseCurrency}`,
     accent: "text-primary/80",
   },
@@ -41,15 +48,15 @@ const steps: DemoStep[] = [
     id: "net",
     icon: DollarSign,
     label: "Net Buying Power",
-    detail: "After fees and FX spread",
+    detail: "After broker fees and FX spread",
     value: `$119.14 ${MARKET_CONFIG.baseCurrency}`,
     accent: "text-primary/70",
   },
   {
     id: "trade",
     icon: ChartLine,
-    label: "Execute Trade",
-    detail: "Buy US stocks, ETFs, or crypto",
+    label: "Buy US position",
+    detail: "Purchase US stocks, ETFs, or crypto",
     value: "Buy 1 VOO @ $453.79",
     accent: "text-primary/60",
   },
@@ -84,11 +91,11 @@ export function LandingDemo() {
               "font-sans mt-3 text-3xl tracking-tight text-balance sm:text-4xl md:text-[2.75rem]",
             )}
           >
-            From pesos to positions in four steps
+            From local deposit to US position in four steps
           </h2>
           <p className="mt-4 text-muted-foreground text-pretty">
-            See how Fintu mirrors your broker flow — every {MARKET_CONFIG.localCurrency} deposit, FX conversion, fee,
-            and trade tracked with precision.
+            See how Fintu mirrors your local broker flow — every deposit, FX conversion, fee,
+            and US trade tracked with precision.
           </p>
         </div>
 
@@ -97,13 +104,11 @@ export function LandingDemo() {
           onMouseEnter={() => { pausedRef.current = true }}
           onMouseLeave={() => { pausedRef.current = false }}
         >
-          {/* Pipeline card */}
           <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-surface-container/80 shadow-2xl shadow-black/30">
-            {/* Header bar */}
             <div className="flex items-center gap-2 border-b border-border/40 bg-surface-container-high/60 px-5 py-3">
               <Building2 className="h-3.5 w-3.5 text-primary/70" />
               <span className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
-                Broker Flow
+                Local broker flow
               </span>
               <span className="ml-auto flex items-center gap-1.5 font-mono text-[10px] text-primary">
                 <span className="size-1.5 rounded-full bg-primary" />
@@ -111,18 +116,15 @@ export function LandingDemo() {
               </span>
             </div>
 
-            {/* Step display */}
             <div className="p-6 md:p-10">
               <div
                 key={activeIndex}
                 className="flex flex-col items-center gap-6 text-center"
               >
-                {/* Animated icon */}
                 <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border/40 bg-muted/30 landing-fade-up">
                   <ActiveIcon className={cn("h-9 w-9", steps[activeIndex].accent)} strokeWidth={1.5} />
                 </div>
 
-                {/* Step content */}
                 <div className="space-y-2 landing-fade-up">
                   <p className="text-sm font-medium text-muted-foreground">
                     Step {activeIndex + 1} of {steps.length}
@@ -141,7 +143,6 @@ export function LandingDemo() {
               </div>
             </div>
 
-            {/* Pipeline progress bar */}
             <div className="border-t border-border/40 bg-surface-container-low/60 px-5 py-4">
               <div className="flex items-center gap-2">
                 {steps.map((step, i) => (
@@ -174,7 +175,6 @@ export function LandingDemo() {
                         {step.label}
                       </span>
                     </div>
-                    {/* Progress bar segment */}
                     <div className="relative h-1 w-full overflow-hidden rounded-full bg-muted/50">
                       {i === activeIndex && (
                         <div className="absolute inset-y-0 left-0 rounded-full bg-primary landing-progress-fill" />

@@ -86,7 +86,7 @@ describe("PortfolioPerformanceChart", () => {
     mockGetPerformanceTimeSeries.mockResolvedValue([])
     renderChart()
     await waitFor(() => {
-      expect(screen.getByText(/no performance history yet/i)).toBeInTheDocument()
+      expect(screen.getByText(/no performance data yet/i)).toBeInTheDocument()
     })
     expect(screen.queryByTestId("line-chart")).toBeNull()
   })

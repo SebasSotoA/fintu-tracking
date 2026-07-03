@@ -6,29 +6,29 @@ import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 const features = [
   {
     id: "multi-currency",
-    title: "Multi-Currency",
+    title: "Local Currency Deposits",
     description:
-      `Track ${MARKET_CONFIG.localCurrency} to ${MARKET_CONFIG.baseCurrency} conversions with historical FX rates applied at each trade date—not today's spot rate.`,
+      `Track local currency deposits into ${MARKET_CONFIG.baseCurrency} with historical FX rates applied at each trade date—not today's spot rate.`,
     icon: TrendingUp,
     accent: "from-[var(--landing-gradient-mint-start)] via-[var(--landing-gradient-mint-mid)] to-transparent",
   },
   {
     id: "cost-basis",
-    title: "Accurate Cost Basis",
-    description: "Average cost method with every fee rolled into your true entry price.",
+    title: "Broker Fees in Basis",
+    description: "Average cost method with every broker fee—deposit, transfer, and trading—rolled into your true entry price.",
     icon: DollarSign,
     accent: "from-[var(--landing-gradient-mint-start)] via-[var(--landing-gradient-mint-mid)] to-transparent",
   },
   {
     id: "portfolio",
-    title: "Portfolio View",
-    description: `Holdings, allocation, and P/L in ${MARKET_CONFIG.baseCurrency} and ${MARKET_CONFIG.localCurrency}—side by side.`,
+    title: "US Holdings View",
+    description: `US stocks, ETFs, and crypto—allocation and P/L in ${MARKET_CONFIG.baseCurrency} and your local currency, side by side.`,
     icon: PieChart,
     accent: "from-[var(--landing-gradient-mint-start)] via-[var(--landing-gradient-mint-mid)] to-transparent",
   },
   {
     id: "performance",
-    title: "Performance",
+    title: "True Performance",
     description:
       "XIRR and fee-impact analysis that reflect how your capital actually compounded over time.",
     icon: BarChart3,
@@ -50,7 +50,7 @@ export function LandingFeatures() {
             Every pillar of precision tracking
           </h2>
           <p className="mt-4 text-muted-foreground text-pretty">
-            From FX reconciliation to performance math—Fintu is built around the numbers LATAM
+            From local currency deposits to US-market holdings—Fintu is built around the numbers LATAM
             investors actually need.
           </p>
         </div>

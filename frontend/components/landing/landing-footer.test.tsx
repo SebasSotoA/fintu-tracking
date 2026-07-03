@@ -17,4 +17,11 @@ describe("LandingFooter", () => {
       screen.getByText(`© ${new Date().getFullYear()} Fintu. All rights reserved.`),
     ).toBeInTheDocument()
   })
+
+  it("uses LATAM-local deposit language instead of country-specific currency", () => {
+    render(<LandingFooter />)
+
+    expect(screen.getByText(/every local deposit converted/i)).toBeInTheDocument()
+    expect(screen.queryByText(/colombian peso/i)).not.toBeInTheDocument()
+  })
 })

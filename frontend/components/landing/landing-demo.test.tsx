@@ -15,18 +15,25 @@ describe("LandingDemo", () => {
     render(<LandingDemo />)
 
     expect(screen.getByText("How it works")).toBeInTheDocument()
+    expect(screen.getByText(/from local deposit to us position/i)).toBeInTheDocument()
     // Step labels appear in the active display and the progress bar.
-    expect(screen.getAllByText("Deposit COP").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("Deposit local currency").length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText("FX Conversion").length).toBeGreaterThanOrEqual(1)
     expect(screen.getAllByText("Net Buying Power").length).toBeGreaterThanOrEqual(1)
-    expect(screen.getAllByText("Execute Trade").length).toBeGreaterThanOrEqual(1)
+    expect(screen.getAllByText("Buy US position").length).toBeGreaterThanOrEqual(1)
+  })
+
+  it("mentions Hapi as a Colombia broker example", () => {
+    render(<LandingDemo />)
+
+    expect(screen.getByText(/hapi in colombia/i)).toBeInTheDocument()
   })
 
   it("shows the first step initially", () => {
     render(<LandingDemo />)
 
     expect(screen.getByText("Step 1 of 4")).toBeInTheDocument()
-    expect(screen.getByText("COP 500,000")).toBeInTheDocument()
+    expect(screen.getByText(/500,000/)).toBeInTheDocument()
   })
 
   it("advances to the next step after STEP_DURATION", () => {
@@ -39,7 +46,7 @@ describe("LandingDemo", () => {
     })
 
     expect(screen.getByText("Step 2 of 4")).toBeInTheDocument()
-    expect(screen.getByText("COP 4,127.50/USD")).toBeInTheDocument()
+    expect(screen.getByText(/4,127\.50\/USD/)).toBeInTheDocument()
   })
 
   it("wraps back to the first step after the last step", () => {

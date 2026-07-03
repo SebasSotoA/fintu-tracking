@@ -6,12 +6,16 @@ describe("LandingHero", () => {
   it("renders headline and subcopy", () => {
     render(<LandingHero />)
 
+    expect(screen.getByText(/built for latam retail investors/i)).toBeInTheDocument()
     expect(
-      screen.getByRole("heading", { level: 1, name: /track your usd investments/i }),
+      screen.getByRole("heading", {
+        level: 1,
+        name: /us assets through your local broker/i,
+      }),
     ).toBeInTheDocument()
-    expect(screen.getByText(/with precision/i)).toBeInTheDocument()
+    expect(screen.getByText(/tracked with precision/i)).toBeInTheDocument()
     expect(
-      screen.getByText(/fintu accounts for cop↔usd fx, fees, and cost basis/i),
+      screen.getByText(/local-currency.*fx.*broker fees.*cost basis/i),
     ).toBeInTheDocument()
   })
 

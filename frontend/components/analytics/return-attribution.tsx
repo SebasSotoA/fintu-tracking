@@ -188,8 +188,8 @@ export function ReturnAttribution(): React.JSX.Element {
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center h-48 text-muted-foreground">
           <AlertCircleIcon className="h-10 w-10 mb-3 opacity-40" />
-          <p className="font-medium">No attribution data yet</p>
-          <p className="text-sm mt-1">Add trades and cash flows to see your return breakdown.</p>
+          <p className="font-medium">No performance data yet</p>
+          <p className="text-sm mt-1">Add trades and cash flows to calculate returns, fees, and XIRR.</p>
         </CardContent>
       </Card>
     );
