@@ -3,7 +3,9 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
+	"strings"
 
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/handlers"
@@ -47,7 +49,13 @@ func (d *Deps) Close() {
 }
 
 // NewApp builds a Fiber application with middleware and all API routes.
+//
+// Lambda runtime env (wired in Phase 4.2): DATABASE_URL, SUPABASE_URL,
+// SUPABASE_JWT_SECRET, FRONTEND_URL, TWELVE_DATA_API_KEY, DB_MAX_OPEN_CONNS,
+// DB_MAX_IDLE_CONNS.
 func NewApp(deps *Deps) *fiber.App {
+	warnLambdaMissingFrontendURL()
+
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c fiber.Ctx, err error) error {
 			code := fiber.StatusInternalServerError
@@ -61,12 +69,8 @@ func NewApp(deps *Deps) *fiber.App {
 	})
 
 	app.Use(logger.New())
-	allowedOrigins := []string{"http://localhost:3000", "http://localhost:3001"}
-	if feURL := os.Getenv("FRONTEND_URL"); feURL != "" {
-		allowedOrigins = append(allowedOrigins, feURL)
-	}
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: allowedOrigins,
+		AllowOrigins: corsAllowOrigins(),
 		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 	}))
@@ -132,4 +136,22 @@ func NewApp(deps *Deps) *fiber.App {
 	protected.Get("/activity/feed", handlers.GetActivityFeed)
 
 	return app
+}
+
+func corsAllowOrigins() []string {
+	origins := []string{"http://localhost:3000", "http://localhost:3001"}
+	if feURL := strings.TrimSpace(os.Getenv("FRONTEND_URL")); feURL != "" {
+		origins = append(origins, feURL)
+	}
+	return origins
+}
+
+func warnLambdaMissingFrontendURL() {
+	if os.Getenv("AWS_LAMBDA_RUNTIME_API") == "" {
+		return
+	}
+	if strings.TrimSpace(os.Getenv("FRONTEND_URL")) != "" {
+		return
+	}
+	log.Printf("warning: FRONTEND_URL is not set in Lambda; browser CORS will only allow localhost origins")
 }
