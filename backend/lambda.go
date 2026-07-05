@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
+	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/migrations"
 	"fintu-tracking-backend/internal/server"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/gofiber/fiber/v3/middleware/adaptor"
+	"github.com/jackc/pgx/v5/pgxpool"
 	felixadapter "github.com/its-felix/aws-lambda-go-http-adapter/adapter"
 	"github.com/its-felix/aws-lambda-go-http-adapter/handler"
 )
@@ -32,8 +36,11 @@ func handleLambdaUnifiedEvent(ctx context.Context, deps *server.Deps, httpAdapte
 	}
 
 	if eventType, hasType := eventMap["type"]; hasType {
-		switch eventType {
-		// Custom invoke events (database-status, user-migration) added in T-04.
+		switch eventType.(string) {
+		case "database-status":
+			return handleDatabaseStatus(ctx)
+		case "user-migration":
+			return handleUserMigration(ctx)
 		}
 	}
 
@@ -78,6 +85,78 @@ func handleLambdaRawEvent(ctx context.Context, eventMap map[string]interface{}, 
 	}
 
 	return nil, fmt.Errorf("could not determine event type from map keys: %v", mapKeys(eventMap))
+}
+
+func handleDatabaseStatus(ctx context.Context) (map[string]interface{}, error) {
+	pool := database.GetPool()
+	if pool == nil {
+		return invokeJSONResponse(http.StatusOK, map[string]interface{}{
+			"status": "error",
+			"error":  "database pool not initialized",
+		})
+	}
+
+	payload := map[string]interface{}{
+		"status": "ok",
+		"pool":   poolStats(pool),
+	}
+	if err := pool.Ping(ctx); err != nil {
+		payload["status"] = "error"
+		payload["error"] = err.Error()
+	}
+
+	return invokeJSONResponse(http.StatusOK, payload)
+}
+
+func handleUserMigration(ctx context.Context) (map[string]interface{}, error) {
+	if err := ctx.Err(); err != nil {
+		return invokeJSONResponse(http.StatusOK, map[string]interface{}{
+			"status": "error",
+			"error":  err.Error(),
+		})
+	}
+
+	migrationDB, err := database.OpenMigrationDB()
+	if err != nil {
+		return invokeJSONResponse(http.StatusOK, map[string]interface{}{
+			"status": "error",
+			"error":  err.Error(),
+		})
+	}
+	defer migrationDB.Close()
+
+	if err := migrations.Up(migrationDB, server.ResolveMigrationsDir()); err != nil {
+		return invokeJSONResponse(http.StatusOK, map[string]interface{}{
+			"status": "error",
+			"error":  err.Error(),
+		})
+	}
+
+	return invokeJSONResponse(http.StatusOK, map[string]interface{}{
+		"status":  "ok",
+		"message": "migrations applied",
+	})
+}
+
+func invokeJSONResponse(statusCode int, payload map[string]interface{}) (map[string]interface{}, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal invoke response: %w", err)
+	}
+	return map[string]interface{}{
+		"statusCode": statusCode,
+		"body":       string(body),
+	}, nil
+}
+
+func poolStats(pool *pgxpool.Pool) map[string]int32 {
+	stat := pool.Stat()
+	return map[string]int32{
+		"total_conns":    stat.TotalConns(),
+		"acquired_conns": stat.AcquiredConns(),
+		"idle_conns":     stat.IdleConns(),
+		"max_conns":      stat.MaxConns(),
+	}
 }
 
 func mapKeys(m map[string]interface{}) []string {

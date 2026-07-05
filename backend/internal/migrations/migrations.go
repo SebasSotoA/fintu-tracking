@@ -5,39 +5,13 @@ package migrations
 import (
 	"database/sql"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
-
-// newMigrator builds a golang-migrate instance from a filesystem migration
-// directory and an open *sql.DB.
-func newMigrator(dir string, db *sql.DB) (*migrate.Migrate, error) {
-	absDir, err := filepath.Abs(dir)
-	if err != nil {
-		return nil, fmt.Errorf("resolve migrations path: %w", err)
-	}
-
-	srcURL := (&url.URL{Scheme: "file", Path: filepath.ToSlash(absDir)}).String()
-
-	dbDriver, err := pgx.WithInstance(db, &pgx.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("create pgx migration driver: %w", err)
-	}
-
-	m, err := migrate.NewWithDatabaseInstance(srcURL, "pgx5", dbDriver)
-	if err != nil {
-		return nil, fmt.Errorf("create migrator: %w", err)
-	}
-
-	return m, nil
-}
 
 // withMigrator creates a migrator for dir and db, runs fn, and ensures it is closed.
 func withMigrator(dir string, db *sql.DB, fn func(*migrate.Migrate) error) error {
