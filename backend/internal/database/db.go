@@ -4,11 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math"
 	"os"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
+)
+
+const (
+	defaultMaxOpenConns = 25
+	defaultMaxIdleConns = 5
 )
 
 var pool *pgxpool.Pool
@@ -25,9 +32,7 @@ func Connect() error {
 		return fmt.Errorf("failed to parse database URL: %w", err)
 	}
 
-	// Set connection pool settings
-	config.MaxConns = 25
-	config.MinConns = 5
+	applyPoolEnvSettings(config)
 
 	// Disable prepared statements for Supabase transaction pooler
 	// This prevents "prepared statement already exists" errors
@@ -84,3 +89,19 @@ func OpenMigrationDB() (*sql.DB, error) {
 	return db, nil
 }
 
+func applyPoolEnvSettings(config *pgxpool.Config) {
+	config.MaxConns = int32(envIntOrDefault("DB_MAX_OPEN_CONNS", defaultMaxOpenConns))
+	config.MinConns = int32(envIntOrDefault("DB_MAX_IDLE_CONNS", defaultMaxIdleConns))
+}
+
+func envIntOrDefault(key string, defaultVal int) int {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return defaultVal
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 0 || n > math.MaxInt32 {
+		return defaultVal
+	}
+	return n
+}
