@@ -46,6 +46,23 @@ func TestNewApp_registersHealthRoute(t *testing.T) {
 	}
 }
 
+func TestNewApp_registersMeRoute(t *testing.T) {
+	deps := &Deps{
+		BillingSvc: services.NewBillingService(nil, services.NewNoOpBillingProvider()),
+	}
+	app := NewApp(deps)
+
+	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/me", nil))
+	if err != nil {
+		t.Fatalf("app.Test: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want %d (route must exist and require auth)", resp.StatusCode, http.StatusUnauthorized)
+	}
+}
+
 func TestNewApp_healthNotUnderAPIPrefix(t *testing.T) {
 	deps := &Deps{
 		BillingSvc: services.NewBillingService(nil, services.NewNoOpBillingProvider()),
