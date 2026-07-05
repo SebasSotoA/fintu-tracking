@@ -30,6 +30,7 @@ frontend/next-env.d.ts
 # Backend (Go)
 backend/tmp/
 backend/main
+backend/bootstrap
 backend/*.exe
 backend/*.test
 backend/*.out

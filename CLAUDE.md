@@ -58,7 +58,8 @@ Full workflows: `.claude/skills/plan/SKILL.md`, `.claude/skills/execute/SKILL.md
 ## Backend Conventions
 
 - Module: `fintu-tracking-backend`
-- Route wiring: `backend/cmd/api/main.go`
+- Entrypoints: `backend/main.go` (dev: `go run . dev`, default: Lambda)
+- Route wiring: `backend/internal/server/app.go`
 - Handlers → `backend/internal/handlers/`, services → `backend/internal/services/`
 - Models: `backend/internal/models/models.go`
 - Read `.claude/skills/golang-patterns/SKILL.md` before writing Go

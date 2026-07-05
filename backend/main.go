@@ -12,11 +12,28 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
+
+	if len(os.Args) > 1 && os.Args[1] == "dev" {
+		startDev(ctx)
+		return
+	}
+
+	deps, err := server.Bootstrap(ctx)
+	if err != nil {
+		log.Fatalf("Failed to bootstrap server: %v", err)
+	}
+	defer deps.Close()
+
+	LambdaStart(deps)
+}
+
+func startDev(ctx context.Context) {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using system environment variables")
 	}
 
-	deps, err := server.Bootstrap(context.Background())
+	deps, err := server.Bootstrap(ctx)
 	if err != nil {
 		log.Fatalf("Failed to bootstrap server: %v", err)
 	}

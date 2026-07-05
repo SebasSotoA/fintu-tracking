@@ -22,8 +22,8 @@ backend-dev:
 	@if command -v air > /dev/null 2>&1; then \
 		cd $(BACKEND_DIR) && air; \
 	else \
-		echo "air not found, using go run ./cmd/api..."; \
-		cd $(BACKEND_DIR) && go run ./cmd/api; \
+		echo "air not found, using go run . dev..."; \
+		cd $(BACKEND_DIR) && go run . dev; \
 	fi
 
 frontend-dev:
@@ -49,8 +49,8 @@ dev: install check-env ensure-ports-free
 		if command -v air > /dev/null 2>&1; then \
 			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && air) > /tmp/fintu-backend.log 2>&1 & \
 		else \
-			echo "   air not found, using go run ./cmd/api..."; \
-			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && go run ./cmd/api) > /tmp/fintu-backend.log 2>&1 & \
+			echo "   air not found, using go run . dev..."; \
+			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && go run . dev) > /tmp/fintu-backend.log 2>&1 & \
 		fi; \
 		BACKEND_PID=$$!; \
 		echo "   Backend PID: $$BACKEND_PID"; \
@@ -188,8 +188,8 @@ restart-backend: stop-backend
 		if command -v air > /dev/null 2>&1; then \
 			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && air) > /tmp/fintu-backend.log 2>&1 & \
 		else \
-			echo "   air not found, using go run ./cmd/api..."; \
-			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && go run ./cmd/api) > /tmp/fintu-backend.log 2>&1 & \
+			echo "   air not found, using go run . dev..."; \
+			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && go run . dev) > /tmp/fintu-backend.log 2>&1 & \
 		fi; \
 		BACKEND_PID=$$!; \
 		echo "   Backend PID: $$BACKEND_PID"; \

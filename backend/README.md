@@ -22,7 +22,7 @@ This is the Go REST API backend for Fintu Tracking.
    CI/production.)
 5. Run the server:
    ```bash
-   go run cmd/api/main.go
+   go run . dev
    ```
 
 ## Development
@@ -60,7 +60,16 @@ Historical SQL scripts are kept in `scripts/archive/` for audit history only.
 
 ## Building for Production
 
+Local binary:
+
 ```bash
-go build -o main cmd/api/main.go
-./main
+go build -o bin/api .
 ```
+
+AWS Lambda (`GOOS=linux GOARCH=arm64`):
+
+```bash
+go build -o bootstrap .
+```
+
+Or from the repo root: `make build` / `make build-lambda`.
