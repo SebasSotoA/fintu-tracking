@@ -1,0 +1,28 @@
+name: Deploy Fintu production
+
+on:
+  push:
+    tags:
+      - v*
+      - "!v*rc*"
+
+jobs:
+  deploy:
+    name: Deploy to production
+    permissions:
+      id-token: write # Required for AWS authentication via OIDC
+      contents: read
+    uses: ./.github/workflows/infra.yml
+    with:
+      instance_name: fintu-production
+      web_domain: app.fintu.com
+      api_domain: api.fintu.com
+      environment: prod
+    secrets:
+      aws_role_arn: ${{ secrets.AWS_ROLE_ARN_PROD }}
+      supabase_database_url: ${{ secrets.DATABASE_URL }}
+      supabase_url: ${{ secrets.SUPABASE_URL }}
+      supabase_jwt_secret: ${{ secrets.SUPABASE_JWT_SECRET }}
+      twelve_data_api_key: ${{ secrets.TWELVE_DATA_API_KEY }}
+      next_public_supabase_url: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      next_public_supabase_anon_key: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
