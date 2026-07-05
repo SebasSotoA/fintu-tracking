@@ -1,0 +1,155 @@
+name: Deploy Infrastructure
+
+on:
+  workflow_call:
+    inputs:
+      instance_name:
+        required: true
+        type: string
+        description: "Instance identifier (e.g., fintu-sandbox, fintu-production)"
+      web_domain:
+        required: true
+        type: string
+        description: "Frontend domain (e.g., app.sandbox.fintu.com)"
+      api_domain:
+        required: true
+        type: string
+        description: "API domain (e.g., api.sandbox.fintu.com)"
+      environment:
+        required: true
+        type: string
+        description: "Environment name (sandbox, prod)"
+    secrets:
+      aws_role_arn:
+        required: true
+        description: "AWS IAM Role ARN for OIDC authentication"
+      supabase_database_url:
+        required: true
+        description: "Supabase PostgreSQL connection string (Transaction Pooler URL recommended for Lambda)"
+      supabase_url:
+        required: true
+        description: "Supabase project URL (SUPABASE_URL on Lambda)"
+      supabase_jwt_secret:
+        required: true
+        description: "Supabase JWT secret for HS256 fallback on Lambda"
+      twelve_data_api_key:
+        required: true
+        description: "Twelve Data API key for market data on Lambda"
+      next_public_supabase_url:
+        required: true
+        description: "NEXT_PUBLIC_SUPABASE_URL for frontend static export build"
+      next_public_supabase_anon_key:
+        required: true
+        description: "NEXT_PUBLIC_SUPABASE_ANON_KEY for frontend static export build"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.aws_role_arn }}
+          aws-region: us-east-1
+          role-session-name: ${{ github.actor }}-${{ github.run_id }}
+
+      - name: Set up backend
+        uses: realsensesolutions/actions-aws-backend-setup@main
+        id: backend
+        with:
+          instance: ${{ inputs.instance_name }}
+
+      - name: Network
+        uses: realsensesolutions/actions-aws-network@main
+
+      - name: Deploy Lambda Web
+        id: deploy
+        uses: realsensesolutions/actions-aws-function-go@main
+        with:
+          name: ${{ inputs.instance_name }}-lambda
+          entrypoint-file: main.go
+          working-directory: backend
+          memory: 256
+          timeout: 900
+          allow-public-access: true
+          use-vpc: false
+          env: |
+            DATABASE_URL: ${{ secrets.supabase_database_url }}
+            DB_MAX_OPEN_CONNS: "5"
+            DB_MAX_IDLE_CONNS: "2"
+            SUPABASE_URL: ${{ secrets.supabase_url }}
+            SUPABASE_JWT_SECRET: ${{ secrets.supabase_jwt_secret }}
+            FRONTEND_URL: https://${{ inputs.web_domain }}
+            TWELVE_DATA_API_KEY: ${{ secrets.twelve_data_api_key }}
+            ENVIRONMENT: ${{ inputs.environment }}
+
+      - name: Check Database Status
+        run: |
+          echo "Checking database status..."
+          echo '{"type": "database-status"}' > /tmp/status-payload.json
+          aws lambda invoke \
+            --function-name ${{ steps.deploy.outputs.arn }} \
+            --payload fileb:///tmp/status-payload.json \
+            /tmp/status-response.json
+          cat /tmp/status-response.json
+          STATUS=$(jq -r 'if .body then (.body | fromjson).status else .status end' /tmp/status-response.json)
+          if [ "$STATUS" = "error" ]; then exit 1; fi
+
+      - name: Run Database Migrations
+        run: |
+          echo "Running database migrations..."
+          echo '{"type": "user-migration"}' > /tmp/migration-payload.json
+          aws lambda invoke \
+            --function-name ${{ steps.deploy.outputs.arn }} \
+            --payload fileb:///tmp/migration-payload.json \
+            /tmp/migration-response.json
+          cat /tmp/migration-response.json
+          STATUS=$(jq -r 'if .body then (.body | fromjson).status else .status end' /tmp/migration-response.json)
+          if [ "$STATUS" = "error" ]; then exit 1; fi
+
+      - name: Deploy API Gateway with custom domain
+        uses: realsensesolutions/actions-aws-api-gateway@main
+        id: api_gateway
+        with:
+          domain: ${{ inputs.api_domain }}
+          function: ${{ steps.deploy.outputs.arn }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install Node.js for frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_URL: https://${{ inputs.api_domain }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.next_public_supabase_url }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.next_public_supabase_anon_key }}
+        run: pnpm run build
+
+      - name: Deploy frontend
+        uses: realsensesolutions/actions-aws-website@main
+        id: frontend
+        with:
+          domain: ${{ inputs.web_domain }}
+          name: ${{ inputs.instance_name }}-frontend
+          content-path: frontend/out
+          spa: "true"
