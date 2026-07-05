@@ -8,12 +8,6 @@ build:
 	@cd $(BACKEND_DIR) && $(GOBUILD) -o ../$(BIN_DIR)/$(APP_NAME) $(BUILD_FLAGS) .
 	@echo "Binary: $(BIN_DIR)/$(APP_NAME)"
 
-build-lambda:
-	@echo "Building Lambda bootstrap..."
-	@mkdir -p $(BIN_DIR)
-	@cd $(BACKEND_DIR) && GOOS=linux GOARCH=arm64 CGO_ENABLED=0 $(GOBUILD) -o ../$(BIN_DIR)/bootstrap $(BUILD_FLAGS) .
-	@echo "Lambda binary: $(BIN_DIR)/bootstrap"
-
 build-frontend:
 	@echo "Building frontend..."
 	@cd $(FRONTEND_DIR) && $(NPM) run build

@@ -72,4 +72,4 @@ AWS Lambda (`GOOS=linux GOARCH=arm64`):
 go build -o bootstrap .
 ```
 
-Or from the repo root: `make build` / `make build-lambda`.
+Or from the repo root: `make build`.
