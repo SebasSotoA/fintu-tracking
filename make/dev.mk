@@ -30,7 +30,7 @@ frontend-dev:
 	@echo "Checking port availability..."
 	@$(MAKE) check-port-available PORT=$(FRONTEND_PORT)
 	@echo "Starting frontend server (foreground) on :$(FRONTEND_PORT)..."
-	@cd $(FRONTEND_DIR) && $(NPM) run dev
+	@cd $(FRONTEND_DIR) && $(NPM) exec next dev -p $(FRONTEND_PORT)
 
 # Combined dev environment - starts both servers in background
 dev: install check-env ensure-ports-free
@@ -62,7 +62,7 @@ dev: install check-env ensure-ports-free
 			rm -rf "$$SCRIPT_DIR/$(FRONTEND_DIR)/.next"; \
 		fi; \
 		echo "Starting frontend server..."; \
-		(cd $$SCRIPT_DIR/$(FRONTEND_DIR) && $(NPM) run dev) > /tmp/fintu-frontend.log 2>&1 & \
+		(cd $$SCRIPT_DIR/$(FRONTEND_DIR) && $(NPM) exec next dev -p $(FRONTEND_PORT)) > /tmp/fintu-frontend.log 2>&1 & \
 		FRONTEND_PID=$$!; \
 		echo "   Frontend PID: $$FRONTEND_PID"; \
 		echo "   Frontend logs: tail -f /tmp/fintu-frontend.log"; \
@@ -209,7 +209,7 @@ restart-frontend: stop-frontend clean-frontend
 	@echo "Restarting frontend server..."
 	@bash -c ' \
 		SCRIPT_DIR="$$(pwd)"; \
-		(cd $$SCRIPT_DIR/$(FRONTEND_DIR) && $(NPM) run dev) > /tmp/fintu-frontend.log 2>&1 & \
+		(cd $$SCRIPT_DIR/$(FRONTEND_DIR) && $(NPM) exec next dev -p $(FRONTEND_PORT)) > /tmp/fintu-frontend.log 2>&1 & \
 		FRONTEND_PID=$$!; \
 		echo "   Frontend PID: $$FRONTEND_PID"; \
 		echo "   Frontend logs: tail -f /tmp/fintu-frontend.log"; \

@@ -32,7 +32,7 @@ FRONTEND_DIR := frontend
 COVERAGE_DIR := coverage
 
 # Frontend configuration
-FRONTEND_PORT := 3000
+FRONTEND_PORT := 3002
 
 # Backend configuration
 BACKEND_PORT := 8080

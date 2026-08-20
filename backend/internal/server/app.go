@@ -139,7 +139,7 @@ func NewApp(deps *Deps) *fiber.App {
 }
 
 func corsAllowOrigins() []string {
-	origins := []string{"http://localhost:3000", "http://localhost:3001"}
+	origins := []string{"http://localhost:3000", "http://localhost:3001", "http://localhost:3002"}
 	if feURL := strings.TrimSpace(os.Getenv("FRONTEND_URL")); feURL != "" {
 		origins = append(origins, feURL)
 	}
