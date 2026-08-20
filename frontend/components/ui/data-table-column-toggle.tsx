@@ -62,9 +62,26 @@ export function DataTableColumnToggle<T>({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className={cn("gap-2", className)}>
-          <Columns3 className="size-4" />
-          <span>View</span>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          style={{
+            display: "inline-flex",
+            flexDirection: "row",
+            flexWrap: "nowrap",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            whiteSpace: "nowrap",
+            paddingLeft: "0.9rem",
+            paddingRight: "0.9rem",
+            minWidth: "5.5rem",
+          }}
+          className={cn("gap-2", className)}
+        >
+          <Columns3 className="size-4 shrink-0" />
+          <span className="whitespace-nowrap">View</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-0" align="end">
