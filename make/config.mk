@@ -34,6 +34,10 @@ COVERAGE_DIR := coverage
 # Frontend configuration
 FRONTEND_PORT := 3002
 
+# Marketing (Astro) configuration
+MARKETING_DIR := marketing
+MARKETING_PORT := 4321
+
 # Backend configuration
 BACKEND_PORT := 8080
 

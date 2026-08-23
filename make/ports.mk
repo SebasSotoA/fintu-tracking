@@ -35,6 +35,7 @@ check-ports-available:
 	@echo "Checking port availability..."
 	@$(MAKE) check-port-available PORT=$(BACKEND_PORT)
 	@$(MAKE) check-port-available PORT=$(FRONTEND_PORT)
+	@$(MAKE) check-port-available PORT=$(MARKETING_PORT)
 	@echo "All required ports are available"
 
 # Ensure dev ports are free — kill any process using them
@@ -53,6 +54,12 @@ ensure-ports-free:
 			$(MAKE) kill-port PORT=$(FRONTEND_PORT) > /dev/null 2>&1 || true; \
 			sleep 1; \
 		fi; \
+		RESULT_MARKETING=$$(netstat -ano | findstr ":$(MARKETING_PORT) " | findstr "LISTENING" || true); \
+		if [ -n "$$RESULT_MARKETING" ]; then \
+			echo "   Port $(MARKETING_PORT) in use - killing process..."; \
+			$(MAKE) kill-port PORT=$(MARKETING_PORT) > /dev/null 2>&1 || true; \
+			sleep 1; \
+		fi; \
 	else \
 		if lsof -i:$(BACKEND_PORT) > /dev/null 2>&1; then \
 			echo "   Port $(BACKEND_PORT) in use - killing process..."; \
@@ -64,12 +71,17 @@ ensure-ports-free:
 			$(MAKE) kill-port PORT=$(FRONTEND_PORT) > /dev/null 2>&1 || true; \
 			sleep 1; \
 		fi; \
+		if lsof -i:$(MARKETING_PORT) > /dev/null 2>&1; then \
+			echo "   Port $(MARKETING_PORT) in use - killing process..."; \
+			$(MAKE) kill-port PORT=$(MARKETING_PORT) > /dev/null 2>&1 || true; \
+			sleep 1; \
+		fi; \
 	fi
-	@echo "Ports $(BACKEND_PORT) and $(FRONTEND_PORT) are ready"
+	@echo "Ports $(BACKEND_PORT), $(FRONTEND_PORT), and $(MARKETING_PORT) are ready"
 
 # Show processes using dev ports
 netstat-ports:
-	@echo "Checking ports $(BACKEND_PORT) and $(FRONTEND_PORT)..."
+	@echo "Checking ports $(BACKEND_PORT), $(FRONTEND_PORT), and $(MARKETING_PORT)..."
 	@echo ""
 	@if [ "$$(uname -s 2>/dev/null || echo Windows)" = "Windows_NT" ] || echo "$${OS:-unknown}" | grep -qi windows; then \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
@@ -84,6 +96,12 @@ netstat-ports:
 		RESULT=$$(netstat -ano | findstr ':$(FRONTEND_PORT)' || echo "No process found"); \
 		echo "$$RESULT"; \
 		echo ""; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "  Windows - Port $(MARKETING_PORT) (Marketing)"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		RESULT=$$(netstat -ano | findstr ':$(MARKETING_PORT)' || echo "No process found"); \
+		echo "$$RESULT"; \
+		echo ""; \
 		echo "  To kill a process: make kill-port PORT=<port>"; \
 	else \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
@@ -95,6 +113,11 @@ netstat-ports:
 		echo "  Unix/Linux - Port $(FRONTEND_PORT) (Frontend)"; \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
 		lsof -i:$(FRONTEND_PORT) || echo "No process found"; \
+		echo ""; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "  Unix/Linux - Port $(MARKETING_PORT) (Marketing)"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		lsof -i:$(MARKETING_PORT) || echo "No process found"; \
 		echo ""; \
 		echo "  To kill a process: make kill-port PORT=<port>"; \
 	fi

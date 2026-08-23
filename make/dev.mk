@@ -2,7 +2,7 @@
 # Development Workflow
 # =============================================================================
 
-.PHONY: check-env backend-dev frontend-dev dev stop stop-backend stop-frontend restart restart-backend restart-frontend setup install deps deps-frontend deps-all
+.PHONY: check-env backend-dev frontend-dev dev stop stop-backend stop-frontend restart restart-backend restart-frontend setup install deps deps-frontend deps-marketing deps-all
 
 # Verify backend/.env exists
 check-env:
@@ -37,6 +37,7 @@ dev: install check-env ensure-ports-free
 	@echo "Starting development environment..."
 	@echo "  Backend:  http://localhost:$(BACKEND_PORT)"
 	@echo "  Frontend: http://localhost:$(FRONTEND_PORT)"
+	@echo "  Marketing: http://localhost:$(MARKETING_PORT)"
 	@echo ""
 	@if [ ! -f $(BACKEND_DIR)/.env ]; then \
 		echo "WARNING: $(BACKEND_DIR)/.env not found"; \
@@ -67,38 +68,42 @@ dev: install check-env ensure-ports-free
 		echo "   Frontend PID: $$FRONTEND_PID"; \
 		echo "   Frontend logs: tail -f /tmp/fintu-frontend.log"; \
 		echo ""; \
+		echo "Starting marketing server..."; \
+		(cd $$SCRIPT_DIR/$(MARKETING_DIR) && $(NPM) dev) > /tmp/fintu-marketing.log 2>&1 & \
+		MARKETING_PID=$$!; \
+		echo "   Marketing PID: $$MARKETING_PID"; \
+		echo "   Marketing logs: tail -f /tmp/fintu-marketing.log"; \
+		echo ""; \
 		port_listening() { \
 			local p=$$1; \
 			netstat -ano 2>/dev/null | grep -qi ":$$p.*LISTENING" || lsof -i:$$p > /dev/null 2>&1; \
 		}; \
 		BACKEND_UP=false; \
 		FRONTEND_UP=false; \
+		MARKETING_UP=false; \
 		_elapsed=0; \
 		_max_wait=30; \
 		_interval=4; \
 		while [ $$_elapsed -lt $$_max_wait ]; do \
 			if [ "$$BACKEND_UP" = false ] && port_listening $(BACKEND_PORT); then BACKEND_UP=true; fi; \
 			if [ "$$FRONTEND_UP" = false ] && port_listening $(FRONTEND_PORT); then FRONTEND_UP=true; fi; \
-			if [ "$$BACKEND_UP" = true ] && [ "$$FRONTEND_UP" = true ]; then break; fi; \
+			if [ "$$MARKETING_UP" = false ] && port_listening $(MARKETING_PORT); then MARKETING_UP=true; fi; \
+			if [ "$$BACKEND_UP" = true ] && [ "$$FRONTEND_UP" = true ] && [ "$$MARKETING_UP" = true ]; then break; fi; \
 			sleep $$_interval; \
 			_elapsed=$$((_elapsed + _interval)); \
 		done; \
-		if [ "$$BACKEND_UP" = true ] && [ "$$FRONTEND_UP" = true ]; then \
+		if [ "$$BACKEND_UP" = true ] && [ "$$FRONTEND_UP" = true ] && [ "$$MARKETING_UP" = true ]; then \
 			echo "Development servers started successfully"; \
-		elif [ "$$BACKEND_UP" = false ] && [ "$$FRONTEND_UP" = false ]; then \
-			echo "Warning: Both servers failed to start"; \
-			echo "   Check logs: tail -f /tmp/fintu-backend.log /tmp/fintu-frontend.log"; \
-		elif [ "$$BACKEND_UP" = false ]; then \
-			echo "Warning: Backend failed to start"; \
-			echo "   Check logs: tail -f /tmp/fintu-backend.log"; \
 		else \
-			echo "Warning: Frontend failed to start"; \
-			echo "   Check logs: tail -f /tmp/fintu-frontend.log"; \
+			[ "$$BACKEND_UP" = false ] && echo "Warning: Backend failed to start (check /tmp/fintu-backend.log)"; \
+			[ "$$FRONTEND_UP" = false ] && echo "Warning: Frontend failed to start (check /tmp/fintu-frontend.log)"; \
+			[ "$$MARKETING_UP" = false ] && echo "Warning: Marketing failed to start (check /tmp/fintu-marketing.log)"; \
 		fi; \
 		echo ""; \
 		echo "Useful commands:"; \
 		echo "   View backend logs:  tail -f /tmp/fintu-backend.log"; \
 		echo "   View frontend logs: tail -f /tmp/fintu-frontend.log"; \
+		echo "   View marketing logs: tail -f /tmp/fintu-marketing.log"; \
 		echo "   Stop servers:       make stop"; \
 		echo "   Health check:       make health-check"; \
 		echo "" \
@@ -175,7 +180,42 @@ stop-frontend:
 		fi; \
 	fi
 
-stop: stop-backend stop-frontend
+stop-marketing:
+	@echo "Stopping marketing server..."
+	@if [ "$$(uname -s 2>/dev/null || echo Windows)" = "Windows_NT" ] || echo "$${OS:-unknown}" | grep -qi windows; then \
+		PIDS=$$(netstat -ano | grep ':$(MARKETING_PORT) ' | awk '{print $$5}' | sort -u | grep -v '^0$$' || true); \
+		if [ -n "$$PIDS" ]; then \
+			echo "  Found processes on port $(MARKETING_PORT): $$PIDS"; \
+			for pid in $$PIDS; do \
+				echo "    Killing PID $$pid..."; \
+				taskkill //F //PID $$pid 2>/dev/null || true; \
+			done; \
+			sleep 1; \
+			echo "Marketing stopped"; \
+		else \
+			echo "No process found on port $(MARKETING_PORT)"; \
+		fi; \
+	else \
+		PIDS=$$(lsof -ti:$(MARKETING_PORT) 2>/dev/null); \
+		if [ -n "$$PIDS" ]; then \
+			echo "  Found processes on port $(MARKETING_PORT): $$PIDS"; \
+			for pid in $$PIDS; do \
+				pkill -9 -P $$pid 2>/dev/null || true; \
+				kill -9 $$pid 2>/dev/null || true; \
+			done; \
+			sleep 1; \
+			echo "Marketing stopped"; \
+		else \
+			echo "No process found on port $(MARKETING_PORT)"; \
+			ASTRO_PIDS=$$(pgrep -f "astro dev" 2>/dev/null || true); \
+			if [ -n "$$ASTRO_PIDS" ]; then \
+				echo $$ASTRO_PIDS | xargs kill -9 2>/dev/null || true; \
+				echo "Marketing stopped"; \
+			fi; \
+		fi; \
+	fi
+
+stop: stop-backend stop-frontend stop-marketing
 	@echo "All servers stopped"
 
 # Restart targets
@@ -237,6 +277,8 @@ setup:
 	@$(MAKE) deps
 	@echo "Installing frontend dependencies..."
 	@$(MAKE) deps-frontend
+	@echo "Installing marketing dependencies..."
+	@$(MAKE) deps-marketing
 	@echo ""
 	@echo "Setup complete!"
 	@echo ""
@@ -263,6 +305,6 @@ deps-frontend:
 	@cd $(FRONTEND_DIR) && $(NPM) install
 	@echo "Frontend dependencies installed"
 
-deps-all: deps deps-frontend
+deps-all: deps deps-frontend deps-marketing
 
 install: deps-all
