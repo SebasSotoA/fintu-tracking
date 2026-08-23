@@ -1,0 +1,44 @@
+---
+import { cn } from "@/lib/utils"
+
+type Variant = "default" | "kpi" | "interactive"
+
+interface Props {
+  variant?: Variant
+  class?: string
+  className?: string
+  style?: string | Record<string, string>
+  [key: string]: unknown
+}
+
+const { variant = "default", class: className, className: legacyClassName, style, ...rest } = Astro.props
+
+const base = "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm"
+
+const variantClasses: Record<Variant, string> = {
+  default: "",
+  kpi: "bg-[color:var(--color-card-kpi)] shadow-lg ring-1 ring-primary/10",
+  interactive: "transition-all duration-200 hover:shadow-md hover:border-primary/20",
+}
+
+const classes = cn(base, variantClasses[variant], className ?? legacyClassName)
+
+const styleStr =
+  typeof style === "string"
+    ? style
+    : style
+      ? Object.entries(style)
+          .map(([k, v]) => `${k.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase())}:${v}`)
+          .join(";")
+      : undefined
+
+const extraAttrs: Record<string, string> = {}
+for (const [key, value] of Object.entries(rest)) {
+  if (value === true) extraAttrs[key] = ""
+  else if (value !== false && value != null) extraAttrs[key] = String(value)
+}
+---
+
+<div class={classes} data-slot="card" style={styleStr} {...extraAttrs}>
+  <slot />
+</div>

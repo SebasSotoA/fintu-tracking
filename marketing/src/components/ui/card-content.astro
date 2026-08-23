@@ -1,0 +1,22 @@
+---
+import { cn } from "@/lib/utils"
+
+interface Props {
+  class?: string
+  className?: string
+  [key: string]: unknown
+}
+
+const { class: className, className: legacyClassName, ...rest } = Astro.props
+const classes = cn("px-6", className ?? legacyClassName)
+
+const extraAttrs: Record<string, string> = {}
+for (const [key, value] of Object.entries(rest)) {
+  if (value === true) extraAttrs[key] = ""
+  else if (value !== false && value != null) extraAttrs[key] = String(value)
+}
+---
+
+<div class={classes} data-slot="card-content" {...extraAttrs}>
+  <slot />
+</div>

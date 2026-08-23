@@ -1,0 +1,312 @@
+---
+import { BROKER_PRESETS } from "@/lib/broker-presets"
+import { countryLabel, MARKET_CONFIG } from "@/lib/market-config"
+
+function localBrokerExample(): string {
+  const preset = BROKER_PRESETS.find((broker) => broker.id === MARKET_CONFIG.defaultBrokerId)
+  if (!preset) return "your local broker"
+  return `${preset.name} in ${countryLabel(preset.country)}`
+}
+
+interface DemoStep {
+  id: string
+  label: string
+  detail: string
+  value: string
+  accent: string
+  icon: "arrow-down-to-line" | "arrow-right-left" | "dollar-sign" | "chart-line"
+}
+
+const steps: DemoStep[] = [
+  {
+    id: "deposit",
+    label: "Deposit local currency",
+    detail: `Fund your account via your local broker — e.g. ${localBrokerExample()}`,
+    value: `${MARKET_CONFIG.localCurrency} 500,000`,
+    accent: "text-primary",
+    icon: "arrow-down-to-line",
+  },
+  {
+    id: "fx",
+    label: "FX Conversion",
+    detail: "Trade-date FX rate applied at conversion",
+    value: `${MARKET_CONFIG.localCurrency} 4,127.50/${MARKET_CONFIG.baseCurrency}`,
+    accent: "text-primary/80",
+    icon: "arrow-right-left",
+  },
+  {
+    id: "net",
+    label: "Net Buying Power",
+    detail: "After broker fees and FX spread",
+    value: `$119.14 ${MARKET_CONFIG.baseCurrency}`,
+    accent: "text-primary/70",
+    icon: "dollar-sign",
+  },
+  {
+    id: "trade",
+    label: "Buy US position",
+    detail: "Purchase US stocks, ETFs, or crypto",
+    value: "Buy 1 VOO @ $453.79",
+    accent: "text-primary/60",
+    icon: "chart-line",
+  },
+]
+---
+
+<section class="relative border-t border-border/30 bg-surface-container-lowest/50">
+  <div class="container mx-auto px-6 py-20 md:py-24">
+    <div class="mb-10 max-w-2xl landing-fade-up">
+      <p class="font-mono text-xs tracking-widest text-primary uppercase">How it works</p>
+      <h2 class="font-sans mt-3 text-3xl tracking-tight text-balance sm:text-4xl md:text-[2.75rem]">
+        From local deposit to US position in four steps
+      </h2>
+      <p class="mt-4 text-muted-foreground text-pretty">
+        See how Fintu mirrors your local broker flow — every deposit, FX conversion, fee, and US trade
+        tracked with precision.
+      </p>
+    </div>
+
+    <div class="relative mx-auto max-w-3xl landing-fade-up-delayed" data-demo>
+      <div class="relative overflow-hidden rounded-2xl border border-border/50 bg-surface-container/80 shadow-2xl shadow-black/30">
+        <div class="flex items-center gap-2 border-b border-border/40 bg-surface-container-high/60 px-5 py-3">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-3.5 w-3.5 text-primary/70"
+            aria-hidden="true"
+          >
+            <path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path>
+            <path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path>
+            <path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path>
+            <path d="M10 6h4"></path>
+            <path d="M10 10h4"></path>
+            <path d="M10 14h4"></path>
+            <path d="M10 18h4"></path>
+          </svg>
+          <span class="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
+            Local broker flow
+          </span>
+          <span class="ml-auto flex items-center gap-1.5 font-mono text-[10px] text-primary">
+            <span class="size-1.5 rounded-full bg-primary"></span>
+            Live demo
+          </span>
+        </div>
+
+        <div class="p-6 md:p-10">
+          {steps.map((step, index) => (
+            <div
+              data-demo-step
+              data-index={index}
+              class={index === 0 ? "flex flex-col items-center gap-6 text-center" : "hidden"}
+            >
+              <div class="flex h-20 w-20 items-center justify-center rounded-2xl border border-border/40 bg-muted/30 landing-fade-up">
+                {step.icon === "arrow-down-to-line" && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="36"
+                    height="36"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class={`h-9 w-9 ${step.accent}`}
+                    aria-hidden="true"
+                  >
+                    <path d="M12 17V3"></path>
+                    <path d="m6 11 6 6 6-6"></path>
+                    <path d="M19 21H5"></path>
+                  </svg>
+                )}
+                {step.icon === "arrow-right-left" && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="36"
+                    height="36"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class={`h-9 w-9 ${step.accent}`}
+                    aria-hidden="true"
+                  >
+                    <path d="m16 3 4 4-4 4"></path>
+                    <path d="M20 7H4"></path>
+                    <path d="m8 21-4-4 4-4"></path>
+                    <path d="M4 17h16"></path>
+                  </svg>
+                )}
+                {step.icon === "dollar-sign" && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="36"
+                    height="36"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class={`h-9 w-9 ${step.accent}`}
+                    aria-hidden="true"
+                  >
+                    <line x1="12" x2="12" y1="2" y2="22"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                )}
+                {step.icon === "chart-line" && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="36"
+                    height="36"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class={`h-9 w-9 ${step.accent}`}
+                    aria-hidden="true"
+                  >
+                    <path d="M3 3v16a2 2 0 0 0 2 2h16"></path>
+                    <path d="m19 9-5 5-4-4-3 3"></path>
+                  </svg>
+                )}
+              </div>
+
+              <div class="space-y-2 landing-fade-up">
+                <p class="text-sm font-medium text-muted-foreground">
+                  Step {index + 1} of {steps.length}
+                </p>
+                <h3 class="text-2xl font-semibold tracking-tight">{step.label}</h3>
+                <p class="text-sm text-muted-foreground">{step.detail}</p>
+                <p class={`pt-2 font-mono text-3xl font-bold tracking-tight tabular-nums md:text-4xl ${step.accent}`}>
+                  {step.value}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div class="border-t border-border/40 bg-surface-container-low/60 px-5 py-4">
+          <div class="flex items-center gap-2">
+            {steps.map((step, i) => (
+              <button
+                type="button"
+                data-demo-jump={i}
+                class="group flex flex-1 flex-col gap-1.5 py-1 min-h-10"
+                aria-label={`Go to step ${i + 1}: ${step.label}`}
+              >
+                <div class="flex items-center gap-1.5">
+                  <div
+                    data-demo-circle={i}
+                    class={
+                      i === 0
+                        ? "flex h-6 w-6 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-[10px] font-mono font-semibold transition-colors border-primary bg-primary text-primary-foreground"
+                        : "flex h-6 w-6 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-[10px] font-mono font-semibold transition-colors border-border/60 text-muted-foreground group-hover:border-border"
+                    }
+                  >
+                    {i + 1}
+                  </div>
+                  <span
+                    data-demo-label={i}
+                    class={i === 0 ? "text-[11px] transition-colors text-foreground font-medium" : "text-[11px] transition-colors text-muted-foreground"}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+                <div class="relative h-1 w-full overflow-hidden rounded-full bg-muted/50">
+                  <div data-demo-bar={i} class="absolute inset-y-0 left-0 rounded-full bg-primary landing-progress-fill" style={i === 0 ? "" : "display:none"}></div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const demo = document.querySelector<HTMLElement>("[data-demo]")
+  if (demo) {
+    const stepEls = Array.from(demo.querySelectorAll<HTMLElement>("[data-demo-step]"))
+    const circles = Array.from(demo.querySelectorAll<HTMLElement>("[data-demo-circle]"))
+    const labels = Array.from(demo.querySelectorAll<HTMLElement>("[data-demo-label]"))
+    const bars = Array.from(demo.querySelectorAll<HTMLElement>("[data-demo-bar]"))
+    const jumpButtons = Array.from(demo.querySelectorAll<HTMLButtonElement>("[data-demo-jump]"))
+    const total = stepEls.length
+
+    let active = 0
+    let paused = false
+
+    const setActive = (next: number) => {
+      active = (next + total) % total
+
+      stepEls.forEach((el, i) => {
+        el.classList.toggle("hidden", i !== active)
+      })
+
+      circles.forEach((el, i) => {
+        if (i === active) {
+          el.className =
+            "flex h-6 w-6 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-[10px] font-mono font-semibold transition-colors border-primary bg-primary text-primary-foreground"
+          el.textContent = String(i + 1)
+        } else if (i < active) {
+          el.className =
+            "flex h-6 w-6 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-[10px] font-mono font-semibold transition-colors border-primary/40 bg-primary/20 text-primary"
+          el.textContent = "✓"
+        } else {
+          el.className =
+            "flex h-6 w-6 min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border text-[10px] font-mono font-semibold transition-colors border-border/60 text-muted-foreground group-hover:border-border"
+          el.textContent = String(i + 1)
+        }
+      })
+
+      labels.forEach((el, i) => {
+        el.className =
+          i === active
+            ? "text-[11px] transition-colors text-foreground font-medium"
+            : "text-[11px] transition-colors text-muted-foreground"
+      })
+
+      bars.forEach((el, i) => {
+        if (i === active) {
+          el.style.display = ""
+          el.className = "absolute inset-y-0 left-0 rounded-full bg-primary landing-progress-fill"
+        } else if (i < active) {
+          el.style.display = ""
+          el.className = "absolute inset-y-0 left-0 w-full rounded-full bg-primary/60"
+        } else {
+          el.style.display = "none"
+          el.className = "absolute inset-y-0 left-0 rounded-full bg-primary landing-progress-fill"
+        }
+      })
+    }
+
+    jumpButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        setActive(Number(btn.dataset.demoJump))
+      })
+    })
+
+    demo.addEventListener("mouseenter", () => { paused = true })
+    demo.addEventListener("mouseleave", () => { paused = false })
+
+    const timer = window.setInterval(() => {
+      if (!paused) setActive(active + 1)
+    }, 3500)
+
+    window.addEventListener("beforeunload", () => window.clearInterval(timer))
+  }
+</script>

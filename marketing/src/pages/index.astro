@@ -1,0 +1,23 @@
+---
+import LandingLayout from "@/layouts/landing-layout.astro"
+import LandingAtmosphere from "@/components/landing/landing-atmosphere.astro"
+import LandingNav from "@/components/layout/landing-nav.astro"
+import LandingHero from "@/components/landing/landing-hero.astro"
+import LandingFeatures from "@/components/landing/landing-features.astro"
+import LandingSocialProof from "@/components/landing/landing-social-proof.astro"
+import LandingDemo from "@/components/landing/landing-demo.astro"
+import LandingFooter from "@/components/landing/landing-footer.astro"
+---
+
+<LandingLayout title="Fintu">
+  <LandingAtmosphere>
+      <LandingNav />
+    <main>
+      <LandingHero />
+      <LandingFeatures />
+      <LandingSocialProof />
+      <LandingDemo />
+    </main>
+    <LandingFooter />
+  </LandingAtmosphere>
+</LandingLayout>

@@ -1,0 +1,187 @@
+---
+import { appUrl } from "@/lib/app-url"
+
+interface Props {
+  isAuthenticated?: boolean
+}
+
+const { isAuthenticated = false } = Astro.props
+
+const navLinks = [{ href: "#features", label: "Features" }] as const
+
+const loginHref = appUrl("/auth/login")
+const signUpHref = appUrl("/auth/sign-up")
+const dashboardHref = appUrl("/dashboard")
+---
+
+<div class="md:hidden" data-mobile-nav>
+  <button
+    type="button"
+    data-mobile-nav-toggle
+    aria-expanded="false"
+    aria-controls="landing-mobile-menu"
+    aria-label="Open menu"
+    class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-150 shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 hover:ring-1 hover:ring-border min-h-11 min-w-11 md:min-h-9 md:min-w-9 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+  >
+    <svg
+      data-mobile-nav-icon="menu"
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="size-5"
+      aria-hidden="true"
+    >
+      <line x1="4" x2="20" y1="12" y2="12"></line>
+      <line x1="4" x2="20" y1="6" y2="6"></line>
+      <line x1="4" x2="20" y1="18" y2="18"></line>
+    </svg>
+    <svg
+      data-mobile-nav-icon="x"
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="size-5 hidden"
+      aria-hidden="true"
+    >
+      <path d="M18 6 6 18"></path>
+      <path d="m6 6 12 12"></path>
+    </svg>
+  </button>
+
+  <div
+    id="landing-mobile-menu"
+    data-mobile-nav-panel
+    inert
+    class="fixed inset-x-0 top-16 z-40 border-b border-border/10 bg-background/35 backdrop-blur-md transition-all duration-300 motion-reduce:transition-none pointer-events-none -translate-y-2 opacity-0"
+    aria-hidden="true"
+  >
+    <nav class="container mx-auto flex flex-col gap-1 px-6 py-4">
+      {navLinks.map((link) => (
+        <a
+          href={link.href}
+          data-mobile-nav-link
+          class="rounded-lg px-3 py-3 text-sm font-medium text-foreground/80 outline-none transition-colors hover:bg-primary/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
+        >
+          {link.label}
+        </a>
+      ))}
+      <div class="mt-3 flex flex-col gap-2 border-t border-border/10 pt-4">
+        {isAuthenticated ? (
+          <a
+            href={dashboardHref}
+            data-mobile-nav-link
+            class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-150 shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] bg-primary text-primary-foreground hover:bg-[color:var(--color-primary-hover)] hover:scale-[1.02] shadow-sm hover:shadow-md h-11 md:h-9 px-4 has-[>svg]:px-3 w-full gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-4"
+              aria-hidden="true"
+            >
+              <rect width="7" height="9" x="3" y="3" rx="1"></rect>
+              <rect width="7" height="5" x="14" y="3" rx="1"></rect>
+              <rect width="7" height="9" x="14" y="12" rx="1"></rect>
+              <rect width="7" height="5" x="3" y="16" rx="1"></rect>
+            </svg>
+            Dashboard
+          </a>
+        ) : (
+          <a
+            href={loginHref}
+            data-mobile-nav-link
+            class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-150 shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground hover:border-primary/20 dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-11 md:h-9 px-4 has-[>svg]:px-3 w-full [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          >
+            Login
+          </a>
+        )}
+        {!isAuthenticated && (
+          <a
+            href={signUpHref}
+            data-mobile-nav-link
+            class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-150 shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] bg-primary text-primary-foreground hover:bg-[color:var(--color-primary-hover)] hover:scale-[1.02] shadow-sm hover:shadow-md h-11 md:h-9 px-4 has-[>svg]:px-3 w-full [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+          >
+            Get Started
+          </a>
+        )}
+      </div>
+    </nav>
+  </div>
+
+  <button
+    type="button"
+    data-mobile-nav-overlay
+    aria-label="Close menu overlay"
+    class="fixed inset-0 top-16 z-30 bg-black/40 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 hidden"
+  >
+  </button>
+</div>
+
+<script>
+  const root = document.documentElement
+  const nav = document.querySelector<HTMLElement>("[data-mobile-nav]")
+  const toggle = document.querySelector<HTMLButtonElement>("[data-mobile-nav-toggle]")
+  const panel = document.querySelector<HTMLElement>("[data-mobile-nav-panel]")
+  const overlay = document.querySelector<HTMLButtonElement>("[data-mobile-nav-overlay]")
+  const menuIcon = document.querySelector<SVGElement>('[data-mobile-nav-icon="menu"]')
+  const xIcon = document.querySelector<SVGElement>('[data-mobile-nav-icon="x"]')
+  const links = document.querySelectorAll<HTMLAnchorElement>("[data-mobile-nav-link]")
+
+  if (nav && toggle && panel && overlay && menuIcon && xIcon) {
+    let open = false
+
+    const setOpen = (next: boolean) => {
+      if (next === open) return
+      open = next
+
+      toggle.setAttribute("aria-expanded", String(open))
+      toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu")
+      menuIcon.classList.toggle("hidden", open)
+      xIcon.classList.toggle("hidden", !open)
+
+      if (open) {
+        panel.classList.remove("pointer-events-none", "-translate-y-2", "opacity-0")
+        panel.classList.add("translate-y-0", "opacity-100")
+        panel.removeAttribute("inert")
+        panel.setAttribute("aria-hidden", "false")
+        overlay.classList.remove("hidden")
+        root.classList.add("overflow-hidden")
+      } else {
+        panel.classList.add("pointer-events-none", "-translate-y-2", "opacity-0")
+        panel.classList.remove("translate-y-0", "opacity-100")
+        panel.setAttribute("inert", "")
+        panel.setAttribute("aria-hidden", "true")
+        overlay.classList.add("hidden")
+        root.classList.remove("overflow-hidden")
+      }
+    }
+
+    toggle.addEventListener("click", () => setOpen(!open))
+    overlay.addEventListener("click", () => setOpen(false))
+    for (const link of links) {
+      link.addEventListener("click", () => setOpen(false))
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && open) setOpen(false)
+    })
+  }
+</script>

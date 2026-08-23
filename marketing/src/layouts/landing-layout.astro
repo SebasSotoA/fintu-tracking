@@ -1,0 +1,64 @@
+---
+import "@fontsource/geist/400.css"
+import "@fontsource/geist/500.css"
+import "@fontsource/geist/600.css"
+import "@fontsource/geist/700.css"
+import "@fontsource/geist-mono/400.css"
+import "@fontsource/geist-mono/500.css"
+import "../styles/globals.css"
+
+interface Props {
+  title?: string
+  description?: string
+}
+
+const {
+  title = "Fintu",
+  description = "US assets through your local broker, tracked with precision. Built for LATAM retail investors.",
+} = Astro.props
+
+const fullTitle = title === "Fintu" ? "Fintu" : `${title} — Fintu`
+const canonical = new URL(Astro.url.pathname, Astro.site).href
+---
+
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="Fintu" />
+    <meta property="og:image" content={new URL("/og.png", Astro.site).href} />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={new URL("/og.png", Astro.site).href} />
+
+    <style is:global>
+      :root {
+        --font-geist-sans: "Geist", "Geist Fallback";
+        --font-geist-mono: "Geist Mono", "Geist Mono Fallback";
+      }
+    </style>
+  </head>
+  <body class="font-sans antialiased">
+    <slot />
+  </body>
+</html>
+<script>
+  import { inject } from "@vercel/analytics"
+  inject()
+</script>
