@@ -12,18 +12,17 @@ import (
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/services"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/go-chi/chi/v5"
 )
 
 func TestListPlans_Unauthorized(t *testing.T) {
 	t.Parallel()
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Get("/plans", ListPlans)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/plans", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/plans", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusUnauthorized)
@@ -31,13 +30,12 @@ func TestListPlans_Unauthorized(t *testing.T) {
 
 func TestGetSubscription_Unauthorized(t *testing.T) {
 	t.Parallel()
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Get("/subscriptions/current", GetSubscription)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/subscriptions/current", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/subscriptions/current", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusUnauthorized)
@@ -54,14 +52,13 @@ func TestGetSubscription_ReturnsClosedBeta(t *testing.T) {
 		t.Fatalf("create closed_beta subscription: %v", err)
 	}
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userID))
 	app.Get("/subscriptions/current", GetSubscription)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/subscriptions/current", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/subscriptions/current", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
@@ -82,17 +79,16 @@ func TestCreateSubscription_ValidationErrors(t *testing.T) {
 	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userID))
 	app.Post("/subscriptions", CreateSubscription)
 
 	req := httptest.NewRequest(http.MethodPost, "/subscriptions", strings.NewReader(`{"plan_id":""}`))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, req)
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusBadRequest)
@@ -111,7 +107,7 @@ func TestCreateSubscription_Isolation(t *testing.T) {
 		t.Fatalf("create subscription A: %v", err)
 	}
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userB))
 	app.Post("/subscriptions", CreateSubscription)
 
@@ -119,10 +115,9 @@ func TestCreateSubscription_Isolation(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/subscriptions", body)
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, req)
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	// UserB should be able to create their own subscription; userA's subscription is untouched.
@@ -150,14 +145,13 @@ func TestCancelSubscription_Success(t *testing.T) {
 		t.Fatalf("fetch subscription id: %v", err)
 	}
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userID))
-	app.Patch("/subscriptions/:id/cancel", CancelSubscription)
+	app.Patch("/subscriptions/{id}/cancel", CancelSubscription)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodPatch, "/subscriptions/"+subID+"/cancel", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodPatch, "/subscriptions/"+subID+"/cancel", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)

@@ -8,19 +8,18 @@ import (
 
 	"fintu-tracking-backend/internal/database"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/go-chi/chi/v5"
 )
 
 func TestGetMe_Unauthorized(t *testing.T) {
 	t.Parallel()
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Get("/me", GetMe)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/me", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/me", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusUnauthorized)
@@ -32,14 +31,13 @@ func TestGetMe_CreatesProfileForNewUser(t *testing.T) {
 	userID := newTestUserID(t)
 	InitProfileService(database.GetPool())
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userID))
 	app.Get("/me", GetMe)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/me", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/me", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
@@ -86,17 +84,16 @@ func TestUpdateOnboarding_Validation(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			app := fiber.New()
+			app := chi.NewRouter()
 			app.Use(withUser(userID))
 			app.Patch("/me/onboarding", UpdateOnboarding)
 
 			req := httptest.NewRequest(http.MethodPatch, "/me/onboarding", strings.NewReader(tc.body))
 			req.Header.Set("Content-Type", "application/json")
 
-			resp, err := app.Test(req)
-			if err != nil {
-				t.Fatalf("app.Test: %v", err)
-			}
+			rec := httptest.NewRecorder()
+			app.ServeHTTP(rec, req)
+			resp := rec.Result()
 			defer resp.Body.Close()
 
 			assertStatus(t, resp, tc.want)
@@ -116,17 +113,16 @@ func TestUpdateOnboarding_Success(t *testing.T) {
 	userID := newTestUserID(t)
 	InitProfileService(database.GetPool())
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userID))
 	app.Patch("/me/onboarding", UpdateOnboarding)
 
 	req := httptest.NewRequest(http.MethodPatch, "/me/onboarding", strings.NewReader(`{"country":"co","broker_preset_id":"hapi-colombia"}`))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, req)
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
@@ -143,13 +139,12 @@ func TestUpdateOnboarding_Success(t *testing.T) {
 func TestUpdateProfile_Unauthorized(t *testing.T) {
 	t.Parallel()
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Patch("/me/profile", UpdateProfile)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodPatch, "/me/profile", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodPatch, "/me/profile", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusUnauthorized)
@@ -189,17 +184,16 @@ func TestUpdateProfile_Validation(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			app := fiber.New()
+			app := chi.NewRouter()
 			app.Use(withUser(userID))
 			app.Patch("/me/profile", UpdateProfile)
 
 			req := httptest.NewRequest(http.MethodPatch, "/me/profile", strings.NewReader(tc.body))
 			req.Header.Set("Content-Type", "application/json")
 
-			resp, err := app.Test(req)
-			if err != nil {
-				t.Fatalf("app.Test: %v", err)
-			}
+			rec := httptest.NewRecorder()
+			app.ServeHTTP(rec, req)
+			resp := rec.Result()
 			defer resp.Body.Close()
 
 			assertStatus(t, resp, tc.want)
@@ -219,30 +213,28 @@ func TestUpdateProfile_Success(t *testing.T) {
 	userID := newTestUserID(t)
 	InitProfileService(database.GetPool())
 
-	onboardApp := fiber.New()
+	onboardApp := chi.NewRouter()
 	onboardApp.Use(withUser(userID))
 	onboardApp.Patch("/me/onboarding", UpdateOnboarding)
 
 	onboardReq := httptest.NewRequest(http.MethodPatch, "/me/onboarding", strings.NewReader(`{"country":"co","broker_preset_id":"hapi-colombia"}`))
 	onboardReq.Header.Set("Content-Type", "application/json")
-	onboardResp, err := onboardApp.Test(onboardReq)
-	if err != nil {
-		t.Fatalf("onboarding app.Test: %v", err)
-	}
+	onboardRec := httptest.NewRecorder()
+	onboardApp.ServeHTTP(onboardRec, onboardReq)
+	onboardResp := onboardRec.Result()
 	onboardResp.Body.Close()
 	assertStatus(t, onboardResp, http.StatusOK)
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userID))
 	app.Patch("/me/profile", UpdateProfile)
 
 	req := httptest.NewRequest(http.MethodPatch, "/me/profile", strings.NewReader(`{"country":"mx","broker_preset_id":"gbm-mexico"}`))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, req)
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
@@ -264,36 +256,33 @@ func TestUpdateProfile_isolation(t *testing.T) {
 	userB := newTestUserID(t)
 	InitProfileService(database.GetPool())
 
-	appA := fiber.New()
+	appA := chi.NewRouter()
 	appA.Use(withUser(userA))
 	appA.Patch("/me/onboarding", UpdateOnboarding)
 	appA.Patch("/me/profile", UpdateProfile)
 
 	onboardReq := httptest.NewRequest(http.MethodPatch, "/me/onboarding", strings.NewReader(`{"country":"co","broker_preset_id":"hapi-colombia"}`))
 	onboardReq.Header.Set("Content-Type", "application/json")
-	onboardResp, err := appA.Test(onboardReq)
-	if err != nil {
-		t.Fatalf("onboarding app.Test: %v", err)
-	}
+	onboardRec := httptest.NewRecorder()
+	appA.ServeHTTP(onboardRec, onboardReq)
+	onboardResp := onboardRec.Result()
 	onboardResp.Body.Close()
 
 	profileReq := httptest.NewRequest(http.MethodPatch, "/me/profile", strings.NewReader(`{"country":"mx","broker_preset_id":"gbm-mexico"}`))
 	profileReq.Header.Set("Content-Type", "application/json")
-	profileResp, err := appA.Test(profileReq)
-	if err != nil {
-		t.Fatalf("profile app.Test: %v", err)
-	}
+	profileRec := httptest.NewRecorder()
+	appA.ServeHTTP(profileRec, profileReq)
+	profileResp := profileRec.Result()
 	profileResp.Body.Close()
 	assertStatus(t, profileResp, http.StatusOK)
 
-	appB := fiber.New()
+	appB := chi.NewRouter()
 	appB.Use(withUser(userB))
 	appB.Get("/me", GetMe)
 
-	respB, err := appB.Test(httptest.NewRequest(http.MethodGet, "/me", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	recB := httptest.NewRecorder()
+	appB.ServeHTTP(recB, httptest.NewRequest(http.MethodGet, "/me", nil))
+	respB := recB.Result()
 	defer respB.Body.Close()
 
 	assertStatus(t, respB, http.StatusOK)
@@ -315,29 +304,27 @@ func TestUpdateOnboarding_isolation(t *testing.T) {
 	InitProfileService(database.GetPool())
 
 	// Complete onboarding as user A.
-	appA := fiber.New()
+	appA := chi.NewRouter()
 	appA.Use(withUser(userA))
 	appA.Patch("/me/onboarding", UpdateOnboarding)
 
 	reqA := httptest.NewRequest(http.MethodPatch, "/me/onboarding", strings.NewReader(`{"country":"co","broker_preset_id":"hapi-colombia"}`))
 	reqA.Header.Set("Content-Type", "application/json")
 
-	respA, err := appA.Test(reqA)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	recA := httptest.NewRecorder()
+	appA.ServeHTTP(recA, reqA)
+	respA := recA.Result()
 	respA.Body.Close()
 	assertStatus(t, respA, http.StatusOK)
 
 	// Fetch profile as user B; it should not be completed.
-	appB := fiber.New()
+	appB := chi.NewRouter()
 	appB.Use(withUser(userB))
 	appB.Get("/me", GetMe)
 
-	respB, err := appB.Test(httptest.NewRequest(http.MethodGet, "/me", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	recB := httptest.NewRecorder()
+	appB.ServeHTTP(recB, httptest.NewRequest(http.MethodGet, "/me", nil))
+	respB := recB.Result()
 	defer respB.Body.Close()
 
 	assertStatus(t, respB, http.StatusOK)

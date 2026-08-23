@@ -1,12 +1,16 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
+
+	"fintu-tracking-backend/internal/httpx"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/go-chi/chi/v5"
 )
 
 // billingService is the package-level billing service used by handlers.
@@ -19,78 +23,89 @@ func InitBillingService(svc *services.BillingService) {
 }
 
 // ListPlans returns public plans plus the user's current plan.
-func ListPlans(c fiber.Ctx) error {
-	userID, err := middleware.RequireUserID(c)
-	if err != nil {
-		return err
+func ListPlans(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.RequireUserID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	plans, err := billingService.ListPlans(c.Context(), userID)
+	plans, err := billingService.ListPlans(r.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return c.JSON(plans)
+	httpx.JSON(w, http.StatusOK, plans)
 }
 
 // GetSubscription returns the current user's subscription.
-func GetSubscription(c fiber.Ctx) error {
-	userID, err := middleware.RequireUserID(c)
-	if err != nil {
-		return err
+func GetSubscription(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.RequireUserID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	subscription, err := billingService.GetSubscription(c.Context(), userID)
+	subscription, err := billingService.GetSubscription(r.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	if subscription == nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "No subscription found"})
+		httpx.Error(w, http.StatusNotFound, "No subscription found")
+		return
 	}
 
-	return c.JSON(subscription)
+	httpx.JSON(w, http.StatusOK, subscription)
 }
 
 // CreateSubscription creates or updates the user's subscription.
-func CreateSubscription(c fiber.Ctx) error {
-	userID, err := middleware.RequireUserID(c)
-	if err != nil {
-		return err
+func CreateSubscription(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.RequireUserID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	var req models.CreateSubscriptionRequest
-	if err := c.Bind().JSON(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
 	}
 
-	subscription, err := billingService.CreateSubscription(c.Context(), userID, req)
+	subscription, err := billingService.CreateSubscription(r.Context(), userID, req)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(subscription)
+	httpx.JSON(w, http.StatusCreated, subscription)
 }
 
 // CancelSubscription cancels the user's subscription.
-func CancelSubscription(c fiber.Ctx) error {
-	userID, err := middleware.RequireUserID(c)
-	if err != nil {
-		return err
+func CancelSubscription(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.RequireUserID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	id := c.Params("id")
+	id := chi.URLParam(r, "id")
 	if id == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "subscription id is required"})
+		httpx.Error(w, http.StatusBadRequest, "subscription id is required")
+		return
 	}
 
-	subscription, err := billingService.CancelSubscription(c.Context(), userID, id)
+	subscription, err := billingService.CancelSubscription(r.Context(), userID, id)
 	if err != nil {
-		status := fiber.StatusBadRequest
+		status := http.StatusBadRequest
 		if errors.Is(err, services.ErrSubscriptionNotFound) {
-			status = fiber.StatusNotFound
+			status = http.StatusNotFound
 		}
-		return c.Status(status).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, status, err.Error())
+		return
 	}
 
-	return c.JSON(subscription)
+	httpx.JSON(w, http.StatusOK, subscription)
 }

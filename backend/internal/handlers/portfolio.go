@@ -4,14 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"net/http"
+	"strings"
+
 	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/httpx"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
-	"math"
-	"strings"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/go-chi/chi/v5"
 )
 
 var twelveDataSvc = services.NewTwelveDataService(nil)
@@ -22,10 +25,11 @@ func InitTwelveDataService() {
 }
 
 // RefreshMarketPrices fetches live quotes for held tickers and updates market_prices.
-func RefreshMarketPrices(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func RefreshMarketPrices(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	result, err := twelveDataSvc.RefreshMarketPrices(context.Background(), userID)
@@ -33,48 +37,53 @@ func RefreshMarketPrices(c fiber.Ctx) error {
 		var rateLimitErr *services.RateLimitError
 		if errors.As(err, &rateLimitErr) {
 			retryAfterSeconds := int(math.Ceil(rateLimitErr.RetryAfter.Seconds()))
-			c.Set("Retry-After", fmt.Sprintf("%d", retryAfterSeconds))
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", retryAfterSeconds))
+			httpx.JSON(w, http.StatusTooManyRequests, map[string]any{
 				"error":        err.Error(),
 				"retry_after":  retryAfterSeconds,
 				"updated":      result.Updated,
 				"tickers":      result.Tickers,
 				"errors":       result.Errors,
 			})
+			return
 		}
 		if strings.Contains(strings.ToLower(err.Error()), "rate limit") {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+			httpx.JSON(w, http.StatusTooManyRequests, map[string]any{
 				"error":   err.Error(),
 				"updated": result.Updated,
 				"tickers": result.Tickers,
 				"errors":  result.Errors,
 			})
+			return
 		}
 		if strings.Contains(err.Error(), "TWELVE_DATA_API_KEY") {
-			return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{"error": err.Error()})
+			httpx.Error(w, http.StatusServiceUnavailable, err.Error())
+			return
 		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		httpx.JSON(w, http.StatusInternalServerError, map[string]any{
 			"error":   err.Error(),
 			"updated": result.Updated,
 			"tickers": result.Tickers,
 			"errors":  result.Errors,
 		})
+		return
 	}
 
-	return c.JSON(result)
+	httpx.JSON(w, http.StatusOK, result)
 }
 
 // GetHoldings calculates and returns current holdings.
 // Without page/page_size query params, returns a plain JSON array (legacy).
 // With pagination params, returns models.PaginatedResponse sorted by market value descending.
-func GetHoldings(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func GetHoldings(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	pageStr := c.Query("page")
-	pageSizeStr := c.Query("page_size")
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("page_size")
 
 	analyticsService := services.NewAnalyticsService(database.GetPool())
 	ctx := context.Background()
@@ -82,31 +91,36 @@ func GetHoldings(c fiber.Ctx) error {
 	if !paginationRequested(pageStr, pageSizeStr) {
 		holdings, err := analyticsService.GetCurrentHoldings(ctx, userID)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			httpx.Error(w, http.StatusInternalServerError, err.Error())
+			return
 		}
-		return c.JSON(holdings)
+		httpx.JSON(w, http.StatusOK, holdings)
+		return
 	}
 
 	params, err := parsePaginationParams(pageStr, pageSizeStr)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	holdings, err := analyticsService.GetCurrentHoldingsByMarketValue(ctx, userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return c.JSON(paginateHoldings(holdings, params.page, params.pageSize))
+	httpx.JSON(w, http.StatusOK, paginateHoldings(holdings, params.page, params.pageSize))
 }
 
 // ListMarketPrices returns all market prices
-func ListMarketPrices(c fiber.Ctx) error {
+func ListMarketPrices(w http.ResponseWriter, r *http.Request) {
 	query := `SELECT ticker, price, currency, updated_at FROM market_prices ORDER BY ticker`
 
 	rows, err := database.GetPool().Query(context.Background(), query)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	defer rows.Close()
 
@@ -114,17 +128,18 @@ func ListMarketPrices(c fiber.Ctx) error {
 	for rows.Next() {
 		var price models.MarketPrice
 		if err := rows.Scan(&price.Ticker, &price.Price, &price.Currency, &price.UpdatedAt); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			httpx.Error(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 		prices = append(prices, price)
 	}
 
-	return c.JSON(prices)
+	httpx.JSON(w, http.StatusOK, prices)
 }
 
 // GetMarketPrice returns a specific market price
-func GetMarketPrice(c fiber.Ctx) error {
-	ticker := c.Params("ticker")
+func GetMarketPrice(w http.ResponseWriter, r *http.Request) {
+	ticker := chi.URLParam(r, "ticker")
 
 	query := `SELECT ticker, price, currency, updated_at FROM market_prices WHERE ticker = $1`
 
@@ -133,10 +148,11 @@ func GetMarketPrice(c fiber.Ctx) error {
 		Scan(&price.Ticker, &price.Price, &price.Currency, &price.UpdatedAt)
 
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Market price not found"})
+		httpx.Error(w, http.StatusNotFound, "Market price not found")
+		return
 	}
 
-	return c.JSON(price)
+	httpx.JSON(w, http.StatusOK, price)
 }
 
 // paginateHoldings slices a full holdings list into a paginated response,

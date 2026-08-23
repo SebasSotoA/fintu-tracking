@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"fintu-tracking-backend/internal/server"
 
@@ -50,6 +53,24 @@ func startDev(ctx context.Context) {
 		port = "8080"
 	}
 
-	fmt.Printf("Server starting on port %s\n", port)
-	log.Fatal(app.Listen(":" + port))
+	srv := &http.Server{Addr: ":" + port, Handler: app}
+
+	go func() {
+		log.Printf("Backend listening on :%s", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down backend...")
+
+	shutdownCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Printf("Server shutdown error: %v", err)
+	}
+	log.Println("Backend stopped")
 }

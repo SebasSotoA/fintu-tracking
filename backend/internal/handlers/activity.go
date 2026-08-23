@@ -2,26 +2,28 @@ package handlers
 
 import (
 	"fmt"
-	"fintu-tracking-backend/internal/config"
-	"fintu-tracking-backend/internal/database"
-	"fintu-tracking-backend/internal/middleware"
-	"fintu-tracking-backend/internal/models"
+	"net/http"
 	"strconv"
 
-	"github.com/gofiber/fiber/v3"
+	"fintu-tracking-backend/internal/config"
+	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/httpx"
+	"fintu-tracking-backend/internal/middleware"
+	"fintu-tracking-backend/internal/models"
 )
 
 // GetActivityFeed handles GET /api/activity/feed
 // Returns a unified feed of recent trades and cash flows, ordered by date DESC.
 // Query param: limit (default 8, max 20).
-func GetActivityFeed(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func GetActivityFeed(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	limit := 8
-	if limitStr := c.Query("limit"); limitStr != "" {
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
 		if n, err := strconv.Atoi(limitStr); err == nil && n > 0 && n <= 20 {
 			limit = n
 		}
@@ -76,9 +78,10 @@ func GetActivityFeed(c fiber.Ctx) error {
 		LIMIT $2
 	`, config.LocalCurrency, config.LocalCurrency)
 
-	rows, err := database.GetPool().Query(c.Context(), query, userID, limit)
+	rows, err := database.GetPool().Query(r.Context(), query, userID, limit)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	defer rows.Close()
 
@@ -86,10 +89,11 @@ func GetActivityFeed(c fiber.Ctx) error {
 	for rows.Next() {
 		var item models.ActivityItem
 		if err := rows.Scan(&item.ID, &item.Date, &item.Kind, &item.SubKind, &item.Ticker, &item.Direction, &item.AmountUSD, &item.Details); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			httpx.Error(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 		items = append(items, item)
 	}
 
-	return c.JSON(items)
+	httpx.JSON(w, http.StatusOK, items)
 }

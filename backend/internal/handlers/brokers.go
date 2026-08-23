@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"fintu-tracking-backend/internal/config"
+	"fintu-tracking-backend/internal/httpx"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/services"
 
-	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -18,18 +21,20 @@ func InitBrokerService(pool *pgxpool.Pool) {
 var brokerService *services.BrokerService
 
 // ListBrokers returns the user's broker rows plus all available built-in presets.
-func ListBrokers(c fiber.Ctx) error {
-	userID, err := middleware.RequireUserID(c)
-	if err != nil {
-		return err
+func ListBrokers(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.RequireUserID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	brokers, err := brokerService.ListBrokers(c.Context(), userID)
+	brokers, err := brokerService.ListBrokers(r.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return c.JSON(fiber.Map{
+	httpx.JSON(w, http.StatusOK, map[string]any{
 		"brokers": brokers,
 		"presets": config.BuiltInBrokerPresets,
 	})
@@ -41,27 +46,32 @@ type CreateBrokerRequest struct {
 }
 
 // CreateBroker creates a broker row for the authenticated user from a preset.
-func CreateBroker(c fiber.Ctx) error {
-	userID, err := middleware.RequireUserID(c)
-	if err != nil {
-		return err
+func CreateBroker(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.RequireUserID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	var req CreateBrokerRequest
-	if err := c.Bind().JSON(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
 	}
 	if req.PresetID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "preset_id is required"})
+		httpx.Error(w, http.StatusBadRequest, "preset_id is required")
+		return
 	}
 	if config.GetBrokerPreset(req.PresetID) == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Unknown preset"})
+		httpx.Error(w, http.StatusBadRequest, "Unknown preset")
+		return
 	}
 
-	broker, err := brokerService.GetOrCreateBrokerFromPreset(c.Context(), userID, req.PresetID)
+	broker, err := brokerService.GetOrCreateBrokerFromPreset(r.Context(), userID, req.PresetID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(broker)
+	httpx.JSON(w, http.StatusCreated, broker)
 }

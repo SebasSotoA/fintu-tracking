@@ -1,18 +1,22 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
-	"fintu-tracking-backend/internal/config"
-	"fintu-tracking-backend/internal/database"
-	"fintu-tracking-backend/internal/middleware"
-	"fintu-tracking-backend/internal/models"
-	"fintu-tracking-backend/internal/services"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"fintu-tracking-backend/internal/config"
+	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/httpx"
+	"fintu-tracking-backend/internal/middleware"
+	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/services"
+
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
@@ -28,10 +32,11 @@ func InitExchangeRateService() {
 }
 
 // ListFxRates returns all FX rates for the authenticated user
-func ListFxRates(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func ListFxRates(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	query := `
@@ -41,9 +46,10 @@ func ListFxRates(c fiber.Ctx) error {
 		ORDER BY date DESC
 	`
 
-	rows, err := database.GetPool().Query(c.Context(), query, userID)
+	rows, err := database.GetPool().Query(r.Context(), query, userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	defer rows.Close()
 
@@ -51,35 +57,40 @@ func ListFxRates(c fiber.Ctx) error {
 	for rows.Next() {
 		var rate models.FxRate
 		if err := rows.Scan(&rate.ID, &rate.UserID, &rate.Date, &rate.Rate, &rate.Source, &rate.CreatedAt); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			httpx.Error(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 		fxRates = append(fxRates, rate)
 	}
 
-	return c.JSON(fxRates)
+	httpx.JSON(w, http.StatusOK, fxRates)
 }
 
 // CreateFxRate creates a new FX rate
-func CreateFxRate(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func CreateFxRate(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	var req models.CreateFxRateRequest
-	if err := c.Bind().JSON(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
 	}
 
 	// Validate rate
 	if _, err := decimal.NewFromString(req.Rate); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid rate format"})
+		httpx.Error(w, http.StatusBadRequest, "Invalid rate format")
+		return
 	}
 
 	// Parse date
 	date, err := time.Parse("2006-01-02", req.Date)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid date format"})
+		httpx.Error(w, http.StatusBadRequest, "Invalid date format")
+		return
 	}
 
 	id := uuid.New().String()
@@ -97,27 +108,30 @@ func CreateFxRate(c fiber.Ctx) error {
 	`
 
 	var fxRate models.FxRate
-	err = database.GetPool().QueryRow(c.Context(), query, id, userID, date, req.Rate, source).
+	err = database.GetPool().QueryRow(r.Context(), query, id, userID, date, req.Rate, source).
 		Scan(&fxRate.ID, &fxRate.UserID, &fxRate.Date, &fxRate.Rate, &fxRate.Source, &fxRate.CreatedAt)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fxRate)
+	httpx.JSON(w, http.StatusCreated, fxRate)
 }
 
 // UpdateFxRate updates an existing FX rate
-func UpdateFxRate(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func UpdateFxRate(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	id := c.Params("id")
+	id := chi.URLParam(r, "id")
 	var req models.UpdateFxRateRequest
-	if err := c.Bind().JSON(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
 	}
 
 	// Build dynamic update query using fmt.Sprintf for placeholder indices
@@ -129,7 +143,8 @@ func UpdateFxRate(c fiber.Ctx) error {
 	if req.Date != nil {
 		date, err := time.Parse("2006-01-02", *req.Date)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid date format"})
+			httpx.Error(w, http.StatusBadRequest, "Invalid date format")
+			return
 		}
 		query += fmt.Sprintf("date = $%d, ", argCount)
 		args = append(args, date)
@@ -138,7 +153,8 @@ func UpdateFxRate(c fiber.Ctx) error {
 
 	if req.Rate != nil {
 		if _, err := decimal.NewFromString(*req.Rate); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid rate format"})
+			httpx.Error(w, http.StatusBadRequest, "Invalid rate format")
+			return
 		}
 		query += fmt.Sprintf("rate = $%d, ", argCount)
 		args = append(args, *req.Rate)
@@ -152,69 +168,77 @@ func UpdateFxRate(c fiber.Ctx) error {
 	}
 
 	if len(args) == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No fields to update"})
+		httpx.Error(w, http.StatusBadRequest, "No fields to update")
+		return
 	}
 
 	// Remove trailing ", " and append WHERE clause.
 	query = query[:len(query)-2] + fmt.Sprintf(" WHERE id = $%d AND user_id = $%d", argCount, argCount+1)
 	args = append(args, id, userID)
 
-	result, err := database.GetPool().Exec(c.Context(), query, args...)
+	result, err := database.GetPool().Exec(r.Context(), query, args...)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	if result.RowsAffected() == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "FX rate not found"})
+		httpx.Error(w, http.StatusNotFound, "FX rate not found")
+		return
 	}
 
-	return c.JSON(fiber.Map{"message": "FX rate updated successfully"})
+	httpx.JSON(w, http.StatusOK, map[string]any{"message": "FX rate updated successfully"})
 }
 
 // DeleteFxRate deletes an FX rate
-func DeleteFxRate(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func DeleteFxRate(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	id := c.Params("id")
+	id := chi.URLParam(r, "id")
 
 	query := `DELETE FROM fx_rates WHERE id = $1 AND user_id = $2`
-	result, err := database.GetPool().Exec(c.Context(), query, id, userID)
+	result, err := database.GetPool().Exec(r.Context(), query, id, userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	if result.RowsAffected() == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "FX rate not found"})
+		httpx.Error(w, http.StatusNotFound, "FX rate not found")
+		return
 	}
 
-	return c.JSON(fiber.Map{"message": "FX rate deleted successfully"})
+	httpx.JSON(w, http.StatusOK, map[string]any{"message": "FX rate deleted successfully"})
 }
 
 // GetFxRateChart returns daily USD/COP closes from Twelve Data for charting.
-func GetFxRateChart(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func GetFxRateChart(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	days := 30
-	if raw := strings.TrimSpace(c.Query("days")); raw != "" {
+	if raw := strings.TrimSpace(r.URL.Query().Get("days")); raw != "" {
 		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
 			days = parsed
 		}
 	}
 
-	points, err := exchangeRateSvc.FetchDailyHistory(c.Context(), days)
+	points, err := exchangeRateSvc.FetchDailyHistory(r.Context(), days)
 	if err != nil {
-		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+		httpx.JSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": err.Error(),
 		})
+		return
 	}
 
-	return c.JSON(points)
+	httpx.JSON(w, http.StatusOK, points)
 }
 
 // GetCurrentRate returns the current exchange rate between two currencies.
@@ -226,29 +250,34 @@ func GetFxRateChart(c fiber.Ctx) error {
 //
 // Only USD/COP and COP/USD are supported. The base USD→COP rate is always
 // fetched/cached once; the inverse is derived mathematically with no extra API call.
-func GetCurrentRate(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func GetCurrentRate(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	from := strings.ToUpper(strings.TrimSpace(c.Query("from", config.BaseCurrency)))
-	to := strings.ToUpper(strings.TrimSpace(c.Query("to", config.LocalCurrency)))
+	from := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("from")))
+	if from == "" {
+		from = config.BaseCurrency
+	}
+	to := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("to")))
+	if to == "" {
+		to = config.LocalCurrency
+	}
 
 	// Validate supported pairs.
 	pair := from + "/" + to
 	if !slices.Contains(config.SupportedCurrencyPairs, pair) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": fmt.Sprintf("unsupported currency pair: only %s are supported", strings.Join(config.SupportedCurrencyPairs, ", ")),
-		})
+		httpx.Error(w, http.StatusBadRequest, fmt.Sprintf("unsupported currency pair: only %s are supported", strings.Join(config.SupportedCurrencyPairs, ", ")))
+		return
 	}
 
 	// Always fetch the base USD→COP rate (cached; no extra API call for the inverse).
-	base, err := exchangeRateSvc.FetchCurrentRate(c.Context(), userID)
+	base, err := exchangeRateSvc.FetchCurrentRate(r.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
-			"error": "could not retrieve current exchange rate: " + err.Error(),
-		})
+		httpx.Error(w, http.StatusServiceUnavailable, "could not retrieve current exchange rate: "+err.Error())
+		return
 	}
 
 	rate := base.Rate
@@ -257,16 +286,15 @@ func GetCurrentRate(c fiber.Ctx) error {
 	if pair == config.InverseCurrencyPair {
 		baseDecimal, parseErr := decimal.NewFromString(base.Rate)
 		if parseErr != nil || baseDecimal.IsZero() {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": "invalid base rate, cannot compute inverse",
-			})
+			httpx.Error(w, http.StatusInternalServerError, "invalid base rate, cannot compute inverse")
+			return
 		}
 		rate = decimal.NewFromInt(1).Div(baseDecimal).StringFixed(6)
 	}
 
 	// Use the date from the service result to avoid midnight skew between the
 	// cache-key computation in the service and the timestamp in this handler.
-	return c.JSON(fiber.Map{
+	httpx.JSON(w, http.StatusOK, map[string]any{
 		"rate":   rate,
 		"date":   base.Date,
 		"source": base.Source,

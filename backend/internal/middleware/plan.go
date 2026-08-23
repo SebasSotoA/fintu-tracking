@@ -1,34 +1,36 @@
 package middleware
 
 import (
-	"fintu-tracking-backend/internal/services"
+	"net/http"
 
-	"github.com/gofiber/fiber/v3"
+	"fintu-tracking-backend/internal/httpx"
+	"fintu-tracking-backend/internal/services"
 )
 
 // RequireActivePlan returns a middleware that blocks requests when the user has
 // no active or trialing subscription. Routes for managing the subscription itself
 // should be placed outside this middleware.
-func RequireActivePlan(svc *services.BillingService) fiber.Handler {
-	return func(c fiber.Ctx) error {
-		userID, err := RequireUserID(c)
-		if err != nil {
-			return err
-		}
+func RequireActivePlan(svc *services.BillingService) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID, ok := RequireUserID(r)
+			if !ok {
+				httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+				return
+			}
 
-		active, err := svc.HasActiveSubscription(c.Context(), userID)
-		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": err.Error(),
-			})
-		}
+			active, err := svc.HasActiveSubscription(r.Context(), userID)
+			if err != nil {
+				httpx.Error(w, http.StatusInternalServerError, err.Error())
+				return
+			}
 
-		if !active {
-			return c.Status(fiber.StatusPaymentRequired).JSON(fiber.Map{
-				"error": "Active subscription required",
-			})
-		}
+			if !active {
+				httpx.Error(w, http.StatusPaymentRequired, "Active subscription required")
+				return
+			}
 
-		return c.Next()
+			next.ServeHTTP(w, r)
+		})
 	}
 }

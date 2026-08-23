@@ -4,17 +4,19 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/handlers"
-	"fintu-tracking-backend/internal/middleware"
+	"fintu-tracking-backend/internal/httpx"
+	mw "fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/services"
 
-	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/cors"
-	"github.com/gofiber/fiber/v3/middleware/logger"
+	"github.com/go-chi/chi/v5"
+	chimw "github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/cors"
 )
 
 // Deps holds wired services required to build the Fiber application.
@@ -48,94 +50,92 @@ func (d *Deps) Close() {
 	database.Close()
 }
 
-// NewApp builds a Fiber application with middleware and all API routes.
+// NewApp builds a Chi router with middleware and all API routes.
 //
 // Lambda runtime env (wired in Phase 4.2): DATABASE_URL, SUPABASE_URL,
 // SUPABASE_JWT_SECRET, FRONTEND_URL, TWELVE_DATA_API_KEY, DB_MAX_OPEN_CONNS,
 // DB_MAX_IDLE_CONNS.
-func NewApp(deps *Deps) *fiber.App {
+func NewApp(deps *Deps) chi.Router {
 	warnLambdaMissingFrontendURL()
 
-	app := fiber.New(fiber.Config{
-		ErrorHandler: func(c fiber.Ctx, err error) error {
-			code := fiber.StatusInternalServerError
-			if e, ok := err.(*fiber.Error); ok {
-				code = e.Code
-			}
-			return c.Status(code).JSON(fiber.Map{
-				"error": err.Error(),
-			})
-		},
+	r := chi.NewRouter()
+	r.Use(chimw.Recoverer)
+	r.Use(chimw.Logger)
+
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   corsAllowOrigins(),
+		AllowedHeaders:   []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowCredentials: false,
+		Debug:            false,
 	})
+	r.Use(corsHandler.Handler)
 
-	app.Use(logger.New())
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: corsAllowOrigins(),
-		AllowHeaders: []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-	}))
-
-	app.Get("/health", func(c fiber.Ctx) error {
-		return c.JSON(fiber.Map{
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		httpx.JSON(w, http.StatusOK, map[string]any{
 			"status":  "ok",
 			"service": "fintu-tracking-api",
 		})
 	})
 
-	api := app.Group("/api")
+	r.Route("/api", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Use(mw.AuthMiddleware())
 
-	authOnly := api.Group("", middleware.AuthMiddleware())
+			r.Get("/me", handlers.GetMe)
+			r.Patch("/me/onboarding", handlers.UpdateOnboarding)
+			r.Patch("/me/profile", handlers.UpdateProfile)
 
-	authOnly.Get("/me", handlers.GetMe)
-	authOnly.Patch("/me/onboarding", handlers.UpdateOnboarding)
-	authOnly.Patch("/me/profile", handlers.UpdateProfile)
+			r.Get("/plans", handlers.ListPlans)
+			r.Get("/subscriptions/current", handlers.GetSubscription)
+			r.Post("/subscriptions", handlers.CreateSubscription)
+			r.Patch("/subscriptions/{id}/cancel", handlers.CancelSubscription)
 
-	authOnly.Get("/plans", handlers.ListPlans)
-	authOnly.Get("/subscriptions/current", handlers.GetSubscription)
-	authOnly.Post("/subscriptions", handlers.CreateSubscription)
-	authOnly.Patch("/subscriptions/:id/cancel", handlers.CancelSubscription)
+			r.Get("/brokers", handlers.ListBrokers)
+			r.Post("/brokers", handlers.CreateBroker)
 
-	authOnly.Get("/brokers", handlers.ListBrokers)
-	authOnly.Post("/brokers", handlers.CreateBroker)
+			r.Group(func(r chi.Router) {
+				r.Use(mw.RequireActivePlan(deps.BillingSvc))
 
-	protected := authOnly.Group("", middleware.RequireActivePlan(deps.BillingSvc))
+				r.Get("/fx-rates/current", handlers.GetCurrentRate)
+				r.Get("/fx-rates/chart", handlers.GetFxRateChart)
+				r.Get("/fx-rates", handlers.ListFxRates)
+				r.Post("/fx-rates", handlers.CreateFxRate)
+				r.Put("/fx-rates/{id}", handlers.UpdateFxRate)
+				r.Delete("/fx-rates/{id}", handlers.DeleteFxRate)
 
-	protected.Get("/fx-rates/current", handlers.GetCurrentRate)
-	protected.Get("/fx-rates/chart", handlers.GetFxRateChart)
-	protected.Get("/fx-rates", handlers.ListFxRates)
-	protected.Post("/fx-rates", handlers.CreateFxRate)
-	protected.Put("/fx-rates/:id", handlers.UpdateFxRate)
-	protected.Delete("/fx-rates/:id", handlers.DeleteFxRate)
+				r.Get("/cash-flows", handlers.ListCashFlows)
+				r.Post("/cash-flows", handlers.CreateCashFlow)
+				r.Put("/cash-flows/{id}", handlers.UpdateCashFlow)
+				r.Delete("/cash-flows/{id}", handlers.DeleteCashFlow)
 
-	protected.Get("/cash-flows", handlers.ListCashFlows)
-	protected.Post("/cash-flows", handlers.CreateCashFlow)
-	protected.Put("/cash-flows/:id", handlers.UpdateCashFlow)
-	protected.Delete("/cash-flows/:id", handlers.DeleteCashFlow)
+				r.Get("/trade-tickers", handlers.ListTradeTickers)
+				r.Get("/trades", handlers.ListTrades)
+				r.Post("/trades", handlers.CreateTrade)
+				r.Put("/trades/{id}", handlers.UpdateTrade)
+				r.Delete("/trades/{id}", handlers.DeleteTrade)
 
-	protected.Get("/trade-tickers", handlers.ListTradeTickers)
-	protected.Get("/trades", handlers.ListTrades)
-	protected.Post("/trades", handlers.CreateTrade)
-	protected.Put("/trades/:id", handlers.UpdateTrade)
-	protected.Delete("/trades/:id", handlers.DeleteTrade)
+				r.Get("/market-prices", handlers.ListMarketPrices)
+				r.Get("/market-prices/{ticker}", handlers.GetMarketPrice)
+				r.Post("/market-prices/refresh", handlers.RefreshMarketPrices)
 
-	protected.Get("/market-prices", handlers.ListMarketPrices)
-	protected.Get("/market-prices/:ticker", handlers.GetMarketPrice)
-	protected.Post("/market-prices/refresh", handlers.RefreshMarketPrices)
+				r.Get("/portfolio/holdings", handlers.GetHoldings)
 
-	protected.Get("/portfolio/holdings", handlers.GetHoldings)
+				r.Get("/analytics/fee-breakdown", handlers.GetFeeBreakdown)
+				r.Get("/analytics/fee-impact", handlers.GetFeeImpact)
+				r.Get("/analytics/fee-efficiency", handlers.GetFeeEfficiency)
+				r.Get("/analytics/return-attribution", handlers.GetReturnAttribution)
+				r.Get("/analytics/fx-impact", handlers.GetFXImpact)
+				r.Get("/analytics/performance-time-series", handlers.GetPerformanceTimeSeries)
+				r.Get("/analytics/net-worth", handlers.GetNetWorth)
+				r.Get("/analytics/cash-reconciliation", handlers.GetCashReconciliation)
 
-	protected.Get("/analytics/fee-breakdown", handlers.GetFeeBreakdown)
-	protected.Get("/analytics/fee-impact", handlers.GetFeeImpact)
-	protected.Get("/analytics/fee-efficiency", handlers.GetFeeEfficiency)
-	protected.Get("/analytics/return-attribution", handlers.GetReturnAttribution)
-	protected.Get("/analytics/fx-impact", handlers.GetFXImpact)
-	protected.Get("/analytics/performance-time-series", handlers.GetPerformanceTimeSeries)
-	protected.Get("/analytics/net-worth", handlers.GetNetWorth)
-	protected.Get("/analytics/cash-reconciliation", handlers.GetCashReconciliation)
+				r.Get("/activity/feed", handlers.GetActivityFeed)
+			})
+		})
+	})
 
-	protected.Get("/activity/feed", handlers.GetActivityFeed)
-
-	return app
+	return r
 }
 
 func corsAllowOrigins() []string {

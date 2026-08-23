@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"encoding/base64"
@@ -13,9 +14,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
+
+	"fintu-tracking-backend/internal/httpx"
 )
+
+type ctxKey int
+
+const userCtxKey ctxKey = 0
+
+// UserCtxKey returns the context key under which the authenticated user ID is stored.
+// Exported so tests in other packages can inject a user ID without going through AuthMiddleware.
+func UserCtxKey() any { return userCtxKey }
 
 // publicKeyCache holds all keys from the JWKS indexed by kid
 var publicKeyCache map[string]*ecdsa.PublicKey
@@ -129,78 +139,77 @@ func refreshJWKSCache() error {
 }
 
 // AuthMiddleware validates Supabase JWT tokens (supports both HS256 and ES256)
-func AuthMiddleware() fiber.Handler {
-	return func(c fiber.Ctx) error {
-		authHeader := c.Get("Authorization")
-		if authHeader == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Missing authorization header",
-			})
-		}
-
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Invalid authorization header format",
-			})
-		}
-
-		tokenString := parts[1]
-
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			switch token.Method.(type) {
-			case *jwt.SigningMethodHMAC:
-				secret := os.Getenv("SUPABASE_JWT_SECRET")
-				if secret == "" {
-					return nil, fmt.Errorf("SUPABASE_JWT_SECRET not set")
-				}
-				return []byte(secret), nil
-
-			case *jwt.SigningMethodECDSA:
-				// Extract kid from token header for correct key selection
-				kid, _ := token.Header["kid"].(string)
-				pubKey, err := getSupabasePublicKey(kid)
-				if err != nil {
-					return nil, fmt.Errorf("failed to get public key: %w", err)
-				}
-				return pubKey, nil
-
-			default:
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+func AuthMiddleware() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				httpx.Error(w, http.StatusUnauthorized, "Missing authorization header")
+				return
 			}
-		})
 
-		if err != nil || !token.Valid {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": fmt.Sprintf("Invalid or expired token: %v", err),
-			})
-		}
-
-		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			if sub, ok := claims["sub"].(string); ok {
-				c.Locals("user_id", sub)
-				return c.Next()
+			parts := strings.Split(authHeader, " ")
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				httpx.Error(w, http.StatusUnauthorized, "Invalid authorization header format")
+				return
 			}
-		}
 
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token claims",
+			tokenString := parts[1]
+
+			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+				switch token.Method.(type) {
+				case *jwt.SigningMethodHMAC:
+					secret := os.Getenv("SUPABASE_JWT_SECRET")
+					if secret == "" {
+						return nil, fmt.Errorf("SUPABASE_JWT_SECRET not set")
+					}
+					return []byte(secret), nil
+
+				case *jwt.SigningMethodECDSA:
+					// Extract kid from token header for correct key selection
+					kid, _ := token.Header["kid"].(string)
+					pubKey, err := getSupabasePublicKey(kid)
+					if err != nil {
+						return nil, fmt.Errorf("failed to get public key: %w", err)
+					}
+					return pubKey, nil
+
+				default:
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
+			})
+
+			if err != nil || !token.Valid {
+				httpx.Error(w, http.StatusUnauthorized, fmt.Sprintf("Invalid or expired token: %v", err))
+				return
+			}
+
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				if sub, ok := claims["sub"].(string); ok {
+					ctx := context.WithValue(r.Context(), userCtxKey, sub)
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+			}
+
+			httpx.Error(w, http.StatusUnauthorized, "Invalid token claims")
 		})
 	}
 }
 
-// GetUserID retrieves the user ID from the context
-func GetUserID(c fiber.Ctx) string {
-	userID, _ := c.Locals("user_id").(string)
+// GetUserID retrieves the user ID from the request context.
+func GetUserID(r *http.Request) string {
+	userID, _ := r.Context().Value(userCtxKey).(string)
 	return userID
 }
 
-// RequireUserID returns the authenticated user ID or a 401 fiber error.
-// Use it to reduce the repetitive empty-user-id check in handlers.
-func RequireUserID(c fiber.Ctx) (string, error) {
-	userID := GetUserID(c)
+// RequireUserID returns the authenticated user ID and whether it is present.
+// When the second return value is false, the caller is responsible for writing
+// the 401 response.
+func RequireUserID(r *http.Request) (string, bool) {
+	userID := GetUserID(r)
 	if userID == "" {
-		return "", fiber.NewError(fiber.StatusUnauthorized, "Unauthorized")
+		return "", false
 	}
-	return userID, nil
+	return userID, true
 }

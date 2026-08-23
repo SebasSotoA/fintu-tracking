@@ -19,10 +19,9 @@ func TestNewApp_registersHealthRoute(t *testing.T) {
 	}
 	app := NewApp(deps)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/health", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/health", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
@@ -52,10 +51,9 @@ func TestNewApp_registersMeRoute(t *testing.T) {
 	}
 	app := NewApp(deps)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/me", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/me", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusUnauthorized {
@@ -69,10 +67,9 @@ func TestNewApp_healthNotUnderAPIPrefix(t *testing.T) {
 	}
 	app := NewApp(deps)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/api/health", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/health", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusOK {
@@ -85,10 +82,10 @@ func TestCORSAllowOrigins_includesLocalhostDefaults(t *testing.T) {
 	t.Setenv("AWS_LAMBDA_RUNTIME_API", "")
 
 	origins := corsAllowOrigins()
-	if len(origins) != 2 {
-		t.Fatalf("len(origins) = %d, want 2", len(origins))
+	if len(origins) != 3 {
+		t.Fatalf("len(origins) = %d, want 3", len(origins))
 	}
-	if origins[0] != "http://localhost:3000" || origins[1] != "http://localhost:3001" {
+	if origins[0] != "http://localhost:3000" || origins[1] != "http://localhost:3001" || origins[2] != "http://localhost:3002" {
 		t.Errorf("origins = %v, want localhost defaults", origins)
 	}
 }
@@ -98,11 +95,11 @@ func TestCORSAllowOrigins_includesFrontendURLWhenSet(t *testing.T) {
 	t.Setenv("AWS_LAMBDA_RUNTIME_API", "")
 
 	origins := corsAllowOrigins()
-	if len(origins) != 3 {
-		t.Fatalf("len(origins) = %d, want 3", len(origins))
+	if len(origins) != 4 {
+		t.Fatalf("len(origins) = %d, want 4", len(origins))
 	}
-	if origins[2] != "https://app.example.com" {
-		t.Errorf("last origin = %q, want https://app.example.com", origins[2])
+	if origins[3] != "https://app.example.com" {
+		t.Errorf("last origin = %q, want https://app.example.com", origins[3])
 	}
 }
 
@@ -119,10 +116,9 @@ func TestNewApp_corsAllowsFrontendURLOrigin(t *testing.T) {
 	req.Header.Set("Origin", "https://app.example.com")
 	req.Header.Set("Access-Control-Request-Method", "GET")
 
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, req)
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	if got := resp.Header.Get("Access-Control-Allow-Origin"); got != "https://app.example.com" {

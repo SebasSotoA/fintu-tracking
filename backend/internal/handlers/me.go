@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"fintu-tracking-backend/internal/config"
+	"fintu-tracking-backend/internal/httpx"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
 
-	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -20,68 +23,80 @@ func InitProfileService(pool *pgxpool.Pool) {
 }
 
 // GetMe returns the current user's profile. Creates a default profile row if missing.
-func GetMe(c fiber.Ctx) error {
-	userID, err := middleware.RequireUserID(c)
-	if err != nil {
-		return err
+func GetMe(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.RequireUserID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	p, err := profileService.GetOrCreateProfile(c.Context(), userID)
+	p, err := profileService.GetOrCreateProfile(r.Context(), userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return c.JSON(p)
+	httpx.JSON(w, http.StatusOK, p)
 }
 
 // UpdateOnboarding stores country + broker selection and marks onboarding completed.
-func UpdateOnboarding(c fiber.Ctx) error {
-	userID, err := middleware.RequireUserID(c)
-	if err != nil {
-		return err
+func UpdateOnboarding(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.RequireUserID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	var req models.UpdateOnboardingRequest
-	if err := c.Bind().JSON(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
 	}
 	if req.Country == "" || req.BrokerPresetID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "country and broker_preset_id are required"})
+		httpx.Error(w, http.StatusBadRequest, "country and broker_preset_id are required")
+		return
 	}
 	if config.GetBrokerPreset(req.BrokerPresetID) == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Unknown broker preset"})
+		httpx.Error(w, http.StatusBadRequest, "Unknown broker preset")
+		return
 	}
 
-	p, err := profileService.UpdateOnboarding(c.Context(), userID, req)
+	p, err := profileService.UpdateOnboarding(r.Context(), userID, req)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return c.JSON(p)
+	httpx.JSON(w, http.StatusOK, p)
 }
 
 // UpdateProfile updates country and broker preset without altering onboarding state.
-func UpdateProfile(c fiber.Ctx) error {
-	userID, err := middleware.RequireUserID(c)
-	if err != nil {
-		return err
+func UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.RequireUserID(r)
+	if !ok {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	var req models.UpdateProfileRequest
-	if err := c.Bind().JSON(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
 	}
 	if req.Country == "" || req.BrokerPresetID == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "country and broker_preset_id are required"})
+		httpx.Error(w, http.StatusBadRequest, "country and broker_preset_id are required")
+		return
 	}
 	if config.GetBrokerPreset(req.BrokerPresetID) == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Unknown broker preset"})
+		httpx.Error(w, http.StatusBadRequest, "Unknown broker preset")
+		return
 	}
 
-	p, err := profileService.UpdateProfile(c.Context(), userID, req)
+	p, err := profileService.UpdateProfile(r.Context(), userID, req)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return c.JSON(p)
+	httpx.JSON(w, http.StatusOK, p)
 }

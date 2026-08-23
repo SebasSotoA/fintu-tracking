@@ -14,10 +14,11 @@ import (
 	"time"
 
 	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -123,10 +124,12 @@ func seedFxRate(t *testing.T, userID string) string {
 	return id
 }
 
-func withUser(userID string) fiber.Handler {
-	return func(c fiber.Ctx) error {
-		c.Locals("user_id", userID)
-		return c.Next()
+func withUser(userID string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), middleware.UserCtxKey(), userID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
 }
 
@@ -169,14 +172,13 @@ func TestListTrades_isolation(t *testing.T) {
 	seedTrade(t, userA, "AAPL")
 	seedTrade(t, userB, "MSFT")
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userA))
 	app.Get("/trades", ListTrades)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/trades", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/trades", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
@@ -192,18 +194,17 @@ func TestUpdateTrade_isolation(t *testing.T) {
 	userB := newTestUserID(t)
 	tradeB := seedTrade(t, userB, "TSLA")
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userA))
-	app.Put("/trades/:id", UpdateTrade)
+	app.Put("/trades/{id}", UpdateTrade)
 
 	body := fmt.Sprintf(`{"date":"%s","price":"200.00"}`, time.Now().UTC().Format("2006-01-02"))
 	req := httptest.NewRequest(http.MethodPut, "/trades/"+tradeB, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, req)
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusNotFound)
@@ -217,14 +218,13 @@ func TestDeleteCashFlow_isolation(t *testing.T) {
 	userB := newTestUserID(t)
 	cashFlowB := seedCashFlow(t, userB)
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userA))
-	app.Delete("/cash-flows/:id", DeleteCashFlow)
+	app.Delete("/cash-flows/{id}", DeleteCashFlow)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodDelete, "/cash-flows/"+cashFlowB, nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodDelete, "/cash-flows/"+cashFlowB, nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusNotFound)
@@ -239,14 +239,13 @@ func TestListFxRates_isolation(t *testing.T) {
 	seedFxRate(t, userA)
 	seedFxRate(t, userB)
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userA))
 	app.Get("/fx-rates", ListFxRates)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/fx-rates", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/fx-rates", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
@@ -263,14 +262,13 @@ func TestActivityFeed_isolation(t *testing.T) {
 	seedTrade(t, userA, "AAPL")
 	seedCashFlow(t, userB)
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userA))
 	app.Get("/activity/feed", GetActivityFeed)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/activity/feed", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/activity/feed", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
@@ -302,14 +300,13 @@ func TestGetSubscription_isolation(t *testing.T) {
 	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userB))
 	app.Get("/subscriptions/current", GetSubscription)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/subscriptions/current", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/subscriptions/current", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusNotFound)
@@ -332,14 +329,13 @@ func TestCancelSubscription_isolation(t *testing.T) {
 	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userB))
-	app.Patch("/subscriptions/:id/cancel", CancelSubscription)
+	app.Patch("/subscriptions/{id}/cancel", CancelSubscription)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodPatch, "/subscriptions/"+subA+"/cancel", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodPatch, "/subscriptions/"+subA+"/cancel", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusNotFound)
@@ -362,14 +358,13 @@ func TestRefreshMarketPrices_cooldownIsPerUser(t *testing.T) {
 		execSQL(t, "DELETE FROM market_price_refresh_log WHERE user_id = $1", userB)
 	})
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userB))
 	app.Post("/market-prices/refresh", RefreshMarketPrices)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodPost, "/market-prices/refresh", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/market-prices/refresh", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)

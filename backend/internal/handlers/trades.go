@@ -2,15 +2,19 @@ package handlers
 
 import (
 	"context"
-	"fintu-tracking-backend/internal/database"
-	"fintu-tracking-backend/internal/middleware"
-	"fintu-tracking-backend/internal/models"
-	"fintu-tracking-backend/internal/services"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v3"
+	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/httpx"
+	"fintu-tracking-backend/internal/middleware"
+	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/services"
+
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/shopspring/decimal"
@@ -25,25 +29,27 @@ const tradeListColumns = `
 // ListTrades returns trades for the authenticated user with optional filters.
 // Without page/page_size query params, returns a plain JSON array (legacy).
 // With page or page_size, returns models.PaginatedResponse.
-func ListTrades(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func ListTrades(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	filters, err := parseTradeListFilters(
-		c.Query("from"),
-		c.Query("to"),
-		c.Query("side"),
-		c.Query("asset_type"),
-		c.Query("ticker"),
+		r.URL.Query().Get("from"),
+		r.URL.Query().Get("to"),
+		r.URL.Query().Get("side"),
+		r.URL.Query().Get("asset_type"),
+		r.URL.Query().Get("ticker"),
 	)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
-	pageStr := c.Query("page")
-	pageSizeStr := c.Query("page_size")
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("page_size")
 
 	limit := 0
 	offset := 0
@@ -53,7 +59,8 @@ func ListTrades(c fiber.Ctx) error {
 	if paginationRequested(pageStr, pageSizeStr) {
 		params, err := parsePaginationParams(pageStr, pageSizeStr)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+			httpx.Error(w, http.StatusBadRequest, err.Error())
+			return
 		}
 		page = params.page
 		pageSize = params.pageSize
@@ -65,7 +72,8 @@ func ListTrades(c fiber.Ctx) error {
 	if limit > 0 {
 		countQuery, countArgs := buildCountTradesQuery(userID, filters)
 		if err := database.GetPool().QueryRow(context.Background(), countQuery, countArgs...).Scan(&total); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			httpx.Error(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 		page = clampPage(page, total, pageSize)
 		offset = (page - 1) * pageSize
@@ -75,7 +83,8 @@ func ListTrades(c fiber.Ctx) error {
 
 	rows, err := database.GetPool().Query(context.Background(), query, args...)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	defer rows.Close()
 
@@ -83,12 +92,13 @@ func ListTrades(c fiber.Ctx) error {
 	for rows.Next() {
 		trade, err := scanTradeRow(rows)
 		if err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			httpx.Error(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 		trades = append(trades, trade)
 	}
 
-	realizedMap, realizedErr := services.NewAnalyticsService(database.GetPool()).RealizedPLByTradeID(c.Context(), userID)
+	realizedMap, realizedErr := services.NewAnalyticsService(database.GetPool()).RealizedPLByTradeID(r.Context(), userID)
 	if realizedErr == nil {
 		for i := range trades {
 			if trades[i].Side != "sell" {
@@ -104,29 +114,32 @@ func ListTrades(c fiber.Ctx) error {
 	}
 
 	if limit > 0 {
-		return c.JSON(models.PaginatedResponse[models.Trade]{
+		httpx.JSON(w, http.StatusOK, models.PaginatedResponse[models.Trade]{
 			Items:    trades,
 			Total:    total,
 			Page:     page,
 			PageSize: pageSize,
 		})
+		return
 	}
 
-	return c.JSON(trades)
+	httpx.JSON(w, http.StatusOK, trades)
 }
 
 // ListTradeTickers returns distinct tickers for the authenticated user (filter combobox).
-func ListTradeTickers(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func ListTradeTickers(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	rows, err := database.GetPool().Query(context.Background(), `
 		SELECT DISTINCT ticker FROM trades WHERE user_id = $1 ORDER BY ticker ASC
 	`, userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 	defer rows.Close()
 
@@ -134,80 +147,96 @@ func ListTradeTickers(c fiber.Ctx) error {
 	for rows.Next() {
 		var ticker string
 		if err := rows.Scan(&ticker); err != nil {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+			httpx.Error(w, http.StatusInternalServerError, err.Error())
+			return
 		}
 		tickers = append(tickers, ticker)
 	}
 
-	return c.JSON(tickers)
+	httpx.JSON(w, http.StatusOK, tickers)
 }
 
 // CreateTrade creates a new trade
-func CreateTrade(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func CreateTrade(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
 	var req models.CreateTradeRequest
-	if err := c.Bind().JSON(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
 	}
 
 	req.Ticker = strings.TrimSpace(strings.ToUpper(req.Ticker))
 	if req.Ticker == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Ticker is required"})
+		httpx.Error(w, http.StatusBadRequest, "Ticker is required")
+		return
 	}
 
 	if req.AssetType != "stock" && req.AssetType != "etf" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid asset type"})
+		httpx.Error(w, http.StatusBadRequest, "Invalid asset type")
+		return
 	}
 	if req.Side != "buy" && req.Side != "sell" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid side"})
+		httpx.Error(w, http.StatusBadRequest, "Invalid side")
+		return
 	}
 	isOpeningPosition := req.IsOpeningPosition != nil && *req.IsOpeningPosition
 	if isOpeningPosition && req.Side != "buy" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Opening position must use buy side"})
+		httpx.Error(w, http.StatusBadRequest, "Opening position must use buy side")
+		return
 	}
 	if isOpeningPosition && (req.Notes == nil || strings.TrimSpace(*req.Notes) == "") {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for opening positions"})
+		httpx.Error(w, http.StatusBadRequest, "Notes are required for opening positions")
+		return
 	}
 
 	quantity, err := decimal.NewFromString(req.Quantity)
 	if err != nil || !quantity.GreaterThan(decimal.Zero) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid quantity format"})
+		httpx.Error(w, http.StatusBadRequest, "Invalid quantity format")
+		return
 	}
 
 	price, err := decimal.NewFromString(req.Price)
 	if err != nil || !price.GreaterThan(decimal.Zero) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid price format"})
+		httpx.Error(w, http.StatusBadRequest, "Invalid price format")
+		return
 	}
 
 	date, err := parseTradeDate(req.Date)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid date format"})
+		httpx.Error(w, http.StatusBadRequest, "Invalid date format")
+		return
 	}
 
 	depositFee, tradingFee, closingFee, err := parseSplitFees(req.DepositFee, req.TradingFee, req.ClosingFee)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	depositFee, tradingFee, closingFee, err = applyLegacyFeeToTrading(req.Fee, depositFee, tradingFee, closingFee)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusBadRequest, err.Error())
+		return
 	}
 	if isOpeningPosition && depositFee.Add(tradingFee).Add(closingFee).GreaterThan(decimal.Zero) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Opening position cannot include fees"})
+		httpx.Error(w, http.StatusBadRequest, "Opening position cannot include fees")
+		return
 	}
 
 	if req.Side == "sell" {
-		if err := validateSellQuantity(c.Context(), userID, req.Ticker, "", quantity); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		if err := validateSellQuantity(r.Context(), userID, req.Ticker, "", quantity); err != nil {
+			httpx.Error(w, http.StatusBadRequest, err.Error())
+			return
 		}
 	}
-	if err := validateBrokerID(c.Context(), userID, req.BrokerID); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	if err := validateBrokerID(r.Context(), userID, req.BrokerID); err != nil {
+		httpx.Error(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	id := uuid.New().String()
@@ -233,23 +262,26 @@ func CreateTrade(c fiber.Ctx) error {
 		&trade.Total, &trade.BrokerID, &trade.Notes, &trade.CreatedAt, &trade.UpdatedAt,
 	)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(trade)
+	httpx.JSON(w, http.StatusCreated, trade)
 }
 
 // UpdateTrade updates an existing trade
-func UpdateTrade(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func UpdateTrade(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	id := c.Params("id")
+	id := chi.URLParam(r, "id")
 	var req models.UpdateTradeRequest
-	if err := c.Bind().JSON(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, "Invalid request body")
+		return
 	}
 
 	var existing models.Trade
@@ -261,32 +293,37 @@ func UpdateTrade(c fiber.Ctx) error {
 		&existing.Total, &existing.BrokerID, &existing.Notes, &existing.CreatedAt, &existing.UpdatedAt,
 	)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Trade not found"})
+		httpx.Error(w, http.StatusNotFound, "Trade not found")
+		return
 	}
 
 	if req.Date != nil {
 		parsed, err := parseTradeDate(*req.Date)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid date format"})
+			httpx.Error(w, http.StatusBadRequest, "Invalid date format")
+			return
 		}
 		existing.Date = parsed
 	}
 	if req.Ticker != nil {
 		ticker := strings.TrimSpace(strings.ToUpper(*req.Ticker))
 		if ticker == "" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Ticker is required"})
+			httpx.Error(w, http.StatusBadRequest, "Ticker is required")
+			return
 		}
 		existing.Ticker = ticker
 	}
 	if req.AssetType != nil {
 		if *req.AssetType != "stock" && *req.AssetType != "etf" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid asset type"})
+			httpx.Error(w, http.StatusBadRequest, "Invalid asset type")
+			return
 		}
 		existing.AssetType = *req.AssetType
 	}
 	if req.Side != nil {
 		if *req.Side != "buy" && *req.Side != "sell" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid side"})
+			httpx.Error(w, http.StatusBadRequest, "Invalid side")
+			return
 		}
 		existing.Side = *req.Side
 	}
@@ -294,7 +331,8 @@ func UpdateTrade(c fiber.Ctx) error {
 		existing.IsOpeningPosition = *req.IsOpeningPosition
 	}
 	if existing.IsOpeningPosition && existing.Side != "buy" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Opening position must use buy side"})
+		httpx.Error(w, http.StatusBadRequest, "Opening position must use buy side")
+		return
 	}
 	if req.Quantity != nil {
 		existing.Quantity = *req.Quantity
@@ -302,13 +340,15 @@ func UpdateTrade(c fiber.Ctx) error {
 	if req.BrokerID != nil {
 		existing.BrokerID = req.BrokerID
 	}
-	if err := validateBrokerID(c.Context(), userID, existing.BrokerID); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+	if err := validateBrokerID(r.Context(), userID, existing.BrokerID); err != nil {
+		httpx.Error(w, http.StatusBadRequest, err.Error())
+		return
 	}
 	if req.Price != nil {
 		price, err := decimal.NewFromString(*req.Price)
 		if err != nil || !price.GreaterThan(decimal.Zero) {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid price format"})
+			httpx.Error(w, http.StatusBadRequest, "Invalid price format")
+			return
 		}
 		existing.Price = *req.Price
 	}
@@ -329,38 +369,45 @@ func UpdateTrade(c fiber.Ctx) error {
 	if req.DepositFee != nil {
 		depositFee, err = parseOptionalFee(req.DepositFee)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid deposit_fee format"})
+			httpx.Error(w, http.StatusBadRequest, "invalid deposit_fee format")
+			return
 		}
 	}
 	if req.TradingFee != nil {
 		tradingFee, err = parseOptionalFee(req.TradingFee)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid trading_fee format"})
+			httpx.Error(w, http.StatusBadRequest, "invalid trading_fee format")
+			return
 		}
 	}
 	if req.ClosingFee != nil {
 		closingFee, err = parseOptionalFee(req.ClosingFee)
 		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid closing_fee format"})
+			httpx.Error(w, http.StatusBadRequest, "invalid closing_fee format")
+			return
 		}
 	}
 
 	depositFee, tradingFee, closingFee, err = applyLegacyFeeToTrading(req.Fee, depositFee, tradingFee, closingFee)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusBadRequest, err.Error())
+		return
 	}
 	if existing.IsOpeningPosition && depositFee.Add(tradingFee).Add(closingFee).GreaterThan(decimal.Zero) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Opening position cannot include fees"})
+		httpx.Error(w, http.StatusBadRequest, "Opening position cannot include fees")
+		return
 	}
 
 	quantity, err := decimal.NewFromString(existing.Quantity)
 	if err != nil || !quantity.GreaterThan(decimal.Zero) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid quantity format"})
+		httpx.Error(w, http.StatusBadRequest, "Invalid quantity format")
+		return
 	}
 
 	if existing.Side == "sell" {
-		if err := validateSellQuantity(c.Context(), userID, existing.Ticker, id, quantity); err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		if err := validateSellQuantity(r.Context(), userID, existing.Ticker, id, quantity); err != nil {
+			httpx.Error(w, http.StatusBadRequest, err.Error())
+			return
 		}
 	}
 
@@ -369,7 +416,8 @@ func UpdateTrade(c fiber.Ctx) error {
 		notes = req.Notes
 	}
 	if existing.IsOpeningPosition && (notes == nil || strings.TrimSpace(*notes) == "") {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Notes are required for opening positions"})
+		httpx.Error(w, http.StatusBadRequest, "Notes are required for opening positions")
+		return
 	}
 
 	updateQuery := `
@@ -388,24 +436,27 @@ func UpdateTrade(c fiber.Ctx) error {
 		id, userID,
 	)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	if result.RowsAffected() == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Trade not found"})
+		httpx.Error(w, http.StatusNotFound, "Trade not found")
+		return
 	}
 
-	return c.JSON(fiber.Map{"message": "Trade updated successfully"})
+	httpx.JSON(w, http.StatusOK, map[string]any{"message": "Trade updated successfully"})
 }
 
 // DeleteTrade deletes a trade and linked fee cash flows created for that trade.
-func DeleteTrade(c fiber.Ctx) error {
-	userID := middleware.GetUserID(c)
+func DeleteTrade(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
 	if userID == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
 	}
 
-	id := c.Params("id")
+	id := chi.URLParam(r, "id")
 	ctx := context.Background()
 
 	_, err := database.GetPool().Exec(ctx, `
@@ -416,19 +467,22 @@ func DeleteTrade(c fiber.Ctx) error {
 		  AND related_type = 'trade'
 	`, userID, id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	result, err := database.GetPool().Exec(ctx, `DELETE FROM trades WHERE id = $1 AND user_id = $2`, id, userID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
 	}
 
 	if result.RowsAffected() == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Trade not found"})
+		httpx.Error(w, http.StatusNotFound, "Trade not found")
+		return
 	}
 
-	return c.JSON(fiber.Map{"message": "Trade deleted successfully"})
+	httpx.JSON(w, http.StatusOK, map[string]any{"message": "Trade deleted successfully"})
 }
 
 func scanTradeRow(rows pgx.Rows) (models.Trade, error) {

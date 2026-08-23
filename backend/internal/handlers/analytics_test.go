@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/go-chi/chi/v5"
 )
 
 func TestAnalyticsHandlers_ReturnUnauthorizedWhenUserIDMissing(t *testing.T) {
@@ -15,7 +15,7 @@ func TestAnalyticsHandlers_ReturnUnauthorizedWhenUserIDMissing(t *testing.T) {
 
 	cases := []struct {
 		name    string
-		handler fiber.Handler
+		handler http.HandlerFunc
 		route   string
 		request string
 	}{
@@ -33,14 +33,13 @@ func TestAnalyticsHandlers_ReturnUnauthorizedWhenUserIDMissing(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			app := fiber.New()
+			app := chi.NewRouter()
 			app.Get(tc.route, tc.handler)
 
 			req := httptest.NewRequest(http.MethodGet, tc.request, nil)
-			resp, err := app.Test(req)
-			if err != nil {
-				t.Fatalf("app.Test: %v", err)
-			}
+			rec := httptest.NewRecorder()
+			app.ServeHTTP(rec, req)
+			resp := rec.Result()
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusUnauthorized {

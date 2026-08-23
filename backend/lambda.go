@@ -12,7 +12,6 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/gofiber/fiber/v3/middleware/adaptor"
 	"github.com/jackc/pgx/v5/pgxpool"
 	felixadapter "github.com/its-felix/aws-lambda-go-http-adapter/adapter"
 	"github.com/its-felix/aws-lambda-go-http-adapter/handler"
@@ -21,7 +20,7 @@ import (
 // LambdaStart starts the Lambda handler using a unified event dispatcher.
 func LambdaStart(deps *server.Deps) {
 	app := server.NewApp(deps)
-	httpAdapter := felixadapter.NewVanillaAdapter(adaptor.FiberApp(app))
+	httpAdapter := felixadapter.NewVanillaAdapter(app)
 
 	lambda.Start(func(ctx context.Context, event interface{}) (interface{}, error) {
 		return handleLambdaUnifiedEvent(ctx, deps, httpAdapter, event)

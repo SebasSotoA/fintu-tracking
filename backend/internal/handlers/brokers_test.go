@@ -11,7 +11,7 @@ import (
 
 	"fintu-tracking-backend/internal/database"
 
-	"github.com/gofiber/fiber/v3"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -36,13 +36,12 @@ func seedBroker(t *testing.T, userID, presetID string) string {
 func TestListBrokers_Unauthorized(t *testing.T) {
 	t.Parallel()
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Get("/brokers", ListBrokers)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/brokers", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/brokers", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusUnauthorized)
@@ -52,16 +51,15 @@ func TestListBrokers_Unauthorized(t *testing.T) {
 func TestCreateBroker_Unauthorized(t *testing.T) {
 	t.Parallel()
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Post("/brokers", CreateBroker)
 
 	req := httptest.NewRequest(http.MethodPost, "/brokers", strings.NewReader(`{"preset_id":"hapi-colombia"}`))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, req)
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusUnauthorized)
@@ -96,17 +94,16 @@ func TestCreateBroker_Validation(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			app := fiber.New()
+			app := chi.NewRouter()
 			app.Use(withUser(userID))
 			app.Post("/brokers", CreateBroker)
 
 			req := httptest.NewRequest(http.MethodPost, "/brokers", strings.NewReader(tc.body))
 			req.Header.Set("Content-Type", "application/json")
 
-			resp, err := app.Test(req)
-			if err != nil {
-				t.Fatalf("app.Test: %v", err)
-			}
+			rec := httptest.NewRecorder()
+			app.ServeHTTP(rec, req)
+			resp := rec.Result()
 			defer resp.Body.Close()
 
 			assertStatus(t, resp, tc.want)
@@ -121,17 +118,16 @@ func TestCreateBroker_Success(t *testing.T) {
 	userID := newTestUserID(t)
 	InitBrokerService(database.GetPool())
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userID))
 	app.Post("/brokers", CreateBroker)
 
 	req := httptest.NewRequest(http.MethodPost, "/brokers", strings.NewReader(`{"preset_id":"hapi-colombia"}`))
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := app.Test(req)
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, req)
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusCreated)
@@ -166,14 +162,13 @@ func TestListBrokers_ReturnsUserBrokersAndPresets(t *testing.T) {
 	InitBrokerService(database.GetPool())
 	seedBroker(t, userID, "hapi-colombia")
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userID))
 	app.Get("/brokers", ListBrokers)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/brokers", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/brokers", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
@@ -209,14 +204,13 @@ func TestListBrokers_isolation(t *testing.T) {
 	InitBrokerService(database.GetPool())
 	seedBroker(t, userA, "hapi-colombia")
 
-	app := fiber.New()
+	app := chi.NewRouter()
 	app.Use(withUser(userB))
 	app.Get("/brokers", ListBrokers)
 
-	resp, err := app.Test(httptest.NewRequest(http.MethodGet, "/brokers", nil))
-	if err != nil {
-		t.Fatalf("app.Test: %v", err)
-	}
+	rec := httptest.NewRecorder()
+	app.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/brokers", nil))
+	resp := rec.Result()
 	defer resp.Body.Close()
 
 	assertStatus(t, resp, http.StatusOK)
