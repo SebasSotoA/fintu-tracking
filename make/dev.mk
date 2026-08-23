@@ -2,7 +2,7 @@
 # Development Workflow
 # =============================================================================
 
-.PHONY: check-env backend-dev frontend-dev dev stop stop-backend stop-frontend restart restart-backend restart-frontend setup install deps deps-frontend deps-marketing deps-all
+.PHONY: check-env backend-dev frontend-dev dev start-dev-servers ensure-deps stop stop-backend stop-frontend stop-marketing restart setup install deps deps-frontend deps-marketing deps-all
 
 # Verify backend/.env exists
 check-env:
@@ -33,10 +33,10 @@ frontend-dev:
 	@cd $(FRONTEND_DIR) && $(NPM) exec next dev -p $(FRONTEND_PORT)
 
 # Combined dev environment - starts both servers in background
-dev: install check-env ensure-ports-free
+dev: check-env ensure-deps ensure-ports-free
 	@echo "Starting development environment..."
-	@echo "  Backend:  http://localhost:$(BACKEND_PORT)"
-	@echo "  Frontend: http://localhost:$(FRONTEND_PORT)"
+	@echo "  Backend:   http://localhost:$(BACKEND_PORT)"
+	@echo "  Frontend:  http://localhost:$(FRONTEND_PORT)"
 	@echo "  Marketing: http://localhost:$(MARKETING_PORT)"
 	@echo ""
 	@if [ ! -f $(BACKEND_DIR)/.env ]; then \
@@ -44,70 +44,100 @@ dev: install check-env ensure-ports-free
 		echo "   Create it: cp $(BACKEND_DIR)/.env.example $(BACKEND_DIR)/.env"; \
 		echo ""; \
 	fi
+	@$(MAKE) start-dev-servers
+
+# Unified server launch block — used by both dev and restart.
+# Launches all 3 servers in background, polls for readiness, early-exits on dead PID.
+start-dev-servers:
 	@bash -c ' \
 		SCRIPT_DIR="$$(pwd)"; \
 		echo "Starting backend server..."; \
 		if command -v air > /dev/null 2>&1; then \
-			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && air) > /tmp/fintu-backend.log 2>&1 & \
+			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && air) > $(LOG_BACKEND) 2>&1 & \
 		else \
 			echo "   air not found, using go run . dev..."; \
-			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && go run . dev) > /tmp/fintu-backend.log 2>&1 & \
+			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && go run . dev) > $(LOG_BACKEND) 2>&1 & \
 		fi; \
 		BACKEND_PID=$$!; \
 		echo "   Backend PID: $$BACKEND_PID"; \
-		echo "   Backend logs: tail -f /tmp/fintu-backend.log"; \
+		echo "   Backend logs: tail -f $(LOG_BACKEND)"; \
 		echo ""; \
 		ROUTES_FILE="$$SCRIPT_DIR/$(FRONTEND_DIR)/.next/dev/types/routes.d.ts"; \
-		if [ -f "$$ROUTES_FILE" ] && ! grep -q '"/dashboard"' "$$ROUTES_FILE" 2>/dev/null; then \
+		if [ -f "$$ROUTES_FILE" ] && ! grep -q "/dashboard" "$$ROUTES_FILE" 2>/dev/null; then \
 			echo "Clearing corrupted Next.js dev cache (.next)..."; \
 			rm -rf "$$SCRIPT_DIR/$(FRONTEND_DIR)/.next"; \
 		fi; \
 		echo "Starting frontend server..."; \
-		(cd $$SCRIPT_DIR/$(FRONTEND_DIR) && $(NPM) exec next dev -p $(FRONTEND_PORT)) > /tmp/fintu-frontend.log 2>&1 & \
+		(cd $$SCRIPT_DIR/$(FRONTEND_DIR) && $(NPM) exec next dev -p $(FRONTEND_PORT)) > $(LOG_FRONTEND) 2>&1 & \
 		FRONTEND_PID=$$!; \
 		echo "   Frontend PID: $$FRONTEND_PID"; \
-		echo "   Frontend logs: tail -f /tmp/fintu-frontend.log"; \
+		echo "   Frontend logs: tail -f $(LOG_FRONTEND)"; \
 		echo ""; \
 		echo "Starting marketing server..."; \
-		(cd $$SCRIPT_DIR/$(MARKETING_DIR) && $(NPM) dev) > /tmp/fintu-marketing.log 2>&1 & \
+		(cd $$SCRIPT_DIR/$(MARKETING_DIR) && $(NPM) dev) > $(LOG_MARKETING) 2>&1 & \
 		MARKETING_PID=$$!; \
 		echo "   Marketing PID: $$MARKETING_PID"; \
-		echo "   Marketing logs: tail -f /tmp/fintu-marketing.log"; \
+		echo "   Marketing logs: tail -f $(LOG_MARKETING)"; \
 		echo ""; \
 		port_listening() { \
 			local p=$$1; \
 			netstat -ano 2>/dev/null | grep -qi ":$$p.*LISTENING" || lsof -i:$$p > /dev/null 2>&1; \
 		}; \
+		process_alive() { \
+			kill -0 $$1 2>/dev/null; \
+		}; \
+		dump_log() { \
+			local label=$$1; local log=$$2; \
+			echo ""; \
+			echo "=== $$label failed to start ==="; \
+			echo "--- last 20 lines of $$log ---"; \
+			tail -n 20 "$$log" 2>/dev/null || echo "(no log file)"; \
+			echo "==="; \
+		}; \
 		BACKEND_UP=false; \
 		FRONTEND_UP=false; \
 		MARKETING_UP=false; \
 		_elapsed=0; \
-		_max_wait=30; \
-		_interval=4; \
+		_max_wait=$(STACK_READY_TIMEOUT); \
+		_interval=1; \
 		while [ $$_elapsed -lt $$_max_wait ]; do \
 			if [ "$$BACKEND_UP" = false ] && port_listening $(BACKEND_PORT); then BACKEND_UP=true; fi; \
 			if [ "$$FRONTEND_UP" = false ] && port_listening $(FRONTEND_PORT); then FRONTEND_UP=true; fi; \
 			if [ "$$MARKETING_UP" = false ] && port_listening $(MARKETING_PORT); then MARKETING_UP=true; fi; \
 			if [ "$$BACKEND_UP" = true ] && [ "$$FRONTEND_UP" = true ] && [ "$$MARKETING_UP" = true ]; then break; fi; \
+			if ! process_alive $$BACKEND_PID && [ "$$BACKEND_UP" = false ]; then \
+				dump_log "Backend" "$(LOG_BACKEND)"; exit 1; \
+			fi; \
+			if ! process_alive $$FRONTEND_PID && [ "$$FRONTEND_UP" = false ]; then \
+				dump_log "Frontend" "$(LOG_FRONTEND)"; exit 1; \
+			fi; \
+			if ! process_alive $$MARKETING_PID && [ "$$MARKETING_UP" = false ]; then \
+				dump_log "Marketing" "$(LOG_MARKETING)"; exit 1; \
+			fi; \
 			sleep $$_interval; \
 			_elapsed=$$((_elapsed + _interval)); \
 		done; \
 		if [ "$$BACKEND_UP" = true ] && [ "$$FRONTEND_UP" = true ] && [ "$$MARKETING_UP" = true ]; then \
 			echo "Development servers started successfully"; \
 		else \
-			[ "$$BACKEND_UP" = false ] && echo "Warning: Backend failed to start (check /tmp/fintu-backend.log)"; \
-			[ "$$FRONTEND_UP" = false ] && echo "Warning: Frontend failed to start (check /tmp/fintu-frontend.log)"; \
-			[ "$$MARKETING_UP" = false ] && echo "Warning: Marketing failed to start (check /tmp/fintu-marketing.log)"; \
+			[ "$$BACKEND_UP" = false ] && echo "Warning: Backend failed to start (check $(LOG_BACKEND))"; \
+			[ "$$FRONTEND_UP" = false ] && echo "Warning: Frontend failed to start (check $(LOG_FRONTEND))"; \
+			[ "$$MARKETING_UP" = false ] && echo "Warning: Marketing failed to start (check $(LOG_MARKETING))"; \
 		fi; \
 		echo ""; \
 		echo "Useful commands:"; \
-		echo "   View backend logs:  tail -f /tmp/fintu-backend.log"; \
-		echo "   View frontend logs: tail -f /tmp/fintu-frontend.log"; \
-		echo "   View marketing logs: tail -f /tmp/fintu-marketing.log"; \
+		echo "   View backend logs:  tail -f $(LOG_BACKEND)"; \
+		echo "   View frontend logs: tail -f $(LOG_FRONTEND)"; \
+		echo "   View marketing logs: tail -f $(LOG_MARKETING)"; \
 		echo "   Stop servers:       make stop"; \
 		echo "   Health check:       make health-check"; \
 		echo "" \
 	'
+
+# Restart fast path: clear ports and launch servers (skip install/check-env).
+restart: ensure-ports-free
+	@echo "Restarting development servers..."
+	@$(MAKE) start-dev-servers
 
 # Stop targets
 stop-backend:
@@ -218,54 +248,6 @@ stop-marketing:
 stop: stop-backend stop-frontend stop-marketing
 	@echo "All servers stopped"
 
-# Restart targets
-restart-backend: stop-backend
-	@echo "Checking port availability..."
-	@$(MAKE) check-port-available PORT=$(BACKEND_PORT)
-	@echo "Restarting backend server..."
-	@bash -c ' \
-		SCRIPT_DIR="$$(pwd)"; \
-		if command -v air > /dev/null 2>&1; then \
-			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && air) > /tmp/fintu-backend.log 2>&1 & \
-		else \
-			echo "   air not found, using go run . dev..."; \
-			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && go run . dev) > /tmp/fintu-backend.log 2>&1 & \
-		fi; \
-		BACKEND_PID=$$!; \
-		echo "   Backend PID: $$BACKEND_PID"; \
-		echo "   Backend logs: tail -f /tmp/fintu-backend.log"; \
-		sleep 8; \
-		if netstat -ano 2>/dev/null | grep -qi ":$(BACKEND_PORT).*LISTENING" || lsof -i:$(BACKEND_PORT) > /dev/null 2>&1; then \
-			echo "Backend server restarted successfully"; \
-		else \
-			echo "Warning: Backend server may have failed to start"; \
-			echo "   Check logs: tail -f /tmp/fintu-backend.log"; \
-		fi \
-	'
-
-restart-frontend: stop-frontend clean-frontend
-	@echo "Checking port availability..."
-	@$(MAKE) check-port-available PORT=$(FRONTEND_PORT)
-	@echo "Restarting frontend server..."
-	@bash -c ' \
-		SCRIPT_DIR="$$(pwd)"; \
-		(cd $$SCRIPT_DIR/$(FRONTEND_DIR) && $(NPM) exec next dev -p $(FRONTEND_PORT)) > /tmp/fintu-frontend.log 2>&1 & \
-		FRONTEND_PID=$$!; \
-		echo "   Frontend PID: $$FRONTEND_PID"; \
-		echo "   Frontend logs: tail -f /tmp/fintu-frontend.log"; \
-		sleep 8; \
-		if netstat -ano 2>/dev/null | grep -qi ":$(FRONTEND_PORT).*LISTENING" || lsof -i:$(FRONTEND_PORT) > /dev/null 2>&1; then \
-			echo "Frontend server restarted successfully"; \
-		else \
-			echo "Warning: Frontend server may have failed to start"; \
-			echo "   Check logs: tail -f /tmp/fintu-frontend.log"; \
-		fi \
-	'
-
-restart: stop check-ports-available
-	@sleep 2
-	@$(MAKE) dev
-
 # =============================================================================
 # Setup & Dependencies
 # =============================================================================
@@ -308,3 +290,37 @@ deps-frontend:
 deps-all: deps deps-frontend deps-marketing
 
 install: deps-all
+
+# Hash-stamp gate: skip install when lockfiles unchanged.
+# FORCE_INSTALL=1 bypasses the cache and always runs install.
+ensure-deps:
+	@mkdir -p $(STAMP_DIR)
+	@_changed=false; \
+	if [ -n "$(FORCE_INSTALL)" ]; then \
+		_changed=true; \
+		echo "Force install requested"; \
+	else \
+		for pair in "$(GO_LOCKFILE):$(GO_STAMP)" "$(FRONTEND_LOCKFILE):$(FRONTEND_STAMP)" "$(MARKETING_LOCKFILE):$(MARKETING_STAMP)"; do \
+			lock="$${pair%%:*}"; \
+			stamp="$${pair##*:}"; \
+			if [ ! -f "$$stamp" ]; then \
+				_changed=true; echo "   $$stamp missing"; \
+			else \
+				current=$$(sha256sum "$$lock" | awk '{print $$1}'); \
+				stored=$$(cat "$$stamp" 2>/dev/null); \
+				if [ "$$current" != "$$stored" ]; then \
+					_changed=true; echo "   $$lock changed"; \
+				fi; \
+			fi; \
+		done; \
+	fi; \
+	if [ "$$_changed" = true ]; then \
+		echo "Installing dependencies..."; \
+		$(MAKE) install; \
+		sha256sum $(GO_LOCKFILE) | awk '{print $$1}' > $(GO_STAMP); \
+		sha256sum $(FRONTEND_LOCKFILE) | awk '{print $$1}' > $(FRONTEND_STAMP); \
+		sha256sum $(MARKETING_LOCKFILE) | awk '{print $$1}' > $(MARKETING_STAMP); \
+		echo "Dependencies installed and stamps updated"; \
+	else \
+		echo "Dependencies unchanged - skipping install"; \
+	fi

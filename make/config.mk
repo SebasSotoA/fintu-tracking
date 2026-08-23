@@ -48,6 +48,19 @@ HEADROOM_PORT := 8787
 LOG_DIR := /tmp
 LOG_BACKEND := $(LOG_DIR)/fintu-backend.log
 LOG_FRONTEND := $(LOG_DIR)/fintu-frontend.log
+LOG_MARKETING := $(LOG_DIR)/fintu-marketing.log
+
+# Dev startup readiness timeout (seconds)
+STACK_READY_TIMEOUT := 20
+
+# Hash-stamp directory for dependency skip (machine-local, gitignored)
+STAMP_DIR := .make
+GO_LOCKFILE := $(BACKEND_DIR)/go.sum
+FRONTEND_LOCKFILE := $(FRONTEND_DIR)/pnpm-lock.yaml
+MARKETING_LOCKFILE := $(MARKETING_DIR)/pnpm-lock.yaml
+GO_STAMP := $(STAMP_DIR)/go.stamp
+FRONTEND_STAMP := $(STAMP_DIR)/frontend.stamp
+MARKETING_STAMP := $(STAMP_DIR)/marketing.stamp
 
 # =============================================================================
 # Tool Definitions
@@ -84,3 +97,19 @@ BUILD_FLAGS := -ldflags="-s -w"
 BUILD_FLAGS += -ldflags="-X main.Version=$(VERSION)"
 BUILD_FLAGS += -ldflags="-X main.BuildTime=$(BUILD_TIME)"
 BUILD_FLAGS += -ldflags="-X main.GitCommit=$(GIT_COMMIT)"
+
+# =============================================================================
+# Output Helpers (ANSI colors)
+# =============================================================================
+
+ANSI_RESET := \033[0m
+ANSI_GREEN := \033[32m
+ANSI_YELLOW := \033[33m
+ANSI_RED := \033[31m
+ANSI_CYAN := \033[36m
+ANSI_BOLD := \033[1m
+
+print_success = @echo "$(ANSI_GREEN)$(1)$(ANSI_RESET)"
+print_info = @echo "$(ANSI_CYAN)$(1)$(ANSI_RESET)"
+print_warning = @echo "$(ANSI_YELLOW)$(1)$(ANSI_RESET)"
+print_error = @echo "$(ANSI_RED)$(1)$(ANSI_RESET)"

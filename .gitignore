@@ -18,6 +18,9 @@ backend/vendor/
 # Build output
 bin/
 
+# Make dependency stamps (machine-local)
+.make/
+
 # Frontend (Next.js)
 frontend/.next/
 frontend/out/
