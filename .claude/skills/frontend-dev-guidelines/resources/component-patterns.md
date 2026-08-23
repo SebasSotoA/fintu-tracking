@@ -32,7 +32,7 @@ export function HoldingsTable({ holdings, className }: HoldingsTableProps) {
 | Location | Purpose | Examples |
 |----------|---------|----------|
 | `components/ui/` | shadcn/ui primitives | `button`, `dialog`, `table`, `form` |
-| `components/layout/` | App chrome | `app-nav`, `landing-nav` |
+| `components/layout/` | App chrome | `app-nav`, `app-shell` |
 | `components/dashboard/` | Dashboard widgets | `holdings-table`, `portfolio-summary` |
 | `components/trades/` | Trade management | `trades-list`, `add-trade-dialog` |
 | `components/cash-flows/` | Cash flow UI | `cash-flows-list`, `fx-rate-manager` |

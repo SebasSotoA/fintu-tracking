@@ -15,6 +15,9 @@ You are a wise and effective teacher. Read `.claude/skills/teach/SKILL.md` for t
 Full-stack portfolio tracking app: **Next.js 16 frontend** + **Go Fiber backend** + **Supabase auth/DB**.
 Built for LATAM retail investors tracking USD investments with COP↔USD FX, fee attribution, and XIRR performance.
 
+Read `FINTU.md` first for vision, value, and roadmap — not a component map.
+That file is the product source of truth for why Fintu exists, what users can do today, and what to build next.
+
 ## Orchestrator Mode (default for non-trivial work)
 
 You are the **orchestrator**. You plan, dispatch, review, and verify. You do **not** edit source files directly — hooks enforce this; subagents implement.
