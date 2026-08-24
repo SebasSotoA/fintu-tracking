@@ -3,126 +3,127 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Fintu brand toolkit — navy + indigo/violet (light theme) */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --card-kpi: oklch(0.98 0.01 172);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --primary-container: oklch(0.19 0.04 170);
-  --on-primary-container: oklch(0.617 0.055 172);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --background: oklch(0.98 0.005 260);
+  --foreground: oklch(0.15 0.01 260);
+  --card: oklch(0.99 0.004 260);
+  --card-foreground: oklch(0.15 0.01 260);
+  --card-kpi: oklch(0.975 0.006 260);
+  --popover: oklch(0.99 0.004 260);
+  --popover-foreground: oklch(0.15 0.01 260);
+  --primary: oklch(0.58 0.18 277);
+  --primary-foreground: oklch(0.98 0.005 277);
+  --primary-container: oklch(0.92 0.03 277);
+  --on-primary-container: oklch(0.40 0.12 277);
+  --secondary: oklch(0.95 0.01 260);
+  --secondary-foreground: oklch(0.15 0.01 260);
+  --muted: oklch(0.95 0.01 260);
+  --muted-foreground: oklch(0.50 0.02 255);
+  --accent: oklch(0.95 0.01 260);
+  --accent-foreground: oklch(0.15 0.01 260);
+  --destructive: oklch(0.58 0.20 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.88 0.01 260);
+  --input: oklch(0.95 0.01 260);
+  --ring: oklch(0.58 0.18 277);
+  --chart-1: oklch(0.58 0.18 277);
+  --chart-2: oklch(0.62 0.15 290);
+  --chart-3: oklch(0.65 0.14 277);
+  --chart-4: oklch(0.75 0.08 270);
+  --chart-5: oklch(0.48 0.15 277);
   --radius: 0.5rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: oklch(0.97 0.005 260);
+  --sidebar-foreground: oklch(0.15 0.01 260);
+  --sidebar-primary: oklch(0.58 0.18 277);
+  --sidebar-primary-foreground: oklch(0.98 0.005 277);
+  --sidebar-accent: oklch(0.95 0.01 260);
+  --sidebar-accent-foreground: oklch(0.15 0.01 260);
+  --sidebar-border: oklch(0.88 0.01 260);
+  --sidebar-ring: oklch(0.58 0.18 277);
   /* Surface hierarchy */
-  --surface-container-lowest: oklch(0.97 0 0);
-  --surface-container-low: oklch(0.95 0 0);
-  --surface-container: oklch(0.93 0 0);
-  --surface-container-high: oklch(0.91 0 0);
-  --surface-container-highest: oklch(0.89 0 0);
+  --surface-container-lowest: oklch(0.99 0.004 260);
+  --surface-container-low: oklch(0.975 0.005 260);
+  --surface-container: oklch(0.96 0.006 260);
+  --surface-container-high: oklch(0.93 0.008 260);
+  --surface-container-highest: oklch(0.90 0.01 260);
 }
 
-/* Fintu dark theme — Material Design 3 inspired palette */
+/* Fintu brand toolkit — navy + indigo/violet */
 .dark {
-  /* #131313 */
-  --background: oklch(0.108 0 0);
-  /* #e5e2e1 */
-  --foreground: oklch(0.905 0.004 60);
+  /* #0B1220 — near-black navy background */
+  --background: oklch(0.14 0.02 260);
+  /* #E2E6F0 — primary text */
+  --foreground: oklch(0.90 0.01 260);
 
-  /* surface-container #201f1f */
-  --card: oklch(0.163 0 0);
-  --card-foreground: oklch(0.905 0.004 60);
-  --card-kpi: oklch(0.175 0 0);
+  /* #1E293B — glass card surface */
+  --card: oklch(0.22 0.02 260);
+  --card-foreground: oklch(0.90 0.01 260);
+  --card-kpi: oklch(0.24 0.025 260);
 
-  --popover: oklch(0.163 0 0);
-  --popover-foreground: oklch(0.905 0.004 60);
+  --popover: oklch(0.22 0.02 260);
+  --popover-foreground: oklch(0.90 0.01 260);
 
-  /* primary = mint accent #a5d0c1 */
-  --primary: oklch(0.793 0.065 172);
-  --primary-hover: oklch(0.72 0.065 172);
-  --primary-active: oklch(0.68 0.065 172);
-  --primary-foreground: oklch(0.145 0.035 172);
-  /* primary-container = deep teal #043127 */
-  --primary-container: oklch(0.195 0.042 170);
+  /* primary = indigo accent #6366F1 */
+  --primary: oklch(0.58 0.18 277);
+  --primary-hover: oklch(0.53 0.17 277);
+  --primary-active: oklch(0.48 0.16 277);
+  --primary-foreground: oklch(0.98 0.005 277);
+  /* primary-container = indigo-tinted dark */
+  --primary-container: oklch(0.20 0.04 277);
 
-  --secondary: oklch(0.205 0 0);
-  --secondary-foreground: oklch(0.905 0.004 60);
+  --secondary: oklch(0.22 0.015 260);
+  --secondary-foreground: oklch(0.90 0.01 260);
 
-  /* surface-container-high #2a2a2a */
-  --muted: oklch(0.205 0 0);
-  /* on-surface-variant #c0c8c4 */
-  --muted-foreground: oklch(0.783 0.016 168);
+  /* surface-container-high — elevated navy */
+  --muted: oklch(0.22 0.015 260);
+  /* #6E7F98 — slategray muted text */
+  --muted-foreground: oklch(0.62 0.02 255);
 
-  --accent: oklch(0.205 0 0);
-  --accent-foreground: oklch(0.905 0.004 60);
+  --accent: oklch(0.22 0.015 260);
+  --accent-foreground: oklch(0.90 0.01 260);
 
-  /* error #ffb4ab → muted red */
-  --destructive: oklch(0.75 0.14 20);
-  --destructive-foreground: oklch(0.145 0 0);
+  /* error — keep red for losses */
+  --destructive: oklch(0.70 0.19 25);
+  --destructive-foreground: oklch(0.98 0 0);
 
-  /* outline-variant #414845 */
-  --border: oklch(0.305 0.014 167);
-  --input: oklch(0.205 0 0);
-  --ring: oklch(0.793 0.065 172);
+  /* outline-variant — blue-gray border */
+  --border: oklch(0.30 0.02 260);
+  --input: oklch(0.20 0.015 260);
+  --ring: oklch(0.58 0.18 277);
 
-  /* Charts — teal family */
-  --chart-1: oklch(0.793 0.065 172);
-  --chart-2: oklch(0.6 0.12 180);
-  --chart-3: oklch(0.5 0.1 200);
-  --chart-4: oklch(0.7 0.08 160);
-  --chart-5: oklch(0.4 0.06 190);
+  /* Charts — indigo/violet family */
+  --chart-1: oklch(0.58 0.18 277);
+  --chart-2: oklch(0.62 0.15 290);
+  --chart-3: oklch(0.65 0.14 277);
+  --chart-4: oklch(0.75 0.08 270);
+  --chart-5: oklch(0.48 0.15 277);
 
-  /* sidebar = #131313 */
-  --sidebar: oklch(0.108 0 0);
-  --sidebar-foreground: oklch(0.905 0.004 60);
-  --sidebar-primary: oklch(0.793 0.065 172);
-  --sidebar-primary-foreground: oklch(0.145 0.035 172);
-  --sidebar-accent: oklch(0.163 0 0);
-  --sidebar-accent-foreground: oklch(0.905 0.004 60);
-  --sidebar-border: oklch(0.305 0.014 167);
-  --sidebar-ring: oklch(0.793 0.065 172);
+  /* sidebar = navy bg */
+  --sidebar: oklch(0.14 0.02 260);
+  --sidebar-foreground: oklch(0.90 0.01 260);
+  --sidebar-primary: oklch(0.58 0.18 277);
+  --sidebar-primary-foreground: oklch(0.98 0.005 277);
+  --sidebar-accent: oklch(0.22 0.02 260);
+  --sidebar-accent-foreground: oklch(0.90 0.01 260);
+  --sidebar-border: oklch(0.30 0.02 260);
+  --sidebar-ring: oklch(0.58 0.18 277);
 
   /* Surface hierarchy */
-  /* #0e0e0e */
-  --surface-container-lowest: oklch(0.087 0 0);
-  /* #1c1b1b */
-  --surface-container-low: oklch(0.145 0 0);
-  /* #201f1f */
-  --surface-container: oklch(0.163 0 0);
-  /* #2a2a2a */
-  --surface-container-high: oklch(0.205 0 0);
-  /* #353534 */
-  --surface-container-highest: oklch(0.233 0 0);
-  /* on-primary-container #719a8d */
-  --on-primary-container: oklch(0.617 0.055 172);
+  /* deepest navy */
+  --surface-container-lowest: oklch(0.11 0.015 260);
+  /* dark navy */
+  --surface-container-low: oklch(0.17 0.018 260);
+  /* navy */
+  --surface-container: oklch(0.20 0.02 260);
+  /* elevated navy */
+  --surface-container-high: oklch(0.24 0.022 260);
+  /* highest navy */
+  --surface-container-highest: oklch(0.28 0.025 260);
+  /* on-primary-container — indigo-tinted light */
+  --on-primary-container: oklch(0.65 0.10 277);
 
-  /* Landing atmosphere — airy mint wash matching logo (#a5d0c1), not forest/lime green */
+  /* Landing atmosphere — airy indigo glow (auto-derived from --primary) */
   --landing-glow-mint: oklch(
     from var(--primary) min(calc(l + 0.06), 0.88) calc(c * 0.55) calc(h - 3) / 0.4
   );
@@ -130,7 +131,7 @@
     from var(--primary) min(calc(l + 0.08), 0.9) calc(c * 0.4) calc(h - 3) / 0.25
   );
 
-  /* Landing card gradients — lighter, desaturated mint so they read as mint, not green */
+  /* Landing card gradients — desaturated indigo wash */
   --landing-gradient-mint-start: oklch(
     from var(--primary) min(calc(l + 0.1), 0.92) calc(c * 0.5) calc(h - 3) / 0.2
   );
@@ -140,7 +141,7 @@
 }
 
 @theme inline {
-  --font-sans: "Geist", "Geist Fallback";
+  --font-sans: "Inter", "Inter Fallback";
   --font-mono: "Geist Mono", "Geist Mono Fallback";
   --color-background: var(--background);
   --color-foreground: var(--foreground);

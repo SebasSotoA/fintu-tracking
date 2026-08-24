@@ -1,0 +1,612 @@
+{
+    "artifact": {
+      "name": "Fintu Brand Toolkit",
+      "type": "visual_brand_system_and_product_ui_styleboard",
+      "source_reference": "The uploaded Fintu brand toolkit image",
+      "canvas": {
+        "width": 1536,
+        "height": 1024,
+        "aspect_ratio": "3:2",
+        "orientation": "landscape"
+      }
+    },
+    "brand": {
+      "name": "FINTU",
+      "primary_positioning": "Track your true returns. After fees. After FX.",
+      "product_description": "A portfolio tracker that tells investors if they are actually making or losing money after fees and FX.",
+      "core_idea": "Fintu is the ledger that tells the truth about investment performance rather than a broker or trading app.",
+      "brand_attributes": [
+        "Clear",
+        "Honest",
+        "Confident",
+        "Human",
+        "Data-driven",
+        "Trustworthy",
+        "Modern",
+        "Focused"
+      ],
+      "target_context": "LATAM investors tracking US investments funded through local currencies",
+      "source_context": "Fintu exists to calculate deterministic investment performance after the actual fees and FX conversion applied to the user's money. "
+    },
+    "overall_visual_direction": {
+      "style": "premium dark fintech dashboard",
+      "mood": [
+        "professional",
+        "minimal",
+        "technical",
+        "trustworthy",
+        "premium",
+        "focused",
+        "quietly futuristic"
+      ],
+      "visual_language": "Dark interfaces with subtle blue-violet illumination, restrained gradients, thin borders, rounded cards, high information density, and strong typographic hierarchy.",
+      "avoid": [
+        "bright fintech green",
+        "excessive colors",
+        "neon rainbow palettes",
+        "heavy glassmorphism",
+        "excessive blur",
+        "large decorative gradients",
+        "playful consumer-fintech aesthetics",
+        "overly rounded cartoon-like UI",
+        "visual clutter"
+      ]
+    },
+    "layout": {
+      "structure": "single large brand-board canvas divided into multiple bordered modules",
+      "outer_background": "near-black navy",
+      "module_style": {
+        "background": "slightly lighter near-black navy",
+        "border": "very thin muted blue-gray border",
+        "corner_radius": "approximately 6-10px",
+        "spacing": "tight but consistent",
+        "internal_padding": "approximately 20-32px"
+      },
+      "major_columns": [
+        {
+          "position": "left",
+          "width": "approximately 50% of canvas",
+          "purpose": "brand identity system"
+        },
+        {
+          "position": "right",
+          "width": "approximately 50% of canvas",
+          "purpose": "full dashboard product UI"
+        }
+      ]
+    },
+    "logo": {
+      "wordmark": {
+        "text": "FINTU",
+        "case": "uppercase",
+        "letter_spacing": "wide",
+        "weight": "medium-to-bold",
+        "color": "near-white"
+      },
+      "symbol": {
+        "description": "abstract F-shaped geometric symbol formed from two horizontally flowing rounded bars, stacked diagonally/vertically to create a stylized F",
+        "primary_color": "indigo-blue",
+        "shape": "minimal geometric mark with smooth rounded ends",
+        "visual_character": "compact, recognizable, technical and modern"
+      },
+      "primary_lockup": {
+        "composition": "symbol on the left, FINTU wordmark on the right",
+        "alignment": "vertically centered",
+        "background": "dark"
+      },
+      "icon_lockup": {
+        "symbol_only": true,
+        "container": "small dark rounded-square tile",
+        "border": "subtle gray-blue"
+      },
+      "logo_variations": [
+        "primary indigo symbol + white wordmark",
+        "white symbol + white wordmark",
+        "dark gray monochrome symbol + dark gray wordmark",
+        "symbol-only icon"
+      ]
+    },
+    "brand_overview": {
+      "heading": "01. BRAND OVERVIEW",
+      "hero_logo": "Large FINTU logo positioned near the top-left",
+      "headline": {
+        "line_1": "Track your true returns.",
+        "line_2": "After fees. After FX.",
+        "emphasis": "The word 'true' is highlighted in indigo/violet."
+      },
+      "body_copy": "Fintu helps LATAM investors track their US investments with complete clarity—accounting for fees and the real FX rate—so you always know if you're truly making or losing money.",
+      "principles": [
+        {
+          "title": "Clarity",
+          "description": "We make fees and FX simple."
+        },
+        {
+          "title": "Trust",
+          "description": "Your data is safe. Always private."
+        },
+        {
+          "title": "Truth",
+          "description": "Deterministic performance."
+        },
+        {
+          "title": "Global",
+          "description": "Built for LATAM. Focused on you."
+        }
+      ]
+    },
+    "color_system": {
+      "philosophy": "Very restrained palette. Most of the interface is monochromatic dark navy/charcoal with blue-violet reserved for emphasis and interaction.",
+      "colors": [
+        {
+          "name": "INDIGO",
+          "role": "primary brand accent",
+          "hex": "#6366F1",
+          "usage": [
+            "logo",
+            "charts",
+            "links",
+            "active navigation",
+            "primary buttons",
+            "highlighted words",
+            "selected states"
+          ]
+        },
+        {
+          "name": "VIOLETGRAY",
+          "role": "secondary accent",
+          "hex": "#8673E8",
+          "usage": [
+            "secondary emphasis",
+            "subtle gradients",
+            "secondary charts",
+            "interactive states"
+          ]
+        },
+        {
+          "name": "SLATEGRAY",
+          "role": "muted surface/text",
+          "hex": "#6E7F98",
+          "usage": [
+            "secondary information",
+            "muted icons",
+            "inactive states",
+            "supporting chart elements"
+          ]
+        },
+        {
+          "name": "DARK",
+          "role": "primary background",
+          "hex": "#0B1220",
+          "usage": [
+            "application background",
+            "brand board background",
+            "dashboard shell"
+          ]
+        },
+        {
+          "name": "GLASS",
+          "role": "translucent card surface",
+          "hex": "#1E293B",
+          "usage": [
+            "glassmorphism cards",
+            "elevated surfaces",
+            "selected panels"
+          ]
+        },
+        {
+          "name": "TEXT",
+          "role": "primary text",
+          "hex": "#E2E6F0",
+          "usage": [
+            "headings",
+            "primary numbers",
+            "navigation",
+            "body copy"
+          ]
+        }
+      ],
+      "palette_behavior": {
+        "dominant": "dark navy and charcoal",
+        "secondary": "gray/slate",
+        "accent": "blue-indigo/violet",
+        "accent_percentage": "small and intentional",
+        "financial_green": "not used as the primary brand color"
+      }
+    },
+    "typography": {
+      "font_family": "Inter",
+      "character": "clean, highly legible, modern, neutral, product-oriented",
+      "weights": [
+        "Light",
+        "Regular",
+        "Medium",
+        "Bold"
+      ],
+      "hierarchy": {
+        "hero_headline": "large, light-to-regular weight",
+        "section_titles": "small uppercase labels with medium weight",
+        "dashboard_titles": "medium-to-bold",
+        "financial_numbers": "large, high-contrast, regular-to-medium",
+        "body": "small regular",
+        "metadata": "small muted gray"
+      },
+      "letter_spacing": {
+        "wordmark": "very wide",
+        "section_labels": "slightly expanded uppercase tracking",
+        "body": "normal"
+      }
+    },
+    "iconography": {
+      "style": "minimal line icons",
+      "stroke": "thin",
+      "color": "muted white or indigo",
+      "geometry": "simple geometric outlines",
+      "categories": [
+        "Dashboard",
+        "Portfolio",
+        "Investments",
+        "Transactions",
+        "Analytics",
+        "Reports",
+        "Wallet",
+        "Markets",
+        "Watchlist",
+        "Alerts",
+        "Settings",
+        "Profile"
+      ],
+      "principle": "Icons should support navigation and comprehension rather than become decorative elements."
+    },
+    "ui_elements": {
+      "buttons": {
+        "primary": {
+          "background": "indigo/violet",
+          "text": "white",
+          "shape": "moderately rounded rectangle",
+          "style": "solid, high contrast"
+        },
+        "secondary": {
+          "background": "transparent or dark glass",
+          "border": "subtle blue-gray",
+          "text": "light gray",
+          "style": "outlined"
+        }
+      },
+      "inputs": {
+        "background": "dark translucent surface",
+        "border": "subtle gray-blue",
+        "text": "light",
+        "radius": "moderate"
+      },
+      "toggles": {
+        "active": "indigo/violet",
+        "inactive": "dark gray"
+      },
+      "dropdowns": {
+        "background": "dark",
+        "border": "subtle",
+        "text": "light",
+        "radius": "small-to-medium"
+      }
+    },
+    "glassmorphism": {
+      "presence": "subtle but visible",
+      "purpose": "create depth between dashboard layers without making the entire interface translucent",
+      "card_background": "dark navy with moderate transparency",
+      "blur": "low-to-medium",
+      "border": "thin semi-transparent blue-gray/white",
+      "shadow": "soft dark shadow",
+      "highlight": "very subtle edge illumination",
+      "rule": "Cards should feel slightly elevated and translucent, but the UI must remain crisp and readable.",
+      "avoid": [
+        "strong frosted glass",
+        "large blur halos",
+        "transparent text containers",
+        "excessive reflections",
+        "floating glass everywhere"
+      ]
+    },
+    "dashboard": {
+      "position": "right half of brand board",
+      "style": "dark desktop investment dashboard",
+      "background": "#0B1220",
+      "header": {
+        "left": {
+          "logo": "small FINTU icon + wordmark"
+        },
+        "center": {
+          "title": "Dashboard"
+        },
+        "right": [
+          "search icon",
+          "notification icon",
+          "user avatar",
+          "user name",
+          "dropdown chevron"
+        ]
+      },
+      "sidebar": {
+        "width": "approximately 120-150px",
+        "items": [
+          "Overview",
+          "Portfolio",
+          "Investments",
+          "Transactions",
+          "Analytics",
+          "Reports",
+          "Settings"
+        ],
+        "active_item": {
+          "name": "Overview",
+          "background": "subtle indigo-tinted glass",
+          "icon": "white/indigo",
+          "text": "white"
+        }
+      },
+      "main_content": {
+        "heading": "Overview",
+        "time_filter": "Last 7 days",
+        "layout": "responsive dashboard grid"
+      },
+      "metric_cards": [
+        {
+          "title": "Total Portfolio",
+          "value": "$34,875.77",
+          "secondary": "↗ $2,784.13 (8.78%)",
+          "chart": "small indigo line chart"
+        },
+        {
+          "title": "Today's Return",
+          "value": "+$837.20",
+          "secondary": "↗ 2.45%",
+          "chart": "small indigo line chart"
+        },
+        {
+          "title": "Total Invested",
+          "value": "$28,431.64"
+        },
+        {
+          "title": "Cash Balance",
+          "value": "$1,233.48",
+          "icon": "circular dollar icon"
+        }
+      ],
+      "performance_card": {
+        "title": "Performance",
+        "subtitle": "Portfolio performance (net of fees & FX)",
+        "filter": "7 days",
+        "chart": {
+          "type": "line chart",
+          "color": "indigo/violet",
+          "background": "dark",
+          "area_fill": "very subtle blue-violet gradient",
+          "grid": "extremely subtle horizontal lines",
+          "range": "-10% to 10%",
+          "dates": [
+            "Jan 15",
+            "Jan 16",
+            "Jan 17",
+            "Jan 18",
+            "Jan 19",
+            "Jan 20",
+            "Jan 21"
+          ],
+          "trajectory": "generally upward with natural volatility"
+        }
+      },
+      "asset_allocation": {
+        "title": "Asset Allocation",
+        "visualization": "donut chart",
+        "categories": [
+          {
+            "name": "Stocks",
+            "percentage": "65%"
+          },
+          {
+            "name": "ETFs",
+            "percentage": "20%"
+          },
+          {
+            "name": "Crypto",
+            "percentage": "10%"
+          },
+          {
+            "name": "Cash",
+            "percentage": "5%"
+          }
+        ],
+        "style": "dark donut with indigo/lavender segments and muted gray secondary segment"
+      },
+      "recent_transactions": {
+        "title": "Recent Transactions",
+        "action": "View all",
+        "rows": [
+          {
+            "type": "Buy",
+            "asset": "AAPL · Apple Inc.",
+            "amount": "-$250.00",
+            "date": "Jan 21, 2024"
+          },
+          {
+            "type": "Deposit",
+            "source": "From Bancolombia",
+            "amount": "+$1,500.00",
+            "date": "Jan 20, 2024"
+          },
+          {
+            "type": "FX Conversion",
+            "source": "COP → USD",
+            "amount": "-$45.20",
+            "date": "Jan 20, 2024"
+          },
+          {
+            "type": "Buy",
+            "asset": "SPY · SPDR S&P 500 ETF",
+            "amount": "-$320.00",
+            "date": "Jan 19, 2024"
+          }
+        ],
+        "row_style": "compact horizontal rows with circular asset/action icons, muted metadata, and right-aligned financial values"
+      },
+      "top_holdings": {
+        "title": "Top Holdings",
+        "action": "View all",
+        "rows": [
+          {
+            "asset": "AAPL",
+            "description": "Apple Inc.",
+            "value": "$6,235.12",
+            "allocation": "17.9%"
+          },
+          {
+            "asset": "VOO",
+            "description": "Vanguard S&P 500 ETF",
+            "value": "$5,432.10",
+            "allocation": "15.6%"
+          },
+          {
+            "asset": "MSFT",
+            "description": "Microsoft Corp.",
+            "value": "$4,320.45",
+            "allocation": "12.4%"
+          },
+          {
+            "asset": "BTC",
+            "description": "Bitcoin",
+            "value": "$2,931.21",
+            "allocation": "8.4%"
+          },
+          {
+            "asset": "CASH",
+            "description": "USD Cash",
+            "value": "$1,233.48",
+            "allocation": "3.5%"
+          }
+        ]
+      },
+      "pro_card": {
+        "title": "Go Pro",
+        "description": "Unlock advanced analytics and smarter insights.",
+        "button": "Upgrade now",
+        "position": "lower portion of sidebar",
+        "style": "small elevated dark card with subtle glass border and indigo button"
+      }
+    },
+    "brand_board_sections": [
+      {
+        "number": "01",
+        "title": "BRAND OVERVIEW",
+        "position": "top-left"
+      },
+      {
+        "number": "02",
+        "title": "LOGO",
+        "position": "top-center-left"
+      },
+      {
+        "number": "03",
+        "title": "COLOR PALETTE",
+        "position": "middle-left"
+      },
+      {
+        "number": "04",
+        "title": "TYPOGRAPHY",
+        "position": "middle-center-left"
+      },
+      {
+        "number": "05",
+        "title": "ICONOGRAPHY",
+        "position": "lower-left"
+      },
+      {
+        "number": "06",
+        "title": "UI ELEMENTS",
+        "position": "lower-center-left"
+      },
+      {
+        "number": "07",
+        "title": "BRAND TONE",
+        "position": "bottom-left"
+      },
+      {
+        "number": "08",
+        "title": "IMAGERY STYLE",
+        "position": "bottom-center-left"
+      }
+    ],
+    "brand_tone": {
+      "section_title": "07. BRAND TONE",
+      "pillars": [
+        {
+          "name": "Clear",
+          "description": "We explain the complex simply."
+        },
+        {
+          "name": "Honest",
+          "description": "We show the full picture, always."
+        },
+        {
+          "name": "Confident",
+          "description": "We empower better decisions."
+        },
+        {
+          "name": "Human",
+          "description": "We're investors too. We get it."
+        }
+      ],
+      "writing_style": "Direct, factual, transparent, calm and confident. Never overly promotional."
+    },
+    "imagery": {
+      "section_title": "08. IMAGERY STYLE",
+      "visual_categories": [
+        "abstract financial data waves",
+        "financial market charts",
+        "global investment imagery",
+        "modern city skylines"
+      ],
+      "characteristics": [
+        "dark",
+        "blue-toned",
+        "data-driven",
+        "minimal",
+        "premium",
+        "global",
+        "focused",
+        "trustworthy"
+      ],
+      "avoid": [
+        "generic stock-market imagery",
+        "bright corporate photography",
+        "colorful financial illustrations",
+        "crypto-bro aesthetics",
+        "excessive neon"
+      ]
+    },
+    "footer": {
+      "left": "FINTU logo",
+      "center_text": [
+        "Your investments.",
+        "The whole truth."
+      ],
+      "accent": "The phrase 'The whole truth.' is indigo.",
+      "right": "fintu.app"
+    },
+    "recreation_instructions": {
+      "priority_order": [
+        "Preserve the dark navy visual foundation.",
+        "Use indigo/violet as the only strong accent family.",
+        "Use Inter throughout the interface.",
+        "Maintain thin borders and compact rounded cards.",
+        "Use subtle glassmorphism specifically on elevated cards.",
+        "Keep most surfaces opaque enough to preserve clarity.",
+        "Make financial numbers and charts the visual focus.",
+        "Maintain generous negative space around the brand identity sections.",
+        "Keep the dashboard information-dense but visually organized.",
+        "Avoid introducing green as a primary success/brand color."
+      ],
+      "rendering_quality": "high-end SaaS/fintech product design presentation",
+      "lighting": "subtle blue-violet ambient illumination around the dashboard, especially near edges and elevated cards",
+      "depth": "created through borders, shadows, slight transparency and restrained glow rather than heavy blur",
+      "consistency": "Every UI component should feel like part of one coherent financial operating system."
+    }
+  }

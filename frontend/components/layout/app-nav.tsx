@@ -49,7 +49,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
       <aside
         className={cn(
           "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col h-full overflow-hidden",
-          "border-r border-sidebar-border bg-background",
+          "border-r border-sidebar-border bg-background/80 backdrop-blur-md",
           "transition-[width] duration-200 ease-in-out",
           collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED,
         )}

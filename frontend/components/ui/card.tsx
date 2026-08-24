@@ -11,10 +11,10 @@ function Card({ className, variant = 'default', ...props }: CardProps) {
     <div
       data-slot="card"
       className={cn(
-        'bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm',
+        'bg-card/80 text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-md backdrop-blur-sm',
         {
-          'bg-[color:var(--color-card-kpi)] shadow-lg ring-1 ring-primary/10': variant === 'kpi',
-          'transition-all duration-200 hover:shadow-md hover:border-primary/20': variant === 'interactive',
+          'bg-[color:var(--color-card-kpi)] shadow-lg ring-1 ring-primary/10 backdrop-blur-sm': variant === 'kpi',
+          'transition-all duration-200 hover:shadow-md hover:border-primary/20 backdrop-blur-sm': variant === 'interactive',
         },
         className,
       )}
