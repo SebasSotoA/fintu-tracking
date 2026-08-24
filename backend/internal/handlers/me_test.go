@@ -7,9 +7,30 @@ import (
 	"testing"
 
 	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/repositories"
+	"fintu-tracking-backend/internal/services"
 
 	"github.com/go-chi/chi/v5"
 )
+
+func initProfileServiceForTest(t *testing.T) {
+	t.Helper()
+	skipIfNoTestDB(t)
+	pool := database.GetPool()
+	if billingService == nil {
+		InitBillingService(services.NewBillingService(
+			repositories.NewPostgresBillingRepository(pool),
+			services.NewNoOpBillingProvider(),
+		))
+	}
+	brokerSvc := services.NewBrokerService(repositories.NewPostgresBrokerRepository(pool))
+	profileSvc := services.NewProfileService(
+		repositories.NewPostgresProfileRepository(pool),
+		billingService,
+		brokerSvc,
+	)
+	InitProfileService(profileSvc)
+}
 
 func TestGetMe_Unauthorized(t *testing.T) {
 	t.Parallel()
@@ -29,7 +50,7 @@ func TestGetMe_CreatesProfileForNewUser(t *testing.T) {
 	skipIfNoTestDB(t)
 
 	userID := newTestUserID(t)
-	InitProfileService(database.GetPool())
+	initProfileServiceForTest(t)
 
 	app := chi.NewRouter()
 	app.Use(withUser(userID))
@@ -54,7 +75,7 @@ func TestUpdateOnboarding_Validation(t *testing.T) {
 	skipIfNoTestDB(t)
 
 	userID := newTestUserID(t)
-	InitProfileService(database.GetPool())
+	initProfileServiceForTest(t)
 
 	cases := []struct {
 		name  string
@@ -111,7 +132,7 @@ func TestUpdateOnboarding_Success(t *testing.T) {
 	skipIfNoTestDB(t)
 
 	userID := newTestUserID(t)
-	InitProfileService(database.GetPool())
+	initProfileServiceForTest(t)
 
 	app := chi.NewRouter()
 	app.Use(withUser(userID))
@@ -154,7 +175,7 @@ func TestUpdateProfile_Validation(t *testing.T) {
 	skipIfNoTestDB(t)
 
 	userID := newTestUserID(t)
-	InitProfileService(database.GetPool())
+	initProfileServiceForTest(t)
 
 	cases := []struct {
 		name  string
@@ -211,7 +232,7 @@ func TestUpdateProfile_Success(t *testing.T) {
 	skipIfNoTestDB(t)
 
 	userID := newTestUserID(t)
-	InitProfileService(database.GetPool())
+	initProfileServiceForTest(t)
 
 	onboardApp := chi.NewRouter()
 	onboardApp.Use(withUser(userID))
@@ -254,7 +275,7 @@ func TestUpdateProfile_isolation(t *testing.T) {
 
 	userA := newTestUserID(t)
 	userB := newTestUserID(t)
-	InitProfileService(database.GetPool())
+	initProfileServiceForTest(t)
 
 	appA := chi.NewRouter()
 	appA.Use(withUser(userA))
@@ -301,7 +322,7 @@ func TestUpdateOnboarding_isolation(t *testing.T) {
 
 	userA := newTestUserID(t)
 	userB := newTestUserID(t)
-	InitProfileService(database.GetPool())
+	initProfileServiceForTest(t)
 
 	// Complete onboarding as user A.
 	appA := chi.NewRouter()

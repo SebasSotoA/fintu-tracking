@@ -16,47 +16,23 @@ import (
 func (s *AnalyticsService) GetPerformanceTimeSeries(ctx context.Context, userID, interval string) ([]models.PerformancePoint, error) {
 	interval = normalizePerformanceInterval(interval)
 
-	query := `
-		SELECT 
-			snapshot_date,
-			total_value_usd,
-			total_invested_usd,
-			total_fees_usd,
-			total_fx_impact_usd
-		FROM portfolio_snapshots
-		WHERE user_id = $1
-		ORDER BY snapshot_date ASC
-	`
-
-	rows, err := s.pool.Query(ctx, query, userID)
+	snapshots, err := s.repo.GetPerformanceSnapshots(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query performance time series: %w", err)
 	}
-	defer rows.Close()
 
 	var points []models.PerformancePoint
-	for rows.Next() {
-		var point models.PerformancePoint
-		var totalValue, invested, fees, fxImpact string
-
-		err := rows.Scan(
-			&point.Date,
-			&totalValue,
-			&invested,
-			&fees,
-			&fxImpact,
-		)
-		if err != nil {
-			continue
+	for _, snap := range snapshots {
+		point := models.PerformancePoint{
+			Date:               snap.SnapshotDate,
+			PortfolioValue:     snap.TotalValueUSD,
+			InvestedCapital:    snap.TotalInvestedUSD,
+			CumulativeFees:     snap.TotalFeesUSD,
+			CumulativeFXImpact: snap.TotalFXImpactUSD,
 		}
 
-		point.PortfolioValue = totalValue
-		point.InvestedCapital = invested
-		point.CumulativeFees = fees
-		point.CumulativeFXImpact = fxImpact
-
-		value, _ := decimal.NewFromString(totalValue)
-		investedDec, _ := decimal.NewFromString(invested)
+		value, _ := decimal.NewFromString(snap.TotalValueUSD)
+		investedDec, _ := decimal.NewFromString(snap.TotalInvestedUSD)
 		netReturn := value.Sub(investedDec)
 		point.NetReturn = netReturn.String()
 
@@ -79,7 +55,7 @@ func (s *AnalyticsService) GetPerformanceTimeSeries(ctx context.Context, userID,
 		points = aggregatePerformancePointsByInterval(points, interval)
 	}
 
-	points, err = attachSPYBenchmark(ctx, s.pool, points)
+	points, err = s.attachSPYBenchmark(ctx, points)
 	if err != nil {
 		return nil, err
 	}
@@ -98,47 +74,50 @@ func (s *AnalyticsService) generatePerformancePoints(ctx context.Context, userID
 func (s *AnalyticsService) loadPerformanceActivity(ctx context.Context, userID string) (performanceActivity, error) {
 	var activity performanceActivity
 
-	cfRows, err := s.pool.Query(ctx, `
-		SELECT date, type, usd_amount, related_trade_id, related_cash_flow_id
-		FROM cash_flows
-		WHERE user_id = $1
-		ORDER BY date ASC
-	`, userID)
+	cfRows, err := s.repo.GetPerformanceActivityCashFlows(ctx, userID)
 	if err != nil {
 		return activity, fmt.Errorf("load cash flows: %w", err)
 	}
-	defer cfRows.Close()
-
-	for cfRows.Next() {
-		var cf performanceCashFlow
-		var relatedTradeID *string
-		var relatedID *string
-		if err := cfRows.Scan(&cf.Date, &cf.Type, &cf.USDAmount, &relatedTradeID, &relatedID); err != nil {
-			return activity, fmt.Errorf("scan cash flow: %w", err)
+	for _, row := range cfRows {
+		amount, err := decimal.NewFromString(row.USDAmount)
+		if err != nil {
+			return activity, fmt.Errorf("parse cash flow usd_amount %q: %w", row.USDAmount, err)
 		}
-		cf.RelatedTradeID = relatedTradeID
-		cf.RelatedCashFlowID = relatedID
-		activity.CashFlows = append(activity.CashFlows, cf)
-	}
-	if err := cfRows.Err(); err != nil {
-		return activity, fmt.Errorf("iterate cash flows: %w", err)
+		activity.CashFlows = append(activity.CashFlows, performanceCashFlow{
+			Date:              row.Date,
+			Type:              row.Type,
+			USDAmount:         amount,
+			RelatedTradeID:    row.RelatedTradeID,
+			RelatedCashFlowID: row.RelatedCashFlowID,
+		})
 	}
 
-	trRows, err := s.pool.Query(ctx, performanceTradeLoadSQL(), userID)
+	trRows, err := s.repo.GetPerformanceActivityTrades(ctx, userID)
 	if err != nil {
 		return activity, fmt.Errorf("load trades: %w", err)
 	}
-	defer trRows.Close()
-
-	for trRows.Next() {
-		var tr performanceTrade
-		if err := trRows.Scan(&tr.Date, &tr.Side, &tr.Ticker, &tr.Quantity, &tr.Price, &tr.TotalFees, &tr.IsOpeningPosition); err != nil {
-			return activity, fmt.Errorf("scan trade: %w", err)
+	for _, row := range trRows {
+		qty, err := decimal.NewFromString(row.Quantity)
+		if err != nil {
+			return activity, fmt.Errorf("parse trade quantity %q: %w", row.Quantity, err)
 		}
-		activity.Trades = append(activity.Trades, tr)
-	}
-	if err := trRows.Err(); err != nil {
-		return activity, fmt.Errorf("iterate trades: %w", err)
+		price, err := decimal.NewFromString(row.Price)
+		if err != nil {
+			return activity, fmt.Errorf("parse trade price %q: %w", row.Price, err)
+		}
+		fees, err := decimal.NewFromString(row.TotalFees)
+		if err != nil {
+			return activity, fmt.Errorf("parse trade fees %q: %w", row.TotalFees, err)
+		}
+		activity.Trades = append(activity.Trades, performanceTrade{
+			Date:              row.Date,
+			Side:              row.Side,
+			Ticker:            row.Ticker,
+			Quantity:          qty,
+			Price:             price,
+			TotalFees:         fees,
+			IsOpeningPosition: row.IsOpeningPosition,
+		})
 	}
 
 	return activity, nil

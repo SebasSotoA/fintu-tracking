@@ -13,8 +13,8 @@ import (
 )
 
 type fakeMarketDataStore struct {
-	fxRates          map[string]RateResult
-	latestFxRate     *RateResult
+	fxRates          map[string]models.RateResult
+	latestFxRate     *models.RateResult
 	marketPrices     map[string]models.MarketPrice
 	heldTickers      []string
 	lastRefresh      map[string]time.Time
@@ -37,13 +37,13 @@ type upsertPriceCall struct {
 
 func newFakeMarketDataStore() *fakeMarketDataStore {
 	return &fakeMarketDataStore{
-		fxRates:     make(map[string]RateResult),
+		fxRates:     make(map[string]models.RateResult),
 		marketPrices: make(map[string]models.MarketPrice),
 		lastRefresh: make(map[string]time.Time),
 	}
 }
 
-func (f *fakeMarketDataStore) GetFxRate(_ context.Context, userID, date, source string) (RateResult, bool, error) {
+func (f *fakeMarketDataStore) GetFxRate(_ context.Context, userID, date, source string) (models.RateResult, bool, error) {
 	key := userID + "|" + date + "|" + source
 	row, ok := f.fxRates[key]
 	return row, ok, nil
@@ -52,15 +52,15 @@ func (f *fakeMarketDataStore) GetFxRate(_ context.Context, userID, date, source 
 func (f *fakeMarketDataStore) UpsertFxRate(_ context.Context, userID string, date time.Time, rate, source string) error {
 	f.upsertFxCalls = append(f.upsertFxCalls, upsertFxCall{userID: userID, date: date, rate: rate, source: source})
 	key := userID + "|" + date.Format("2006-01-02") + "|" + source
-	f.fxRates[key] = RateResult{Rate: rate, Date: date.Format("2006-01-02"), Source: source, CachedAt: time.Now()}
+	f.fxRates[key] = models.RateResult{Rate: rate, Date: date.Format("2006-01-02"), Source: source, CachedAt: time.Now()}
 	return nil
 }
 
-func (f *fakeMarketDataStore) GetLatestFxRate(_ context.Context, userID string) (RateResult, bool, error) {
+func (f *fakeMarketDataStore) GetLatestFxRate(_ context.Context, userID string) (models.RateResult, bool, error) {
 	if f.latestFxRate != nil && f.latestFxRate.Source != "" {
 		return *f.latestFxRate, true, nil
 	}
-	return RateResult{}, false, nil
+	return models.RateResult{}, false, nil
 }
 
 func (f *fakeMarketDataStore) ListHeldTickers(_ context.Context, userID string) ([]string, error) {
@@ -103,14 +103,14 @@ func TestFetchCurrentRate_returnsFreshCachedRateWithoutCallingAPI(t *testing.T) 
 
 	today := time.Now().UTC().Format("2006-01-02")
 	store := newFakeMarketDataStore()
-	store.fxRates["user-1|"+today+"|twelve-data"] = RateResult{
+	store.fxRates["user-1|"+today+"|twelve-data"] = models.RateResult{
 		Rate:     "4200.00",
 		Date:     today,
 		Source:   config.TwelveDataSource,
 		CachedAt: time.Now(),
 	}
 
-	svc := &ExchangeRateService{store: store}
+	svc := NewExchangeRateService(store)
 
 	result, err := svc.FetchCurrentRate(context.Background(), "user-1")
 	if err != nil {
@@ -141,11 +141,9 @@ func TestFetchCurrentRate_callsAPIAndStoresResultWhenCacheMiss(t *testing.T) {
 	defer server.Close()
 
 	store := newFakeMarketDataStore()
-	svc := &ExchangeRateService{
-		store:      store,
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewExchangeRateService(store)
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	t.Setenv("TWELVE_DATA_API_KEY", "test-key")
 	result, err := svc.FetchCurrentRate(context.Background(), "user-1")
@@ -175,18 +173,16 @@ func TestFetchCurrentRate_refetchesWhenCacheIsStale(t *testing.T) {
 
 	today := time.Now().UTC().Format("2006-01-02")
 	store := newFakeMarketDataStore()
-	store.fxRates["user-1|"+today+"|twelve-data"] = RateResult{
+	store.fxRates["user-1|"+today+"|twelve-data"] = models.RateResult{
 		Rate:     "4100.00",
 		Date:     today,
 		Source:   config.TwelveDataSource,
 		CachedAt: time.Now().Add(-48 * time.Hour),
 	}
 
-	svc := &ExchangeRateService{
-		store:      store,
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewExchangeRateService(store)
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	t.Setenv("TWELVE_DATA_API_KEY", "test-key")
 	result, err := svc.FetchCurrentRate(context.Background(), "user-1")
@@ -210,18 +206,16 @@ func TestFetchCurrentRate_manualRowIsNotATwelveDataCacheHit(t *testing.T) {
 
 	today := time.Now().UTC().Format("2006-01-02")
 	store := newFakeMarketDataStore()
-	store.fxRates["user-1|"+today+"|manual"] = RateResult{
+	store.fxRates["user-1|"+today+"|manual"] = models.RateResult{
 		Rate:     "4000.00",
 		Date:     today,
 		Source:   "manual",
 		CachedAt: time.Now(),
 	}
 
-	svc := &ExchangeRateService{
-		store:      store,
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewExchangeRateService(store)
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	t.Setenv("TWELVE_DATA_API_KEY", "test-key")
 	result, err := svc.FetchCurrentRate(context.Background(), "user-1")
@@ -244,17 +238,15 @@ func TestFetchCurrentRate_fallsBackToLatestRowOnAPIFailure(t *testing.T) {
 	defer server.Close()
 
 	store := newFakeMarketDataStore()
-	store.latestFxRate = &RateResult{
+	store.latestFxRate = &models.RateResult{
 		Rate:   "4150.00",
 		Date:   "2026-06-26",
 		Source: "manual",
 	}
 
-	svc := &ExchangeRateService{
-		store:      store,
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewExchangeRateService(store)
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	t.Setenv("TWELVE_DATA_API_KEY", "test-key")
 	result, err := svc.FetchCurrentRate(context.Background(), "user-1")
@@ -279,11 +271,9 @@ func TestFetchDailyHistory_buildsCorrectURL(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := &ExchangeRateService{
-		store:      newFakeMarketDataStore(),
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewExchangeRateService(newFakeMarketDataStore())
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	t.Setenv("TWELVE_DATA_API_KEY", "test-key")
 	points, err := svc.FetchDailyHistory(context.Background(), 1)

@@ -19,37 +19,19 @@ func (s *AnalyticsService) CalculateFXImpact(ctx context.Context, userID string)
 		ImpactByPeriod:    make(map[string]string),
 	}
 
-	var avgRate string
-	err := s.pool.QueryRow(ctx, `
-		SELECT 
-			COALESCE(
-				SUM(cf.usd_amount * cf.fx_rate) / NULLIF(SUM(cf.usd_amount), 0),
-				0
-			) as weighted_avg_rate
-		FROM cash_flows cf
-		WHERE cf.user_id = $1 
-			AND cf.type = 'deposit' 
-			AND cf.fx_rate IS NOT NULL
-	`, userID).Scan(&avgRate)
+	fxRows, err := s.repo.GetFXImpactCashFlows(ctx, userID)
 	if err != nil {
-		avgRate = "0"
+		return report, fmt.Errorf("failed to load fx-impact cash flows: %w", err)
 	}
+	avgRate := weightedAvgFXRate(fxRows)
 	report.AvgInvestmentRate = avgRate
 
-	var currentRate string
-	err = s.pool.QueryRow(ctx, `
-		SELECT rate
-		FROM fx_rates
-		WHERE user_id = $1
-		ORDER BY date DESC
-		LIMIT 1
-	`, userID).Scan(&currentRate)
+	currentRate, err := s.repo.GetLatestFXRate(ctx, userID)
 	if err != nil {
-		if err != nil && err.Error() == "no rows in result set" {
-			currentRate = avgRate
-		} else {
-			return report, fmt.Errorf("failed to get current FX rate: %w", err)
-		}
+		return report, fmt.Errorf("failed to get current FX rate: %w", err)
+	}
+	if currentRate == "" {
+		currentRate = avgRate
 	}
 	report.CurrentRate = currentRate
 
@@ -64,25 +46,39 @@ func (s *AnalyticsService) CalculateFXImpact(ctx context.Context, userID string)
 	report.FXImpactUSD = "0"
 	report.FXImpactPct = "0"
 
-	periodRows, err := s.pool.Query(ctx, `
-		SELECT 
-			TO_CHAR(date, 'YYYY-MM') as period,
-			AVG(rate) as avg_rate
-		FROM fx_rates
-		WHERE user_id = $1
-		GROUP BY TO_CHAR(date, 'YYYY-MM')
-		ORDER BY period DESC
-		LIMIT 12
-	`, userID)
+	periods, err := s.repo.GetFXRatePeriods(ctx, userID)
 	if err == nil {
-		defer periodRows.Close()
-		for periodRows.Next() {
-			var period, rate string
-			if err := periodRows.Scan(&period, &rate); err == nil {
-				report.ImpactByPeriod[period] = rate
-			}
+		for _, p := range periods {
+			report.ImpactByPeriod[p.Period] = p.Rate
 		}
 	}
 
 	return report, nil
+}
+
+// weightedAvgFXRate computes SUM(usd_amount * fx_rate) / SUM(usd_amount) over
+// deposit cash flows with a non-null fx_rate, returning "0" when not
+// computable (no rows or zero total amount).
+func weightedAvgFXRate(rows []models.AnalyticsFXImpactCashFlowRow) string {
+	weightedSum := decimal.Zero
+	totalAmount := decimal.Zero
+	for _, row := range rows {
+		amount, err := decimal.NewFromString(row.USDAmount)
+		if err != nil {
+			continue
+		}
+		if row.FXRate == nil {
+			continue
+		}
+		rate, err := decimal.NewFromString(*row.FXRate)
+		if err != nil {
+			continue
+		}
+		weightedSum = weightedSum.Add(amount.Mul(rate))
+		totalAmount = totalAmount.Add(amount)
+	}
+	if totalAmount.IsZero() {
+		return "0"
+	}
+	return weightedSum.Div(totalAmount).String()
 }

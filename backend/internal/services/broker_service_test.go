@@ -7,6 +7,7 @@ import (
 
 	"fintu-tracking-backend/internal/config"
 	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/repositories"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -103,7 +104,7 @@ func TestBrokerService_ListBrokers(t *testing.T) {
 	require.NoError(t, err)
 	defer pool.Close()
 
-	s := NewBrokerService(pool)
+	s := NewBrokerService(repositories.NewPostgresBrokerRepository(pool))
 	userID := uuid.New().String()
 
 	_, err = s.GetOrCreateBrokerFromPreset(ctx, userID, "hapi-colombia")
@@ -127,7 +128,7 @@ func TestBrokerService_GetOrCreateBrokerFromPreset_idempotent(t *testing.T) {
 	require.NoError(t, err)
 	defer pool.Close()
 
-	s := NewBrokerService(pool)
+	s := NewBrokerService(repositories.NewPostgresBrokerRepository(pool))
 	userID := uuid.New().String()
 
 	first, err := s.GetOrCreateBrokerFromPreset(ctx, userID, "hapi-colombia")

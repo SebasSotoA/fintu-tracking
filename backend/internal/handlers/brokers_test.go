@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/repositories"
+	"fintu-tracking-backend/internal/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -20,7 +22,7 @@ func seedBroker(t *testing.T, userID, presetID string) string {
 
 	if brokerService == nil {
 		skipIfNoTestDB(t)
-		InitBrokerService(database.GetPool())
+		InitBrokerService(services.NewBrokerService(repositories.NewPostgresBrokerRepository(database.GetPool())))
 	}
 
 	broker, err := brokerService.GetOrCreateBrokerFromPreset(context.Background(), userID, presetID)
@@ -70,7 +72,7 @@ func TestCreateBroker_Validation(t *testing.T) {
 	skipIfNoTestDB(t)
 
 	userID := newTestUserID(t)
-	InitBrokerService(database.GetPool())
+	InitBrokerService(services.NewBrokerService(repositories.NewPostgresBrokerRepository(database.GetPool())))
 
 	cases := []struct {
 		name  string
@@ -116,7 +118,7 @@ func TestCreateBroker_Success(t *testing.T) {
 	skipIfNoTestDB(t)
 
 	userID := newTestUserID(t)
-	InitBrokerService(database.GetPool())
+	InitBrokerService(services.NewBrokerService(repositories.NewPostgresBrokerRepository(database.GetPool())))
 
 	app := chi.NewRouter()
 	app.Use(withUser(userID))
@@ -159,7 +161,7 @@ func TestListBrokers_ReturnsUserBrokersAndPresets(t *testing.T) {
 	skipIfNoTestDB(t)
 
 	userID := newTestUserID(t)
-	InitBrokerService(database.GetPool())
+	InitBrokerService(services.NewBrokerService(repositories.NewPostgresBrokerRepository(database.GetPool())))
 	seedBroker(t, userID, "hapi-colombia")
 
 	app := chi.NewRouter()
@@ -201,7 +203,7 @@ func TestListBrokers_isolation(t *testing.T) {
 
 	userA := newTestUserID(t)
 	userB := uuid.New().String()
-	InitBrokerService(database.GetPool())
+	InitBrokerService(services.NewBrokerService(repositories.NewPostgresBrokerRepository(database.GetPool())))
 	seedBroker(t, userA, "hapi-colombia")
 
 	app := chi.NewRouter()

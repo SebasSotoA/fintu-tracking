@@ -9,17 +9,15 @@ import (
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
 	"fintu-tracking-backend/internal/services"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // profileService is the package-level profile service used by handlers.
-// It is initialized once from main.go after the DB pool is available.
+// It is initialized once from Bootstrap after the DB pool is available.
 var profileService *services.ProfileService
 
 // InitProfileService sets the package-level profile service used by handlers.
-func InitProfileService(pool *pgxpool.Pool) {
-	profileService = services.NewProfileService(pool, billingService, services.NewBrokerService(pool))
+func InitProfileService(svc *services.ProfileService) {
+	profileService = svc
 }
 
 // GetMe returns the current user's profile. Creates a default profile row if missing.

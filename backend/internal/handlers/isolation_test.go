@@ -16,6 +16,7 @@ import (
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/repositories"
 	"fintu-tracking-backend/internal/services"
 
 	"github.com/go-chi/chi/v5"
@@ -297,7 +298,7 @@ func TestGetSubscription_isolation(t *testing.T) {
 	userB := newTestUserID(t)
 	subA := seedSubscription(t, userA)
 
-	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	billingSvc := services.NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
 	app := chi.NewRouter()
@@ -326,7 +327,7 @@ func TestCancelSubscription_isolation(t *testing.T) {
 	userB := newTestUserID(t)
 	subA := seedSubscription(t, userA)
 
-	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	billingSvc := services.NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
 	app := chi.NewRouter()

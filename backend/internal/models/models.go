@@ -36,6 +36,21 @@ type PaginatedResponse[T any] struct {
 	PageSize int `json:"page_size"`
 }
 
+// RateResult carries the exchange rate, the date it applies to, which source provided it,
+// and when it was cached so callers can evaluate TTL freshness.
+type RateResult struct {
+	Rate     string
+	Date     string
+	Source   string
+	CachedAt time.Time
+}
+
+// FxRateChartPoint is a single daily USD/COP close for charting.
+type FxRateChartPoint struct {
+	Date string `json:"date"`
+	Rate string `json:"rate"`
+}
+
 // FxRate represents a foreign exchange rate record
 type FxRate struct {
 	ID        string    `json:"id" db:"id"`
@@ -300,6 +315,49 @@ type ReconciliationIssue struct {
 	Description        string `json:"description"`
 }
 
+// FeeTypeTotal is one row from aggregate fees grouped by fee_type.
+type FeeTypeTotal struct {
+	FeeType string
+	Total   string
+}
+
+// FeeMonthTotal is one row from aggregate fees grouped by month.
+type FeeMonthTotal struct {
+	MonthKey string
+	Total    string
+}
+
+// TradeFeeImpact aggregates net quantity, cost, fees, and trade count for a
+// ticker. Values are strings as returned by Postgres numeric aggregates.
+type TradeFeeImpact struct {
+	NetQuantity string
+	TotalCost   string
+	TotalFees   string
+	TradeCount  int
+}
+
+// ReconciliationSummaryRow is one row from the fee_reconciliation_summary view
+// with a non-zero reconciliation_diff. Date is the raw time so the service can
+// format it.
+type ReconciliationSummaryRow struct {
+	TradeID            string
+	Ticker             string
+	Date               time.Time
+	TradeTotalFees     string
+	CashFlowTotalFees  string
+	ReconciliationDiff string
+}
+
+// FeeEfficiencyRow is one per-ticker fee efficiency aggregate row. Values are
+// strings as returned by Postgres numeric aggregates.
+type FeeEfficiencyRow struct {
+	Ticker     string
+	TradeCount int
+	TotalFees  string
+	TotalValue string
+	AvgFeePct  string
+}
+
 // NetWorthSummary provides a complete picture of user's financial position
 type NetWorthSummary struct {
 	HoldingsValue     string            `json:"holdings_value"`
@@ -418,4 +476,124 @@ type AnalyticsQuery struct {
 	EndDate   *string `json:"end_date"`
 	Ticker    *string `json:"ticker"`
 	Interval  *string `json:"interval"` // day, week, month, year
+}
+
+// AnalyticsHoldingTradeRow is one trade row used to compute current holdings.
+// Numeric values are strings as returned by Postgres numeric columns; the
+// service parses them into decimal.Decimal.
+type AnalyticsHoldingTradeRow struct {
+	Date      time.Time
+	CreatedAt time.Time
+	Ticker    string
+	AssetType string
+	Side      string
+	Quantity  string
+	Price     string
+	TotalFees string
+}
+
+// AnalyticsMarketPriceRow is one row from market_prices used to mark holdings
+// to market. Price is the raw string from Postgres; UpdatedAt is NULLABLE.
+type AnalyticsMarketPriceRow struct {
+	Ticker    string
+	Price     string
+	UpdatedAt *time.Time
+}
+
+// AnalyticsFXImpactCashFlowRow is one deposit cash flow used by the FX-impact
+// weighted-average-rate calculation.
+type AnalyticsFXImpactCashFlowRow struct {
+	USDAmount string
+	FXRate    *string
+}
+
+// AnalyticsFXRatePeriodRow is one monthly FX-rate average row.
+type AnalyticsFXRatePeriodRow struct {
+	Period string
+	Rate   string
+}
+
+// AnalyticsXIRRCashFlowRow is one deposit/withdrawal cash flow used by XIRR.
+type AnalyticsXIRRCashFlowRow struct {
+	Date      time.Time
+	Type      string
+	USDAmount string
+}
+
+// AnalyticsPerformanceSnapshotRow is one portfolio_snapshots row used by the
+// performance time series when snapshots are present.
+type AnalyticsPerformanceSnapshotRow struct {
+	SnapshotDate     time.Time
+	TotalValueUSD    string
+	TotalInvestedUSD string
+	TotalFeesUSD     string
+	TotalFXImpactUSD string
+}
+
+// AnalyticsPerformanceCashFlowRow is one cash_flows row used to synthesize
+// performance points from activity.
+type AnalyticsPerformanceCashFlowRow struct {
+	Date              time.Time
+	Type              string
+	USDAmount         string
+	RelatedTradeID    *string
+	RelatedCashFlowID *string
+}
+
+// AnalyticsPerformanceTradeRow is one trades row used to synthesize performance
+// points from activity. IsOpeningPosition is COALESCEd to false in the query.
+type AnalyticsPerformanceTradeRow struct {
+	Date              time.Time
+	Side              string
+	Ticker            string
+	Quantity          string
+	Price             string
+	TotalFees         string
+	IsOpeningPosition bool
+}
+
+// AnalyticsReturnAttributionHoldingRow is one joined trades+market_prices row
+// used by the return-attribution holdings value calculation. The price/cost
+// columns are nullable (LEFT JOIN + aggregates), hence pointer types.
+type AnalyticsReturnAttributionHoldingRow struct {
+	Ticker        string
+	NetQuantity   *string
+	TotalCost     *string
+	CurrentPrice  *string
+}
+
+// AnalyticsRealizedPLRow is one trades row used to compute realized P/L by
+// trade ID using average cost.
+type AnalyticsRealizedPLRow struct {
+	ID        string
+	Date      time.Time
+	CreatedAt time.Time
+	Ticker    string
+	Side      string
+	Quantity  string
+	Price     string
+	TotalFees string
+}
+
+// AnalyticsSPYPriceRow is one dated SPY market-price row used to index the
+// benchmark against the portfolio time series.
+type AnalyticsSPYPriceRow struct {
+	Date  time.Time
+	Price string
+}
+
+// AnalyticsLocalCurrencyTotals holds the local-currency deposit/withdrawal
+// totals returned by the net-worth summary query.
+type AnalyticsLocalCurrencyTotals struct {
+	TotalDeposited   string
+	TotalWithdrawn   string
+}
+
+// AnalyticsReturnAttributionFeesRow holds the per-fee-type totals returned by
+// the return-attribution fee query.
+type AnalyticsReturnAttributionFeesRow struct {
+	DepositFees string
+	TradingFees string
+	ClosingFees string
+	TotalFees   string
 }

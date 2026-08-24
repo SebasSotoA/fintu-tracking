@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"fintu-tracking-backend/internal/config"
+	"fintu-tracking-backend/internal/models"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 )
 
@@ -26,10 +26,10 @@ type ExchangeRateService struct {
 	baseURL    string
 }
 
-// NewExchangeRateService creates a new ExchangeRateService backed by the given DB pool.
-func NewExchangeRateService(pool *pgxpool.Pool) *ExchangeRateService {
+// NewExchangeRateService creates a new ExchangeRateService backed by the given store.
+func NewExchangeRateService(store MarketDataStore) *ExchangeRateService {
 	return &ExchangeRateService{
-		store:      NewPostgresMarketDataStore(pool),
+		store:      store,
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 		baseURL:    config.TwelveDataBaseURL,
 	}
@@ -41,21 +41,6 @@ type twelveDataExchangeRateResponse struct {
 	Status  string  `json:"status"`
 	Code    int     `json:"code"`
 	Message string  `json:"message"`
-}
-
-// RateResult carries the exchange rate, the date it applies to, which source provided it,
-// and when it was cached so callers can evaluate TTL freshness.
-type RateResult struct {
-	Rate     string
-	Date     string
-	Source   string
-	CachedAt time.Time
-}
-
-// FxRateChartPoint is a single daily USD/COP close for charting.
-type FxRateChartPoint struct {
-	Date string `json:"date"`
-	Rate string `json:"rate"`
 }
 
 type twelveDataTimeSeriesResponse struct {
@@ -75,7 +60,7 @@ type twelveDataTimeSeriesBar struct {
 //  1. Query fx_rates for a fresh Twelve-Data-sourced row for today.
 //  2. If no fresh cached row exists, call Twelve Data and upsert the result.
 //  3. If the API call fails, fall back to the most recent fx_rates row for the user.
-func (s *ExchangeRateService) FetchCurrentRate(ctx context.Context, userID string) (RateResult, error) {
+func (s *ExchangeRateService) FetchCurrentRate(ctx context.Context, userID string) (models.RateResult, error) {
 	today := time.Now().UTC()
 	dateStr := today.Format("2006-01-02")
 
@@ -92,13 +77,13 @@ func (s *ExchangeRateService) FetchCurrentRate(ctx context.Context, userID strin
 		} else if ok {
 			return row, nil
 		}
-		return RateResult{}, fmt.Errorf("twelve data: %w", err)
+		return models.RateResult{}, fmt.Errorf("twelve data: %w", err)
 	}
 
 	if dbErr := s.store.UpsertFxRate(ctx, userID, today, rate, config.TwelveDataSource); dbErr != nil {
 		log.Printf("exchange_rate_service: failed to persist rate to DB: %v", dbErr)
 	}
-	return RateResult{Rate: rate, Date: dateStr, Source: config.TwelveDataSource}, nil
+	return models.RateResult{Rate: rate, Date: dateStr, Source: config.TwelveDataSource}, nil
 }
 
 func (s *ExchangeRateService) fetchFromAPI(ctx context.Context) (string, error) {
@@ -177,7 +162,7 @@ func twelveDataErrorMessage(status string, code int, message string) string {
 }
 
 // FetchDailyHistory returns daily USD/COP close prices from Twelve Data time_series.
-func (s *ExchangeRateService) FetchDailyHistory(ctx context.Context, days int) ([]FxRateChartPoint, error) {
+func (s *ExchangeRateService) FetchDailyHistory(ctx context.Context, days int) ([]models.FxRateChartPoint, error) {
 	if days <= 0 {
 		days = config.DefaultFXRateDays
 	}
@@ -236,7 +221,7 @@ func (s *ExchangeRateService) FetchDailyHistory(ctx context.Context, days int) (
 		return nil, fmt.Errorf("API returned HTTP %d", resp.StatusCode)
 	}
 
-	points := make([]FxRateChartPoint, 0, len(result.Values))
+	points := make([]models.FxRateChartPoint, 0, len(result.Values))
 	for _, bar := range result.Values {
 		date := parseChartDate(bar.Datetime)
 		if date == "" {
@@ -250,7 +235,7 @@ func (s *ExchangeRateService) FetchDailyHistory(ctx context.Context, days int) (
 		if err != nil || !closeDec.GreaterThan(decimal.Zero) {
 			continue
 		}
-		points = append(points, FxRateChartPoint{
+		points = append(points, models.FxRateChartPoint{
 			Date: date,
 			Rate: closeDec.StringFixed(2),
 		})

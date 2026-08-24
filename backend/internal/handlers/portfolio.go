@@ -17,11 +17,12 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-var twelveDataSvc = services.NewTwelveDataService(nil)
+var twelveDataSvc *services.TwelveDataService
 
-// InitTwelveDataService wires the DB pool into the Twelve Data service singleton.
-func InitTwelveDataService() {
-	twelveDataSvc = services.NewTwelveDataService(database.GetPool())
+// InitTwelveDataService sets the package-level Twelve Data service used by handlers.
+// It is called once from Bootstrap after the DB pool is available.
+func InitTwelveDataService(svc *services.TwelveDataService) {
+	twelveDataSvc = svc
 }
 
 // RefreshMarketPrices fetches live quotes for held tickers and updates market_prices.
@@ -85,7 +86,6 @@ func GetHoldings(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
 	pageSizeStr := r.URL.Query().Get("page_size")
 
-	analyticsService := services.NewAnalyticsService(database.GetPool())
 	ctx := context.Background()
 
 	if !paginationRequested(pageStr, pageSizeStr) {

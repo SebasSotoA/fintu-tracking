@@ -6,6 +6,7 @@ import (
 
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/repositories"
 
 	"github.com/google/uuid"
 )
@@ -24,8 +25,8 @@ func TestProfileService_GetOrCreateProfile_CreatesDefaultForNewUser(t *testing.T
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	billingSvc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
-	svc := NewProfileService(database.GetPool(), billingSvc, nil)
+	billingSvc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
+	svc := NewProfileService(repositories.NewPostgresProfileRepository(database.GetPool()), billingSvc, nil)
 
 	profile, err := svc.GetOrCreateProfile(context.Background(), userID)
 	if err != nil {
@@ -58,8 +59,8 @@ func TestProfileService_UpdateOnboarding_MarksCompleted(t *testing.T) {
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	billingSvc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
-	svc := NewProfileService(database.GetPool(), billingSvc, nil)
+	billingSvc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
+	svc := NewProfileService(repositories.NewPostgresProfileRepository(database.GetPool()), billingSvc, nil)
 
 	profile, err := svc.UpdateOnboarding(context.Background(), userID, models.UpdateOnboardingRequest{
 		Country:        "mx",
@@ -90,8 +91,8 @@ func TestProfileService_UpdateOnboarding_MarksCompleted(t *testing.T) {
 
 func newTestProfileService(t *testing.T) *ProfileService {
 	t.Helper()
-	billingSvc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
-	return NewProfileService(database.GetPool(), billingSvc, NewBrokerService(database.GetPool()))
+	billingSvc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
+	return NewProfileService(repositories.NewPostgresProfileRepository(database.GetPool()), billingSvc, NewBrokerService(repositories.NewPostgresBrokerRepository(database.GetPool())))
 }
 
 func TestProfileService_UpdateProfile_PreservesOnboardingCompleted(t *testing.T) {
@@ -139,7 +140,7 @@ func TestProfileService_UpdateProfile_CreatesBrokerWhenPresetChanges(t *testing.
 
 	userID := newTestUserID(t)
 	svc := newTestProfileService(t)
-	brokerSvc := NewBrokerService(database.GetPool())
+	brokerSvc := NewBrokerService(repositories.NewPostgresBrokerRepository(database.GetPool()))
 
 	if _, err := svc.UpdateOnboarding(context.Background(), userID, models.UpdateOnboardingRequest{
 		Country:        "co",
@@ -227,8 +228,8 @@ func TestProfileService_UpdateOnboarding_DoesNotAffectOtherUsers(t *testing.T) {
 
 	userA := newTestUserID(t)
 	userB := newTestUserID(t)
-	billingSvc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
-	svc := NewProfileService(database.GetPool(), billingSvc, nil)
+	billingSvc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
+	svc := NewProfileService(repositories.NewPostgresProfileRepository(database.GetPool()), billingSvc, nil)
 
 	if _, err := svc.UpdateOnboarding(context.Background(), userA, models.UpdateOnboardingRequest{
 		Country:        "co",

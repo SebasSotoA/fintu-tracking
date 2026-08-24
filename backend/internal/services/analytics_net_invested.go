@@ -1,25 +1,8 @@
 package services
 
 import (
-	"fmt"
-
 	"github.com/shopspring/decimal"
 )
-
-const netInvestedCaseExpr = `
-  CASE
-    WHEN type = 'deposit' THEN usd_amount
-    WHEN type = 'withdrawal' THEN -usd_amount
-    ELSE 0
-  END`
-
-func netInvestedSQL() string {
-	return fmt.Sprintf(`SELECT COALESCE(SUM(%s), 0) FROM cash_flows WHERE user_id = $1`, netInvestedCaseExpr)
-}
-
-func netInvestedSQLAsOfDate() string {
-	return fmt.Sprintf(`SELECT COALESCE(SUM(%s), 0) FROM cash_flows WHERE user_id = $1 AND date <= $2`, netInvestedCaseExpr)
-}
 
 type netInvestedFlow struct {
 	Type              string

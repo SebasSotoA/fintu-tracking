@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/repositories"
 	"fintu-tracking-backend/internal/services"
 
 	"github.com/go-chi/chi/v5"
@@ -17,7 +18,7 @@ func TestRequireActivePlan_AllowsActiveSubscription(t *testing.T) {
 	skipIfNoTestDB(t)
 	userID := uuid.New().String()
 
-	svc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	svc := services.NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), services.NewNoOpBillingProvider())
 	if _, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID); err != nil {
 		t.Fatalf("create subscription: %v", err)
 	}
@@ -49,7 +50,7 @@ func TestRequireActivePlan_BlocksMissingSubscription(t *testing.T) {
 	skipIfNoTestDB(t)
 	userID := uuid.New().String()
 
-	svc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	svc := services.NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), services.NewNoOpBillingProvider())
 
 	app := chi.NewRouter()
 	app.Use(withUser(userID))
@@ -72,7 +73,7 @@ func TestRequireActivePlan_BlocksCanceledSubscription(t *testing.T) {
 	skipIfNoTestDB(t)
 	userID := uuid.New().String()
 
-	svc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	svc := services.NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), services.NewNoOpBillingProvider())
 	if _, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID); err != nil {
 		t.Fatalf("create subscription: %v", err)
 	}

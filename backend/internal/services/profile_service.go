@@ -5,40 +5,42 @@ import (
 	"fmt"
 
 	"fintu-tracking-backend/internal/models"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// BillingServiceInterface is the narrow slice of BillingService that
+// ProfileService depends on. BillingService satisfies it implicitly.
+type BillingServiceInterface interface {
+	GetOrCreateClosedBetaSubscription(ctx context.Context, userID string) (*models.Subscription, error)
+	HasActiveSubscription(ctx context.Context, userID string) (bool, error)
+}
+
+// BrokerServiceInterface is the narrow slice of BrokerService that
+// ProfileService depends on. BrokerService satisfies it implicitly.
+type BrokerServiceInterface interface {
+	GetOrCreateBrokerFromPreset(ctx context.Context, userID, presetID string) (*models.Broker, error)
+	ComputeDepositFeeUSD(netUsd string, broker models.Broker) (*string, error)
+	ComputeWithdrawalFeeUSD(netUsd string, broker models.Broker) (*string, error)
+}
 
 // ProfileService manages per-user onboarding, UI preference, and cached subscription state.
 type ProfileService struct {
-	pool    *pgxpool.Pool
-	billing *BillingService
-	brokers *BrokerService
+	repo    ProfileRepository
+	billing BillingServiceInterface
+	brokers BrokerServiceInterface
 }
 
-// NewProfileService creates a ProfileService backed by the given DB pool, billing, and broker services.
-func NewProfileService(pool *pgxpool.Pool, billing *BillingService, brokers *BrokerService) *ProfileService {
-	return &ProfileService{pool: pool, billing: billing, brokers: brokers}
+// NewProfileService creates a ProfileService backed by the given repository, billing,
+// and broker services.
+func NewProfileService(repo ProfileRepository, billing BillingServiceInterface, brokers BrokerServiceInterface) *ProfileService {
+	return &ProfileService{repo: repo, billing: billing, brokers: brokers}
 }
 
 // GetOrCreateProfile returns the user's profile, inserting a default row if missing
 // and ensuring the user has a closed_beta subscription.
 func (s *ProfileService) GetOrCreateProfile(ctx context.Context, userID string) (*models.Profile, error) {
-	rows, err := s.pool.Query(ctx, `
-		INSERT INTO profiles (user_id, country, onboarding_completed, onboarding_step)
-		VALUES ($1, 'co', false, 'welcome')
-		ON CONFLICT (user_id) DO UPDATE SET updated_at = NOW()
-		RETURNING id, user_id, country, broker_preset_id, onboarding_completed, onboarding_step, plan_id, subscription_status, created_at, updated_at
-	`, userID)
+	profile, err := s.repo.GetOrCreateProfile(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("upserting profile: %w", err)
-	}
-	defer rows.Close()
-
-	profile, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Profile])
-	if err != nil {
-		return nil, fmt.Errorf("collecting profile: %w", err)
+		return nil, err
 	}
 
 	if s.billing != nil {
@@ -54,27 +56,12 @@ func (s *ProfileService) GetOrCreateProfile(ctx context.Context, userID string) 
 		return refreshed, nil
 	}
 
-	return &profile, nil
+	return profile, nil
 }
 
 // GetProfile returns the user's profile by ID.
 func (s *ProfileService) GetProfile(ctx context.Context, userID string) (*models.Profile, error) {
-	rows, err := s.pool.Query(ctx, `
-		SELECT id, user_id, country, broker_preset_id, onboarding_completed, onboarding_step,
-		       plan_id, subscription_status, created_at, updated_at
-		FROM profiles
-		WHERE user_id = $1
-	`, userID)
-	if err != nil {
-		return nil, fmt.Errorf("fetching profile: %w", err)
-	}
-	defer rows.Close()
-
-	profile, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Profile])
-	if err != nil {
-		return nil, fmt.Errorf("collecting profile: %w", err)
-	}
-	return &profile, nil
+	return s.repo.GetProfile(ctx, userID)
 }
 
 // UpdateOnboarding stores the selected country and broker preset and marks onboarding completed.
@@ -83,26 +70,7 @@ func (s *ProfileService) UpdateOnboarding(ctx context.Context, userID string, re
 		return nil, err
 	}
 
-	rows, err := s.pool.Query(ctx, `
-		UPDATE profiles
-		SET country = $2,
-		    broker_preset_id = $3,
-		    onboarding_completed = true,
-		    onboarding_step = 'completed',
-		    updated_at = NOW()
-		WHERE user_id = $1
-		RETURNING id, user_id, country, broker_preset_id, onboarding_completed, onboarding_step, plan_id, subscription_status, created_at, updated_at
-	`, userID, req.Country, req.BrokerPresetID)
-	if err != nil {
-		return nil, fmt.Errorf("updating onboarding: %w", err)
-	}
-	defer rows.Close()
-
-	profile, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Profile])
-	if err != nil {
-		return nil, fmt.Errorf("collecting updated profile: %w", err)
-	}
-	return &profile, nil
+	return s.repo.UpdateOnboarding(ctx, userID, req)
 }
 
 // UpdateProfile updates country and broker preset without changing onboarding state.
@@ -119,22 +87,5 @@ func (s *ProfileService) UpdateProfile(ctx context.Context, userID string, req m
 		}
 	}
 
-	rows, err := s.pool.Query(ctx, `
-		UPDATE profiles
-		SET country = $2,
-		    broker_preset_id = $3,
-		    updated_at = NOW()
-		WHERE user_id = $1
-		RETURNING id, user_id, country, broker_preset_id, onboarding_completed, onboarding_step, plan_id, subscription_status, created_at, updated_at
-	`, userID, req.Country, req.BrokerPresetID)
-	if err != nil {
-		return nil, fmt.Errorf("updating profile: %w", err)
-	}
-	defer rows.Close()
-
-	profile, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[models.Profile])
-	if err != nil {
-		return nil, fmt.Errorf("collecting updated profile: %w", err)
-	}
-	return &profile, nil
+	return s.repo.UpdateProfile(ctx, userID, req)
 }

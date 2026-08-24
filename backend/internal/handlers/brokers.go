@@ -8,17 +8,16 @@ import (
 	"fintu-tracking-backend/internal/httpx"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/services"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// InitBrokerService sets the package-level broker service used by handlers.
-// It is called once from main.go after the DB pool is available.
-func InitBrokerService(pool *pgxpool.Pool) {
-	brokerService = services.NewBrokerService(pool)
-}
-
+// brokerService is the package-level broker service used by handlers.
+// It is initialized once from Bootstrap after the DB pool is available.
 var brokerService *services.BrokerService
+
+// InitBrokerService sets the package-level broker service used by handlers.
+func InitBrokerService(svc *services.BrokerService) {
+	brokerService = svc
+}
 
 // ListBrokers returns the user's broker rows plus all available built-in presets.
 func ListBrokers(w http.ResponseWriter, r *http.Request) {

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/repositories"
 
 	"github.com/google/uuid"
 )
@@ -114,7 +115,7 @@ func TestAnalyticsService_GetCurrentHoldings_isolation(t *testing.T) {
 	seedSvcTrade(t, userA, "AAPL", "5", "150.00")
 	seedSvcTrade(t, userB, "AAPL", "100", "150.00")
 
-	svc := NewAnalyticsService(database.GetPool())
+	svc := NewAnalyticsService(repositories.NewPostgresAnalyticsRepository(database.GetPool()))
 	holdings, err := svc.GetCurrentHoldings(context.Background(), userA)
 	if err != nil {
 		t.Fatalf("GetCurrentHoldings() error = %v", err)
@@ -137,7 +138,7 @@ func TestAnalyticsService_GetNetWorthSummary_isolation(t *testing.T) {
 	seedSvcTrade(t, userA, "AAPL", "5", "150.00")
 	seedSvcCashFlow(t, userB, "50000")
 
-	svc := NewAnalyticsService(database.GetPool())
+	svc := NewAnalyticsService(repositories.NewPostgresAnalyticsRepository(database.GetPool()))
 	summary, err := svc.GetNetWorthSummary(context.Background(), userA)
 	if err != nil {
 		t.Fatalf("GetNetWorthSummary() error = %v", err)

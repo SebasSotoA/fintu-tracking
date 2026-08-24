@@ -12,8 +12,6 @@ import (
 	"time"
 
 	"fintu-tracking-backend/internal/config"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // RefreshResult summarizes a market price refresh run.
@@ -32,11 +30,11 @@ type TwelveDataService struct {
 	baseURL    string
 }
 
-// NewTwelveDataService creates a service backed by the given DB pool.
-func NewTwelveDataService(pool *pgxpool.Pool) *TwelveDataService {
+// NewTwelveDataService creates a service backed by the given store.
+func NewTwelveDataService(store MarketDataStore) *TwelveDataService {
 	return &TwelveDataService{
 		apiKey:     os.Getenv("TWELVE_DATA_API_KEY"),
-		store:      NewPostgresMarketDataStore(pool),
+		store:      store,
 		httpClient: &http.Client{Timeout: 15 * time.Second},
 		baseURL:    config.TwelveDataBaseURL,
 	}

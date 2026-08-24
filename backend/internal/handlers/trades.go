@@ -12,7 +12,6 @@ import (
 	"fintu-tracking-backend/internal/httpx"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/models"
-	"fintu-tracking-backend/internal/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -98,7 +97,7 @@ func ListTrades(w http.ResponseWriter, r *http.Request) {
 		trades = append(trades, trade)
 	}
 
-	realizedMap, realizedErr := services.NewAnalyticsService(database.GetPool()).RealizedPLByTradeID(r.Context(), userID)
+	realizedMap, realizedErr := analyticsService.RealizedPLByTradeID(r.Context(), userID)
 	if realizedErr == nil {
 		for i := range trades {
 			if trades[i].Side != "sell" {

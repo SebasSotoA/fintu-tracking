@@ -1,34 +1,8 @@
 package services
 
 import (
-	"fmt"
-
 	"github.com/shopspring/decimal"
 )
-
-const cashFlowsBalanceCaseExpr = `
-  CASE
-    WHEN type = 'deposit' THEN usd_amount
-    WHEN type = 'withdrawal' THEN -usd_amount
-    WHEN type = 'cash_adjustment' THEN usd_amount
-    WHEN type = 'fee' AND related_trade_id IS NULL AND related_cash_flow_id IS NULL THEN -usd_amount
-    ELSE 0
-  END`
-
-const netTradeCashFlowCaseExpr = `
-  CASE
-    WHEN side = 'buy' AND COALESCE(is_opening_position, false) = false THEN (quantity * price + COALESCE(total_fees, 0))
-    WHEN side = 'sell' THEN -(quantity * price - COALESCE(total_fees, 0))
-    ELSE 0
-  END`
-
-func cashFlowsBalanceSQL() string {
-	return fmt.Sprintf(`SELECT COALESCE(SUM(%s), 0) FROM cash_flows WHERE user_id = $1`, cashFlowsBalanceCaseExpr)
-}
-
-func netTradeCashFlowSQL() string {
-	return fmt.Sprintf(`SELECT COALESCE(SUM(%s), 0) FROM trades WHERE user_id = $1`, netTradeCashFlowCaseExpr)
-}
 
 func portfolioCashAfterTrades(cashFromFlows, tradeCosts decimal.Decimal) decimal.Decimal {
 	return cashFromFlows.Sub(tradeCosts)

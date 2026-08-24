@@ -30,11 +30,10 @@ func TestFetchQuote_success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := &TwelveDataService{
-		apiKey:     "test-key",
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	price, day, currency, err := svc.FetchQuote(context.Background(), "aapl")
 	if err != nil {
@@ -58,11 +57,10 @@ func TestFetchQuote_rateLimitHTTP429(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := &TwelveDataService{
-		apiKey:     "test-key",
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	_, _, _, err := svc.FetchQuote(context.Background(), "AAPL")
 	if err == nil {
@@ -80,11 +78,10 @@ func TestFetchQuote_apiErrorBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := &TwelveDataService{
-		apiKey:     "test-key",
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	_, _, _, err := svc.FetchQuote(context.Background(), "AAPL")
 	if err == nil {
@@ -96,7 +93,8 @@ func TestFetchQuote_apiErrorBody(t *testing.T) {
 }
 
 func TestFetchQuote_missingAPIKey(t *testing.T) {
-	svc := &TwelveDataService{apiKey: ""}
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = ""
 
 	_, _, _, err := svc.FetchQuote(context.Background(), "AAPL")
 	if err == nil {
@@ -121,7 +119,7 @@ func TestRefreshMarketPrices_skipsFreshTickers(t *testing.T) {
 	store.marketPrices["AAPL"] = models.MarketPrice{Ticker: "AAPL", Price: "180.00", Currency: "USD", UpdatedAt: time.Now()}
 	store.marketPrices["MSFT"] = models.MarketPrice{Ticker: "MSFT", Price: "330.00", Currency: "USD", UpdatedAt: time.Now()}
 
-	svc := &TwelveDataService{store: store}
+	svc := NewTwelveDataService(store)
 	result, err := svc.RefreshMarketPrices(context.Background(), "user-1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -154,12 +152,10 @@ func TestRefreshMarketPrices_fetchesOnlyStaleTickers(t *testing.T) {
 	store.marketPrices["AAPL"] = models.MarketPrice{Ticker: "AAPL", Price: "180.00", Currency: "USD", UpdatedAt: time.Now().Add(-48 * time.Hour)}
 	store.marketPrices["MSFT"] = models.MarketPrice{Ticker: "MSFT", Price: "330.00", Currency: "USD", UpdatedAt: time.Now()}
 
-	svc := &TwelveDataService{
-		store:      store,
-		apiKey:     "test-key",
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewTwelveDataService(store)
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	result, err := svc.RefreshMarketPrices(context.Background(), "user-1")
 	if err != nil {
@@ -178,7 +174,7 @@ func TestRefreshMarketPrices_fetchesOnlyStaleTickers(t *testing.T) {
 
 func TestRefreshMarketPrices_handlesEmptyHoldings(t *testing.T) {
 	store := newFakeMarketDataStore()
-	svc := &TwelveDataService{store: store}
+	svc := NewTwelveDataService(store)
 	result, err := svc.RefreshMarketPrices(context.Background(), "user-1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -193,7 +189,7 @@ func TestRefreshMarketPrices_allowsFirstRefreshAndRecordsTimestamp(t *testing.T)
 	store.heldTickers = []string{"AAPL"}
 	store.marketPrices["AAPL"] = models.MarketPrice{Ticker: "AAPL", Price: "180.00", Currency: "USD", UpdatedAt: time.Now()}
 
-	svc := &TwelveDataService{store: store}
+	svc := NewTwelveDataService(store)
 
 	result, err := svc.RefreshMarketPrices(context.Background(), "user-1")
 	if err != nil {
@@ -224,12 +220,10 @@ func TestRefreshMarketPrices_rejectsDuringCooldown(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := &TwelveDataService{
-		store:      store,
-		apiKey:     "test-key",
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewTwelveDataService(store)
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	result, err := svc.RefreshMarketPrices(context.Background(), "user-1")
 	if err == nil {
@@ -263,12 +257,10 @@ func TestRefreshMarketPrices_propagatesRateLimit(t *testing.T) {
 	store := newFakeMarketDataStore()
 	store.heldTickers = []string{"AAPL", "MSFT"}
 
-	svc := &TwelveDataService{
-		store:      store,
-		apiKey:     "test-key",
-		httpClient: server.Client(),
-		baseURL:    server.URL,
-	}
+	svc := NewTwelveDataService(store)
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
 
 	result, err := svc.RefreshMarketPrices(context.Background(), "user-1")
 	if err == nil {

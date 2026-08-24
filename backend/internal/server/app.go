@@ -12,6 +12,7 @@ import (
 	"fintu-tracking-backend/internal/handlers"
 	"fintu-tracking-backend/internal/httpx"
 	mw "fintu-tracking-backend/internal/middleware"
+	"fintu-tracking-backend/internal/repositories"
 	"fintu-tracking-backend/internal/services"
 
 	"github.com/go-chi/chi/v5"
@@ -34,13 +35,34 @@ func Bootstrap(ctx context.Context) (*Deps, error) {
 		return nil, fmt.Errorf("database connect: %w", err)
 	}
 
+	pool := database.GetPool()
+
+	// Repositories
+	billingRepo := repositories.NewPostgresBillingRepository(pool)
+	brokerRepo := repositories.NewPostgresBrokerRepository(pool)
+	profileRepo := repositories.NewPostgresProfileRepository(pool)
+	feeRepo := repositories.NewPostgresFeeRepository(pool)
+	analyticsRepo := repositories.NewPostgresAnalyticsRepository(pool)
+	marketDataStore := repositories.NewPostgresMarketDataStore(pool)
+
+	// Services
 	billingProvider := services.NewNoOpBillingProvider()
-	billingSvc := services.NewBillingService(database.GetPool(), billingProvider)
+	billingSvc := services.NewBillingService(billingRepo, billingProvider)
+	brokerSvc := services.NewBrokerService(brokerRepo)
+	profileSvc := services.NewProfileService(profileRepo, billingSvc, brokerSvc)
+	exchangeRateSvc := services.NewExchangeRateService(marketDataStore)
+	twelveDataSvc := services.NewTwelveDataService(marketDataStore)
+	feeSvc := services.NewFeeService(feeRepo)
+	analyticsSvc := services.NewAnalyticsService(analyticsRepo)
+
+	// Wire into handlers
 	handlers.InitBillingService(billingSvc)
-	handlers.InitExchangeRateService()
-	handlers.InitTwelveDataService()
-	handlers.InitBrokerService(database.GetPool())
-	handlers.InitProfileService(database.GetPool())
+	handlers.InitExchangeRateService(exchangeRateSvc)
+	handlers.InitTwelveDataService(twelveDataSvc)
+	handlers.InitBrokerService(brokerSvc)
+	handlers.InitProfileService(profileSvc)
+	handlers.InitFeeService(feeSvc)
+	handlers.InitAnalyticsService(analyticsSvc)
 
 	return &Deps{BillingSvc: billingSvc}, nil
 }

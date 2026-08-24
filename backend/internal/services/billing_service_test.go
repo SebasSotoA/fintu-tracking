@@ -7,13 +7,14 @@ import (
 
 	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/repositories"
 )
 
 func TestBillingService_GetOrCreateClosedBetaSubscription_CreatesPlanAndSubscription(t *testing.T) {
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
 
 	sub, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID)
 	if err != nil {
@@ -39,7 +40,7 @@ func TestBillingService_GetOrCreateClosedBetaSubscription_IsIdempotent(t *testin
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
 
 	sub1, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID)
 	if err != nil {
@@ -65,7 +66,7 @@ func TestBillingService_GetSubscription_Isolation(t *testing.T) {
 
 	userA := newTestUserID(t)
 	userB := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
 
 	if _, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userA); err != nil {
 		t.Fatalf("create subscription A: %v", err)
@@ -89,7 +90,7 @@ func TestBillingService_CreateSubscription_ProviderAndPaidPlanGates(t *testing.T
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
 
 	if _, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID); err != nil {
 		t.Fatalf("create closed_beta subscription: %v", err)
@@ -134,7 +135,7 @@ func TestBillingService_ListPlans_IncludesCurrentPrivatePlan(t *testing.T) {
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
 
 	if _, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID); err != nil {
 		t.Fatalf("create closed_beta subscription: %v", err)
@@ -171,7 +172,7 @@ func TestBillingService_CreateSubscription_UnknownPlan(t *testing.T) {
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
 
 	_, err := svc.CreateSubscription(context.Background(), userID, models.CreateSubscriptionRequest{
 		PlanID:          "nonexistent",
@@ -187,7 +188,7 @@ func TestBillingService_CancelSubscription_Isolation(t *testing.T) {
 
 	userA := newTestUserID(t)
 	userB := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
 
 	if _, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userA); err != nil {
 		t.Fatalf("create subscription A: %v", err)
@@ -214,8 +215,8 @@ func TestBillingService_CancelSubscription_ManualKeepsActiveWithCancelAtPeriodEn
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
-	profileSvc := NewProfileService(database.GetPool(), svc, nil)
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
+	profileSvc := NewProfileService(repositories.NewPostgresProfileRepository(database.GetPool()), svc, nil)
 
 	profile, err := profileSvc.GetOrCreateProfile(context.Background(), userID)
 	if err != nil {
@@ -260,8 +261,8 @@ func TestBillingService_GetOrCreateClosedBetaSubscription_ReactivatesCanceled(t 
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
-	profileSvc := NewProfileService(database.GetPool(), svc, nil)
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
+	profileSvc := NewProfileService(repositories.NewPostgresProfileRepository(database.GetPool()), svc, nil)
 
 	sub, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID)
 	if err != nil {
@@ -319,7 +320,7 @@ func TestBillingService_CreateSubscription_ReactivatesCanceledClosedBeta(t *test
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
 
 	sub, err := svc.GetOrCreateClosedBetaSubscription(context.Background(), userID)
 	if err != nil {
@@ -359,7 +360,7 @@ func TestBillingService_GetOrCreateClosedBetaSubscription_DoesNotReactivatePaidP
 	skipIfNoSvcTestDB(t)
 
 	userID := newTestUserID(t)
-	svc := NewBillingService(database.GetPool(), NewNoOpBillingProvider())
+	svc := NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), NewNoOpBillingProvider())
 
 	execSvcSQL(t, `
 		INSERT INTO subscriptions (user_id, plan_id, status, billing_provider)

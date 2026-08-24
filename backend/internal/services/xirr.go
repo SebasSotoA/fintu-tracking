@@ -6,7 +6,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 )
 
@@ -15,41 +14,28 @@ type xirrCashFlow struct {
 	amount decimal.Decimal
 }
 
-// calculateXIRR approximates money-weighted return from deposit/withdrawal cash flows.
-// Returns annualized rate as decimal fraction (e.g. 0.12 = 12%). Zero if not computable.
-func calculateXIRR(ctx context.Context, pool *pgxpool.Pool, userID string, terminalValue decimal.Decimal, asOf time.Time) (decimal.Decimal, error) {
-	rows, err := pool.Query(ctx, `
-		SELECT date, type, usd_amount
-		FROM cash_flows
-		WHERE user_id = $1 AND type IN ('deposit', 'withdrawal')
-		ORDER BY date ASC
-	`, userID)
+// calculateXIRR approximates money-weighted return from deposit/withdrawal
+// cash flows. Returns annualized rate as decimal fraction (e.g. 0.12 = 12%).
+// Zero if not computable. It is a method on AnalyticsService so it uses the
+// repository and stays unit-testable.
+func (s *AnalyticsService) calculateXIRR(ctx context.Context, userID string, terminalValue decimal.Decimal, asOf time.Time) (decimal.Decimal, error) {
+	rows, err := s.repo.GetXIRRCashFlows(ctx, userID)
 	if err != nil {
 		return decimal.Zero, fmt.Errorf("load cash flows for xirr: %w", err)
 	}
-	defer rows.Close()
 
-	flows := make([]xirrCashFlow, 0)
-	for rows.Next() {
-		var date time.Time
-		var flowType string
-		var amount string
-		if err := rows.Scan(&date, &flowType, &amount); err != nil {
-			return decimal.Zero, err
-		}
-		amt, err := decimal.NewFromString(amount)
+	flows := make([]xirrCashFlow, 0, len(rows))
+	for _, row := range rows {
+		amt, err := decimal.NewFromString(row.USDAmount)
 		if err != nil {
 			continue
 		}
-		switch flowType {
+		switch row.Type {
 		case "deposit":
-			flows = append(flows, xirrCashFlow{date: date, amount: amt})
+			flows = append(flows, xirrCashFlow{date: row.Date, amount: amt})
 		case "withdrawal":
-			flows = append(flows, xirrCashFlow{date: date, amount: amt.Neg()})
+			flows = append(flows, xirrCashFlow{date: row.Date, amount: amt.Neg()})
 		}
-	}
-	if err := rows.Err(); err != nil {
-		return decimal.Zero, err
 	}
 	if len(flows) == 0 {
 		return decimal.Zero, nil

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 
@@ -33,31 +34,35 @@ func sellProceeds(qty, price, totalFees decimal.Decimal) decimal.Decimal {
 
 // RealizedPLByTradeID maps sell trade IDs to realized P/L (USD) using average cost per ticker.
 func (s *AnalyticsService) RealizedPLByTradeID(ctx context.Context, userID string) (map[string]decimal.Decimal, error) {
-	rows, err := s.pool.Query(ctx, `
-		SELECT id, date, created_at, ticker, side, quantity, price, COALESCE(total_fees, 0)
-		FROM trades
-		WHERE user_id = $1
-		ORDER BY date ASC, created_at ASC
-	`, userID)
+	rows, err := s.repo.GetRealizedPLTrades(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var trades []tradeForRealized
-	for rows.Next() {
-		var t tradeForRealized
-		var qtyStr, priceStr, feesStr string
-		if err := rows.Scan(&t.ID, &t.Date, &t.CreatedAt, &t.Ticker, &t.Side, &qtyStr, &priceStr, &feesStr); err != nil {
-			return nil, err
+	for _, row := range rows {
+		qty, err := decimal.NewFromString(row.Quantity)
+		if err != nil {
+			return nil, fmt.Errorf("parse realized pl quantity %q: %w", row.Quantity, err)
 		}
-		t.Quantity, _ = decimal.NewFromString(qtyStr)
-		t.Price, _ = decimal.NewFromString(priceStr)
-		t.TotalFees, _ = decimal.NewFromString(feesStr)
-		trades = append(trades, t)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+		price, err := decimal.NewFromString(row.Price)
+		if err != nil {
+			return nil, fmt.Errorf("parse realized pl price %q: %w", row.Price, err)
+		}
+		fees, err := decimal.NewFromString(row.TotalFees)
+		if err != nil {
+			return nil, fmt.Errorf("parse realized pl fees %q: %w", row.TotalFees, err)
+		}
+		trades = append(trades, tradeForRealized{
+			ID:        row.ID,
+			Date:      row.Date,
+			CreatedAt: row.CreatedAt,
+			Ticker:    row.Ticker,
+			Side:      row.Side,
+			Quantity:  qty,
+			Price:     price,
+			TotalFees: fees,
+		})
 	}
 
 	sort.Slice(trades, func(i, j int) bool {

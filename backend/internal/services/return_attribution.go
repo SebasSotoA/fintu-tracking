@@ -25,8 +25,7 @@ func (s *AnalyticsService) CalculateReturnAttribution(ctx context.Context, userI
 		NetReturnPct:       "0",
 	}
 
-	var startingCapitalStr string
-	err := s.pool.QueryRow(ctx, netInvestedSQL(), userID).Scan(&startingCapitalStr)
+	startingCapitalStr, err := s.repo.GetNetInvested(ctx, userID)
 	if err != nil {
 		return attribution, fmt.Errorf("failed to calculate total invested: %w", err)
 	}
@@ -37,64 +36,31 @@ func (s *AnalyticsService) CalculateReturnAttribution(ctx context.Context, userI
 	}
 	attribution.StartingCapital = startingCapital.String()
 
-	err = s.pool.QueryRow(ctx, `
-		SELECT 
-			COALESCE(SUM(CASE WHEN fee_type = 'deposit' THEN usd_amount ELSE 0 END), 0) as deposit_fees,
-			COALESCE(SUM(CASE WHEN fee_type = 'trading' THEN usd_amount ELSE 0 END), 0) as trading_fees,
-			COALESCE(SUM(CASE WHEN fee_type = 'closing' THEN usd_amount ELSE 0 END), 0) as closing_fees,
-			COALESCE(SUM(usd_amount), 0) as total_fees
-		FROM cash_flows
-		WHERE user_id = $1 AND type = 'fee'
-	`, userID).Scan(
-		&attribution.DepositFeesImpact,
-		&attribution.TradingFeesImpact,
-		&attribution.ClosingFeesImpact,
-		&attribution.TotalFeesImpact,
-	)
+	fees, err := s.repo.GetReturnAttributionFees(ctx, userID)
 	if err != nil {
 		return attribution, fmt.Errorf("failed to calculate fee impact: %w", err)
 	}
+	attribution.DepositFeesImpact = fees.DepositFees
+	attribution.TradingFeesImpact = fees.TradingFees
+	attribution.ClosingFeesImpact = fees.ClosingFees
+	attribution.TotalFeesImpact = fees.TotalFees
 
 	totalFees, _ := decimal.NewFromString(attribution.TotalFeesImpact)
 
-	rows, err := s.pool.Query(ctx, returnAttributionHoldingsSQL(), userID)
+	holdingRows, err := s.repo.GetReturnAttributionHoldings(ctx, userID)
 	if err != nil {
 		return attribution, fmt.Errorf("failed to query holdings: %w", err)
 	}
-	defer rows.Close()
 
-	totalValue := decimal.Zero
-	totalCost := decimal.Zero
+	totalValue, totalCost := sumReturnAttributionHoldings(holdingRows)
 
-	for rows.Next() {
-		var ticker string
-		var netQuantity, costBasis, currentPrice *string
-
-		if err := rows.Scan(&ticker, &netQuantity, &costBasis, &currentPrice); err != nil {
-			continue
-		}
-
-		if netQuantity != nil && costBasis != nil {
-			qty, _ := decimal.NewFromString(*netQuantity)
-			cost, _ := decimal.NewFromString(*costBasis)
-			totalCost = totalCost.Add(cost)
-
-			if currentPrice != nil && qty.GreaterThan(decimal.Zero) {
-				price, _ := decimal.NewFromString(*currentPrice)
-				value := qty.Mul(price)
-				totalValue = totalValue.Add(value)
-			}
-		}
-	}
-
-	var cashFlowsBalance string
-	err = s.pool.QueryRow(ctx, cashFlowsBalanceSQL(), userID).Scan(&cashFlowsBalance)
+	cashFlowsBalance, err := s.repo.GetCashFlowsBalance(ctx, userID)
 	if err != nil {
 		cashFlowsBalance = "0"
 	}
 
-	var tradeCosts string
-	if err := s.pool.QueryRow(ctx, netTradeCashFlowSQL(), userID).Scan(&tradeCosts); err != nil {
+	tradeCosts, err := s.repo.GetNetTradeCashFlow(ctx, userID)
+	if err != nil {
 		tradeCosts = "0"
 	}
 
@@ -125,4 +91,34 @@ func (s *AnalyticsService) CalculateReturnAttribution(ctx context.Context, userI
 	}
 
 	return attribution, nil
+}
+
+// sumReturnAttributionHoldings folds the joined holdings rows into total
+// market value and total cost. Rows with null quantity/cost are skipped; rows
+// with null price contribute cost but no value (consistent with the prior
+// scan-and-continue behavior).
+func sumReturnAttributionHoldings(rows []models.AnalyticsReturnAttributionHoldingRow) (totalValue, totalCost decimal.Decimal) {
+	for _, row := range rows {
+		if row.NetQuantity == nil || row.TotalCost == nil {
+			continue
+		}
+		qty, err := decimal.NewFromString(*row.NetQuantity)
+		if err != nil {
+			continue
+		}
+		cost, err := decimal.NewFromString(*row.TotalCost)
+		if err != nil {
+			continue
+		}
+		totalCost = totalCost.Add(cost)
+
+		if row.CurrentPrice != nil && qty.GreaterThan(decimal.Zero) {
+			price, err := decimal.NewFromString(*row.CurrentPrice)
+			if err != nil {
+				continue
+			}
+			totalValue = totalValue.Add(qty.Mul(price))
+		}
+	}
+	return totalValue, totalCost
 }

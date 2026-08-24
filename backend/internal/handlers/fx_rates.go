@@ -23,12 +23,12 @@ import (
 
 // exchangeRateSvc is a package-level singleton so the in-memory cache persists
 // across requests for the lifetime of the process.
-var exchangeRateSvc = services.NewExchangeRateService(nil)
+var exchangeRateSvc *services.ExchangeRateService
 
-// InitExchangeRateService wires the DB pool into the singleton. Call this after
-// database.Connect() in main.go.
-func InitExchangeRateService() {
-	exchangeRateSvc = services.NewExchangeRateService(database.GetPool())
+// InitExchangeRateService sets the package-level exchange rate service used by
+// handlers. It is called once from Bootstrap after the DB pool is available.
+func InitExchangeRateService(svc *services.ExchangeRateService) {
+	exchangeRateSvc = svc
 }
 
 // ListFxRates returns all FX rates for the authenticated user

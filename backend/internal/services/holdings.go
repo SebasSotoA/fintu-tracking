@@ -89,82 +89,53 @@ func (s *AnalyticsService) GetCurrentHoldingsByMarketValue(ctx context.Context, 
 }
 
 func (s *AnalyticsService) loadHoldingTrades(ctx context.Context, userID string) ([]holdingTradeRow, error) {
-	rows, err := s.pool.Query(ctx, `
-		SELECT date, created_at, ticker, asset_type, side, quantity, price, COALESCE(total_fees, 0)
-		FROM trades
-		WHERE user_id = $1
-		ORDER BY date ASC, created_at ASC
-	`, userID)
+	rows, err := s.repo.LoadHoldingTrades(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("load holding trades: %w", err)
-	}
-	defer rows.Close()
-
-	trades := make([]holdingTradeRow, 0)
-	for rows.Next() {
-		var tr holdingTradeRow
-		var qtyStr, priceStr, feesStr string
-		if err := rows.Scan(
-			&tr.Date,
-			&tr.CreatedAt,
-			&tr.Ticker,
-			&tr.AssetType,
-			&tr.Side,
-			&qtyStr,
-			&priceStr,
-			&feesStr,
-		); err != nil {
-			return nil, fmt.Errorf("scan holding trade: %w", err)
-		}
-
-		tr.Quantity, err = decimal.NewFromString(qtyStr)
-		if err != nil {
-			return nil, fmt.Errorf("parse trade quantity %q: %w", qtyStr, err)
-		}
-		tr.Price, err = decimal.NewFromString(priceStr)
-		if err != nil {
-			return nil, fmt.Errorf("parse trade price %q: %w", priceStr, err)
-		}
-		tr.TotalFees, err = decimal.NewFromString(feesStr)
-		if err != nil {
-			return nil, fmt.Errorf("parse trade fees %q: %w", feesStr, err)
-		}
-
-		trades = append(trades, tr)
+		return nil, err
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate holding trades: %w", err)
+	trades := make([]holdingTradeRow, 0, len(rows))
+	for _, row := range rows {
+		qty, err := decimal.NewFromString(row.Quantity)
+		if err != nil {
+			return nil, fmt.Errorf("parse trade quantity %q: %w", row.Quantity, err)
+		}
+		price, err := decimal.NewFromString(row.Price)
+		if err != nil {
+			return nil, fmt.Errorf("parse trade price %q: %w", row.Price, err)
+		}
+		fees, err := decimal.NewFromString(row.TotalFees)
+		if err != nil {
+			return nil, fmt.Errorf("parse trade fees %q: %w", row.TotalFees, err)
+		}
+		trades = append(trades, holdingTradeRow{
+			Date:      row.Date,
+			CreatedAt: row.CreatedAt,
+			Ticker:    row.Ticker,
+			AssetType: row.AssetType,
+			Side:      row.Side,
+			Quantity:  qty,
+			Price:     price,
+			TotalFees: fees,
+		})
 	}
-
 	return trades, nil
 }
 
 func (s *AnalyticsService) loadMarketPrices(ctx context.Context) (map[string]marketPriceInfo, error) {
-	rows, err := s.pool.Query(ctx, `SELECT ticker, price, updated_at FROM market_prices`)
+	rows, err := s.repo.LoadMarketPrices(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("load market prices: %w", err)
+		return nil, err
 	}
-	defer rows.Close()
 
-	prices := make(map[string]marketPriceInfo)
-	for rows.Next() {
-		var ticker, priceStr string
-		var updatedAt *time.Time
-		if err := rows.Scan(&ticker, &priceStr, &updatedAt); err != nil {
-			return nil, fmt.Errorf("scan market price: %w", err)
-		}
-		price, err := decimal.NewFromString(priceStr)
+	prices := make(map[string]marketPriceInfo, len(rows))
+	for _, row := range rows {
+		price, err := decimal.NewFromString(row.Price)
 		if err != nil {
-			return nil, fmt.Errorf("parse market price %q: %w", priceStr, err)
+			return nil, fmt.Errorf("parse market price %q: %w", row.Price, err)
 		}
-		prices[ticker] = marketPriceInfo{price: price, updatedAt: updatedAt}
+		prices[row.Ticker] = marketPriceInfo{price: price, updatedAt: row.UpdatedAt}
 	}
-
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate market prices: %w", err)
-	}
-
 	return prices, nil
 }
 

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"fintu-tracking-backend/internal/database"
+	"fintu-tracking-backend/internal/repositories"
 	"fintu-tracking-backend/internal/services"
 
 	"github.com/go-chi/chi/v5"
@@ -45,7 +46,7 @@ func TestGetSubscription_ReturnsClosedBeta(t *testing.T) {
 	skipIfNoTestDB(t)
 	userID := newTestUserID(t)
 
-	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	billingSvc := services.NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
 	if _, err := billingSvc.GetOrCreateClosedBetaSubscription(context.Background(), userID); err != nil {
@@ -76,7 +77,7 @@ func TestCreateSubscription_ValidationErrors(t *testing.T) {
 	skipIfNoTestDB(t)
 	userID := newTestUserID(t)
 
-	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	billingSvc := services.NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
 	app := chi.NewRouter()
@@ -99,7 +100,7 @@ func TestCreateSubscription_Isolation(t *testing.T) {
 	userA := newTestUserID(t)
 	userB := newTestUserID(t)
 
-	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	billingSvc := services.NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
 	// Create subscription for user A first.
@@ -133,7 +134,7 @@ func TestCancelSubscription_Success(t *testing.T) {
 	skipIfNoTestDB(t)
 	userID := newTestUserID(t)
 
-	billingSvc := services.NewBillingService(database.GetPool(), services.NewNoOpBillingProvider())
+	billingSvc := services.NewBillingService(repositories.NewPostgresBillingRepository(database.GetPool()), services.NewNoOpBillingProvider())
 	InitBillingService(billingSvc)
 
 	if _, err := billingSvc.GetOrCreateClosedBetaSubscription(context.Background(), userID); err != nil {

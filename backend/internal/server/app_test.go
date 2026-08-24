@@ -10,12 +10,13 @@ import (
 	"strings"
 	"testing"
 
+	"fintu-tracking-backend/internal/repositories"
 	"fintu-tracking-backend/internal/services"
 )
 
 func TestNewApp_registersHealthRoute(t *testing.T) {
 	deps := &Deps{
-		BillingSvc: services.NewBillingService(nil, services.NewNoOpBillingProvider()),
+		BillingSvc: services.NewBillingService(repositories.NewPostgresBillingRepository(nil), services.NewNoOpBillingProvider()),
 	}
 	app := NewApp(deps)
 
@@ -47,7 +48,7 @@ func TestNewApp_registersHealthRoute(t *testing.T) {
 
 func TestNewApp_registersMeRoute(t *testing.T) {
 	deps := &Deps{
-		BillingSvc: services.NewBillingService(nil, services.NewNoOpBillingProvider()),
+		BillingSvc: services.NewBillingService(repositories.NewPostgresBillingRepository(nil), services.NewNoOpBillingProvider()),
 	}
 	app := NewApp(deps)
 
@@ -63,7 +64,7 @@ func TestNewApp_registersMeRoute(t *testing.T) {
 
 func TestNewApp_healthNotUnderAPIPrefix(t *testing.T) {
 	deps := &Deps{
-		BillingSvc: services.NewBillingService(nil, services.NewNoOpBillingProvider()),
+		BillingSvc: services.NewBillingService(repositories.NewPostgresBillingRepository(nil), services.NewNoOpBillingProvider()),
 	}
 	app := NewApp(deps)
 
@@ -108,7 +109,7 @@ func TestNewApp_corsAllowsFrontendURLOrigin(t *testing.T) {
 	t.Setenv("AWS_LAMBDA_RUNTIME_API", "")
 
 	deps := &Deps{
-		BillingSvc: services.NewBillingService(nil, services.NewNoOpBillingProvider()),
+		BillingSvc: services.NewBillingService(repositories.NewPostgresBillingRepository(nil), services.NewNoOpBillingProvider()),
 	}
 	app := NewApp(deps)
 
@@ -138,7 +139,7 @@ func TestNewApp_warnsWhenLambdaMissingFrontendURL(t *testing.T) {
 	})
 
 	deps := &Deps{
-		BillingSvc: services.NewBillingService(nil, services.NewNoOpBillingProvider()),
+		BillingSvc: services.NewBillingService(repositories.NewPostgresBillingRepository(nil), services.NewNoOpBillingProvider()),
 	}
 	NewApp(deps)
 
@@ -159,7 +160,7 @@ func TestNewApp_noLambdaWarningWhenFrontendURLSet(t *testing.T) {
 	})
 
 	deps := &Deps{
-		BillingSvc: services.NewBillingService(nil, services.NewNoOpBillingProvider()),
+		BillingSvc: services.NewBillingService(repositories.NewPostgresBillingRepository(nil), services.NewNoOpBillingProvider()),
 	}
 	NewApp(deps)
 

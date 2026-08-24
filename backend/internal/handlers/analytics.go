@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	"fintu-tracking-backend/internal/database"
 	"fintu-tracking-backend/internal/httpx"
 	"fintu-tracking-backend/internal/middleware"
 	"fintu-tracking-backend/internal/services"
@@ -20,7 +19,6 @@ func GetFeeBreakdown(w http.ResponseWriter, r *http.Request) {
 
 	dateRange := parseDateRange(r)
 
-	feeService := services.NewFeeService(database.GetPool())
 	breakdown, err := feeService.GetTotalFeesByType(r.Context(), userID, dateRange)
 	if err != nil {
 		httpx.JSON(w, http.StatusInternalServerError, map[string]any{
@@ -48,7 +46,6 @@ func GetFeeImpact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	feeService := services.NewFeeService(database.GetPool())
 	impact, err := feeService.GetFeeImpactOnReturn(r.Context(), userID, ticker)
 	if err != nil {
 		httpx.JSON(w, http.StatusInternalServerError, map[string]any{
@@ -72,7 +69,6 @@ func GetFeeEfficiency(w http.ResponseWriter, r *http.Request) {
 		groupBy = "ticker"
 	}
 
-	feeService := services.NewFeeService(database.GetPool())
 	efficiency, err := feeService.GetFeeEfficiency(r.Context(), userID, groupBy)
 	if err != nil {
 		httpx.JSON(w, http.StatusInternalServerError, map[string]any{
@@ -92,7 +88,6 @@ func GetReturnAttribution(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	analyticsService := services.NewAnalyticsService(database.GetPool())
 	attribution, err := analyticsService.CalculateReturnAttribution(r.Context(), userID)
 	if err != nil {
 		httpx.JSON(w, http.StatusInternalServerError, map[string]any{
@@ -112,7 +107,6 @@ func GetFXImpact(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	analyticsService := services.NewAnalyticsService(database.GetPool())
 	fxReport, err := analyticsService.CalculateFXImpact(r.Context(), userID)
 	if err != nil {
 		httpx.JSON(w, http.StatusInternalServerError, map[string]any{
@@ -136,7 +130,6 @@ func GetPerformanceTimeSeries(w http.ResponseWriter, r *http.Request) {
 		interval = "day"
 	}
 
-	analyticsService := services.NewAnalyticsService(database.GetPool())
 	timeSeries, err := analyticsService.GetPerformanceTimeSeries(r.Context(), userID, interval)
 	if err != nil {
 		httpx.JSON(w, http.StatusInternalServerError, map[string]any{
@@ -156,7 +149,6 @@ func GetNetWorth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	analyticsService := services.NewAnalyticsService(database.GetPool())
 	netWorth, err := analyticsService.GetNetWorthSummary(r.Context(), userID)
 	if err != nil {
 		httpx.JSON(w, http.StatusInternalServerError, map[string]any{
@@ -176,7 +168,6 @@ func GetCashReconciliation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	feeService := services.NewFeeService(database.GetPool())
 	report, err := feeService.ReconcileCashFlowFees(r.Context(), userID)
 	if err != nil {
 		httpx.JSON(w, http.StatusInternalServerError, map[string]any{

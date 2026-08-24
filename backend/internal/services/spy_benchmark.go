@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 	"fintu-tracking-backend/internal/models"
 )
@@ -15,38 +14,26 @@ type spyPricePoint struct {
 	price decimal.Decimal
 }
 
-// attachSPYBenchmark sets SpyIndexed on each point (indexed to 100 at first portfolio date).
-func attachSPYBenchmark(ctx context.Context, pool *pgxpool.Pool, points []models.PerformancePoint) ([]models.PerformancePoint, error) {
+// attachSPYBenchmark sets SpyIndexed on each point (indexed to 100 at first
+// portfolio date). It is a method on AnalyticsService so it uses the
+// repository and stays unit-testable.
+func (s *AnalyticsService) attachSPYBenchmark(ctx context.Context, points []models.PerformancePoint) ([]models.PerformancePoint, error) {
 	if len(points) == 0 {
 		return points, nil
 	}
 
-	rows, err := pool.Query(ctx, `
-		SELECT updated_at::date, price::text
-		FROM market_prices
-		WHERE ticker = 'SPY'
-		ORDER BY updated_at ASC
-	`)
+	rows, err := s.repo.GetSPYBenchmarkPrices(ctx)
 	if err != nil {
-		return points, fmt.Errorf("load SPY prices: %w", err)
+		return points, fmt.Errorf("load spy prices: %w", err)
 	}
-	defer rows.Close()
 
-	spyPrices := make([]spyPricePoint, 0)
-	for rows.Next() {
-		var d time.Time
-		var p string
-		if err := rows.Scan(&d, &p); err != nil {
-			return points, err
-		}
-		price, err := decimal.NewFromString(p)
+	spyPrices := make([]spyPricePoint, 0, len(rows))
+	for _, row := range rows {
+		price, err := decimal.NewFromString(row.Price)
 		if err != nil {
 			continue
 		}
-		spyPrices = append(spyPrices, spyPricePoint{date: d, price: price})
-	}
-	if err := rows.Err(); err != nil {
-		return points, err
+		spyPrices = append(spyPrices, spyPricePoint{date: row.Date, price: price})
 	}
 	if len(spyPrices) == 0 {
 		return points, nil

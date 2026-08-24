@@ -1,15 +1,15 @@
 package services
 
-import (
-	"github.com/jackc/pgx/v5/pgxpool"
-)
-
-// AnalyticsService handles performance attribution and analysis
+// AnalyticsService handles performance attribution and analysis. It holds an
+// AnalyticsRepository (not a database pool) so it can be unit-tested with a
+// fake and so all SQL lives in the repositories package.
 type AnalyticsService struct {
-	pool *pgxpool.Pool
+	repo AnalyticsRepository
 }
 
-// NewAnalyticsService creates a new analytics service
-func NewAnalyticsService(pool *pgxpool.Pool) *AnalyticsService {
-	return &AnalyticsService{pool: pool}
+// NewAnalyticsService creates a new analytics service backed by the given
+// repository. Wire it with repositories.NewPostgresAnalyticsRepository(pool)
+// in handlers; pass a fake in unit tests.
+func NewAnalyticsService(repo AnalyticsRepository) *AnalyticsService {
+	return &AnalyticsService{repo: repo}
 }

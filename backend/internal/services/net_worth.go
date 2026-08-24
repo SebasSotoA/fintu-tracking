@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"fintu-tracking-backend/internal/config"
 	"fintu-tracking-backend/internal/models"
 	"github.com/shopspring/decimal"
 )
@@ -55,14 +54,13 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 	}
 	summary.HoldingsValue = totalHoldingsValue.String()
 
-	var cashFlowsBalance string
-	err = s.pool.QueryRow(ctx, cashFlowsBalanceSQL(), userID).Scan(&cashFlowsBalance)
+	cashFlowsBalance, err := s.repo.GetCashFlowsBalance(ctx, userID)
 	if err != nil {
 		cashFlowsBalance = "0"
 	}
 
-	var tradeCosts string
-	if err := s.pool.QueryRow(ctx, netTradeCashFlowSQL(), userID).Scan(&tradeCosts); err != nil {
+	tradeCosts, err := s.repo.GetNetTradeCashFlow(ctx, userID)
+	if err != nil {
 		tradeCosts = "0"
 	}
 
@@ -74,28 +72,20 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 	netWorth := portfolioNetWorth(totalHoldingsValue, cash)
 	summary.NetWorth = netWorth.String()
 
-	var totalInvested string
-	s.pool.QueryRow(ctx, netInvestedSQL(), userID).Scan(&totalInvested)
+	totalInvested, err := s.repo.GetNetInvested(ctx, userID)
+	if err != nil {
+		totalInvested = "0"
+	}
 	summary.TotalInvested = totalInvested
 
-	var transferFees string
-	s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(usd_amount), 0)
-		FROM cash_flows
-		WHERE user_id = $1
-		  AND type = 'fee'
-		  AND (
-		    related_cash_flow_id IS NOT NULL
-		    OR fee_type IN ('deposit', 'withdrawal')
-		  )
-	`, userID).Scan(&transferFees)
-
-	var tradeFees string
-	s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(total_fees), 0)
-		FROM trades
-		WHERE user_id = $1
-	`, userID).Scan(&tradeFees)
+	transferFees, err := s.repo.GetTransferFees(ctx, userID)
+	if err != nil {
+		transferFees = "0"
+	}
+	tradeFees, err := s.repo.GetTradingFees(ctx, userID)
+	if err != nil {
+		tradeFees = "0"
+	}
 
 	transferFeesDec, _ := decimal.NewFromString(transferFees)
 	tradeFeesDec, _ := decimal.NewFromString(tradeFees)
@@ -110,19 +100,17 @@ func (s *AnalyticsService) GetNetWorthSummary(ctx context.Context, userID string
 		summary.TotalGainLossPct = gainLossPct.String()
 	}
 
-	xirrRate, err := calculateXIRR(ctx, s.pool, userID, netWorth, time.Now())
+	xirrRate, err := s.calculateXIRR(ctx, userID, netWorth, time.Now())
 	if err == nil && !xirrRate.IsZero() {
 		summary.XIRR = xirrRate.Mul(decimal.NewFromInt(100)).StringFixed(2)
 	}
 
-	if err := s.pool.QueryRow(ctx, fmt.Sprintf(`
-		SELECT
-			COALESCE(SUM(CASE WHEN type = 'deposit' AND currency = '%s' THEN amount ELSE 0 END), 0),
-			COALESCE(SUM(CASE WHEN type = 'withdrawal' AND currency = '%s' THEN amount ELSE 0 END), 0)
-		FROM cash_flows WHERE user_id = $1
-	`, config.LocalCurrency, config.LocalCurrency), userID).Scan(&summary.TotalDepositedCOP, &summary.TotalWithdrawnCOP); err != nil {
-		return summary, fmt.Errorf("failed to sum %s deposits and withdrawals: %w", config.LocalCurrency, err)
+	totals, err := s.repo.GetLocalCurrencyTotals(ctx, userID)
+	if err != nil {
+		return summary, fmt.Errorf("failed to sum local-currency deposits and withdrawals: %w", err)
 	}
+	summary.TotalDepositedCOP = totals.TotalDeposited
+	summary.TotalWithdrawnCOP = totals.TotalWithdrawn
 
 	return summary, nil
 }
