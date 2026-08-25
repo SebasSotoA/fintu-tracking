@@ -92,7 +92,7 @@ describe("PerformanceHero", () => {
     const twrLabel = screen.getByText("Money-weighted return (XIRR)")
     const twrCell = twrLabel.closest("div")?.parentElement
     expect(twrCell).toBeTruthy()
-    expect(within(twrCell as HTMLElement).getByText("—")).toBeInTheDocument()
+    expect(within(twrCell as HTMLElement).getByText("-")).toBeInTheDocument()
   })
 
   it("shows three stats in performance summary without FX context", () => {
