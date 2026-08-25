@@ -10,6 +10,9 @@ const {
   mockSkeleton,
   mockGetNetWorth,
   mockUseHoldingsData,
+  mockKpiStrip,
+  mockAssetAllocation,
+  mockTopHoldings,
 } = vi.hoisted(() => ({
   mockNetWorthCard: vi.fn(),
   mockActivityFeed: vi.fn(),
@@ -17,6 +20,9 @@ const {
   mockSkeleton: vi.fn(),
   mockGetNetWorth: vi.fn(),
   mockUseHoldingsData: vi.fn(),
+  mockKpiStrip: vi.fn(),
+  mockAssetAllocation: vi.fn(),
+  mockTopHoldings: vi.fn(),
 }))
 
 vi.mock("next/navigation", () => ({
@@ -48,6 +54,27 @@ vi.mock("@/components/dashboard/dashboard-empty-state", () => ({
   DashboardEmptyState: () => <div data-testid="dashboard-empty-state">DashboardEmptyState</div>,
 }))
 
+vi.mock("@/components/dashboard/kpi-strip", () => ({
+  KpiStrip: (props: { initialData?: unknown }) => {
+    mockKpiStrip(props)
+    return <div data-testid="kpi-strip">KpiStrip</div>
+  },
+}))
+
+vi.mock("@/components/dashboard/asset-allocation-card", () => ({
+  AssetAllocationCard: (props: unknown) => {
+    mockAssetAllocation(props)
+    return <div data-testid="asset-allocation-card">AssetAllocation</div>
+  },
+}))
+
+vi.mock("@/components/dashboard/top-holdings-card", () => ({
+  TopHoldingsCard: (props: unknown) => {
+    mockTopHoldings(props)
+    return <div data-testid="top-holdings-card">TopHoldings</div>
+  },
+}))
+
 vi.mock("@/components/dashboard/dashboard-card-skeleton", () => ({
   ActivityFeedCardSkeleton: () => {
     mockSkeleton("ActivityFeedCardSkeleton")
@@ -71,6 +98,21 @@ vi.mock("@/hooks/use-holdings-data", () => ({
   useHoldingsData: (...args: unknown[]) => mockUseHoldingsData(...args),
 }))
 
+const mockNetWorth = {
+  holdings_value: "10000.00",
+  cash_balance: "2000.00",
+  net_worth: "12000.00",
+  total_invested: "10000.00",
+  total_fees: "50.00",
+  total_gain_loss: "2000.00",
+  total_gain_loss_pct: "20.00",
+  xirr: "0",
+  breakdown: {
+    by_asset_type: { etf: "6000.00", stock: "4000.00", crypto: "0.00" },
+    by_ticker: {},
+  },
+}
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -85,7 +127,7 @@ function renderPage() {
 describe("DashboardPage", () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    mockGetNetWorth.mockResolvedValue({})
+    mockGetNetWorth.mockResolvedValue(mockNetWorth)
     mockUseHoldingsData.mockReturnValue({
       isLoading: false,
       data: {
@@ -99,17 +141,14 @@ describe("DashboardPage", () => {
     })
   })
 
-  it("renders the top grid with responsive gap", async () => {
+  it("renders the KPI strip at the top", async () => {
     renderPage()
     await waitFor(() => {
-      expect(screen.getByTestId("net-worth-card")).toBeInTheDocument()
+      expect(screen.getByTestId("kpi-strip")).toBeInTheDocument()
     })
-    const grid = screen.getByTestId("net-worth-card").parentElement?.parentElement
-    expect(grid).toHaveClass("gap-4")
-    expect(grid).toHaveClass("md:gap-6")
   })
 
-  it("renders NetWorthCard and ActivityFeed in the top grid", async () => {
+  it("renders the top grid with NetWorthCard and ActivityFeed", async () => {
     renderPage()
     await waitFor(() => {
       expect(screen.getByTestId("net-worth-card")).toBeInTheDocument()
@@ -117,7 +156,15 @@ describe("DashboardPage", () => {
     expect(screen.getByTestId("activity-feed")).toBeInTheDocument()
   })
 
-  it("renders DashboardQuickTrade below the top grid", async () => {
+  it("renders the secondary grid with AssetAllocation and TopHoldings", async () => {
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByTestId("asset-allocation-card")).toBeInTheDocument()
+    })
+    expect(screen.getByTestId("top-holdings-card")).toBeInTheDocument()
+  })
+
+  it("renders DashboardQuickTrade below the cards", async () => {
     renderPage()
     await waitFor(() => {
       expect(screen.getByTestId("dashboard-quick-trade")).toBeInTheDocument()
