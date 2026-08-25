@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { Holding } from "@/lib/types"
 import { HoldingsTable } from "./holdings-table"
@@ -109,6 +110,22 @@ describe("HoldingsTable", () => {
       />,
     )
     expect(screen.getByText(/Some prices are stale/i)).toBeInTheDocument()
+  })
+
+  it("hides the stale banner after the user dismisses it", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(
+      <HoldingsTable
+        holdings={[sampleHolding]}
+        total={1}
+        page={1}
+        pageSize={10}
+        priceUpdatedAtByTicker={{ AAPL: "2020-01-01T00:00:00Z" }}
+      />,
+    )
+    expect(screen.getByTestId("stale-prices-banner")).toBeInTheDocument()
+    await user.click(screen.getByTestId("stale-prices-dismiss"))
+    expect(screen.queryByTestId("stale-prices-banner")).not.toBeInTheDocument()
   })
 
   it("renders pagination controls when total exceeds page size", () => {

@@ -1,9 +1,9 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { Holding } from "@/lib/types"
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { AlertCircle, Plus, X } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -88,6 +88,13 @@ export function HoldingsTable({
   )
   const formattedRefresh = formatPriceAsOf(lastPriceRefreshAt)
 
+  const [staleDismissed, setStaleDismissed] = useState(false)
+  // Re-show the banner automatically when a new refresh updates lastPriceRefreshAt.
+  useEffect(() => {
+    setStaleDismissed(false)
+  }, [lastPriceRefreshAt])
+  const showStaleBanner = hasStalePrices && !staleDismissed
+
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -171,7 +178,7 @@ export function HoldingsTable({
             </div>
             <div className="col-span-2 space-y-0.5 text-right">
               <p className="text-xs text-muted-foreground">Unrealized P/L</p>
-              <p className={cn("text-sm font-mono", isPositive ? "text-primary" : "text-destructive")}>
+              <p className={cn("text-sm font-mono", isPositive ? "text-success" : "text-destructive")}>
                 {formatCurrency(holding.unrealizedPL, MARKET_CONFIG.baseCurrency)}
                 {" "}
                 ({format(holding.unrealizedPLPercent, 2)}%)
@@ -247,7 +254,7 @@ export function HoldingsTable({
           const pl = new Decimal(holding.unrealizedPL || 0)
           const isPositive = pl.gte(0)
           return (
-            <span className={isPositive ? "text-primary" : "text-destructive"}>
+            <span className={isPositive ? "text-success" : "text-destructive"}>
               {formatCurrency(holding.unrealizedPL, MARKET_CONFIG.baseCurrency)}
             </span>
           )
@@ -262,7 +269,7 @@ export function HoldingsTable({
           const pl = new Decimal(holding.unrealizedPL || 0)
           const isPositive = pl.gte(0)
           return (
-            <span className={isPositive ? "text-primary" : "text-destructive"}>
+            <span className={isPositive ? "text-success" : "text-destructive"}>
               {format(holding.unrealizedPLPercent, 2)}%
             </span>
           )
@@ -305,7 +312,14 @@ export function HoldingsTable({
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-semibold">Current Holdings</h2>
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h2 className="text-base font-semibold">Current Holdings</h2>
+          {formattedRefresh && (
+            <p className="text-xs text-muted-foreground">
+              Prices as of {formattedRefresh}
+            </p>
+          )}
+        </div>
         <div className="flex shrink-0 items-center gap-2">
           <RefreshPricesButton />
           <DataTableColumnToggle
@@ -318,13 +332,25 @@ export function HoldingsTable({
         </div>
       </div>
 
-      {formattedRefresh && (
-        <p className="text-xs text-muted-foreground">Prices as of {formattedRefresh}</p>
-      )}
-      {hasStalePrices && (
-        <p className="text-sm text-destructive">
-          Some prices are stale (&gt;24h). Use Refresh Prices to sync market values.
-        </p>
+      {showStaleBanner && (
+        <div
+          className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm"
+          data-testid="stale-prices-banner"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
+          <p className="flex-1 text-destructive leading-snug">
+            Some prices are stale (&gt;24h). Use Refresh Prices to sync market values.
+          </p>
+          <button
+            type="button"
+            onClick={() => setStaleDismissed(true)}
+            aria-label="Dismiss stale prices warning"
+            data-testid="stale-prices-dismiss"
+            className="-m-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-destructive/70 transition-colors hover:bg-destructive/15 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
       )}
 
       <DataTable
