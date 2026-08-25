@@ -51,6 +51,7 @@ dev: check-env ensure-deps ensure-ports-free
 start-dev-servers:
 	@bash -c ' \
 		SCRIPT_DIR="$$(pwd)"; \
+		mkdir -p "$$SCRIPT_DIR/$(LOG_DIR)"; \
 		echo "Starting backend server..."; \
 		if command -v air > /dev/null 2>&1; then \
 			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && air) > $(LOG_BACKEND) 2>&1 & \
@@ -61,6 +62,8 @@ start-dev-servers:
 		BACKEND_PID=$$!; \
 		echo "   Backend PID: $$BACKEND_PID"; \
 		echo "   Backend logs: tail -f $(LOG_BACKEND)"; \
+		mkdir -p "$(PID_DIR)"; \
+		echo $$BACKEND_PID > "$(PID_DIR)/backend.pid"; \
 		echo ""; \
 		ROUTES_FILE="$$SCRIPT_DIR/$(FRONTEND_DIR)/.next/dev/types/routes.d.ts"; \
 		if [ -f "$$ROUTES_FILE" ] && ! grep -q "/dashboard" "$$ROUTES_FILE" 2>/dev/null; then \
@@ -72,16 +75,26 @@ start-dev-servers:
 		FRONTEND_PID=$$!; \
 		echo "   Frontend PID: $$FRONTEND_PID"; \
 		echo "   Frontend logs: tail -f $(LOG_FRONTEND)"; \
+		mkdir -p "$(PID_DIR)"; \
+		echo $$FRONTEND_PID > "$(PID_DIR)/frontend.pid"; \
 		echo ""; \
 		echo "Starting marketing server..."; \
 		(cd $$SCRIPT_DIR/$(MARKETING_DIR) && $(NPM) dev) > $(LOG_MARKETING) 2>&1 & \
 		MARKETING_PID=$$!; \
 		echo "   Marketing PID: $$MARKETING_PID"; \
 		echo "   Marketing logs: tail -f $(LOG_MARKETING)"; \
+		mkdir -p "$(PID_DIR)"; \
+		echo $$MARKETING_PID > "$(PID_DIR)/marketing.pid"; \
 		echo ""; \
 		port_listening() { \
 			local p=$$1; \
-			netstat -ano 2>/dev/null | grep -qi ":$$p.*LISTENING" || lsof -i:$$p > /dev/null 2>&1; \
+			if command -v ss > /dev/null 2>&1; then \
+				ss -tlnp 2>/dev/null | grep -q ":$$p "; \
+			elif command -v netstat > /dev/null 2>&1; then \
+				netstat -ano 2>/dev/null | grep -qi ":$$p.*LISTENING"; \
+			else \
+				lsof -i:$$p > /dev/null 2>&1; \
+			fi; \
 		}; \
 		process_alive() { \
 			kill -0 $$1 2>/dev/null; \
@@ -151,28 +164,26 @@ stop-backend:
 				taskkill //F //PID $$pid 2>/dev/null || true; \
 			done; \
 			sleep 1; \
-			echo "Backend stopped"; \
-		else \
-			echo "No process found on port $(BACKEND_PORT)"; \
 		fi; \
+		echo "Backend stopped"; \
 	else \
-		PIDS=$$(lsof -ti:$(BACKEND_PORT) 2>/dev/null); \
-		if [ -n "$$PIDS" ]; then \
-			echo "  Found processes on port $(BACKEND_PORT): $$PIDS"; \
-			for pid in $$PIDS; do \
-				pkill -9 -P $$pid 2>/dev/null || true; \
-				kill -9 $$pid 2>/dev/null || true; \
-			done; \
-			sleep 1; \
-			echo "Backend stopped"; \
-		else \
-			echo "No process found on port $(BACKEND_PORT)"; \
-			AIR_PIDS=$$(pgrep -f "air" 2>/dev/null || true); \
-			if [ -n "$$AIR_PIDS" ]; then \
-				echo $$AIR_PIDS | xargs kill -9 2>/dev/null || true; \
-				echo "Backend stopped"; \
+		_kill_pid_file() { \
+			local pidfile=$$1; \
+			[ -f "$$pidfile" ] && kill -9 $$(cat $$pidfile) 2>/dev/null || true; \
+			rm -f "$$pidfile"; \
+		}; \
+		_kill_by_port() { \
+			local p=$$1; \
+			if command -v ss > /dev/null 2>&1; then \
+				ss -tlnp 2>/dev/null | grep ":$$p " | grep -oP 'pid=\K\d+' | xargs kill -9 2>/dev/null || true; \
+			else \
+				lsof -ti:$$p 2>/dev/null | xargs kill -9 2>/dev/null || true; \
 			fi; \
-		fi; \
+		}; \
+		_kill_pid_file "$(PID_BACKEND)"; \
+		_kill_by_port $(BACKEND_PORT); \
+		sleep 1; \
+		echo "Backend stopped"; \
 	fi
 
 stop-frontend:
@@ -186,28 +197,26 @@ stop-frontend:
 				taskkill //F //PID $$pid 2>/dev/null || true; \
 			done; \
 			sleep 1; \
-			echo "Frontend stopped"; \
-		else \
-			echo "No process found on port $(FRONTEND_PORT)"; \
 		fi; \
+		echo "Frontend stopped"; \
 	else \
-		PIDS=$$(lsof -ti:$(FRONTEND_PORT) 2>/dev/null); \
-		if [ -n "$$PIDS" ]; then \
-			echo "  Found processes on port $(FRONTEND_PORT): $$PIDS"; \
-			for pid in $$PIDS; do \
-				pkill -9 -P $$pid 2>/dev/null || true; \
-				kill -9 $$pid 2>/dev/null || true; \
-			done; \
-			sleep 1; \
-			echo "Frontend stopped"; \
-		else \
-			echo "No process found on port $(FRONTEND_PORT)"; \
-			NEXT_PIDS=$$(pgrep -f "next dev" 2>/dev/null || true); \
-			if [ -n "$$NEXT_PIDS" ]; then \
-				echo $$NEXT_PIDS | xargs kill -9 2>/dev/null || true; \
-				echo "Frontend stopped"; \
+		_kill_pid_file() { \
+			local pidfile=$$1; \
+			[ -f "$$pidfile" ] && kill -9 $$(cat $$pidfile) 2>/dev/null || true; \
+			rm -f "$$pidfile"; \
+		}; \
+		_kill_by_port() { \
+			local p=$$1; \
+			if command -v ss > /dev/null 2>&1; then \
+				ss -tlnp 2>/dev/null | grep ":$$p " | grep -oP 'pid=\K\d+' | xargs kill -9 2>/dev/null || true; \
+			else \
+				lsof -ti:$$p 2>/dev/null | xargs kill -9 2>/dev/null || true; \
 			fi; \
-		fi; \
+		}; \
+		_kill_pid_file "$(PID_FRONTEND)"; \
+		_kill_by_port $(FRONTEND_PORT); \
+		sleep 1; \
+		echo "Frontend stopped"; \
 	fi
 
 stop-marketing:
@@ -221,28 +230,26 @@ stop-marketing:
 				taskkill //F //PID $$pid 2>/dev/null || true; \
 			done; \
 			sleep 1; \
-			echo "Marketing stopped"; \
-		else \
-			echo "No process found on port $(MARKETING_PORT)"; \
 		fi; \
+		echo "Marketing stopped"; \
 	else \
-		PIDS=$$(lsof -ti:$(MARKETING_PORT) 2>/dev/null); \
-		if [ -n "$$PIDS" ]; then \
-			echo "  Found processes on port $(MARKETING_PORT): $$PIDS"; \
-			for pid in $$PIDS; do \
-				pkill -9 -P $$pid 2>/dev/null || true; \
-				kill -9 $$pid 2>/dev/null || true; \
-			done; \
-			sleep 1; \
-			echo "Marketing stopped"; \
-		else \
-			echo "No process found on port $(MARKETING_PORT)"; \
-			ASTRO_PIDS=$$(pgrep -f "astro dev" 2>/dev/null || true); \
-			if [ -n "$$ASTRO_PIDS" ]; then \
-				echo $$ASTRO_PIDS | xargs kill -9 2>/dev/null || true; \
-				echo "Marketing stopped"; \
+		_kill_pid_file() { \
+			local pidfile=$$1; \
+			[ -f "$$pidfile" ] && kill -9 $$(cat $$pidfile) 2>/dev/null || true; \
+			rm -f "$$pidfile"; \
+		}; \
+		_kill_by_port() { \
+			local p=$$1; \
+			if command -v ss > /dev/null 2>&1; then \
+				ss -tlnp 2>/dev/null | grep ":$$p " | grep -oP 'pid=\K\d+' | xargs kill -9 2>/dev/null || true; \
+			else \
+				lsof -ti:$$p 2>/dev/null | xargs kill -9 2>/dev/null || true; \
 			fi; \
-		fi; \
+		}; \
+		_kill_pid_file "$(PID_MARKETING)"; \
+		_kill_by_port $(MARKETING_PORT); \
+		sleep 1; \
+		echo "Marketing stopped"; \
 	fi
 
 stop: stop-backend stop-frontend stop-marketing

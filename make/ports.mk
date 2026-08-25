@@ -20,6 +20,14 @@ check-port-available:
 		else \
 			echo "Port $(PORT) is available"; \
 		fi; \
+	elif command -v ss > /dev/null 2>&1; then \
+		if ss -tlnp 2>/dev/null | grep -q ":$(PORT) "; then \
+			echo "Port $(PORT) is already in use"; \
+			echo "  Run: make kill-port PORT=$(PORT)"; \
+			exit 1; \
+		else \
+			echo "Port $(PORT) is available"; \
+		fi; \
 	else \
 		if lsof -i:$(PORT) > /dev/null 2>&1; then \
 			echo "Port $(PORT) is already in use"; \
@@ -41,43 +49,42 @@ check-ports-available:
 # Ensure dev ports are free — kill any process using them
 ensure-ports-free:
 	@echo "Ensuring required ports are available..."
-	@if [ "$$(uname -s 2>/dev/null || echo Windows)" = "Windows_NT" ] || echo "$${OS:-unknown}" | grep -qi windows; then \
-		RESULT_BACKEND=$$(netstat -ano | findstr ":$(BACKEND_PORT) " | findstr "LISTENING" || true); \
-		if [ -n "$$RESULT_BACKEND" ]; then \
+	@bash -c ' \
+		_port_in_use() { \
+			local p=$$1; \
+			if command -v ss > /dev/null 2>&1; then \
+				ss -tlnp 2>/dev/null | grep -q ":$$p "; \
+			elif command -v netstat > /dev/null 2>&1; then \
+				netstat -ano 2>/dev/null | grep -qi ":$$p.*LISTENING"; \
+			else \
+				lsof -i:$$p > /dev/null 2>&1; \
+			fi; \
+		}; \
+		_kill_port() { \
+			local p=$$1; \
+			if command -v ss > /dev/null 2>&1; then \
+				ss -tlnp 2>/dev/null | grep ":$$p " | grep -oP "pid=\K\d+" | xargs kill -9 2>/dev/null || true; \
+			else \
+				lsof -ti:$$p 2>/dev/null | xargs kill -9 2>/dev/null || true; \
+			fi; \
+		}; \
+		if _port_in_use $(BACKEND_PORT); then \
 			echo "   Port $(BACKEND_PORT) in use - killing process..."; \
-			$(MAKE) kill-port PORT=$(BACKEND_PORT) > /dev/null 2>&1 || true; \
+			_kill_port $(BACKEND_PORT); \
 			sleep 1; \
 		fi; \
-		RESULT_FRONTEND=$$(netstat -ano | findstr ":$(FRONTEND_PORT) " | findstr "LISTENING" || true); \
-		if [ -n "$$RESULT_FRONTEND" ]; then \
+		if _port_in_use $(FRONTEND_PORT); then \
 			echo "   Port $(FRONTEND_PORT) in use - killing process..."; \
-			$(MAKE) kill-port PORT=$(FRONTEND_PORT) > /dev/null 2>&1 || true; \
+			_kill_port $(FRONTEND_PORT); \
 			sleep 1; \
 		fi; \
-		RESULT_MARKETING=$$(netstat -ano | findstr ":$(MARKETING_PORT) " | findstr "LISTENING" || true); \
-		if [ -n "$$RESULT_MARKETING" ]; then \
+		if _port_in_use $(MARKETING_PORT); then \
 			echo "   Port $(MARKETING_PORT) in use - killing process..."; \
-			$(MAKE) kill-port PORT=$(MARKETING_PORT) > /dev/null 2>&1 || true; \
+			_kill_port $(MARKETING_PORT); \
 			sleep 1; \
 		fi; \
-	else \
-		if lsof -i:$(BACKEND_PORT) > /dev/null 2>&1; then \
-			echo "   Port $(BACKEND_PORT) in use - killing process..."; \
-			$(MAKE) kill-port PORT=$(BACKEND_PORT) > /dev/null 2>&1 || true; \
-			sleep 1; \
-		fi; \
-		if lsof -i:$(FRONTEND_PORT) > /dev/null 2>&1; then \
-			echo "   Port $(FRONTEND_PORT) in use - killing process..."; \
-			$(MAKE) kill-port PORT=$(FRONTEND_PORT) > /dev/null 2>&1 || true; \
-			sleep 1; \
-		fi; \
-		if lsof -i:$(MARKETING_PORT) > /dev/null 2>&1; then \
-			echo "   Port $(MARKETING_PORT) in use - killing process..."; \
-			$(MAKE) kill-port PORT=$(MARKETING_PORT) > /dev/null 2>&1 || true; \
-			sleep 1; \
-		fi; \
-	fi
-	@echo "Ports $(BACKEND_PORT), $(FRONTEND_PORT), and $(MARKETING_PORT) are ready"
+		echo "Ports $(BACKEND_PORT), $(FRONTEND_PORT), and $(MARKETING_PORT) are ready"; \
+	'
 
 # Show processes using dev ports
 netstat-ports:
@@ -103,19 +110,36 @@ netstat-ports:
 		echo "$$RESULT"; \
 		echo ""; \
 		echo "  To kill a process: make kill-port PORT=<port>"; \
+	elif command -v ss > /dev/null 2>&1; then \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "  Linux - Port $(BACKEND_PORT) (Backend)"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		ss -tlnp 2>/dev/null | grep ":$(BACKEND_PORT) " || echo "No process found"; \
+		echo ""; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "  Linux - Port $(FRONTEND_PORT) (Frontend)"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		ss -tlnp 2>/dev/null | grep ":$(FRONTEND_PORT) " || echo "No process found"; \
+		echo ""; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		echo "  Linux - Port $(MARKETING_PORT) (Marketing)"; \
+		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
+		ss -tlnp 2>/dev/null | grep ":$(MARKETING_PORT) " || echo "No process found"; \
+		echo ""; \
+		echo "  To kill a process: make kill-port PORT=<port>"; \
 	else \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo "  Unix/Linux - Port $(BACKEND_PORT) (Backend)"; \
+		echo "  Unix/Linux (lsof) - Port $(BACKEND_PORT) (Backend)"; \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
 		lsof -i:$(BACKEND_PORT) || echo "No process found"; \
 		echo ""; \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo "  Unix/Linux - Port $(FRONTEND_PORT) (Frontend)"; \
+		echo "  Unix/Linux (lsof) - Port $(FRONTEND_PORT) (Frontend)"; \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
 		lsof -i:$(FRONTEND_PORT) || echo "No process found"; \
 		echo ""; \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
-		echo "  Unix/Linux - Port $(MARKETING_PORT) (Marketing)"; \
+		echo "  Unix/Linux (lsof) - Port $(MARKETING_PORT) (Marketing)"; \
 		echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"; \
 		lsof -i:$(MARKETING_PORT) || echo "No process found"; \
 		echo ""; \
@@ -143,8 +167,22 @@ kill-port:
 		else \
 			echo "No process found on port $(PORT)"; \
 		fi; \
+	elif command -v ss > /dev/null 2>&1; then \
+		echo "  Linux environment detected (ss)"; \
+		PIDS=$$(ss -tlnp 2>/dev/null | grep ":$(PORT) " | grep -oP 'pid=\K\d+' | sort -u || true); \
+		if [ -n "$$PIDS" ]; then \
+			echo "  Found processes on port $(PORT): $$PIDS"; \
+			for pid in $$PIDS; do \
+				echo "    Killing PID $$pid and its children..."; \
+				pkill -9 -P $$pid 2>/dev/null || true; \
+				kill -9 $$pid 2>/dev/null || true; \
+			done; \
+			echo "Process(es) killed"; \
+		else \
+			echo "No process found on port $(PORT)"; \
+		fi; \
 	else \
-		echo "  Unix/Linux environment detected"; \
+		echo "  Unix/Linux environment detected (lsof)"; \
 		PIDS=$$(lsof -ti:$(PORT) 2>/dev/null || true); \
 		if [ -n "$$PIDS" ]; then \
 			echo "  Found processes on port $(PORT): $$PIDS"; \

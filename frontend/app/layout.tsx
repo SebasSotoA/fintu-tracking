@@ -5,8 +5,8 @@ import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/components/providers"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-geist-sans" })
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
+const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
   title: "Fintu",

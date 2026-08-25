@@ -26,6 +26,8 @@
   --accent-foreground: oklch(0.161 0.021 251.3);
   --destructive: oklch(0.58 0.20 25);
   --destructive-foreground: oklch(0.98 0 0);
+  --success: oklch(0.55 0.18 145);
+  --success-foreground: oklch(0.98 0 0);
   --border: oklch(0.88 0.01 260);
   --input: oklch(0.95 0.01 260);
   --ring: oklch(0.585 0.204 277.1);
@@ -35,7 +37,7 @@
   --chart-4: oklch(0.670 0.177 276.9);
   --chart-5: oklch(0.751 0.023 256.8);
   --radius: 0.4375rem;
-  --sidebar: oklch(0.97 0.005 260);
+  --sidebar: var(--background);
   --sidebar-foreground: oklch(0.161 0.021 251.3);
   --sidebar-primary: oklch(0.585 0.204 277.1);
   --sidebar-primary-foreground: oklch(0.98 0.005 277);
@@ -108,14 +110,14 @@
   --chart-4: oklch(0.45 0.02 252); /* cash   #475569 */
   --chart-5: oklch(0.51 0.21 277);
 
-  /* sidebar #070A10 — darker than main bg */
-  --sidebar: oklch(0.13 0.015 252);
+  /* sidebar matches main bg */
+  --sidebar: oklch(0.18 0.02 252);
   --sidebar-foreground: oklch(0.70 0.02 248);
   --sidebar-primary: oklch(1 0 0);
   --sidebar-primary-foreground: oklch(0.18 0.02 252);
   --sidebar-accent: oklch(1 0 0 / 0.05);
   --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.27 0.03 257);
+  --sidebar-border: oklch(0.18 0.02 252 / 0);
   --sidebar-ring: oklch(0.58 0.21 277);
 
   --surface-container-lowest: oklch(0.13 0.015 252);

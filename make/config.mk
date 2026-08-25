@@ -44,11 +44,17 @@ BACKEND_PORT := 8080
 # Headroom (optional AI context compression)
 HEADROOM_PORT := 8787
 
-# Dev log files - use /tmp for bash compatibility on both Unix and Windows (Git Bash)
-LOG_DIR := /tmp
+# Dev log files - ./logs/ is relative to project root (where Makefile lives)
+LOG_DIR := logs
 LOG_BACKEND := $(LOG_DIR)/fintu-backend.log
 LOG_FRONTEND := $(LOG_DIR)/fintu-frontend.log
 LOG_MARKETING := $(LOG_DIR)/fintu-marketing.log
+
+# PID files for dev servers (machine-local, gitignored)
+PID_DIR := .make/pids
+PID_BACKEND := $(PID_DIR)/backend.pid
+PID_FRONTEND := $(PID_DIR)/frontend.pid
+PID_MARKETING := $(PID_DIR)/marketing.pid
 
 # Dev startup readiness timeout (seconds)
 STACK_READY_TIMEOUT := 20

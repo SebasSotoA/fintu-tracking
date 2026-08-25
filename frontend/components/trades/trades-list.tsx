@@ -1,7 +1,6 @@
 "use client"
 
 import type { Trade } from "@/lib/types"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { MobileActions } from "@/components/ui/mobile-actions"
@@ -72,6 +71,26 @@ const ASSET_OPTIONS: { value: TradeAssetTypeFilter; label: string }[] = [
   { value: "etf", label: "ETFs" },
   { value: "crypto", label: "Crypto" },
 ]
+
+const BADGE_BASE =
+  "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0"
+
+function getAssetBadgeClasses(assetType: Trade["asset_type"]): string {
+  if (assetType === "crypto") {
+    return cn(BADGE_BASE, "bg-sky-500/15 text-sky-300 ring-1 ring-inset ring-sky-400/20")
+  }
+  if (assetType === "etf") {
+    return cn(BADGE_BASE, "bg-violet-500/15 text-violet-300 ring-1 ring-inset ring-violet-400/20")
+  }
+  return cn(BADGE_BASE, "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-400/20")
+}
+
+function getSideBadgeClasses(side: Trade["side"]): string {
+  if (side === "buy") {
+    return cn(BADGE_BASE, "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/20")
+  }
+  return cn(BADGE_BASE, "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-400/20")
+}
 
 function TradeTickerFilter({
   tickers,
@@ -278,10 +297,12 @@ export function TradesList({
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono font-semibold">{trade.ticker}</span>
-            <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
-            <Badge variant={trade.side === "buy" ? "default" : "secondary"}>
+            <span className={getAssetBadgeClasses(trade.asset_type)}>
+              {trade.asset_type.toUpperCase()}
+            </span>
+            <span className={getSideBadgeClasses(trade.side)}>
               {trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}
-            </Badge>
+            </span>
           </div>
           <MobileActions
             actions={[
@@ -316,8 +337,8 @@ export function TradesList({
               <p className="text-xs text-muted-foreground">Realized P/L</p>
               <p
                 className={cn(
-                  "text-sm font-mono",
-                  new Decimal(trade.realized_pl).gte(0) ? "text-primary" : "text-destructive",
+                  "text-sm font-mono font-semibold",
+                  new Decimal(trade.realized_pl).gte(0) ? "text-success" : "text-destructive",
                 )}
               >
                 {formatCurrency(trade.realized_pl, MARKET_CONFIG.baseCurrency)}
@@ -348,16 +369,18 @@ export function TradesList({
         key: "assetType",
         header: "Type",
         cell: (trade) => (
-          <Badge variant="outline">{trade.asset_type.toUpperCase()}</Badge>
+          <span className={getAssetBadgeClasses(trade.asset_type)}>
+            {trade.asset_type.toUpperCase()}
+          </span>
         ),
       },
       {
         key: "side",
         header: "Side",
         cell: (trade) => (
-          <Badge variant={trade.side === "buy" ? "default" : "secondary"}>
+          <span className={getSideBadgeClasses(trade.side)}>
             {trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}
-          </Badge>
+          </span>
         ),
       },
       {
@@ -395,7 +418,7 @@ export function TradesList({
           trade.side === "sell" && trade.realized_pl != null && trade.realized_pl !== "" ? (
             <span
               className={
-                new Decimal(trade.realized_pl).gte(0) ? "text-primary" : "text-destructive"
+                new Decimal(trade.realized_pl).gte(0) ? "text-success" : "text-destructive"
               }
             >
               {formatCurrency(trade.realized_pl, MARKET_CONFIG.baseCurrency)}

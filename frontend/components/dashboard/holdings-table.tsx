@@ -196,11 +196,12 @@ export function HoldingsTable({
       {
         key: "ticker",
         header: "Ticker",
+        className: "font-mono font-semibold",
         cell: (holding) => (
           <div className="flex items-center gap-1.5">
             <Link
               href={`/trades?ticker=${encodeURIComponent(holding.ticker)}`}
-              className="hover:underline font-mono font-semibold"
+              className="hover:underline"
             >
               {holding.ticker}
             </Link>

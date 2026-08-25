@@ -186,10 +186,10 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
           <Area
             type="monotone"
             dataKey="rate"
-            stroke="var(--chart-1)"
-            strokeWidth={2}
+            stroke="var(--primary)"
+            strokeWidth={2.5}
             fill="var(--primary)"
-            fillOpacity={0.12}
+            fillOpacity={0.16}
             isAnimationActive={false}
             dot={(dotProps) => CurrentRateDot(dotProps, lastIndex)}
             activeDot={false}

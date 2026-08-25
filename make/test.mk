@@ -46,5 +46,5 @@ test-unit:
 
 test-api:
 	@echo "Running API tests..."
-	@cd $(BACKEND_DIR) && $(GOTEST) -race -v ./cmd/... ./handlers/...
+	@cd $(BACKEND_DIR) && $(GOTEST) -race -v ./internal/handlers/... ./internal/services/...
 	@echo "API tests passed"

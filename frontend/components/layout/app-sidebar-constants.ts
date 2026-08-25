@@ -13,7 +13,7 @@ export const RAIL_PL = "pl-3"
 export const RAIL_PR = "pr-3"
 
 export const navIconCellClass =
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center"
+  "flex h-9 w-9 shrink-0 items-center justify-center [&_svg]:m-auto"
 
 export const navItemTransition = "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
 

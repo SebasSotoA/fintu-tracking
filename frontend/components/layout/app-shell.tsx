@@ -57,7 +57,7 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
           collapsed ? SIDEBAR_MAIN_OFFSET_COLLAPSED : SIDEBAR_MAIN_OFFSET_EXPANDED,
         )}
       >
-        {profile && <AppTopbar profile={profile} />}
+        {profile && <AppTopbar />}
         <main className="h-[calc(100dvh-4rem)] overflow-y-auto scrollbar-minimal pb-28 md:pb-0 pb-safe">
           <div className="container mx-auto px-4 md:px-8 py-8">{children}</div>
         </main>
