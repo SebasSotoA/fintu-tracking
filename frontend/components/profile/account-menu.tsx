@@ -22,7 +22,7 @@ import type { Profile } from "@/lib/api/me"
 interface AccountMenuProps {
   profile: Profile
   collapsed: boolean
-  variant: "sidebar" | "mobile"
+  variant: "sidebar" | "mobile" | "topbar"
 }
 
 export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
@@ -46,8 +46,8 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
   }
 
   const userIcon = (
-    <div className="flex size-8 items-center justify-center rounded-lg bg-primary-container/30">
-      <User className="size-4 text-primary" aria-hidden />
+    <div className="flex size-8 items-center justify-center rounded-lg bg-white/[0.06] ring-1 ring-white/10">
+      <User className="size-4 text-white/85" aria-hidden />
     </div>
   )
 
@@ -68,7 +68,7 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
           className={cn("min-w-0 flex-1 overflow-hidden leading-none", label)}
           aria-hidden={collapsed}
         >
-          <p className="truncate font-sans text-sm font-bold text-primary">My account</p>
+          <p className="truncate font-sans text-sm font-bold text-white">My account</p>
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
             Portfolio
           </p>
@@ -92,17 +92,43 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
         type="button"
         aria-label="My account"
         data-testid="my-account-button-mobile"
+          className={cn(
+            "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 transition-colors duration-75",
+            menuOpen || profileOpen
+              ? "bg-primary-container/30 text-primary"
+              : "text-foreground/50 hover:text-primary",
+          )}
+        >
+          <User className="size-5" />
+          <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">
+            Account
+          </span>
+        </button>
+      </DropdownMenuTrigger>
+  )
+
+  const topbarTrigger = (
+    <DropdownMenuTrigger asChild>
+      <button
+        type="button"
+        aria-label="My account"
+        data-testid="my-account-button-topbar"
         className={cn(
-          "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 transition-colors duration-75",
-          menuOpen || profileOpen
-            ? "bg-primary-container/20 text-primary"
-            : "text-foreground/40 hover:text-primary",
+          "flex items-center gap-2 rounded-full p-1 pr-3 transition-colors",
+          "hover:bg-white/[0.06]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
         )}
       >
-        <User className="size-5" />
-        <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">
-          Account
-        </span>
+        <div className="flex size-8 items-center justify-center rounded-full bg-white/[0.06] ring-1 ring-white/10">
+          <User className="size-4 text-white/85" aria-hidden />
+        </div>
+        <ChevronDown
+          className={cn(
+            "size-4 shrink-0 text-muted-foreground transition-transform duration-200",
+            menuOpen && "rotate-180",
+          )}
+          aria-hidden
+        />
       </button>
     </DropdownMenuTrigger>
   )
@@ -110,12 +136,18 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
   return (
     <>
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-        {variant === "sidebar" ? sidebarTrigger : mobileTrigger}
+        {variant === "sidebar" ? sidebarTrigger : variant === "topbar" ? topbarTrigger : mobileTrigger}
         <DropdownMenuContent
-          align={variant === "mobile" ? "center" : "start"}
-          side="top"
-          sideOffset={variant === "mobile" ? 8 : 4}
-          className={cn(variant === "mobile" ? "w-48" : "w-[--radix-dropdown-menu-trigger-width]")}
+          align={variant === "mobile" ? "center" : "end"}
+          side={variant === "sidebar" ? "top" : "bottom"}
+          sideOffset={variant === "mobile" ? 8 : variant === "topbar" ? 8 : 4}
+          className={cn(
+            variant === "mobile"
+              ? "w-48"
+              : variant === "topbar"
+                ? "w-56"
+                : "w-[--radix-dropdown-menu-trigger-width]",
+          )}
         >
           <DropdownMenuItem onSelect={handleConfiguration}>
             <Settings aria-hidden />

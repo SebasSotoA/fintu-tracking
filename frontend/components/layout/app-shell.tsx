@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import { AppNav } from "@/components/layout/app-nav"
+import { AppTopbar } from "@/components/layout/app-topbar"
 import { SetupModal } from "@/components/onboarding/setup-modal"
 import { useMe } from "@/hooks/use-me"
 import type { Profile } from "@/lib/api/me"
@@ -50,14 +51,17 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
           profile={profile}
         />
       )}
-      <main
+      <div
         className={cn(
-          "h-dvh overflow-y-auto scrollbar-minimal pb-28 md:pb-0 pb-safe transition-[margin-left] duration-200 ease-in-out",
+          "min-h-screen transition-[margin-left] duration-200 ease-in-out",
           collapsed ? SIDEBAR_MAIN_OFFSET_COLLAPSED : SIDEBAR_MAIN_OFFSET_EXPANDED,
         )}
       >
-        <div className="container mx-auto px-4 md:px-8 py-8">{children}</div>
-      </main>
+        {profile && <AppTopbar profile={profile} />}
+        <main className="h-[calc(100dvh-4rem)] overflow-y-auto scrollbar-minimal pb-28 md:pb-0 pb-safe">
+          <div className="container mx-auto px-4 md:px-8 py-8">{children}</div>
+        </main>
+      </div>
       {profile && !profile.onboarding_completed && <SetupModal initialProfile={profile} />}
     </div>
   )

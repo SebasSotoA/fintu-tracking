@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { AppShell } from "./app-shell"
 import { SIDEBAR_COLLAPSED_STORAGE_KEY } from "./app-sidebar-constants"
 import type { Profile } from "@/lib/api/me"
@@ -12,6 +13,18 @@ vi.mock("@/components/layout/app-nav", () => ({
   AppNav: ({ collapsed }: { collapsed: boolean }) => (
     <div data-testid="app-nav" data-collapsed={collapsed ? "true" : "false"} />
   ),
+}))
+
+vi.mock("@/components/layout/app-topbar", () => ({
+  AppTopbar: () => <div data-testid="app-topbar" />,
+}))
+
+vi.mock("@/components/dashboard/notifications-bell", () => ({
+  NotificationsBell: () => null,
+}))
+
+vi.mock("@/components/profile/account-menu", () => ({
+  AccountMenu: () => null,
 }))
 
 vi.mock("@/components/onboarding/setup-modal", () => ({
@@ -29,6 +42,15 @@ const baseProfile: Profile = {
   updated_at: "",
 }
 
+function renderWithProviders(ui: React.ReactNode) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return render(
+    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+  )
+}
+
 describe("AppShell", () => {
   beforeEach(() => {
     localStorage.clear()
@@ -39,7 +61,7 @@ describe("AppShell", () => {
   })
 
   it("defaults to expanded when localStorage is empty", () => {
-    render(
+    renderWithProviders(
       <AppShell initialProfile={baseProfile}>
         <div>child</div>
       </AppShell>,
@@ -51,7 +73,7 @@ describe("AppShell", () => {
   it("applies stored collapsed state after mount", async () => {
     localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, "true")
 
-    render(
+    renderWithProviders(
       <AppShell initialProfile={baseProfile}>
         <div>child</div>
       </AppShell>,
@@ -65,7 +87,7 @@ describe("AppShell", () => {
   it("does not overwrite stored collapsed state before hydration", async () => {
     localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, "true")
 
-    render(
+    renderWithProviders(
       <AppShell initialProfile={baseProfile}>
         <div>child</div>
       </AppShell>,
@@ -76,15 +98,16 @@ describe("AppShell", () => {
     })
   })
 
-  it("uses duration-200 ease-in-out for main margin transition", () => {
-    render(
+  it("uses duration-200 ease-in-out for sidebar margin transition", () => {
+    renderWithProviders(
       <AppShell initialProfile={baseProfile}>
         <div>child</div>
       </AppShell>,
     )
 
     const main = screen.getByRole("main")
-    expect(main.className).toContain("duration-200")
-    expect(main.className).toContain("ease-in-out")
+    const wrapper = main.parentElement as HTMLElement
+    expect(wrapper.className).toContain("duration-200")
+    expect(wrapper.className).toContain("ease-in-out")
   })
 })
