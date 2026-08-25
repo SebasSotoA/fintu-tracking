@@ -11,10 +11,12 @@ function Card({ className, variant = 'default', ...props }: CardProps) {
     <div
       data-slot="card"
       className={cn(
-        'bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-[0_4px_16px_rgba(0,0,0,0.18)]',
+        'text-card-foreground flex flex-col gap-4 rounded-xl border border-white/10 py-4 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.3),0_2px_4px_-2px_rgba(0,0,0,0.3)] backdrop-blur-md',
+        'bg-gradient-to-b from-white/[0.07] to-card relative overflow-hidden',
+        'before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent before:content-[""]',
         {
-          'bg-[color:var(--color-card-kpi)] shadow-[0_8px_28px_rgba(0,0,0,0.28)] ring-1 ring-primary/5': variant === 'kpi',
-          'hover:bg-[color:var(--color-surface-container-highest)] hover:border-primary/20 hover:shadow-[0_6px_22px_rgba(0,0,0,0.28)] hover:-translate-y-px transition-all duration-160': variant === 'interactive',
+          'shadow-[0_6px_18px_rgba(0,0,0,0.35)]': variant === 'kpi',
+          'hover:border-white/20 hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.4),0_4px_6px_-4px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]': variant === 'interactive',
         },
         className,
       )}
