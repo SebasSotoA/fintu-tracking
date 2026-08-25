@@ -59,7 +59,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
       >
         <div
           className={cn(
-            "flex shrink-0 gap-1 border-b border-border/10 py-4",
+            "flex shrink-0 gap-1 border-b border-white/5 py-4",
             RAIL_PL,
             RAIL_PR,
             collapsed ? "flex-col items-start" : "flex-row items-center",
@@ -157,8 +157,8 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                 href={item.href}
                 aria-label={collapsed ? item.label : undefined}
                 className={cn(
-                  "flex h-9 min-h-9 w-full items-center gap-1 rounded-lg text-left text-sm font-medium",
-                  isActive ? navActive : navIdle,
+                  "flex h-9 min-h-9 w-full items-center gap-1 rounded-lg text-left text-sm",
+                  isActive ? `${navActive} font-semibold` : `${navIdle} font-medium`,
                 )}
               >
                 <span className={navIconCellClass}>

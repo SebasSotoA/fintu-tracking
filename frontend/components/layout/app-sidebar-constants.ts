@@ -15,16 +15,16 @@ export const RAIL_PR = "pr-3"
 export const navIconCellClass =
   "inline-flex h-9 w-9 shrink-0 items-center justify-center"
 
-export const navItemTransition = "transition-colors duration-75"
+export const navItemTransition = "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
 
 export const navIdle = cn(
   navItemTransition,
-  "text-foreground/60 hover:bg-surface-container-low hover:text-foreground/90",
+  "text-sidebar-foreground/70 hover:bg-white/[0.05] hover:text-white",
 )
 
 export const navActive = cn(
   navItemTransition,
-  "bg-primary-container/30 text-primary",
+  "bg-white/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]",
 )
 
 export function sidebarLabelClass(collapsed: boolean) {
