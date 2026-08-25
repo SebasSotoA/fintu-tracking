@@ -49,79 +49,61 @@
   --surface-container-highest: oklch(0.90 0.01 260);
 }
 
-/* Fintu brand toolkit — navy + indigo/violet */
+/* Fintu brand toolkit — navy + indigo/violet (dark) */
 .dark {
-  /* #0B1220 — near-black navy background */
-  --background: oklch(0.14 0.02 260);
-  /* #E2E6F0 — primary text */
-  --foreground: oklch(0.90 0.01 260);
+  --background: oklch(0.161 0.021 251.3);
+  --foreground: oklch(0.926 0.012 259.8);
 
-  /* #1E293B — glass card surface */
-  --card: oklch(0.22 0.02 260);
-  --card-foreground: oklch(0.90 0.01 260);
-  --card-kpi: oklch(0.24 0.025 260);
+  --card: oklch(0.188 0.022 251.9);
+  --card-foreground: oklch(0.926 0.012 259.8);
+  --card-kpi: oklch(0.210 0.024 251.6);
 
-  --popover: oklch(0.22 0.02 260);
-  --popover-foreground: oklch(0.90 0.01 260);
+  --popover: oklch(0.218 0.026 251.4);
+  --popover-foreground: oklch(0.926 0.012 259.8);
 
-  /* primary = indigo accent #6366F1 */
-  --primary: oklch(0.58 0.18 277);
-  --primary-hover: oklch(0.53 0.17 277);
-  --primary-active: oklch(0.48 0.16 277);
+  --primary: oklch(0.585 0.204 277.1);
+  --primary-hover: oklch(0.636 0.178 281.6);
+  --primary-active: oklch(0.537 0.158 276.8);
   --primary-foreground: oklch(0.98 0.005 277);
-  /* primary-container = indigo-tinted dark */
   --primary-container: oklch(0.20 0.04 277);
 
-  --secondary: oklch(0.22 0.015 260);
-  --secondary-foreground: oklch(0.90 0.01 260);
+  --secondary: oklch(0.226 0.028 251.3);
+  --secondary-foreground: oklch(0.926 0.012 259.8);
 
-  /* surface-container-high — elevated navy */
-  --muted: oklch(0.22 0.015 260);
-  /* #6E7F98 — slategray muted text */
-  --muted-foreground: oklch(0.62 0.02 255);
+  --muted: oklch(0.226 0.028 251.3);
+  --muted-foreground: oklch(0.558 0.030 257.1);
 
-  --accent: oklch(0.22 0.015 260);
-  --accent-foreground: oklch(0.90 0.01 260);
+  --accent: oklch(0.226 0.028 251.3);
+  --accent-foreground: oklch(0.926 0.012 259.8);
 
-  /* error — keep red for losses */
-  --destructive: oklch(0.70 0.19 25);
+  --destructive: oklch(0.612 0.095 7.0);
   --destructive-foreground: oklch(0.98 0 0);
 
-  /* outline-variant — blue-gray border */
-  --border: oklch(0.30 0.02 260);
-  --input: oklch(0.20 0.015 260);
-  --ring: oklch(0.58 0.18 277);
+  --border: oklch(0.276 0.034 250.8);
+  --input: oklch(0.179 0.022 252.0);
+  --ring: oklch(0.585 0.204 277.1);
 
-  /* Charts — indigo/violet family */
-  --chart-1: oklch(0.58 0.18 277);
-  --chart-2: oklch(0.62 0.15 290);
-  --chart-3: oklch(0.65 0.14 277);
-  --chart-4: oklch(0.75 0.08 270);
-  --chart-5: oklch(0.48 0.15 277);
+  --chart-1: oklch(0.629 0.183 278.7);
+  --chart-2: oklch(0.537 0.158 276.8);
+  --chart-3: oklch(0.680 0.158 276.9);
+  --chart-4: oklch(0.670 0.177 276.9);
+  --chart-5: oklch(0.369 0.041 252.9);
 
-  /* sidebar = navy bg */
-  --sidebar: oklch(0.14 0.02 260);
-  --sidebar-foreground: oklch(0.90 0.01 260);
-  --sidebar-primary: oklch(0.58 0.18 277);
+  --sidebar: oklch(0.174 0.022 251.9);
+  --sidebar-foreground: oklch(0.926 0.012 259.8);
+  --sidebar-primary: oklch(0.585 0.204 277.1);
   --sidebar-primary-foreground: oklch(0.98 0.005 277);
-  --sidebar-accent: oklch(0.22 0.02 260);
-  --sidebar-accent-foreground: oklch(0.90 0.01 260);
-  --sidebar-border: oklch(0.30 0.02 260);
-  --sidebar-ring: oklch(0.58 0.18 277);
+  --sidebar-accent: oklch(0.188 0.022 251.9);
+  --sidebar-accent-foreground: oklch(0.926 0.012 259.8);
+  --sidebar-border: oklch(0.251 0.032 251.0);
+  --sidebar-ring: oklch(0.585 0.204 277.1);
 
-  /* Surface hierarchy */
-  /* deepest navy */
-  --surface-container-lowest: oklch(0.11 0.015 260);
-  /* dark navy */
-  --surface-container-low: oklch(0.17 0.018 260);
-  /* navy */
-  --surface-container: oklch(0.20 0.02 260);
-  /* elevated navy */
-  --surface-container-high: oklch(0.24 0.022 260);
-  /* highest navy */
-  --surface-container-highest: oklch(0.28 0.025 260);
-  /* on-primary-container — indigo-tinted light */
-  --on-primary-container: oklch(0.65 0.10 277);
+  --surface-container-lowest: oklch(0.161 0.021 251.3);
+  --surface-container-low: oklch(0.174 0.022 251.9);
+  --surface-container: oklch(0.188 0.022 251.9);
+  --surface-container-high: oklch(0.210 0.024 251.6);
+  --surface-container-highest: oklch(0.226 0.028 251.3);
+  --on-primary-container: oklch(0.751 0.023 256.8);
 
   /* Landing atmosphere — airy indigo glow (auto-derived from --primary) */
   --landing-glow-mint: oklch(

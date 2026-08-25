@@ -42,26 +42,7 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
   }, [collapsed, sidebarHydrated])
 
   return (
-    <div className="relative min-h-screen">
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
-      >
-        <div
-          className="absolute -top-40 -right-32 h-[600px] w-[600px] opacity-30 blur-3xl"
-          style={{
-            background:
-              "radial-gradient(circle at center, var(--primary) 0%, transparent 60%)",
-          }}
-        />
-        <div
-          className="absolute -bottom-40 -left-32 h-[500px] w-[500px] opacity-15 blur-3xl"
-          style={{
-            background:
-              "radial-gradient(circle at center, var(--primary) 0%, transparent 60%)",
-          }}
-        />
-      </div>
+    <div className="min-h-screen">
       {profile && (
         <AppNav
           collapsed={collapsed}
