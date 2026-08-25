@@ -7,11 +7,11 @@ export const PERFORMANCE_TOOLTIPS = {
   netReturnPct:
     "Total gain/loss including uninvested cash, as % of capital deployed (total invested).",
   feeDrag:
-    "Total fees paid as % of total invested — how much fees reduced your return.",
+    "Total fees paid as % of total invested. How much fees reduced your return.",
   timeWeightedReturn:
     "Internal rate of return (XIRR) across cash flows; shown when available from analytics.",
   portfolioVsInvested:
     "Historical portfolio value compared to cumulative invested capital over time.",
   feeEfficiency:
-    "Average fee as % of trade notional per ticker — higher values mean more expensive trading.",
+    "Average fee as % of trade notional per ticker. Higher values mean more expensive trading.",
 } as const

@@ -106,7 +106,7 @@ export function PerformanceMetrics({ trades, cashFlows, fxRates, marketPrices }:
         <CardContent>
           <div className="text-xl md:text-2xl font-semibold font-mono">
             {isNetWorthPending
-              ? "—"
+              ? "-"
               : formatCurrency(totalInvestedBase.toString(), MARKET_CONFIG.baseCurrency)}
           </div>
           {depositsInLocal && (

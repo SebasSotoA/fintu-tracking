@@ -367,7 +367,7 @@ export function CashFlowsList({
           const value =
             cf.type === "deposit" || cf.type === "withdrawal"
               ? formatAmountPlain(cf.amount, MARKET_CONFIG.localCurrency)
-              : "—"
+              : "-"
           return <span className="font-mono">{value}</span>
         },
         align: "right",
@@ -377,7 +377,7 @@ export function CashFlowsList({
         header: "FX",
         cell: (cf) => {
           const value =
-            cf.type === "deposit" || cf.type === "withdrawal" ? (cf.fx_rate ?? "—") : "—"
+            cf.type === "deposit" || cf.type === "withdrawal" ? (cf.fx_rate ?? "-") : "-"
           return <span className="font-mono">{value}</span>
         },
         align: "right",
@@ -390,10 +390,10 @@ export function CashFlowsList({
             cf.type === "deposit" || cf.type === "withdrawal"
               ? cf.linkedFee
                 ? formatCurrency(cf.linkedFee.amount, MARKET_CONFIG.baseCurrency)
-                : "—"
+                : "-"
               : cf.type === "fee"
                 ? formatCurrency(cf.amount, MARKET_CONFIG.baseCurrency)
-                : "—"
+                : "-"
           return <span className="font-mono">{value}</span>
         },
         align: "right",
@@ -409,7 +409,7 @@ export function CashFlowsList({
                 ? formatCurrency(cf.usd_amount, MARKET_CONFIG.baseCurrency)
                 : cf.type === "cash_adjustment"
                   ? formatCurrency(cf.amount, MARKET_CONFIG.baseCurrency)
-                  : "—"
+                  : "-"
           return <span className="font-mono font-semibold">{value}</span>
         },
         align: "right",

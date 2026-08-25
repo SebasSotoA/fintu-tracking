@@ -85,7 +85,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
       await getMarketPrice(ticker)
       setPriceWarning(null)
     } catch {
-      setPriceWarning("No cached price yet — use Refresh Prices on the dashboard after saving.")
+      setPriceWarning("No cached price yet. Use Refresh Prices on the dashboard after saving.")
     }
   }
 

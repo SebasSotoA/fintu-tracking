@@ -103,7 +103,7 @@ function checkConcentration(netWorth: NetWorthData): HealthAlert | null {
     return {
       type: "concentration",
       severity: "warning",
-      message: `${maxTicker} represents ${percentString(byTicker[maxTicker], netWorth.net_worth)}% of your portfolio — consider diversifying.`,
+      message: `${maxTicker} represents ${percentString(byTicker[maxTicker], netWorth.net_worth)}% of your portfolio. Consider diversifying.`,
       details: `A single position exceeding ${CONCENTRATION_THRESHOLD}% introduces concentration risk.`,
     }
   }
@@ -125,7 +125,7 @@ function checkLargeMove(holdings: Holding[]): HealthAlert | null {
       return {
         type: "large_move",
         severity: "warning",
-        message: `${h.ticker} ${sign}${pct.toFixed(1)}% unrealized — ${isNegative ? "consider reviewing this position." : "consider taking profits."}`,
+        message: `${h.ticker} ${sign}${pct.toFixed(1)}% unrealized. ${isNegative ? "Consider reviewing this position." : "Consider taking profits."}`,
         details: `Unrealized ${isNegative ? "loss" : "gain"} on ${h.ticker}: ${formattedPL} ${MARKET_CONFIG.baseCurrency}.`,
         direction: isNegative ? "down" : "up",
       }
@@ -175,7 +175,7 @@ function checkLowBuyingPower(netWorth: NetWorthData): HealthAlert | null {
     return {
       type: "low_buying_power",
       severity: "warning",
-      message: `You have ${cashFormatted} buying power (${pct.toFixed(0)}% of portfolio) — consider depositing more ${MARKET_CONFIG.localCurrency} to seize opportunities.`,
+      message: `You have ${cashFormatted} buying power (${pct.toFixed(0)}% of portfolio). Consider depositing more ${MARKET_CONFIG.localCurrency} to seize opportunities.`,
       details: `Buying power below ${LOW_BUYING_POWER_THRESHOLD}% limits your ability to act on market moves.`,
     }
   }
@@ -201,7 +201,7 @@ function checkFXMove(fxChart: FxRateChartPoint[]): HealthAlert | null {
     return {
       type: "fx_move",
       severity: "info",
-      message: `${pair} ${direction} ${changePct.toFixed(1)}% this week — your ${MARKET_CONFIG.localCurrency}-valued returns are affected.`,
+      message: `${pair} ${direction} ${changePct.toFixed(1)}% this week. Your ${MARKET_CONFIG.localCurrency}-valued returns are affected.`,
       details: `Rate went from ${oldest.toFixed(2)} to ${latest.toFixed(2)} in ${FX_LOOKBACK_DAYS} days.`,
     }
   }

@@ -44,7 +44,7 @@ function isXirrPlaceholder(xirr: Decimal): boolean {
 
 function formatPeriodLabel(cashFlows: CashFlow[]): string {
   const deposits = cashFlows.filter((cf) => cf.type === "deposit")
-  if (deposits.length === 0) return "—"
+  if (deposits.length === 0) return "-"
   const earliest = deposits.reduce(
     (min, cf) => (cf.date < min ? cf.date : min),
     deposits[0].date,
@@ -155,7 +155,7 @@ export function PerformanceHero({
           <StatCell
             label="Money-weighted return (XIRR)"
             tooltip={PERFORMANCE_TOOLTIPS.timeWeightedReturn}
-            value={isXirrPlaceholder(xirr) ? "—" : formatPct(xirr)}
+            value={isXirrPlaceholder(xirr) ? "-" : formatPct(xirr)}
             valueClassName={
               isXirrPlaceholder(xirr)
                 ? "text-muted-foreground"

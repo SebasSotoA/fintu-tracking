@@ -401,7 +401,7 @@ export function TradesList({
               {formatCurrency(trade.realized_pl, MARKET_CONFIG.baseCurrency)}
             </span>
           ) : (
-            <span className="text-muted-foreground">—</span>
+            <span className="text-muted-foreground">-</span>
           ),
         align: "right",
         className: "font-mono",
