@@ -58,9 +58,9 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
         aria-label={collapsed ? "My account" : undefined}
         data-testid="my-account-button"
         className={cn(
-          "flex h-9 min-h-9 max-h-9 w-full items-center gap-1 rounded-lg text-left",
+          "flex h-9 min-h-9 max-h-9 items-center gap-1 rounded-lg text-left transition-[padding,background-color,box-shadow] duration-200 ease-in-out",
           navIdle,
-          collapsed ? "justify-start" : "min-w-0 flex-1 gap-3",
+          collapsed ? "w-9 justify-center" : "w-full justify-start gap-3",
         )}
       >
         <span className={navIconCellClass}>{userIcon}</span>

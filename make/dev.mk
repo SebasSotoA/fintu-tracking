@@ -19,12 +19,19 @@ backend-dev:
 	@echo "Checking port availability..."
 	@$(MAKE) check-port-available PORT=$(BACKEND_PORT)
 	@echo "Starting backend server (foreground) on :$(BACKEND_PORT)..."
-	@if command -v air > /dev/null 2>&1; then \
-		cd $(BACKEND_DIR) && air; \
-	else \
-		echo "air not found, using go run . dev..."; \
-		cd $(BACKEND_DIR) && go run . dev; \
-	fi
+	@bash -c '\
+		if [ -n "$$NO_AIR" ]; then \
+			echo "   NO_AIR set — using go run . dev..."; \
+			cd $(BACKEND_DIR) && exec go run . dev; \
+		fi; \
+		if command -v air > /dev/null 2>&1; then \
+			echo "   Starting air (hot reload)..."; \
+			cd $(BACKEND_DIR) && air; \
+		else \
+			echo "   air not found, using go run . dev..."; \
+			cd $(BACKEND_DIR) && exec go run . dev; \
+		fi; \
+	'
 
 frontend-dev:
 	@echo "Checking port availability..."
@@ -48,22 +55,41 @@ dev: check-env ensure-deps ensure-ports-free
 
 # Unified server launch block — used by both dev and restart.
 # Launches all 3 servers in background, polls for readiness, early-exits on dead PID.
+# Honors NO_AIR=1 to skip the hot-reload watcher (avoids inotify "too many open files" on busy systems).
+# If air crashes within the readiness window, falls back to `go run . dev` automatically.
 start-dev-servers:
 	@bash -c ' \
 		SCRIPT_DIR="$$(pwd)"; \
 		mkdir -p "$$SCRIPT_DIR/$(LOG_DIR)"; \
 		echo "Starting backend server..."; \
-		if command -v air > /dev/null 2>&1; then \
-			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && air) > $(LOG_BACKEND) 2>&1 & \
-		else \
-			echo "   air not found, using go run . dev..."; \
-			(cd $$SCRIPT_DIR/$(BACKEND_DIR) && go run . dev) > $(LOG_BACKEND) 2>&1 & \
+		use_air=false; \
+		if [ -z "$$NO_AIR" ] && command -v air > /dev/null 2>&1; then \
+			use_air=true; \
 		fi; \
-		BACKEND_PID=$$!; \
+		start_backend() { \
+			local mode=$$1; \
+			if [ "$$mode" = "air" ]; then \
+				(cd $$SCRIPT_DIR/$(BACKEND_DIR) && air) > $(LOG_BACKEND) 2>&1 & \
+			else \
+				echo "   Falling back to go run . dev (no hot reload)..."; \
+				(cd $$SCRIPT_DIR/$(BACKEND_DIR) && go run . dev) > $(LOG_BACKEND) 2>&1 & \
+			fi; \
+			BACKEND_PID=$$!; \
+			mkdir -p "$(PID_DIR)"; \
+			echo $$BACKEND_PID > "$(PID_DIR)/backend.pid"; \
+		}; \
+		if [ "$$use_air" = true ]; then \
+			start_backend air; \
+		else \
+			if [ -n "$$NO_AIR" ]; then \
+				echo "   NO_AIR set — skipping hot reload"; \
+			else \
+				echo "   air not found, using go run . dev..."; \
+			fi; \
+			start_backend gorun; \
+		fi; \
 		echo "   Backend PID: $$BACKEND_PID"; \
 		echo "   Backend logs: tail -f $(LOG_BACKEND)"; \
-		mkdir -p "$(PID_DIR)"; \
-		echo $$BACKEND_PID > "$(PID_DIR)/backend.pid"; \
 		echo ""; \
 		ROUTES_FILE="$$SCRIPT_DIR/$(FRONTEND_DIR)/.next/dev/types/routes.d.ts"; \
 		if [ -f "$$ROUTES_FILE" ] && ! grep -q "/dashboard" "$$ROUTES_FILE" 2>/dev/null; then \
@@ -110,6 +136,7 @@ start-dev-servers:
 		BACKEND_UP=false; \
 		FRONTEND_UP=false; \
 		MARKETING_UP=false; \
+		backend_retried=false; \
 		_elapsed=0; \
 		_max_wait=$(STACK_READY_TIMEOUT); \
 		_interval=1; \
@@ -118,7 +145,16 @@ start-dev-servers:
 			if [ "$$FRONTEND_UP" = false ] && port_listening $(FRONTEND_PORT); then FRONTEND_UP=true; fi; \
 			if [ "$$MARKETING_UP" = false ] && port_listening $(MARKETING_PORT); then MARKETING_UP=true; fi; \
 			if [ "$$BACKEND_UP" = true ] && [ "$$FRONTEND_UP" = true ] && [ "$$MARKETING_UP" = true ]; then break; fi; \
-			if ! process_alive $$BACKEND_PID && [ "$$BACKEND_UP" = false ]; then \
+			if [ "$$BACKEND_UP" = false ] && [ "$$backend_retried" = false ] && [ "$$use_air" = true ] && ! process_alive $$BACKEND_PID; then \
+				echo ""; \
+				echo "=== air crashed — falling back to go run ==="; \
+				dump_log "Backend (air)" "$(LOG_BACKEND)"; \
+				start_backend gorun; \
+				use_air=false; \
+				backend_retried=true; \
+				continue; \
+			fi; \
+			if [ "$$BACKEND_UP" = false ] && [ "$$backend_retried" = false ] && ! process_alive $$BACKEND_PID; then \
 				dump_log "Backend" "$(LOG_BACKEND)"; exit 1; \
 			fi; \
 			if ! process_alive $$FRONTEND_PID && [ "$$FRONTEND_UP" = false ]; then \

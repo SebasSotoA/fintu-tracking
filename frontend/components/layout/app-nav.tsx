@@ -133,7 +133,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
         <nav
           className={cn(
             "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto py-2 scrollbar-minimal transition-[padding] duration-200 ease-in-out",
-            collapsed ? "items-center px-0" : cn(RAIL_PL, RAIL_PR),
+            collapsed ? "px-0" : cn(RAIL_PL, RAIL_PR),
           )}
           aria-label="Main"
         >
@@ -141,29 +141,37 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
             const Icon = item.icon
             const isActive =
               pathname === item.href || pathname?.startsWith(`${item.href}/`)
+            const iconLeft = collapsed ? "left-[14px]" : "left-0"
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-label={collapsed ? item.label : undefined}
-                className={cn(
-                  "flex h-9 min-h-9 w-full items-center gap-2 rounded-lg text-sm transition-[justify-content,padding,background-color,box-shadow] duration-200 ease-in-out",
-                  collapsed ? "justify-center px-0" : "justify-start px-0",
-                  isActive ? "font-semibold" : "font-medium",
-                  isActive
-                    ? collapsed
-                      ? "bg-white/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
-                      : `${navActive}`
-                    : navIdle,
-                )}
-              >
-                <span className={navIconCellClass}>
+              <div key={item.href} className="relative h-9 min-h-9">
+                <span
+                  aria-hidden
+                  className={cn(
+                    "absolute top-0 flex h-9 w-9 items-center justify-center [&_svg]:m-auto transition-[left] duration-200 ease-in-out",
+                    iconLeft,
+                  )}
+                >
                   <Icon className="size-4 shrink-0" aria-hidden />
                 </span>
-                <span className={cn("overflow-hidden", label)} aria-hidden={collapsed}>
-                  {item.label}
-                </span>
-              </Link>
+                <Link
+                  href={item.href}
+                  aria-label={collapsed ? item.label : undefined}
+                  className={cn(
+                    "absolute inset-0 flex items-center rounded-lg text-sm transition-[background-color,box-shadow,padding] duration-200 ease-in-out",
+                    collapsed ? "justify-center" : "justify-start pl-9",
+                    isActive ? "font-semibold" : "font-medium",
+                    isActive
+                      ? collapsed
+                        ? "bg-white/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
+                        : `${navActive}`
+                      : navIdle,
+                  )}
+                >
+                  <span className={cn("overflow-hidden", label)} aria-hidden={collapsed}>
+                    {item.label}
+                  </span>
+                </Link>
+              </div>
             )
           })}
         </nav>
