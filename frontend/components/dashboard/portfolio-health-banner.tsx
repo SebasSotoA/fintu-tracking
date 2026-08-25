@@ -12,18 +12,16 @@ const AlertIcon: Record<Exclude<HealthAlertType, "large_move">, React.ComponentT
 }
 
 const severityStyles: Record<string, string> = {
-  destructive: "border-primary/30 bg-primary/5 text-foreground",
-  warning: "border-primary/30 bg-primary/5 text-foreground",
-  info: "border-primary/30 bg-primary/5 text-foreground",
+  destructive: "border-white/10 bg-white/[0.04] text-foreground",
+  warning: "border-white/10 bg-white/[0.04] text-foreground",
+  info: "border-white/10 bg-white/[0.04] text-foreground",
 }
 
 export function PortfolioHealthBanner() {
   const { alerts } = usePortfolioHealth()
 
   if (alerts.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">No notifications</p>
-    )
+    return null
   }
 
   return (
@@ -32,8 +30,7 @@ export function PortfolioHealthBanner() {
         const IconComp = alert.type === "large_move"
           ? (alert.direction === "down" ? TrendingDown : TrendingUp)
           : AlertIcon[alert.type as Exclude<HealthAlertType, "large_move">]
-        // All notification icons use the primary mint palette for visual consistency.
-        const iconColor = "text-primary"
+        const iconColor = "text-white/80"
 
         return (
           <div
@@ -44,7 +41,7 @@ export function PortfolioHealthBanner() {
             <div className="flex-1 min-w-0">
               <p className="font-medium">{alert.message}</p>
               {alert.details && (
-                <p className="mt-1 text-xs opacity-70">{alert.details}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{alert.details}</p>
               )}
             </div>
           </div>

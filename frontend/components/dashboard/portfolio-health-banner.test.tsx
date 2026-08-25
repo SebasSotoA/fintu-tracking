@@ -35,9 +35,9 @@ describe("PortfolioHealthBanner", () => {
     mockAlerts.splice(0, mockAlerts.length)
   })
 
-  it("renders an empty state when there are no alerts", () => {
-    renderBanner()
-    expect(screen.getByText("No notifications")).toBeInTheDocument()
+  it("renders nothing when there are no alerts", () => {
+    const { container } = renderBanner()
+    expect(container).toBeEmptyDOMElement()
   })
 
   it("renders all active alerts", () => {
