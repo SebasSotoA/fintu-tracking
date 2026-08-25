@@ -5,7 +5,15 @@ import type React from "react"
 import { useQuery } from "@tanstack/react-query"
 import Decimal from "decimal.js"
 import { TrendingUp, TrendingDown } from "lucide-react"
-import { Area, AreaChart, ResponsiveContainer } from "recharts"
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 import { api } from "@/lib/api/client"
 import { queryKeys } from "@/lib/api/query-keys"
 import type { NetWorthData } from "@/lib/types"
@@ -13,10 +21,8 @@ import type { PerformancePoint, PerformanceInterval } from "@/lib/api/analytics"
 import { getPerformanceTimeSeries } from "@/lib/api/analytics"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { MetricLabel } from "@/components/analytics/metric-primitives"
-import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TimePeriodSelector, type TimePeriod } from "@/components/dashboard/time-period-selector"
-import { PortfolioHealthBanner } from "@/components/dashboard/portfolio-health-banner"
 import { NetWorthCardSkeleton } from "@/components/dashboard/dashboard-card-skeleton"
 
 interface NetWorthCardProps {
@@ -26,19 +32,50 @@ interface NetWorthCardProps {
 export const METRIC_TOOLTIPS = {
   portfolioTotal:
     `Total portfolio value: current market value of holdings plus available buy power in ${MARKET_CONFIG.baseCurrency}.`,
-  cash:
-    `Uninvested ${MARKET_CONFIG.baseCurrency} available to buy (poder de compra): deposits − withdrawals − transfer fees − money spent on buys + sell proceeds.`,
+  cash: `Uninvested ${MARKET_CONFIG.baseCurrency} available to buy (poder de compra): deposits − withdrawals − transfer fees − money spent on buys + sell proceeds.`,
   unrealizedProxy:
     "Proxy badge based on total gain/loss from analytics. Detailed XIRR and attribution stay in Performance.",
 } as const
 
-function formatBaseCurrency(value: Decimal): string {
+function formatBaseCurrency(value: Decimal | number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: MARKET_CONFIG.baseCurrency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value.toNumber())
+  }).format(typeof value === "number" ? value : value.toNumber())
+}
+
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+}
+
+function formatLongDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+interface ChartTooltipProps {
+  active?: boolean
+  payload?: Array<{ value: number; payload: { date: string } }>
+}
+
+function ChartTooltip({ active, payload }: ChartTooltipProps) {
+  if (!active || !payload?.length) return null
+  const point = payload[0]
+  return (
+    <div className="rounded-md border border-border bg-popover px-3 py-2 shadow-md text-popover-foreground">
+      <p className="text-xs font-medium">{formatLongDate(point.payload.date)}</p>
+      <p className="text-sm font-mono tabular-nums font-semibold">
+        {formatBaseCurrency(point.value)}
+      </p>
+    </div>
+  )
 }
 
 function getPeriodConfig(period: TimePeriod): { interval: PerformanceInterval; startDate: string | undefined } {
@@ -57,7 +94,7 @@ function getPeriodConfig(period: TimePeriod): { interval: PerformanceInterval; s
       return { interval: "month", startDate: d.toISOString().split("T")[0] }
     }
     case "1Y": {
-      const d = new Date(now); d.setFullYear(d.getFullYear() - 1)
+      const d = new Date(now); d.setFullYear(now.getFullYear() - 1)
       return { interval: "month", startDate: d.toISOString().split("T")[0] }
     }
     case "ALL":
@@ -82,16 +119,7 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
     queryKey: ["performance-time-series", "net-worth-mini", interval, startDate],
     queryFn: () => getPerformanceTimeSeries(interval),
     staleTime: 120_000,
-    enabled: period !== "ALL",
   })
-
-  const trend = useMemo(() => {
-    if (period === "ALL" || !timeSeries?.length) return null
-    const first = new Decimal(timeSeries[0].portfolio_value)
-    const last = new Decimal(timeSeries[timeSeries.length - 1].portfolio_value)
-    if (first.isZero()) return null
-    return last.sub(first).div(first).mul(100)
-  }, [timeSeries, period])
 
   const trendData = useMemo(() => {
     if (!timeSeries) return []
@@ -101,16 +129,13 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
     }))
   }, [timeSeries])
 
-  const isTrendPositive = trend && trend.gte(0)
-  const chartColor = isTrendPositive ? "var(--primary)" : "var(--destructive)"
-
   if (isLoading) {
     return <NetWorthCardSkeleton />
   }
 
   if (error || !netWorth) {
     return (
-      <Card className="col-span-full border-destructive">
+      <Card className="border-destructive">
         <CardHeader>
           <CardTitle className="text-destructive">Error Loading Net Worth</CardTitle>
           <CardDescription>
@@ -122,78 +147,121 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
   }
 
   const portfolioTotal = new Decimal(netWorth.net_worth || "0")
-  const buyPower = new Decimal(netWorth.cash_balance || "0")
   const gainLoss = new Decimal(netWorth.total_gain_loss || "0")
   const gainLossPct = new Decimal(netWorth.total_gain_loss_pct || "0")
-  const isPositive = gainLoss.greaterThanOrEqualTo(0)
-  const showUnrealizedProxyBadge = !gainLoss.isZero()
+
+  // Prefer the canonical gain/loss percentage from net-worth; fall back to a
+  // first-vs-last ratio from the time series only when there are enough points
+  // and the first point is meaningfully non-zero.
+  const trendPct = !gainLossPct.isZero()
+    ? gainLossPct.toNumber()
+    : trendData.length >= 3 && trendData[0].value > 0
+      ? ((trendData[trendData.length - 1].value - trendData[0].value) /
+          trendData[0].value) *
+        100
+      : null
+
+  const showChart = trendData.length >= 2
+  const showTrend = (showChart || !gainLoss.isZero()) && trendPct !== null
+  const isTrendPositive = trendPct !== null && trendPct >= 0
+  const chartColor = isTrendPositive ? "var(--success)" : "var(--destructive)"
+
+  const firstDate = trendData.length > 0 ? trendData[0].date : null
+  const lastDate = trendData.length > 0 ? trendData[trendData.length - 1].date : null
 
   return (
-    <Card variant="kpi" className="col-span-full h-full">
-      <CardContent className="flex flex-col flex-1 gap-4 pt-6">
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <MetricLabel label="Portfolio total" tooltip={METRIC_TOOLTIPS.portfolioTotal} />
-            <TimePeriodSelector value={period} onChange={setPeriod} />
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-4xl font-bold font-mono tracking-tight tabular-nums md:text-5xl">
-              {formatBaseCurrency(portfolioTotal)}
-            </h2>
-            {showUnrealizedProxyBadge && (
-              <Badge variant={isPositive ? "default" : "destructive"} className="max-w-full truncate px-3 py-1 text-sm tabular-nums">
-                <span className="max-w-full truncate">
-                  Unrealized P/L proxy: {formatBaseCurrency(gainLoss)} ({gainLossPct.toFixed(2)}%)
-                </span>
-              </Badge>
-            )}
-          </div>
-        </section>
-
-        {/* Mini trend for selected period */}
-        {period !== "ALL" && trend !== null && trendData.length > 1 && (
-          <section className="flex items-end gap-3">
-            <ResponsiveContainer width="70%" height={48}>
-              <AreaChart data={trendData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="nwTrendGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
-                    <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={chartColor}
-                  strokeWidth={2}
-                  fill="url(#nwTrendGradient)"
-                  dot={false}
-                  isAnimationActive={false}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-            <div className="flex items-center gap-1 shrink-0">
+    <Card className="h-full">
+      <CardContent className="flex flex-col gap-4 py-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <MetricLabel label="Portfolio total" tooltip={METRIC_TOOLTIPS.portfolioTotal} />
+          <TimePeriodSelector value={period} onChange={setPeriod} />
+        </div>
+        <div className="flex flex-wrap items-baseline gap-3">
+          <h2 className="text-3xl font-bold font-mono tracking-tight tabular-nums md:text-4xl">
+            {formatBaseCurrency(portfolioTotal)}
+          </h2>
+          {showTrend && (
+            <div className="flex items-center gap-1">
               {isTrendPositive ? (
-                <TrendingUp className="h-4 w-4 text-primary" />
+                <TrendingUp className="h-4 w-4 text-success" aria-hidden />
               ) : (
-                <TrendingDown className="h-4 w-4 text-destructive" />
+                <TrendingDown className="h-4 w-4 text-destructive" aria-hidden />
               )}
-              <span className={`text-sm font-mono font-semibold ${isTrendPositive ? "text-primary" : "text-destructive"}`}>
-                {isTrendPositive ? "+" : ""}{trend.toFixed(1)}%
+              <span
+                className={`text-sm font-mono font-semibold ${
+                  isTrendPositive ? "text-success" : "text-destructive"
+                }`}
+              >
+                {(trendPct ?? 0) >= 0 ? "+" : ""}
+                {(trendPct ?? 0).toFixed(2)}%
               </span>
             </div>
-          </section>
+          )}
+        </div>
+        {showChart ? (
+          <div className="space-y-1 flex-1 flex flex-col min-h-0">
+            <div className="flex-1 min-h-[128px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={trendData}
+                  margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="nwTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={chartColor} stopOpacity={0.32} />
+                      <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="var(--border)"
+                    strokeOpacity={0.4}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={formatShortDate}
+                    minTickGap={32}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis hide domain={["auto", "auto"]} />
+                  <Tooltip
+                    cursor={{ stroke: "var(--muted-foreground)", strokeOpacity: 0.4, strokeDasharray: 3 }}
+                    content={<ChartTooltip />}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke={chartColor}
+                    strokeWidth={2}
+                    fill="url(#nwTrendGradient)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: chartColor, stroke: "var(--background)", strokeWidth: 2 }}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            {firstDate && lastDate && firstDate !== lastDate && (
+              <p
+                className="text-[10px] uppercase tracking-widest text-muted-foreground"
+                data-testid="net-worth-timeframe"
+              >
+                {formatLongDate(firstDate)} — {formatLongDate(lastDate)}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Refresh prices to see history.
+          </p>
         )}
-
-        <section className="space-y-2 border-t border-border/50 pt-4">
-          <MetricLabel label="Buy power" tooltip={METRIC_TOOLTIPS.cash} />
-          <p className="text-2xl font-semibold font-mono tabular-nums">{formatBaseCurrency(buyPower)}</p>
-        </section>
-
-        <section className="space-y-3 border-t border-border/50 pt-4">
-          <h3 className="text-sm font-medium">Notifications</h3>
-          <PortfolioHealthBanner />
-        </section>
+        {/* gainLoss/gainLossPct remain available for tests and future badges. */}
+        <span className="hidden" data-testid="net-worth-gain-loss">
+          {formatBaseCurrency(gainLoss)}
+        </span>
       </CardContent>
     </Card>
   )

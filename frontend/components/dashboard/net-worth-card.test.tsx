@@ -53,12 +53,9 @@ describe("NetWorthCard", () => {
     expect(screen.getByText("Portfolio total")).toBeInTheDocument()
   })
 
-  it("shows buy power section and hides legacy metric rows", () => {
+  it("does not render the buy power section (it lives in the KPI strip)", () => {
     renderCard()
-    expect(screen.getByText("Buy power")).toBeInTheDocument()
-    expect(screen.queryByText("Portfolio value")).not.toBeInTheDocument()
-    expect(screen.queryByText("Total invested")).not.toBeInTheDocument()
-    expect(screen.queryByText("Money-weighted return (XIRR)")).not.toBeInTheDocument()
+    expect(screen.queryByText("Buy power")).not.toBeInTheDocument()
   })
 
   it("shows loading skeleton layout while fetching", () => {
@@ -75,20 +72,13 @@ describe("NetWorthCard", () => {
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThanOrEqual(2)
   })
 
-  it("renders unrealized proxy badge when gain/loss is non-zero", () => {
-    const { container } = renderCard()
-    const badge = container.querySelector(".max-w-full.truncate")
-    expect(badge).toBeInTheDocument()
-    expect(screen.getByText(/Unrealized P\/L proxy/i)).toBeInTheDocument()
+  it("exposes the gain/loss value for KPI consumers via a hidden marker", () => {
+    renderCard()
+    const marker = screen.getByTestId("net-worth-gain-loss")
+    expect(marker).toHaveTextContent("$2,000.00")
   })
 
   it("keeps buy power tooltip copy aligned with hapi meaning", () => {
     expect(METRIC_TOOLTIPS.cash).toContain("poder de compra")
-  })
-
-  it("renders the merged Notifications section", () => {
-    renderCard()
-    expect(screen.getByText("Notifications")).toBeInTheDocument()
-    expect(screen.getByText("No notifications")).toBeInTheDocument()
   })
 })
