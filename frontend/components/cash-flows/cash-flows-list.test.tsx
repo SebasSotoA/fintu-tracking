@@ -111,7 +111,7 @@ describe("CashFlowsList", () => {
       />,
     )
 
-    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument()
+    expect(screen.getByText("Showing 10 of 25 cash flows")).toBeInTheDocument()
   })
 
   it("renders a mobile filter drawer trigger below md", () => {
@@ -180,5 +180,35 @@ describe("CashFlowsList", () => {
     expect(typeSelect).toHaveClass("w-full")
     const currencySelect = within(dialog).getByLabelText(/filter cash flows by currency/i)
     expect(currencySelect).toHaveClass("w-full")
+  })
+
+  it("does not render a Show trade fee audit rows button", () => {
+    renderWithProviders(
+      <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={1} pageSize={10} />,
+    )
+
+    expect(screen.queryByRole("button", { name: /show.*fee.*audit/i })).not.toBeInTheDocument()
+    expect(screen.queryByText(/show trade fee audit rows/i)).not.toBeInTheDocument()
+  })
+
+  it("Add Cash Flow button is visible in the toolbar when list has rows", () => {
+    renderWithProviders(
+      <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={1} pageSize={10} />,
+    )
+
+    expect(screen.getByRole("button", { name: /add cash flow/i })).toBeInTheDocument()
+  })
+
+  it("View button precedes Add Cash Flow button in DOM order", () => {
+    renderWithProviders(
+      <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={1} pageSize={10} />,
+    )
+
+    const allButtons = screen.getAllByRole("button")
+    const viewIndex = allButtons.findIndex((b) => b.textContent?.includes("View"))
+    const addIndex = allButtons.findIndex((b) => b.textContent?.includes("Add Cash Flow"))
+    expect(viewIndex).toBeGreaterThanOrEqual(0)
+    expect(addIndex).toBeGreaterThanOrEqual(0)
+    expect(viewIndex).toBeLessThan(addIndex)
   })
 })

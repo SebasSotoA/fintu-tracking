@@ -10,6 +10,7 @@ import { MobileFilterDrawer } from "@/components/ui/mobile-filter-drawer"
 import { Download, Pencil, Trash2, LinkIcon } from "lucide-react"
 import { listCashFlowsForExport } from "@/lib/api/cash-flows"
 import { downloadCashFlowsCsv } from "@/lib/cash-flows/export-cash-flows-csv"
+import { AddCashFlowDialog } from "./add-cash-flow-dialog"
 import { TablePagination } from "@/components/ui/table-pagination"
 import {
   mergePageSearchParams,
@@ -126,7 +127,6 @@ export function CashFlowsList({
   const [editingCashFlow, setEditingCashFlow] = useState<CashFlow | null>(null)
   const [deletingCashFlow, setDeletingCashFlow] = useState<CashFlow | null>(null)
   const [exporting, setExporting] = useState(false)
-  const [showTradeFeeAuditRows, setShowTradeFeeAuditRows] = useState(false)
 
   const filters = useMemo(
     () => parseCashFlowFiltersFromSearchParams(Object.fromEntries(searchParams.entries())),
@@ -137,8 +137,8 @@ export function CashFlowsList({
   const activeFilterCount =
     [filters.type !== "all", filters.currency !== "all", filters.dateRange.from !== null].filter(Boolean).length
   const visibleCashFlows = useMemo(
-    () => (showTradeFeeAuditRows ? cashFlows : cashFlows.filter((cf) => !isMirroredTradeFeeRow(cf))),
-    [cashFlows, showTradeFeeAuditRows],
+    () => cashFlows.filter((cf) => !isMirroredTradeFeeRow(cf)),
+    [cashFlows],
   )
   const linkedFeeByParentId = useMemo(() => {
     const byParentId = new Map<string, CashFlow>()
@@ -501,10 +501,15 @@ export function CashFlowsList({
 
   if (total === 0 && !filtersActive) {
     return (
-      <EmptyState
-        title="No cash flows recorded yet"
-        description="Add your first deposit or withdrawal to start tracking"
-      />
+      <section className="space-y-4">
+        <div className="flex justify-end">
+          <AddCashFlowDialog />
+        </div>
+        <EmptyState
+          title="No cash flows recorded yet"
+          description="Add your first deposit or withdrawal to start tracking"
+        />
+      </section>
     )
   }
 
@@ -522,38 +527,26 @@ export function CashFlowsList({
           >
             <CashFlowFiltersForm filters={filters} onChange={patchFilters} />
           </MobileFilterDrawer>
-          <div className="flex flex-col items-start gap-2 md:items-end">
-            <p className="text-sm text-muted-foreground">
-              Showing {visibleCashFlows.length} of {total} cash flows
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant={showTradeFeeAuditRows ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowTradeFeeAuditRows((current) => !current)}
-              >
-                Show trade fee audit rows
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2 shrink-0"
-                onClick={handleExport}
-                disabled={total === 0 || exporting}
-              >
-                <Download className="size-4" />
-                Export
-              </Button>
-              <DataTableColumnToggle
-                columns={columns}
-                visibleKeys={visibleKeys}
-                defaultVisibleKeys={defaultKeys}
-                onChange={setVisibleKeys}
-                className="hidden md:block"
-              />
-            </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2 shrink-0"
+              onClick={handleExport}
+              disabled={total === 0 || exporting}
+            >
+              <Download className="size-4" />
+              Export
+            </Button>
+            <DataTableColumnToggle
+              columns={columns}
+              visibleKeys={visibleKeys}
+              defaultVisibleKeys={defaultKeys}
+              onChange={setVisibleKeys}
+              className="hidden md:block"
+            />
+            <AddCashFlowDialog />
           </div>
         </div>
 
@@ -577,6 +570,7 @@ export function CashFlowsList({
               total={total}
               onPageChange={setPage}
               onPageSizeChange={setPageSize}
+              showingText={`Showing ${visibleCashFlows.length} of ${total} cash flows`}
             />
           </>
         )}

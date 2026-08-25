@@ -113,7 +113,7 @@ describe("TradesList", () => {
       />,
     )
 
-    expect(screen.getByText("Page 1 of 3")).toBeInTheDocument()
+    expect(screen.getByText("Showing 10 of 25 trades")).toBeInTheDocument()
   })
 
   it("renders a mobile filter drawer trigger below md", () => {
@@ -196,5 +196,37 @@ describe("TradesList", () => {
     expect(sideSelect).toHaveClass("w-full")
     const assetSelect = within(dialog).getByLabelText(/filter trades by asset/i)
     expect(assetSelect).toHaveClass("w-full")
+  })
+
+  it("ticker filter CommandList has scrollbar-minimal class when open", () => {
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL", "TSLA"]} />,
+    )
+
+    fireEvent.click(screen.getByRole("combobox", { name: /filter trades by ticker/i }))
+    const commandList = document.querySelector('[data-slot="command-list"]')
+    expect(commandList).not.toBeNull()
+    expect(commandList).toHaveClass("scrollbar-minimal")
+  })
+
+  it("Add Trade button is visible in the toolbar when list has rows", () => {
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,
+    )
+
+    expect(screen.getByRole("button", { name: /add trade/i })).toBeInTheDocument()
+  })
+
+  it("View button precedes Add Trade button in DOM order", () => {
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,
+    )
+
+    const allButtons = screen.getAllByRole("button")
+    const viewIndex = allButtons.findIndex((b) => b.textContent?.includes("View"))
+    const addIndex = allButtons.findIndex((b) => b.textContent?.includes("Add Trade"))
+    expect(viewIndex).toBeGreaterThanOrEqual(0)
+    expect(addIndex).toBeGreaterThanOrEqual(0)
+    expect(viewIndex).toBeLessThan(addIndex)
   })
 })

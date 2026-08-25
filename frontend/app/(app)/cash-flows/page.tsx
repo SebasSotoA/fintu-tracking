@@ -4,7 +4,6 @@ import { Suspense, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { CashFlowsList } from "@/components/cash-flows/cash-flows-list"
-import { AddCashFlowDialog } from "@/components/cash-flows/add-cash-flow-dialog"
 import { FxRateManager } from "@/components/cash-flows/fx-rate-manager"
 import { LazyReconciliationDashboard } from "@/components/cash-flows/lazy-reconciliation-dashboard"
 import { listCashFlowsPaginated } from "@/lib/api/cash-flows"
@@ -68,9 +67,6 @@ function CashFlowsPageContent() {
 
   return (
     <>
-      <div className="flex justify-end mb-8">
-        <AddCashFlowDialog />
-      </div>
       <CashFlowsList
         cashFlows={cashFlows}
         total={total}

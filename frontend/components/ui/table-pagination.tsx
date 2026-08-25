@@ -27,6 +27,7 @@ interface TablePaginationProps {
   total: number
   onPageChange: (page: number) => void
   onPageSizeChange: (pageSize: PageSize) => void
+  showingText?: string
 }
 
 export function TablePagination({
@@ -35,6 +36,7 @@ export function TablePagination({
   total,
   onPageChange,
   onPageSizeChange,
+  showingText,
 }: TablePaginationProps) {
   const pages = totalPages(total, pageSize)
   const atFirst = page <= 1
@@ -67,7 +69,7 @@ export function TablePagination({
       </div>
 
       <p className="text-center text-xs font-medium uppercase tracking-wide text-muted-foreground sm:flex-1">
-        Page {page} of {pages}
+        {showingText ?? `Page ${page} of ${pages}`}
       </p>
 
       <div className="flex items-center justify-center gap-1 sm:justify-end">

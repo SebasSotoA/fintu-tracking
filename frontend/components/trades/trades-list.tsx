@@ -25,6 +25,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { EditTradeDialog } from "./edit-trade-dialog"
 import { DeleteTradeDialog } from "./delete-trade-dialog"
+import { AddTradeDialog } from "./add-trade-dialog"
 import { TradeDateFilter } from "@/components/trades/trade-date-filter"
 import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
 import { listTradesForExport } from "@/lib/api/trades"
@@ -119,11 +120,10 @@ function TradeTickerFilter({
             aria-expanded={open}
             aria-label="Filter trades by ticker"
             className={cn(
-              "h-9 w-full justify-between px-3 text-sm font-normal md:w-[9.5rem]",
-              !value && "text-muted-foreground",
+              "h-9 w-full justify-between px-3 text-sm md:w-[9.5rem]",
             )}
           >
-            <span className="truncate font-mono">{label}</span>
+            <span className="truncate">{label}</span>
             <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -467,7 +467,10 @@ export function TradesList({
 
   if (total === 0 && !filtersActive) {
     return (
-      <section>
+      <section className="space-y-4">
+        <div className="flex justify-end">
+          <AddTradeDialog />
+        </div>
         <EmptyState
           title="No trades recorded yet"
           description="Add your first trade to start tracking your portfolio"
@@ -490,30 +493,26 @@ export function TradesList({
           >
             <TradeFiltersForm filters={filters} tickers={tickers} onChange={patchFilters} />
           </MobileFilterDrawer>
-          <div className="flex flex-col items-start gap-2 md:items-end">
-            <p className="text-sm text-muted-foreground" title="Filter URLs can be shared or bookmarked">
-              Showing {trades.length} of {total} trades
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={handleExport}
-                disabled={total === 0 || exporting}
-              >
-                <Download className="size-4" />
-                Export
-              </Button>
-              <DataTableColumnToggle
-                columns={columns}
-                visibleKeys={visibleKeys}
-                defaultVisibleKeys={defaultKeys}
-                onChange={setVisibleKeys}
-                className="hidden md:block"
-              />
-            </div>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={handleExport}
+              disabled={total === 0 || exporting}
+            >
+              <Download className="size-4" />
+              Export
+            </Button>
+            <DataTableColumnToggle
+              columns={columns}
+              visibleKeys={visibleKeys}
+              defaultVisibleKeys={defaultKeys}
+              onChange={setVisibleKeys}
+              className="hidden md:block"
+            />
+            <AddTradeDialog />
           </div>
         </div>
 
@@ -534,6 +533,7 @@ export function TradesList({
               total={total}
               onPageChange={setPage}
               onPageSizeChange={setPageSize}
+              showingText={`Showing ${trades.length} of ${total} trades`}
             />
           </>
         )}

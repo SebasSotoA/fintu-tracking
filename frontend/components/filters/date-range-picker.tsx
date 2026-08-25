@@ -187,7 +187,6 @@ export function DateRangePicker({
   }, [open, value])
 
   const triggerLabel = formatLabel(value)
-  const isEmpty = value.from === null
 
   const handleApply = () => {
     onChange(normalizeTradeDateRange(draft))
@@ -209,8 +208,7 @@ export function DateRangePicker({
       variant="outline"
       aria-label={ariaLabel}
       className={cn(
-        "h-8 min-w-[11rem] justify-start gap-2 px-2.5 font-normal md:h-9",
-        isEmpty && "text-muted-foreground",
+        "h-8 min-w-[11rem] justify-start gap-2 px-2.5 text-sm md:h-9",
       )}
     >
       <CalendarIcon className="size-3.5 shrink-0 opacity-70" />

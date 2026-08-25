@@ -4,7 +4,6 @@ import { Suspense, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { TradesList } from "@/components/trades/trades-list"
-import { AddTradeDialog } from "@/components/trades/add-trade-dialog"
 import { listTradeTickers, listTradesPaginated } from "@/lib/api/trades"
 import {
   parseTradeFiltersFromSearchParams,
@@ -67,17 +66,12 @@ function TradesPageContent() {
   const tickers = tickersQuery.data ?? []
 
   return (
-    <>
-      <div className="flex justify-end mb-8">
-        <AddTradeDialog />
-      </div>
-      <TradesList
-        trades={trades}
-        total={total}
-        page={currentPage}
-        pageSize={currentPageSize}
-        tickers={tickers}
-      />
-    </>
+    <TradesList
+      trades={trades}
+      total={total}
+      page={currentPage}
+      pageSize={currentPageSize}
+      tickers={tickers}
+    />
   )
 }
