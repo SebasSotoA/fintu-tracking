@@ -53,7 +53,7 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
       )}
       <div
         className={cn(
-          "min-h-screen transition-[margin-left] duration-200 ease-in-out",
+          "min-h-screen transition-[margin-left] duration-150 ease-in-out",
           collapsed ? SIDEBAR_MAIN_OFFSET_COLLAPSED : SIDEBAR_MAIN_OFFSET_EXPANDED,
         )}
       >

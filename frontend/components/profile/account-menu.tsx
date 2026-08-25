@@ -14,7 +14,6 @@ import { ProfileConfigDialog } from "@/components/profile/profile-config-dialog"
 import { useSignOut } from "@/hooks/use-sign-out"
 import {
   navIconCellClass,
-  navIdle,
   sidebarLabelClass,
 } from "@/components/layout/app-sidebar-constants"
 import type { Profile } from "@/lib/api/me"
@@ -58,9 +57,8 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
         aria-label={collapsed ? "My account" : undefined}
         data-testid="my-account-button"
         className={cn(
-          "flex h-9 min-h-9 max-h-9 items-center gap-1 rounded-lg text-left transition-[padding,background-color,box-shadow] duration-200 ease-in-out",
-          navIdle,
-          collapsed ? "w-9 justify-center" : "w-full justify-start gap-3",
+          "flex h-9 min-h-9 w-full items-center gap-3 rounded-lg text-left transition-colors duration-200",
+          "hover:bg-white/[0.05] hover:text-white",
         )}
       >
         <span className={navIconCellClass}>{userIcon}</span>

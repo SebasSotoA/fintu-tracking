@@ -144,11 +144,11 @@ describe("AppNav", () => {
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument()
   })
 
-  it("uses duration-200 ease-in-out for sidebar width transition", () => {
+  it("uses duration-150 ease-in-out for sidebar width transition", () => {
     renderAppNav(false)
 
     const sidebar = screen.getByTestId("app-sidebar")
-    expect(sidebar.className).toContain("duration-200")
+    expect(sidebar.className).toContain("duration-150")
     expect(sidebar.className).toContain("ease-in-out")
   })
 

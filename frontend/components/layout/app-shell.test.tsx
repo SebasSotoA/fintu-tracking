@@ -98,7 +98,7 @@ describe("AppShell", () => {
     })
   })
 
-  it("uses duration-200 ease-in-out for sidebar margin transition", () => {
+  it("uses duration-150 ease-in-out for sidebar margin transition", () => {
     renderWithProviders(
       <AppShell initialProfile={baseProfile}>
         <div>child</div>
@@ -107,7 +107,7 @@ describe("AppShell", () => {
 
     const main = screen.getByRole("main")
     const wrapper = main.parentElement as HTMLElement
-    expect(wrapper.className).toContain("duration-200")
+    expect(wrapper.className).toContain("duration-150")
     expect(wrapper.className).toContain("ease-in-out")
   })
 })

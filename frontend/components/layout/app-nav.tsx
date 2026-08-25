@@ -14,7 +14,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
-  navActive,
   navIconCellClass,
   navIdle,
   RAIL_PL,
@@ -51,7 +50,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
           "hidden md:flex fixed inset-y-0 left-0 z-40 flex-col h-full overflow-hidden",
           "border-r border-sidebar-border bg-sidebar",
           "shadow-[2px_0_8px_-2px_rgba(0,0,0,0.4)]",
-          "transition-[width] duration-200 ease-in-out",
+          "transition-[width] duration-150 ease-in-out",
           collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED,
         )}
         aria-label="App navigation"
@@ -60,9 +59,10 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
       >
         <div
           className={cn(
-            "flex h-16 shrink-0 items-center gap-1 border-b border-border bg-background transition-[padding] duration-200 ease-in-out",
-            collapsed ? "flex-col justify-center px-0" : "flex-row justify-between",
-            collapsed ? "" : cn(RAIL_PL, RAIL_PR),
+            "flex h-16 shrink-0 items-center border-b border-border bg-background",
+            RAIL_PL,
+            RAIL_PR,
+            "flex-row justify-between",
           )}
         >
           {collapsed ? (
@@ -97,11 +97,11 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
               <Link
                 href="/dashboard"
                 className={cn(
-                  "flex min-w-0 flex-1 items-center gap-1 rounded-lg outline-none",
+                  "flex min-w-0 flex-1 items-center gap-2 rounded-lg outline-none",
                   "focus-visible:ring-2 focus-visible:ring-primary/40",
                 )}
               >
-                <span className={cn(navIconCellClass, "shrink-0")} aria-hidden style={{mixBlendMode: "screen"}}>
+                <span className={cn(navIconCellClass, "shrink-0")} aria-hidden style={{ mixBlendMode: "screen" }}>
                   <Image
                     src="/fintu-aqua-icon.svg"
                     alt=""
@@ -110,6 +110,9 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                     className="size-7 object-contain"
                     priority
                   />
+                </span>
+                <span className="font-sans text-sm font-bold tracking-tight text-foreground">
+                  Fintu
                 </span>
               </Link>
               <button
@@ -132,8 +135,9 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
 
         <nav
           className={cn(
-            "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto py-2 scrollbar-minimal transition-[padding] duration-200 ease-in-out",
-            collapsed ? "px-0" : cn(RAIL_PL, RAIL_PR),
+            "flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto py-2 scrollbar-minimal",
+            RAIL_PL,
+            RAIL_PR,
           )}
           aria-label="Main"
         >
@@ -141,15 +145,22 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
             const Icon = item.icon
             const isActive =
               pathname === item.href || pathname?.startsWith(`${item.href}/`)
-            const iconLeft = collapsed ? "left-[14px]" : "left-0"
             return (
-              <div key={item.href} className="relative h-9 min-h-9">
+              <div key={item.href} className="group relative h-9 min-h-9 w-full">
                 <span
                   aria-hidden
                   className={cn(
-                    "absolute top-0 flex h-9 w-9 items-center justify-center [&_svg]:m-auto transition-[left] duration-200 ease-in-out",
-                    iconLeft,
+                    "absolute top-0 h-9 w-9 rounded-lg transition-colors duration-200",
+                    collapsed && isActive
+                      ? "bg-white/[0.08] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
+                      : collapsed
+                        ? "group-hover:bg-white/[0.05]"
+                        : "",
                   )}
+                />
+                <span
+                  aria-hidden
+                  className="absolute top-0 flex h-9 w-9 items-center justify-center [&_svg]:m-auto"
                 >
                   <Icon className="size-4 shrink-0" aria-hidden />
                 </span>
@@ -157,14 +168,12 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                   href={item.href}
                   aria-label={collapsed ? item.label : undefined}
                   className={cn(
-                    "absolute inset-0 flex items-center rounded-lg text-sm transition-[background-color,box-shadow,padding] duration-200 ease-in-out",
-                    collapsed ? "justify-center" : "justify-start pl-9",
-                    isActive ? "font-semibold" : "font-medium",
-                    isActive
-                      ? collapsed
-                        ? "bg-white/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
-                        : `${navActive}`
-                      : navIdle,
+                    "absolute inset-0 flex items-center rounded-lg pl-11 text-sm transition-colors duration-200",
+                    !collapsed && isActive
+                      ? "bg-white/[0.08] text-white font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
+                      : isActive
+                        ? "font-semibold text-white"
+                        : "font-medium text-sidebar-foreground/70 hover:bg-white/[0.05] hover:text-white",
                   )}
                 >
                   <span className={cn("overflow-hidden", label)} aria-hidden={collapsed}>
@@ -178,9 +187,10 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
 
         <div
           className={cn(
-            "mt-auto flex w-full shrink-0 border-t border-border/10 py-3 transition-[padding] duration-200 ease-in-out",
-            collapsed ? "justify-center px-0" : cn(RAIL_PL, RAIL_PR),
-            collapsed ? "flex-col items-center" : "flex-row items-center",
+            "mt-auto flex w-full shrink-0 border-t border-border/10 py-3",
+            RAIL_PL,
+            RAIL_PR,
+            collapsed ? "flex-col items-start" : "flex-row items-center",
           )}
         >
           <AccountMenu profile={profile} collapsed={collapsed} variant="sidebar" />
