@@ -12,9 +12,11 @@ Fintu was built for the founder first.
 
 He invests in the US market — stocks, ETFs, and crypto — through a local broker, but he deposits in Colombian pesos. The broker converts that money to USD at its own rate and charges fees along the way.
 
-Generic portfolio tools ignore that path. They show a ticker, today’s price, and maybe today’s USD/COP from the news. They never see the conversion the broker actually used or the fees it actually took, so “am I up or down?” is guesswork. You can look rich in dollars and still have lost purchasing power in pesos, or the reverse, and not know which.
+This problem is not unique to Colombia or to COP. Any investor whose broker sits between their local currency and USD has the same blind spot: you deposit pesos, the broker converts to dollars at their rate (with their markup), charges fees on top, and nobody tells you what that conversion actually cost you. Mexico (MXN), Argentina (ARS), Brazil (BRL), Peru (PEN), Chile (CLP) — the currency changes, the problem does not.
 
-Fintu’s job is a simple, deterministic answer: after fees and the broker’s conversion, is this money making or losing?
+Generic portfolio tools ignore that path. They show a ticker, today's price, and maybe today's USD/COP from the news. They never see the conversion the broker actually used or the fees it actually took, so "am I up or down?" is guesswork. You can look rich in dollars and still have lost purchasing power in pesos, or the reverse, and not know which.
+
+Fintu's job is a simple, deterministic answer: after fees and the broker's conversion, is this money making or losing?
 
 Today only the US market is in scope. Other markets come later. Entry is still manual — you record what happened; Fintu does not pull it from the broker.
 
@@ -43,11 +45,11 @@ Fintu is not a broker. It is not a trading app. You already trade elsewhere. Fin
 
 ---
 
-## Who it’s for
+## Who it's for
 
-LATAM retail investors who fund a US brokerage from local currency. Colombia and Hapi are the beachhead.
+Retail investors who fund a US brokerage account through a broker that converts their local currency to USD. Colombia and Hapi are the beachhead.
 
-It is also useful to anyone who wants honest returns after costs: the same fees-and-FX problem shows up whenever a broker sits between your pesos (or other local cash) and a US account.
+The problem is currency-agnostic: any investor whose broker sits between their pesos (COP, MXN, ARS, BRL, PEN, CLP — or any local currency) and a US account loses money on the FX spread and fees, and nobody tells them how much. Fintu does.
 
 Mexico is modeled so the product is not Colombia-only in principle. You can pick a country and a broker, including other local names besides Hapi. Go-to-market stays Colombia first until that beachhead is real.
 
@@ -105,6 +107,56 @@ This started as a personal tool: track a Hapi account honestly, including the co
 The idea did not change. The product grew around it. Fees and FX were first-class from the start — because that was the whole point. Then a dashboard and a performance view so “am I winning?” had a home. Then onboarding, broker choice, and a path to charge later, once the book was something other people might use.
 
 Recent work is making it launchable — online, with fresh prices, then a small beta — not inventing a new thesis.
+
+---
+
+## Competitive landscape
+
+The broad "portfolio tracker" category is crowded. That is not the question. The question is whether the specific problem Fintu solves is well served.
+
+### What exists
+
+| Category | Products | Do they solve fees + FX? |
+|----------|----------|------------------------|
+| Global trackers (advanced) | Sharesight, Capitally, Portseido | Yes — deep FX attribution + fee decomposition. Built for advanced DIY investors. Priced for developed markets. No LATAM focus. |
+| Global trackers (general) | Delta, PortfolioTrackr, GuardFolio | Partial — some FX, no fee-specific tracking. |
+| Multi-currency dashboards | Curravo, FlashFi, Foliopal | Partial — FX rates, but no fee attribution. Foliopal is closest in spirit ("real FX-adjusted gains, the clarity your broker's app will never give you") but generic, not LATAM. |
+| LATAM-specific | Inversoria | Broker imports (Hapi, Trii, XTB, IBKR) + AI stock analysis. No explicit fee/FX attribution. A trading companion, not a truth ledger. |
+| Brokers themselves | Hapi, Trii, eToro | Show positions and gross returns. Do not show net-of-fees-and-FX performance. Conflict of interest — they don't want to highlight how much fees eat returns. |
+
+### Where Fintu sits
+
+Fintu is not a general portfolio tracker. It is the **truth ledger for investors whose broker converts their local currency to USD**.
+
+The specific wedge: a retail investor sends pesos (COP, MXN, ARS, BRL, PEN, CLP — any local currency) to a broker that converts to USD at the broker's own rate. The broker takes a spread on the FX and charges fees on top. Nobody tells the investor what that conversion actually cost them, or whether they're actually making money after all of it.
+
+That problem is currency-agnostic. Colombia + Hapi is the beachhead because that's the founder's experience. But the thesis applies to:
+
+- Mexico: MXN → USD via Hapi or eToro
+- Argentina: ARS → USD via any broker offering US stocks
+- Brazil: BRL → USD via Hapi, eToro, Nuinvest
+- Peru/Chile: PEN/CLP → USD via Hapi or eToro
+- Anywhere: local currency → USD (or in the future, other currencies)
+
+### What Fintu should NOT compete on
+
+- Advanced analytics (TWR, MWR, IRR, options tracking) — Capitally owns this
+- Broker integrations / CSV imports — Inversoria and Sharesight own this
+- Tax reporting — Sharesight owns this globally
+
+### What Fintu's moat is
+
+- **The honest answer**: "Am I making or losing money after fees and FX?" in plain language — no XIRR, no "fee drag," no jargon. Nobody does this well.
+- **Broker FX awareness**: Understanding that the broker's conversion rate is not the market rate, and quantifying what that gap cost you.
+- **Currency-agnostic**: Any local currency → USD (or future currency pairs). Not limited to COP.
+- **Plain language**: "You're up $X after fees and FX." Not "Your money-weighted return is Y% with a fee drag of Z%."
+- **Speed + focus**: Being the first to nail this specific niche before global tools localize or LATAM tools add depth.
+
+### The real risk
+
+The risk is not that the category is crowded. The risk is distribution — reaching 20–50 paying users who care about fees and FX before either (a) global tools like Capitally localize to Spanish, or (b) LATAM tools like Inversoria add fee attribution, or (c) brokers like Hapi add "true performance after fees" themselves.
+
+The code is mostly built. The remaining work is: ship it, put it in front of Hapi users, and ask "would you pay for this?"
 
 ---
 
