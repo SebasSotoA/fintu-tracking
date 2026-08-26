@@ -1,15 +1,17 @@
 "use client"
 
 import { useMemo } from "react"
+import Link from "next/link"
+import { useQuery } from "@tanstack/react-query"
+import { ArrowRight } from "lucide-react"
 import type { CashFlow } from "@/lib/types"
 import { Decimal, formatCurrency } from "@/lib/decimal"
 import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { listCashFlowsForExport } from "@/lib/api/cash-flows"
+import { queryKeys } from "@/lib/api/query-keys"
 import { cn } from "@/lib/utils"
-
-interface FeesBreakdownProps {
-  cashFlows: CashFlow[]
-}
 
 function isTransferFee(cf: CashFlow): boolean {
   return (
@@ -48,7 +50,13 @@ function formatUSD(value: Decimal): string {
   return formatCurrency(value.toString(), MARKET_CONFIG.baseCurrency)
 }
 
-export function FeesBreakdown({ cashFlows }: FeesBreakdownProps) {
+export function FeesBreakdown() {
+  const { data: cashFlows = [], isLoading } = useQuery<CashFlow[]>({
+    queryKey: queryKeys.cashFlowsExport(),
+    queryFn: () => listCashFlowsForExport(),
+    staleTime: 60_000,
+  })
+
   const transferFees = useMemo(() => cashFlows.filter(isTransferFee), [cashFlows])
   const tradingFees = useMemo(() => cashFlows.filter(isTradingFee), [cashFlows])
   const standaloneFees = useMemo(() => cashFlows.filter(isStandaloneFee), [cashFlows])
@@ -56,6 +64,19 @@ export function FeesBreakdown({ cashFlows }: FeesBreakdownProps) {
   const transferTotal = sumAmount(transferFees)
   const tradingTotal = sumAmount(tradingFees)
   const grandTotal = transferTotal.add(tradingTotal)
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="space-y-3 py-6">
+          <Skeleton className="h-6 w-1/2" />
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-full" />
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
@@ -95,6 +116,13 @@ export function FeesBreakdown({ cashFlows }: FeesBreakdownProps) {
             {standaloneFees.length} unlinked fee row{standaloneFees.length > 1 ? "s" : ""} need review
           </p>
         )}
+        <Link
+          href="/cash-flows"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          View full breakdown
+          <ArrowRight className="size-4" aria-hidden />
+        </Link>
       </CardContent>
     </Card>
   )

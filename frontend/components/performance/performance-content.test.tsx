@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render } from "@testing-library/react"
 import type { NetWorthData } from "@/lib/types"
 import { PerformanceContent } from "./performance-content"
 
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: [] }),
+  useQuery: () => ({ data: undefined }),
 }))
 
 vi.mock("next/dynamic", () => ({
@@ -19,12 +19,8 @@ vi.mock("next/dynamic", () => ({
   },
 }))
 
-vi.mock("./performance-hero", () => ({
-  PerformanceHero: () => <div data-testid="performance-hero" />,
-}))
-
-vi.mock("./money-breakdown", () => ({
-  MoneyBreakdown: () => <div data-testid="money-breakdown" />,
+vi.mock("./performance-summary-card", () => ({
+  PerformanceSummaryCard: () => <div data-testid="performance-summary" />,
 }))
 
 vi.mock("./fees-breakdown", () => ({
@@ -54,20 +50,13 @@ function sectionTestIds(container: HTMLElement): string[] {
 }
 
 describe("PerformanceContent", () => {
-  it("renders hero, breakdown, chart, fees, and FX card in order", () => {
+  it("renders 2x2 grid: summary + chart on top, fees + fx on bottom", () => {
     const { container } = render(<PerformanceContent netWorth={netWorth} />)
     expect(sectionTestIds(container)).toEqual([
-      "performance-hero",
-      "money-breakdown",
+      "performance-summary",
       "portfolio-performance-chart",
       "fees-breakdown",
       "fx-impact-card",
     ])
-  })
-
-  it("does not render legacy components (return attribution, cumulative deposits)", () => {
-    render(<PerformanceContent netWorth={netWorth} />)
-    expect(screen.queryByTestId("return-attribution")).not.toBeInTheDocument()
-    expect(screen.queryByTestId("performance-charts")).not.toBeInTheDocument()
   })
 })

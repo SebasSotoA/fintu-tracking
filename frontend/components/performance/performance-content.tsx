@@ -1,12 +1,8 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { useQuery } from "@tanstack/react-query"
 import type { NetWorthData } from "@/lib/types"
-import { listCashFlowsForExport } from "@/lib/api/cash-flows"
-import { queryKeys } from "@/lib/api/query-keys"
-import { PerformanceHero } from "@/components/performance/performance-hero"
-import { MoneyBreakdown } from "@/components/performance/money-breakdown"
+import { PerformanceSummaryCard } from "@/components/performance/performance-summary-card"
 import { FeesBreakdown } from "@/components/performance/fees-breakdown"
 import { FxImpactCard } from "@/components/performance/fx-impact-card"
 
@@ -27,19 +23,14 @@ export interface PerformanceContentProps {
 }
 
 export function PerformanceContent({ netWorth }: PerformanceContentProps) {
-  const { data: cashFlows = [] } = useQuery({
-    queryKey: queryKeys.cashFlowsExport(),
-    queryFn: () => listCashFlowsForExport(),
-    staleTime: 60_000,
-  })
-
   return (
     <div className="space-y-6">
-      <PerformanceHero initialNetWorth={netWorth} />
-      <MoneyBreakdown />
-      <PortfolioPerformanceChart />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_2fr]">
+        <PerformanceSummaryCard initialNetWorth={netWorth} />
+        <PortfolioPerformanceChart />
+      </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <FeesBreakdown cashFlows={cashFlows} />
+        <FeesBreakdown />
         <FxImpactCard />
       </div>
     </div>

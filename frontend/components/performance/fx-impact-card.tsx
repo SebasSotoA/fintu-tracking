@@ -1,7 +1,9 @@
 "use client"
 
 import type React from "react"
+import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
+import { ArrowRight } from "lucide-react"
 import Decimal from "decimal.js"
 import { getFxImpact } from "@/lib/api/analytics"
 import type { FxImpactReport } from "@/lib/api/analytics"
@@ -110,6 +112,13 @@ export function FxImpactCard(): React.JSX.Element {
             </div>
           )}
         </div>
+        <Link
+          href="/cash-flows"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+        >
+          View FX details
+          <ArrowRight className="size-4" aria-hidden />
+        </Link>
       </CardContent>
     </Card>
   )
