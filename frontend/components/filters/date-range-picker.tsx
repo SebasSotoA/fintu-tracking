@@ -51,6 +51,7 @@ function DateRangePickerContent({
   setRangeSelection,
   draft,
   setDraft,
+  onPreset,
 }: {
   mode: "day" | "range"
   setMode: (mode: "day" | "range") => void
@@ -60,6 +61,7 @@ function DateRangePickerContent({
   setRangeSelection: (range: DateRange | undefined) => void
   draft: TradeDateRange
   setDraft: (draft: TradeDateRange) => void
+  onPreset: (preset: TradeDatePreset) => void
 }) {
   const handleModeChange = (next: string) => {
     const nextMode = next as "day" | "range"
@@ -77,17 +79,6 @@ function DateRangePickerContent({
         setDraft({ from: draft.from, to: draft.from })
       }
     }
-  }
-
-  const handlePreset = (preset: TradeDatePreset) => {
-    const next = applyTradeDatePreset(preset)
-    setMode("range")
-    setDraft(next)
-    setRangeSelection({
-      from: parseCalendarDay(next.from),
-      to: parseCalendarDay(next.to),
-    })
-    setSingleDay(undefined)
   }
 
   return (
@@ -149,7 +140,7 @@ function DateRangePickerContent({
             variant="ghost"
             size="sm"
             className="h-7 px-2 text-xs"
-            onClick={() => handlePreset(preset.id)}
+            onClick={() => onPreset(preset.id)}
           >
             {preset.label}
           </Button>
@@ -198,6 +189,12 @@ export function DateRangePicker({
     setSingleDay(undefined)
     setRangeSelection(undefined)
     onChange(EMPTY_TRADE_DATE_RANGE)
+    setOpen(false)
+  }
+
+  const handlePreset = (preset: TradeDatePreset) => {
+    const next = applyTradeDatePreset(preset)
+    onChange(normalizeTradeDateRange(next))
     setOpen(false)
   }
 
@@ -268,6 +265,7 @@ export function DateRangePicker({
                 setRangeSelection={setRangeSelection}
                 draft={draft}
                 setDraft={setDraft}
+                onPreset={handlePreset}
               />
             </div>
             <DrawerFooter className="px-4 pb-6">
@@ -296,6 +294,7 @@ export function DateRangePicker({
             setRangeSelection={setRangeSelection}
             draft={draft}
             setDraft={setDraft}
+            onPreset={handlePreset}
           />
           {Footer}
         </PopoverContent>

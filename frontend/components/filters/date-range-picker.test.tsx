@@ -1,8 +1,12 @@
-import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
+import { render, screen, fireEvent } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { DateRangePicker } from "./date-range-picker"
-import { EMPTY_TRADE_DATE_RANGE } from "@/lib/trades/trade-filters"
+import {
+  EMPTY_TRADE_DATE_RANGE,
+  applyTradeDatePreset,
+  normalizeTradeDateRange,
+} from "@/lib/trades/trade-filters"
 
 const useIsMobileMock = vi.fn()
 
@@ -112,5 +116,51 @@ describe("DateRangePicker", () => {
     await user.click(screen.getByRole("button", { name: /^clear$/i }))
 
     expect(onChange).toHaveBeenCalledWith(EMPTY_TRADE_DATE_RANGE)
+  })
+
+  describe("preset auto-apply", () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["Date"] })
+      vi.setSystemTime(new Date(2026, 7, 25))
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it.each([
+      ["last30d" as const, "Last 30d"],
+      ["ytd" as const, "YTD"],
+      ["12m" as const, "12M"],
+    ])("clicking %s auto-applies and closes (desktop)", async (preset, label) => {
+      const user = userEvent.setup()
+      const { onChange } = renderPicker({ isMobile: false })
+
+      await user.click(screen.getAllByRole("button", { name: /filter cash flows by date/i })[0])
+      await user.click(screen.getByRole("button", { name: new RegExp(`^${label}$`, "i") }))
+
+      expect(onChange).toHaveBeenCalledOnce()
+      expect(onChange).toHaveBeenCalledWith(
+        normalizeTradeDateRange(applyTradeDatePreset(preset, new Date(2026, 7, 25))),
+      )
+      expect(document.querySelector("[data-slot='popover-content']")).not.toBeInTheDocument()
+    })
+
+    it("clicking Last 30d auto-applies and closes (mobile)", async () => {
+      const user = userEvent.setup()
+      const { onChange } = renderPicker({ isMobile: true })
+
+      await user.click(screen.getAllByRole("button", { name: /filter cash flows by date/i })[0])
+      fireEvent.click(screen.getByRole("button", { name: /^last 30d$/i }))
+
+      expect(onChange).toHaveBeenCalledOnce()
+      expect(onChange).toHaveBeenCalledWith(
+        normalizeTradeDateRange(applyTradeDatePreset("last30d", new Date(2026, 7, 25))),
+      )
+      expect(document.querySelector("[data-slot='drawer-content']")).toHaveAttribute(
+        "data-state",
+        "closed",
+      )
+    })
   })
 })
