@@ -1,17 +1,11 @@
 export const PERFORMANCE_TOOLTIPS = {
-  startingCapital: "Capital deployed at the start of the attribution period.",
-  marketGains: "Change in holdings value from market moves, before fees and FX.",
-  totalFeesImpact: "All deposit, trading, and closing fees reducing your position.",
-  netPosition: "Ending portfolio value after gains, fees, and FX.",
-  netWorth: "Ending portfolio value (holdings + cash) after market gains and fees.",
-  netReturnPct:
-    "Total gain/loss including uninvested cash, as % of capital deployed (total invested).",
-  feeDrag:
-    "Total fees paid as % of total invested. How much fees reduced your return.",
-  timeWeightedReturn:
-    "Internal rate of return (XIRR) across cash flows; shown when available from analytics.",
-  portfolioVsInvested:
-    "Historical portfolio value compared to cumulative invested capital over time.",
-  feeEfficiency:
-    "Average fee as % of trade notional per ticker. Higher values mean more expensive trading.",
+  gainLoss:
+    "Your total profit or loss after market gains, fees, and FX — compared to what you invested.",
+  invested: "Total capital you've put into the market (deposits minus withdrawals).",
+  marketGains:
+    "How much your holdings went up or down in value from market moves, before fees.",
+  feesPaid: "All fees the broker charged you: deposit, trading, and closing fees.",
+  fxImpact:
+    "How much the COP→USD exchange rate cost or made you, based on the rate you got vs the current rate.",
+  currentValue: "What your portfolio is worth right now: holdings + cash.",
 } as const

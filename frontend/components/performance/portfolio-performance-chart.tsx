@@ -1,8 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useQuery, keepPreviousData } from "@tanstack/react-query"
-import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts"
 import { AlertCircleIcon } from "lucide-react"
 import {
   getPerformanceTimeSeries,
@@ -12,14 +20,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
 import { queryKeys } from "@/lib/api/query-keys"
-import { formatCurrency } from "@/lib/decimal"
 import Decimal from "decimal.js"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { CHART_HEIGHT_SHORT } from "@/lib/chart-sizes"
@@ -30,74 +31,35 @@ const INTERVAL_OPTIONS: { value: PerformanceInterval; label: string }[] = [
   { value: "year", label: "Year" },
 ]
 
-const chartConfig = {
-  portfolio_value: {
-    label: "Portfolio value",
-    color: "var(--chart-1)",
-  },
-  invested_capital: {
-    label: "Invested capital",
-    color: "var(--chart-2)",
-  },
-  spy_indexed: {
-    label: "SPY (indexed)",
-    color: "var(--chart-4)",
-  },
-} satisfies ChartConfig
-
-const TOOLTIP_CLASS =
-  "border-border bg-popover text-popover-foreground shadow-md"
-
 function formatChartDate(date: string): string {
   const parsed = new Date(date)
   if (Number.isNaN(parsed.getTime())) return date
   return parsed.toLocaleDateString("en-US", { month: "short", year: "numeric" })
 }
 
-function toChartData(points: PerformancePoint[]) {
-  return points.map((point) => ({
-    date: point.date,
-    label: formatChartDate(point.date),
-    portfolio_value: new Decimal(point.portfolio_value || "0").toNumber(),
-    invested_capital: new Decimal(point.invested_capital || "0").toNumber(),
-    spy_indexed: point.spy_indexed
-      ? new Decimal(point.spy_indexed).toNumber()
-      : null,
-  }))
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: MARKET_CONFIG.baseCurrency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value)
 }
 
-function hasSpySeries(points: PerformancePoint[]): boolean {
-  return points.some((p) => p.spy_indexed && p.spy_indexed !== "")
+interface ChartTooltipProps {
+  active?: boolean
+  payload?: Array<{ value: number; payload: { label: string } }>
 }
 
-function ChartHeaderLegend({ showSpy }: { showSpy: boolean }) {
+function ChartTooltipContent({ active, payload }: ChartTooltipProps) {
+  if (!active || !payload?.length) return null
+  const point = payload[0]
   return (
-    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-      <span className="flex items-center gap-1.5">
-        <span
-          className="h-2 w-2 shrink-0 rounded-[2px]"
-          style={{ backgroundColor: "var(--chart-1)" }}
-          aria-hidden
-        />
-        Portfolio value
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span
-          className="h-2 w-2 shrink-0 rounded-[2px] border border-dashed border-[var(--chart-2)] bg-transparent"
-          aria-hidden
-        />
-        Invested capital
-      </span>
-      {showSpy ? (
-        <span className="flex items-center gap-1.5">
-          <span
-            className="h-2 w-2 shrink-0 rounded-[2px]"
-            style={{ backgroundColor: "var(--chart-4)" }}
-            aria-hidden
-          />
-          SPY (indexed)
-        </span>
-      ) : null}
+    <div className="rounded-md border border-border bg-popover px-3 py-2 shadow-md text-popover-foreground">
+      <p className="text-xs font-medium">{point.payload.label}</p>
+      <p className="text-sm font-mono font-semibold tabular-nums">
+        {formatCurrency(point.value)}
+      </p>
     </div>
   )
 }
@@ -105,12 +67,29 @@ function ChartHeaderLegend({ showSpy }: { showSpy: boolean }) {
 export function PortfolioPerformanceChart() {
   const [interval, setInterval] = useState<PerformanceInterval>("month")
 
-  const { data: points = [], isLoading, error } = useQuery({
+  const { data: points = [], isLoading, error } = useQuery<PerformancePoint[]>({
     queryKey: queryKeys.performanceTimeSeries(interval),
     queryFn: () => getPerformanceTimeSeries(interval),
     retry: false,
     placeholderData: keepPreviousData,
   })
+
+  const chartData = useMemo(
+    () =>
+      points.map((point) => ({
+        label: formatChartDate(point.date),
+        value: new Decimal(point.portfolio_value || "0").toNumber(),
+      })),
+    [points],
+  )
+
+  const isPositiveTrend = useMemo(() => {
+    if (chartData.length < 2) return true
+    return chartData[chartData.length - 1].value >= chartData[0].value
+  }, [chartData])
+
+  const chartColor = isPositiveTrend ? "var(--success)" : "var(--destructive)"
+  const gradientId = "perfChartGradient"
 
   const showInitialSkeleton = isLoading && points.length === 0
 
@@ -118,7 +97,7 @@ export function PortfolioPerformanceChart() {
     return (
       <Card>
         <CardHeader>
-          <Skeleton className="h-6 w-64" />
+          <Skeleton className="h-6 w-48" />
         </CardHeader>
         <CardContent>
           <Skeleton className={`${CHART_HEIGHT_SHORT} w-full`} />
@@ -132,7 +111,7 @@ export function PortfolioPerformanceChart() {
       <Card>
         <CardHeader>
           <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-            Portfolio vs invested
+            Your money over time
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -146,18 +125,12 @@ export function PortfolioPerformanceChart() {
     )
   }
 
-  const chartData = toChartData(points)
-  const showSpy = hasSpySeries(points)
-
   return (
     <Card>
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-            Portfolio vs invested
-          </CardTitle>
-          <ChartHeaderLegend showSpy={showSpy} />
-        </div>
+        <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+          Your money over time
+        </CardTitle>
         <ToggleGroup
           type="single"
           value={interval}
@@ -176,82 +149,57 @@ export function PortfolioPerformanceChart() {
         </ToggleGroup>
       </CardHeader>
       <CardContent>
-        {chartData.length === 0 ? (
+        {chartData.length < 2 ? (
           <div className="flex min-h-[260px] md:min-h-[320px] flex-col items-center justify-center text-muted-foreground">
             <AlertCircleIcon className="mb-3 h-10 w-10 opacity-40" />
             <p className="font-medium">No performance data yet</p>
-            <p className="mt-1 text-sm">Add trades and cash flows to calculate returns, fees, and XIRR.</p>
+            <p className="mt-1 text-sm">Add trades and cash flows to see your money over time.</p>
           </div>
         ) : (
-          <ChartContainer config={chartConfig} className={`${CHART_HEIGHT_SHORT} w-full aspect-auto`}>
-            <LineChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--muted-foreground)" strokeOpacity={0.1} />
-              <XAxis
-                dataKey="label"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                stroke="var(--muted-foreground)"
-                strokeOpacity={0.3}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                stroke="var(--muted-foreground)"
-                strokeOpacity={0.3}
-                tickFormatter={(value: number) =>
-                  new Intl.NumberFormat("en-US", {
-                    notation: "compact",
-                    maximumFractionDigits: 1,
-                  }).format(value)
-                }
-              />
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    className={TOOLTIP_CLASS}
-                    labelFormatter={(_, payload) => {
-                      const item = payload?.[0]?.payload as { label?: string } | undefined
-                      return item?.label ?? ""
-                    }}
-                    formatter={(value, name) => (
-                      <span className="font-mono font-medium tabular-nums text-foreground">
-                        {name === "spy_indexed"
-                          ? Number(value).toFixed(2)
-                          : formatCurrency(String(value), MARKET_CONFIG.baseCurrency)}
-                      </span>
-                    )}
-                  />
-                }
-              />
-              <Line
-                type="monotone"
-                dataKey="portfolio_value"
-                stroke="var(--color-portfolio_value)"
-                strokeWidth={2.5}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="invested_capital"
-                stroke="var(--color-invested_capital)"
-                strokeWidth={2}
-                strokeDasharray="6 4"
-                dot={false}
-              />
-              {showSpy ? (
-                <Line
-                  type="monotone"
-                  dataKey="spy_indexed"
-                  stroke="var(--color-spy_indexed)"
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls
+          <div className={`${CHART_HEIGHT_SHORT} w-full`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={chartColor} stopOpacity={0.32} />
+                    <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  vertical={false}
+                  stroke="var(--border)"
+                  strokeOpacity={0.4}
                 />
-              ) : null}
-            </LineChart>
-          </ChartContainer>
+                <XAxis
+                  dataKey="label"
+                  tick={{ fill: "var(--muted-foreground)", fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  minTickGap={32}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  hide
+                  domain={["auto", "auto"]}
+                />
+                <Tooltip
+                  cursor={{ stroke: "var(--muted-foreground)", strokeOpacity: 0.4, strokeDasharray: 3 }}
+                  content={<ChartTooltipContent />}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke={chartColor}
+                  strokeWidth={2.5}
+                  fill={`url(#${gradientId})`}
+                  dot={false}
+                  activeDot={{ r: 4, fill: chartColor, stroke: "var(--background)", strokeWidth: 2 }}
+                  isAnimationActive={false}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>

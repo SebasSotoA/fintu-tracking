@@ -3,10 +3,9 @@
 import { useMemo } from "react"
 import type { CashFlow } from "@/lib/types"
 import { Decimal, formatCurrency } from "@/lib/decimal"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 interface FeesBreakdownProps {
   cashFlows: CashFlow[]
@@ -38,9 +37,15 @@ function isStandaloneFee(cf: CashFlow): boolean {
   )
 }
 
-function sumBaseCurrency(flows: CashFlow[]): string {
-  const total = flows.reduce((sum, cf) => sum.add(new Decimal(cf.usd_amount || cf.amount || "0")), new Decimal(0))
-  return formatCurrency(total.toString(), MARKET_CONFIG.baseCurrency)
+const BADGE_BASE =
+  "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0"
+
+function sumAmount(flows: CashFlow[]): Decimal {
+  return flows.reduce((sum, cf) => sum.add(new Decimal(cf.usd_amount || cf.amount || "0")), new Decimal(0))
+}
+
+function formatUSD(value: Decimal): string {
+  return formatCurrency(value.toString(), MARKET_CONFIG.baseCurrency)
 }
 
 export function FeesBreakdown({ cashFlows }: FeesBreakdownProps) {
@@ -48,31 +53,48 @@ export function FeesBreakdown({ cashFlows }: FeesBreakdownProps) {
   const tradingFees = useMemo(() => cashFlows.filter(isTradingFee), [cashFlows])
   const standaloneFees = useMemo(() => cashFlows.filter(isStandaloneFee), [cashFlows])
 
+  const transferTotal = sumAmount(transferFees)
+  const tradingTotal = sumAmount(tradingFees)
+  const grandTotal = transferTotal.add(tradingTotal)
+
   return (
     <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Fees</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="py-6">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+          Fees paid
+        </h3>
+        <p className="text-2xl font-bold font-mono tabular-nums text-destructive mb-4">
+          {formatUSD(grandTotal)}
+        </p>
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={cn(BADGE_BASE, "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-400/20")}>
+                Transfer
+              </span>
+              <span className="text-sm text-muted-foreground">Deposit & withdrawal fees</span>
+            </div>
+            <span className="text-sm font-mono font-semibold tabular-nums text-destructive">
+              {formatUSD(transferTotal)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={cn(BADGE_BASE, "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-400/20")}>
+                Trading
+              </span>
+              <span className="text-sm text-muted-foreground">Trade commissions</span>
+            </div>
+            <span className="text-sm font-mono font-semibold tabular-nums text-destructive">
+              {formatUSD(tradingTotal)}
+            </span>
+          </div>
+        </div>
         {standaloneFees.length > 0 && (
-          <Badge variant="destructive">
+          <p className="mt-4 text-xs text-muted-foreground">
             {standaloneFees.length} unlinked fee row{standaloneFees.length > 1 ? "s" : ""} need review
-          </Badge>
+          </p>
         )}
-        <Tabs defaultValue="transfer" className="w-full">
-          <TabsList>
-            <TabsTrigger value="transfer">Transfer fees</TabsTrigger>
-            <TabsTrigger value="trading">Trading fees</TabsTrigger>
-          </TabsList>
-          <TabsContent value="transfer" className="space-y-2 pt-3">
-            <p className="text-sm text-muted-foreground">Deposit and withdrawal transfer fees linked to cash flows.</p>
-            <p className="text-2xl font-semibold font-mono">{sumBaseCurrency(transferFees)}</p>
-          </TabsContent>
-          <TabsContent value="trading" className="space-y-2 pt-3">
-            <p className="text-sm text-muted-foreground">Trading commissions linked to trade executions.</p>
-            <p className="text-2xl font-semibold font-mono">{sumBaseCurrency(tradingFees)}</p>
-          </TabsContent>
-        </Tabs>
       </CardContent>
     </Card>
   )

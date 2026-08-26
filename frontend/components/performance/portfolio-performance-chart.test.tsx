@@ -12,15 +12,14 @@ vi.mock("@/lib/api/analytics", () => ({
 }))
 
 vi.mock("recharts", () => ({
-  LineChart: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="line-chart">{children}</div>
+  AreaChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="area-chart">{children}</div>
   ),
-  Line: () => null,
+  Area: () => null,
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
   Tooltip: () => null,
-  Legend: () => null,
   ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="responsive-container">{children}</div>
   ),
@@ -74,12 +73,9 @@ describe("PortfolioPerformanceChart", () => {
   it("renders chart when points exist", async () => {
     renderChart()
     await waitFor(() => {
-      expect(screen.getByText("Portfolio vs invested")).toBeInTheDocument()
+      expect(screen.getByText("Your money over time")).toBeInTheDocument()
     })
-    expect(screen.queryByText(/historical path of holdings/i)).toBeNull()
-    expect(screen.getByTestId("line-chart")).toBeInTheDocument()
-    expect(screen.getByText("Portfolio value")).toBeInTheDocument()
-    expect(screen.getByText("Invested capital")).toBeInTheDocument()
+    expect(screen.getByTestId("area-chart")).toBeInTheDocument()
   })
 
   it("shows empty state when API returns no points", async () => {
@@ -88,7 +84,7 @@ describe("PortfolioPerformanceChart", () => {
     await waitFor(() => {
       expect(screen.getByText(/no performance data yet/i)).toBeInTheDocument()
     })
-    expect(screen.queryByTestId("line-chart")).toBeNull()
+    expect(screen.queryByTestId("area-chart")).toBeNull()
   })
 
   it("shows error state when fetch fails", async () => {
@@ -97,7 +93,7 @@ describe("PortfolioPerformanceChart", () => {
     await waitFor(() => {
       expect(screen.getByText(/unable to load performance history/i)).toBeInTheDocument()
     })
-    expect(screen.queryByTestId("line-chart")).toBeNull()
+    expect(screen.queryByTestId("area-chart")).toBeNull()
   })
 
   it("refetches when interval changes to quarter", async () => {

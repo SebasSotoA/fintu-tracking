@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
 import type { CashFlow } from "@/lib/types"
 import { FeesBreakdown } from "./fees-breakdown"
 
@@ -27,8 +26,7 @@ function cashFlow(overrides: Partial<CashFlow>): CashFlow {
 }
 
 describe("FeesBreakdown", () => {
-  it("shows transfer and trading fees in separate tabs", async () => {
-    const user = userEvent.setup()
+  it("shows total fees paid with transfer and trading breakdown", () => {
     render(
       <FeesBreakdown
         cashFlows={[
@@ -38,8 +36,11 @@ describe("FeesBreakdown", () => {
       />,
     )
 
+    expect(screen.getByText("Fees paid")).toBeInTheDocument()
+    expect(screen.getByText("$4.49")).toBeInTheDocument()
+    expect(screen.getByText("Transfer")).toBeInTheDocument()
     expect(screen.getByText("$1.99")).toBeInTheDocument()
-    await user.click(screen.getByRole("tab", { name: "Trading fees" }))
+    expect(screen.getByText("Trading")).toBeInTheDocument()
     expect(screen.getByText("$2.50")).toBeInTheDocument()
   })
 

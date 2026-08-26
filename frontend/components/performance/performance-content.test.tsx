@@ -1,49 +1,18 @@
 import { describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
-import type { CashFlow, NetWorthData } from "@/lib/types"
+import type { NetWorthData } from "@/lib/types"
 import { PerformanceContent } from "./performance-content"
 
-const mockCashFlows: CashFlow[] = [
-  {
-    id: "cf-1",
-    user_id: "u1",
-    type: "deposit",
-    amount: "100",
-    currency: "USD",
-    fx_rate: null,
-    usd_amount: "100.00",
-    broker_id: null,
-    date: "2024-01-01",
-    notes: null,
-    fee_type: null,
-    related_trade_id: null,
-    related_cash_flow_id: null,
-    related_type: null,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-01-01T00:00:00Z",
-  },
-]
-
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: mockCashFlows }),
+  useQuery: () => ({ data: [] }),
 }))
 
 vi.mock("next/dynamic", () => ({
   default: (loader: () => Promise<unknown>) => {
-    return function MockDynamic(props: Record<string, unknown>) {
+    return function MockDynamic() {
       const name = loader.toString()
       if (name.includes("portfolio-performance-chart")) {
         return <div data-testid="portfolio-performance-chart" />
-      }
-      if (name.includes("return-attribution")) {
-        return <div data-testid="return-attribution" />
-      }
-      if (name.includes("performance-charts")) {
-        return (
-          <div data-testid="performance-charts">
-            flows:{(props.cashFlows as CashFlow[] | undefined)?.length ?? 0}
-          </div>
-        )
       }
       return null
     }
@@ -51,15 +20,19 @@ vi.mock("next/dynamic", () => ({
 }))
 
 vi.mock("./performance-hero", () => ({
-  PerformanceHero: ({ cashFlows }: { cashFlows: CashFlow[] }) => (
-    <div data-testid="performance-hero">flows:{cashFlows.length}</div>
-  ),
+  PerformanceHero: () => <div data-testid="performance-hero" />,
+}))
+
+vi.mock("./money-breakdown", () => ({
+  MoneyBreakdown: () => <div data-testid="money-breakdown" />,
 }))
 
 vi.mock("./fees-breakdown", () => ({
-  FeesBreakdown: ({ cashFlows }: { cashFlows: CashFlow[] }) => (
-    <div data-testid="fees-breakdown">flows:{cashFlows.length}</div>
-  ),
+  FeesBreakdown: () => <div data-testid="fees-breakdown" />,
+}))
+
+vi.mock("./fx-impact-card", () => ({
+  FxImpactCard: () => <div data-testid="fx-impact-card" />,
 }))
 
 const netWorth: NetWorthData = {
@@ -81,22 +54,20 @@ function sectionTestIds(container: HTMLElement): string[] {
 }
 
 describe("PerformanceContent", () => {
-  it("loads cash flows via TanStack Query for hero and charts", () => {
+  it("renders hero, breakdown, chart, fees, and FX card in order", () => {
     const { container } = render(<PerformanceContent netWorth={netWorth} />)
-    expect(screen.getByTestId("performance-hero")).toHaveTextContent("flows:1")
-    expect(screen.getByTestId("performance-charts")).toHaveTextContent("flows:1")
     expect(sectionTestIds(container)).toEqual([
       "performance-hero",
+      "money-breakdown",
       "portfolio-performance-chart",
-      "return-attribution",
       "fees-breakdown",
-      "performance-charts",
+      "fx-impact-card",
     ])
   })
 
-  it("does not render legacy performance metrics grid", () => {
+  it("does not render legacy components (return attribution, cumulative deposits)", () => {
     render(<PerformanceContent netWorth={netWorth} />)
-    expect(screen.queryByText("XIRR (USD)")).not.toBeInTheDocument()
-    expect(screen.queryByText("Portfolio Value")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("return-attribution")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("performance-charts")).not.toBeInTheDocument()
   })
 })
