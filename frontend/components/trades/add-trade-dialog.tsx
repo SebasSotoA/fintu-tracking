@@ -140,7 +140,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
           <ResponsiveDialogDescription>Record a buy or sell for a stock, ETF, or crypto</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <DialogScrollBody>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="add-trade-form" onSubmit={handleSubmit} className="space-y-4">
             <ResponsiveFormGrid>
               <SingleDatePicker
                 id="date"
@@ -294,17 +294,16 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
             </div>
 
             {error && <p className="text-sm text-destructive">{error}</p>}
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-                {isLoading ? "Adding..." : "Add Trade"}
-              </Button>
-            </div>
           </form>
         </DialogScrollBody>
+        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
+            Cancel
+          </Button>
+          <Button type="submit" form="add-trade-form" disabled={isLoading} className="w-full sm:w-auto">
+            {isLoading ? "Adding..." : "Add Trade"}
+          </Button>
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )

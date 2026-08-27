@@ -49,11 +49,11 @@ export function DeleteCashFlowDialog({ cashFlow, open, onOpenChange, onSuccess }
             Are you sure you want to delete this {cashFlow.type}? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="flex gap-3 justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
+          <Button variant="destructive" onClick={handleDelete} disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? "Deleting..." : "Delete"}
           </Button>
         </div>

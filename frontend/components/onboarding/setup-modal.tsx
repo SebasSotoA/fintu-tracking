@@ -91,11 +91,11 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange} dismissible={false}>
       <ResponsiveDialogContent
         showCloseButton={false}
-        className="max-h-[100dvh] md:max-h-[90vh] sm:max-w-md"
+        className="flex max-h-[100dvh] md:max-h-[90vh] flex-col gap-0 p-0 sm:max-w-md"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <ResponsiveDialogHeader>
+        <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
           <ResponsiveDialogTitle>Set up your account</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
             {step === 1
@@ -129,7 +129,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
           </div>
         </DialogScrollBody>
 
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between pt-4">
+        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-between">
           {step === 2 ? (
             <Button
               type="button"

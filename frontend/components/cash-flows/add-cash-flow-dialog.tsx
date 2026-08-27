@@ -152,7 +152,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
           <ResponsiveDialogDescription>Record a deposit, withdrawal, or cash adjustment</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <DialogScrollBody>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="add-cash-flow-form" onSubmit={handleSubmit} className="space-y-4">
           {isTransfer && (
             <MoneyHeroInput
               id="cf-net-usd"
@@ -281,17 +281,16 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
               </p>
             )}
           </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-              {isLoading ? "Adding..." : "Add Cash Flow"}
-            </Button>
-          </div>
           </form>
         </DialogScrollBody>
+        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
+            Cancel
+          </Button>
+          <Button type="submit" form="add-cash-flow-form" disabled={isLoading} className="w-full sm:w-auto">
+            {isLoading ? "Adding..." : "Add Cash Flow"}
+          </Button>
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )

@@ -130,7 +130,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
           <ResponsiveDialogDescription>Update the trade details</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <DialogScrollBody>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="edit-trade-form" onSubmit={handleSubmit} className="space-y-4">
             <ResponsiveFormGrid>
               <SingleDatePicker
                 id="edit-date"
@@ -282,17 +282,16 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-              {isLoading ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
           </form>
         </DialogScrollBody>
+        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+            Cancel
+          </Button>
+          <Button type="submit" form="edit-trade-form" disabled={isLoading} className="w-full sm:w-auto">
+            {isLoading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )

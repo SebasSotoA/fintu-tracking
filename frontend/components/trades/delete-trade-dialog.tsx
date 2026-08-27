@@ -49,11 +49,11 @@ export function DeleteTradeDialog({ trade, open, onOpenChange, onSuccess }: Dele
             Are you sure you want to delete this trade for {trade.ticker}? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="flex gap-3 justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
+          <Button variant="destructive" onClick={handleDelete} disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? "Deleting..." : "Delete"}
           </Button>
         </div>

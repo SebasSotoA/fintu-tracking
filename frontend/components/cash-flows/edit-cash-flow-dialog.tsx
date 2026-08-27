@@ -180,7 +180,7 @@ export function EditCashFlowDialog({
           <ResponsiveDialogDescription>Update the cash flow details</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <DialogScrollBody>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="edit-cash-flow-form" onSubmit={handleSubmit} className="space-y-4">
             {isTransfer && (
               <MoneyHeroInput
                 id="edit-cf-net-usd"
@@ -315,17 +315,16 @@ export function EditCashFlowDialog({
                 </p>
               )}
             </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-                {isLoading ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
           </form>
         </DialogScrollBody>
+        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+            Cancel
+          </Button>
+          <Button type="submit" form="edit-cash-flow-form" disabled={isLoading} className="w-full sm:w-auto">
+            {isLoading ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )

@@ -80,10 +80,10 @@ describe("AddTradeDialog", () => {
   it("stacks footer buttons on mobile and rows them on desktop", () => {
     renderDialog()
 
-    const form = screen.getByRole("dialog").querySelector("form")
-    expect(form).toBeTruthy()
-    const footer = form!.lastElementChild as HTMLElement
-    expect(footer).toHaveClass("flex-col")
+    const dialog = screen.getByRole("dialog")
+    const footer = dialog.querySelector(".flex-col-reverse") as HTMLElement
+    expect(footer).toBeTruthy()
+    expect(footer).toHaveClass("flex-col-reverse")
     expect(footer).toHaveClass("sm:flex-row")
     expect(footer).toHaveClass("sm:justify-end")
   })

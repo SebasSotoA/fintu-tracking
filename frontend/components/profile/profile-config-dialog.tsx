@@ -74,16 +74,16 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
 
   return (
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
-      <ResponsiveDialogContent className="max-h-[100dvh] md:max-h-[90vh] sm:max-w-md">
-        <ResponsiveDialogHeader>
+      <ResponsiveDialogContent className="flex max-h-[100dvh] md:max-h-[90vh] flex-col gap-0 p-0 sm:max-w-md">
+        <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
           <ResponsiveDialogTitle>My account</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
             Update your country and broker to personalize your experience.
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <DialogScrollBody>
+        <DialogScrollBody>
+          <form id="profile-config-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <ProfileSetupFields
               step="all"
               setValue={setValue}
@@ -91,17 +91,17 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
               country={country}
               brokerPresetId={brokerPresetId}
             />
-          </DialogScrollBody>
+          </form>
+        </DialogScrollBody>
 
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end pt-4">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={updateProfile.isPending}>
-              {updateProfile.isPending ? "Saving..." : "Save changes"}
-            </Button>
-          </div>
-        </form>
+        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="submit" form="profile-config-form" disabled={updateProfile.isPending}>
+            {updateProfile.isPending ? "Saving..." : "Save changes"}
+          </Button>
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )
