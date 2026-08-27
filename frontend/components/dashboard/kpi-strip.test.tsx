@@ -37,7 +37,7 @@ describe("KpiStrip", () => {
   it("renders the three remaining KPI tile labels (no Total Portfolio, that's the Net Worth card)", () => {
     renderWithProviders(<KpiStrip initialData={baseData} />)
     expect(screen.queryByText("Total Portfolio")).not.toBeInTheDocument()
-    expect(screen.getByText("Today's Return")).toBeInTheDocument()
+    expect(screen.getByText("Total Return")).toBeInTheDocument()
     expect(screen.getByText("Total Invested")).toBeInTheDocument()
     expect(screen.getByText("Buy Power")).toBeInTheDocument()
   })

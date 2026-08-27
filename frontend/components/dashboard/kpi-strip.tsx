@@ -58,7 +58,7 @@ export function KpiStrip({ initialData }: KpiStripProps) {
       data-testid="kpi-strip"
     >
       <KpiTile
-        label="Today's Return"
+        label="Total Return"
         value={formatCurrency(gainLoss)}
         trendPct={gainLossPct.toNumber()}
         caption={gainLossPct.isZero() ? "No change" : "vs invested"}
