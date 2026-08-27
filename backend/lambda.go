@@ -40,6 +40,8 @@ func handleLambdaUnifiedEvent(ctx context.Context, deps *server.Deps, httpAdapte
 			return handleDatabaseStatus(ctx)
 		case "user-migration":
 			return handleUserMigration(ctx)
+		case "refresh-market-prices":
+			return handleRefreshMarketPrices(ctx, deps)
 		}
 	}
 
@@ -134,6 +136,35 @@ func handleUserMigration(ctx context.Context) (map[string]interface{}, error) {
 	return invokeJSONResponse(http.StatusOK, map[string]interface{}{
 		"status":  "ok",
 		"message": "migrations applied",
+	})
+}
+
+func handleRefreshMarketPrices(ctx context.Context, deps *server.Deps) (map[string]interface{}, error) {
+	if err := ctx.Err(); err != nil {
+		return invokeJSONResponse(http.StatusOK, map[string]interface{}{
+			"status": "error",
+			"error":  err.Error(),
+		})
+	}
+
+	result, err := deps.TwelveDataSvc.RefreshAllMarketPrices(ctx)
+	if err != nil {
+		return invokeJSONResponse(http.StatusOK, map[string]interface{}{
+			"status":  "error",
+			"error":   err.Error(),
+			"updated": result.Updated,
+			"skipped": result.Skipped,
+			"tickers": result.Tickers,
+			"errors":  result.Errors,
+		})
+	}
+
+	return invokeJSONResponse(http.StatusOK, map[string]interface{}{
+		"status":  "ok",
+		"updated": result.Updated,
+		"skipped": result.Skipped,
+		"tickers": result.Tickers,
+		"errors":  result.Errors,
 	})
 }
 

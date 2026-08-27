@@ -13,13 +13,16 @@ import (
 )
 
 type fakeMarketDataStore struct {
-	fxRates          map[string]models.RateResult
-	latestFxRate     *models.RateResult
-	marketPrices     map[string]models.MarketPrice
-	heldTickers      []string
-	lastRefresh      map[string]time.Time
-	upsertFxCalls    []upsertFxCall
-	upsertPriceCalls []upsertPriceCall
+	fxRates           map[string]models.RateResult
+	latestFxRate      *models.RateResult
+	marketPrices      map[string]models.MarketPrice
+	heldTickers       []string
+	allHeldTickers    []string
+	allHeldTickersSet  bool
+	lastRefresh       map[string]time.Time
+	upsertFxCalls     []upsertFxCall
+	upsertPriceCalls  []upsertPriceCall
+	refreshCalls      []string
 }
 
 type upsertFxCall struct {
@@ -67,6 +70,13 @@ func (f *fakeMarketDataStore) ListHeldTickers(_ context.Context, userID string) 
 	return f.heldTickers, nil
 }
 
+func (f *fakeMarketDataStore) ListAllHeldTickers(_ context.Context) ([]string, error) {
+	if f.allHeldTickersSet {
+		return f.allHeldTickers, nil
+	}
+	return []string{"AAPL", "MSFT", "SPY"}, nil
+}
+
 func (f *fakeMarketDataStore) GetMarketPrice(_ context.Context, ticker string) (models.MarketPrice, bool, error) {
 	price, ok := f.marketPrices[ticker]
 	return price, ok, nil
@@ -89,6 +99,7 @@ func (f *fakeMarketDataStore) UpsertMarketPrice(_ context.Context, ticker, price
 }
 
 func (f *fakeMarketDataStore) RecordMarketPriceRefresh(_ context.Context, userID string) error {
+	f.refreshCalls = append(f.refreshCalls, userID)
 	f.lastRefresh[userID] = time.Now()
 	return nil
 }

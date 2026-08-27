@@ -16,6 +16,7 @@ type MarketDataStore interface {
 	GetLatestFxRate(ctx context.Context, userID string) (models.RateResult, bool, error)
 
 	ListHeldTickers(ctx context.Context, userID string) ([]string, error)
+	ListAllHeldTickers(ctx context.Context) ([]string, error)
 	GetMarketPrice(ctx context.Context, ticker string) (models.MarketPrice, bool, error)
 	GetMarketPrices(ctx context.Context, tickers []string) ([]models.MarketPrice, error)
 	UpsertMarketPrice(ctx context.Context, ticker, price, currency string) error

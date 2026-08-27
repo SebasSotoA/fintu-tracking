@@ -4,8 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"fintu-tracking-backend/internal/models"
+	"fintu-tracking-backend/internal/server"
+	"fintu-tracking-backend/internal/services"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/its-felix/aws-lambda-go-http-adapter/handler"
@@ -198,4 +204,96 @@ func stubHTTPAdapter() handler.AdapterFunc {
 		_, err := w.Write([]byte(`{"status":"ok"}`))
 		return err
 	}
+}
+
+func TestHandleLambdaUnifiedEvent_refreshMarketPrices(t *testing.T) {
+	t.Setenv("TWELVE_DATA_API_KEY", "test-key")
+
+	mockServer := newRefreshPricesTestServer(t)
+	defer mockServer.Close()
+
+	store := newLambdaFakeMarketDataStore()
+	svc := services.NewTwelveDataService(store)
+	svc.ConfigureForTesting(mockServer.Client(), mockServer.URL, "test-key")
+
+	deps := &server.Deps{TwelveDataSvc: svc}
+
+	result, err := handleLambdaUnifiedEvent(
+		context.Background(),
+		deps,
+		stubHTTPAdapter(),
+		map[string]interface{}{"type": "refresh-market-prices"},
+	)
+	if err != nil {
+		t.Fatalf("handleLambdaUnifiedEvent: %v", err)
+	}
+
+	body, err := assertInvokeMapResult(t, result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	status, ok := body["status"].(string)
+	if !ok {
+		t.Fatalf("status field missing or wrong type: %v", body["status"])
+	}
+	if status != "ok" {
+		t.Errorf("status = %q, want ok", status)
+	}
+	if _, ok := body["updated"]; !ok {
+		t.Errorf("expected updated field in response, got %v", body)
+	}
+}
+
+func newRefreshPricesTestServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"AAPL":{"price":"181.00","currency":"USD"},"MSFT":{"price":"330.00","currency":"USD"},"SPY":{"price":"500.00","currency":"USD"}}`))
+	}))
+}
+
+type lambdaFakeMarketDataStore struct{}
+
+func newLambdaFakeMarketDataStore() *lambdaFakeMarketDataStore {
+	return &lambdaFakeMarketDataStore{}
+}
+
+func (s *lambdaFakeMarketDataStore) GetFxRate(_ context.Context, userID, date, source string) (models.RateResult, bool, error) {
+	return models.RateResult{}, false, nil
+}
+
+func (s *lambdaFakeMarketDataStore) UpsertFxRate(_ context.Context, userID string, date time.Time, rate, source string) error {
+	return nil
+}
+
+func (s *lambdaFakeMarketDataStore) GetLatestFxRate(_ context.Context, userID string) (models.RateResult, bool, error) {
+	return models.RateResult{}, false, nil
+}
+
+func (s *lambdaFakeMarketDataStore) ListHeldTickers(_ context.Context, userID string) ([]string, error) {
+	return nil, nil
+}
+
+func (s *lambdaFakeMarketDataStore) ListAllHeldTickers(_ context.Context) ([]string, error) {
+	return []string{"AAPL", "MSFT", "SPY"}, nil
+}
+
+func (s *lambdaFakeMarketDataStore) GetMarketPrice(_ context.Context, ticker string) (models.MarketPrice, bool, error) {
+	return models.MarketPrice{}, false, nil
+}
+
+func (s *lambdaFakeMarketDataStore) GetMarketPrices(_ context.Context, tickers []string) ([]models.MarketPrice, error) {
+	return nil, nil
+}
+
+func (s *lambdaFakeMarketDataStore) UpsertMarketPrice(_ context.Context, ticker, price, currency string) error {
+	return nil
+}
+
+func (s *lambdaFakeMarketDataStore) RecordMarketPriceRefresh(_ context.Context, userID string) error {
+	return nil
+}
+
+func (s *lambdaFakeMarketDataStore) GetLastMarketPriceRefresh(_ context.Context, userID string) (time.Time, bool, error) {
+	return time.Time{}, false, nil
 }

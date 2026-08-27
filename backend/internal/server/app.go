@@ -22,7 +22,8 @@ import (
 
 // Deps holds wired services required to build the Fiber application.
 type Deps struct {
-	BillingSvc *services.BillingService
+	BillingSvc     *services.BillingService
+	TwelveDataSvc  *services.TwelveDataService
 }
 
 // Bootstrap connects to the database and initializes handler service singletons.
@@ -64,7 +65,7 @@ func Bootstrap(ctx context.Context) (*Deps, error) {
 	handlers.InitFeeService(feeSvc)
 	handlers.InitAnalyticsService(analyticsSvc)
 
-	return &Deps{BillingSvc: billingSvc}, nil
+	return &Deps{BillingSvc: billingSvc, TwelveDataSvc: twelveDataSvc}, nil
 }
 
 // Close releases database resources held by Bootstrap.
@@ -101,6 +102,9 @@ func NewApp(deps *Deps) chi.Router {
 	})
 
 	r.Route("/api", func(r chi.Router) {
+		// Cron endpoints: authenticated via X-Cron-Secret, not JWT.
+		r.Post("/cron/refresh-prices", handlers.RefreshAllMarketPricesCron)
+
 		r.Group(func(r chi.Router) {
 			r.Use(mw.AuthMiddleware())
 

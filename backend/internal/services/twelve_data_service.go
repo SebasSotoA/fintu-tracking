@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 // RefreshResult summarizes a market price refresh run.
 type RefreshResult struct {
 	Updated int      `json:"updated"`
+	Skipped int      `json:"skipped"`
 	Tickers []string `json:"tickers"`
 	Errors  []string `json:"errors"`
 }
@@ -38,6 +40,14 @@ func NewTwelveDataService(store MarketDataStore) *TwelveDataService {
 		httpClient: &http.Client{Timeout: 15 * time.Second},
 		baseURL:    config.TwelveDataBaseURL,
 	}
+}
+
+// ConfigureForTesting overrides the HTTP client and base URL used by the service.
+// It is intended for use in tests that need to point the service at a mock server.
+func (s *TwelveDataService) ConfigureForTesting(httpClient *http.Client, baseURL, apiKey string) {
+	s.httpClient = httpClient
+	s.baseURL = baseURL
+	s.apiKey = apiKey
 }
 
 type quoteResponse struct {
@@ -62,6 +72,149 @@ func (r *quoteResponse) errorMessage() string {
 		return fmt.Sprintf("API error (code %d)", r.Code)
 	}
 	return "unknown API error"
+}
+
+// BatchPrice holds the latest price and currency for a single ticker returned by the
+// Twelve Data batch /price endpoint.
+type BatchPrice struct {
+	Price    string
+	Currency string
+}
+
+// batchPriceResponse models the Twelve Data batch /price response, which maps each
+// ticker to an object containing its price (and, when provided, currency).
+type batchPriceResponse map[string]struct {
+	Price    string `json:"price"`
+	Currency string `json:"currency"`
+}
+
+// FetchBatchPrices fetches the latest price for every ticker in a single batched call
+// to Twelve Data's /price endpoint. Tickers are split into chunks of
+// config.MaxBatchSymbols to keep requests within provider limits. The returned map is
+// keyed by the upper-cased ticker.
+func (s *TwelveDataService) FetchBatchPrices(ctx context.Context, tickers []string) (map[string]BatchPrice, error) {
+	if s.apiKey == "" {
+		return nil, fmt.Errorf("TWELVE_DATA_API_KEY environment variable is not set")
+	}
+
+	normalized := make([]string, 0, len(tickers))
+	for _, t := range tickers {
+		t = strings.TrimSpace(strings.ToUpper(t))
+		if t != "" {
+			normalized = append(normalized, t)
+		}
+	}
+	if len(normalized) == 0 {
+		return map[string]BatchPrice{}, nil
+	}
+
+	base := s.baseURL
+	if base == "" {
+		base = config.TwelveDataBaseURL
+	}
+	base = strings.TrimRight(base, "/")
+
+	results := make(map[string]BatchPrice, len(normalized))
+
+	for start := 0; start < len(normalized); start += config.MaxBatchSymbols {
+		select {
+		case <-ctx.Done():
+			return results, ctx.Err()
+		default:
+		}
+
+		end := start + config.MaxBatchSymbols
+		if end > len(normalized) {
+			end = len(normalized)
+		}
+		chunk := normalized[start:end]
+
+		batch, err := s.fetchBatchChunk(ctx, base, chunk)
+		if err != nil {
+			return results, err
+		}
+		for ticker, price := range batch {
+			results[ticker] = price
+		}
+	}
+
+	return results, nil
+}
+
+// fetchBatchChunk performs a single batch /price request for the given chunk of
+// tickers and returns the parsed results.
+func (s *TwelveDataService) fetchBatchChunk(ctx context.Context, base string, tickers []string) (map[string]BatchPrice, error) {
+	symbolParam := strings.Join(tickers, ",")
+	apiURL := fmt.Sprintf(
+		"%s/price?symbol=%s&apikey=%s",
+		base,
+		url.QueryEscape(symbolParam),
+		url.QueryEscape(s.apiKey),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		retryAfter := parseRetryAfter(resp.Header.Get("Retry-After"))
+		return nil, &RateLimitError{RetryAfter: retryAfter}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("batch /price returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var parsed batchPriceResponse
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return nil, fmt.Errorf("failed to decode batch response: %w", err)
+	}
+
+	results := make(map[string]BatchPrice, len(tickers))
+	for _, ticker := range tickers {
+		entry, ok := parsed[ticker]
+		if !ok {
+			fmt.Printf("twelve_data: ticker %s missing from batch response\n", ticker)
+			continue
+		}
+		price := strings.TrimSpace(entry.Price)
+		if price == "" {
+			fmt.Printf("twelve_data: ticker %s returned empty price\n", ticker)
+			continue
+		}
+		currency := strings.TrimSpace(entry.Currency)
+		if currency == "" {
+			currency = config.DefaultMarketCurrency
+		}
+		results[ticker] = BatchPrice{Price: price, Currency: currency}
+	}
+
+	return results, nil
+}
+
+// parseRetryAfter converts a Retry-After header value into a Duration. Twelve Data
+// returns seconds; if parsing fails or the header is absent a default is used.
+func parseRetryAfter(value string) time.Duration {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 60 * time.Second
+	}
+	if seconds, err := strconv.Atoi(value); err == nil && seconds > 0 {
+		return time.Duration(seconds) * time.Second
+	}
+	return 60 * time.Second
 }
 
 // FetchQuote returns the latest price, trading day, and currency via the /quote endpoint.
@@ -163,36 +316,89 @@ func (s *TwelveDataService) RefreshMarketPrices(ctx context.Context, userID stri
 		return result, err
 	}
 
-	for i, ticker := range staleTickers {
-		if i > 0 {
-			select {
-			case <-ctx.Done():
-				return result, ctx.Err()
-			case <-time.After(500 * time.Millisecond):
-			}
+	if len(staleTickers) == 0 {
+		result.Skipped = len(tickers)
+		if recordErr := s.store.RecordMarketPriceRefresh(ctx, userID); recordErr != nil {
+			return result, fmt.Errorf("record refresh: %w", recordErr)
 		}
+		return result, nil
+	}
 
-		price, _, currency, fetchErr := s.FetchQuote(ctx, ticker)
-		if fetchErr != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", ticker, fetchErr))
-			if strings.Contains(strings.ToLower(fetchErr.Error()), "rate limit") {
-				return result, fetchErr
-			}
-			continue
+	prices, err := s.FetchBatchPrices(ctx, staleTickers)
+	if err != nil {
+		if _, ok := err.(*RateLimitError); ok {
+			result.Skipped = len(tickers) - len(staleTickers)
+			return result, fmt.Errorf("batch prices rate limited: %w", err)
 		}
+		return result, fmt.Errorf("batch prices: %w", err)
+	}
 
-		if upsertErr := s.store.UpsertMarketPrice(ctx, ticker, price, currency); upsertErr != nil {
+	for ticker, batch := range prices {
+		if upsertErr := s.store.UpsertMarketPrice(ctx, ticker, batch.Price, batch.Currency); upsertErr != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", ticker, upsertErr))
 			continue
 		}
-
 		result.Updated++
 		result.Tickers = append(result.Tickers, ticker)
 	}
 
+	result.Skipped = len(tickers) - len(staleTickers)
+
 	if recordErr := s.store.RecordMarketPriceRefresh(ctx, userID); recordErr != nil {
 		return result, fmt.Errorf("record refresh: %w", recordErr)
 	}
+
+	return result, nil
+}
+
+// RefreshAllMarketPrices fetches prices for every ticker held across all users in a
+// single batched run. This is the cross-user scheduled EOD refresh: there is no
+// per-user cooldown and no RecordMarketPriceRefresh call. Tickers with fresh cached
+// prices (within defaultCacheTTL) are skipped.
+func (s *TwelveDataService) RefreshAllMarketPrices(ctx context.Context) (RefreshResult, error) {
+	result := RefreshResult{
+		Tickers: []string{},
+		Errors:  []string{},
+	}
+
+	tickers, err := s.store.ListAllHeldTickers(ctx)
+	if err != nil {
+		return result, fmt.Errorf("list all held tickers: %w", err)
+	}
+
+	if len(tickers) == 0 {
+		return result, nil
+	}
+
+	staleTickers, err := s.listStaleTickers(ctx, tickers)
+	if err != nil {
+		return result, fmt.Errorf("list stale tickers: %w", err)
+	}
+
+	if len(staleTickers) == 0 {
+		result.Skipped = len(tickers)
+		return result, nil
+	}
+
+	prices, err := s.FetchBatchPrices(ctx, staleTickers)
+	if err != nil {
+		if _, ok := err.(*RateLimitError); ok {
+			result.Skipped = len(tickers) - len(staleTickers)
+			return result, fmt.Errorf("batch prices rate limited: %w", err)
+		}
+		return result, fmt.Errorf("batch prices: %w", err)
+	}
+
+	for ticker, batch := range prices {
+		if upsertErr := s.store.UpsertMarketPrice(ctx, ticker, batch.Price, batch.Currency); upsertErr != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", ticker, upsertErr))
+			continue
+		}
+		result.Updated++
+		result.Tickers = append(result.Tickers, ticker)
+	}
+
+	result.Skipped = len(tickers) - len(staleTickers)
 
 	return result, nil
 }

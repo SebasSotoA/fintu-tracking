@@ -122,6 +122,50 @@ func (s *PostgresMarketDataStore) ListHeldTickers(ctx context.Context, userID st
 	return tickers, nil
 }
 
+func (s *PostgresMarketDataStore) ListAllHeldTickers(ctx context.Context) ([]string, error) {
+	if s.pool == nil {
+		return nil, fmt.Errorf("database pool is not initialized")
+	}
+
+	query := `
+		SELECT ticker
+		FROM trades
+		GROUP BY ticker
+		HAVING SUM(CASE WHEN side = 'buy' THEN quantity ELSE -quantity END) > 0
+		ORDER BY ticker
+	`
+
+	rows, err := s.pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("list all held tickers: %w", err)
+	}
+	defer rows.Close()
+
+	tickers := make([]string, 0)
+	for rows.Next() {
+		var ticker string
+		if err := rows.Scan(&ticker); err != nil {
+			return nil, fmt.Errorf("scan ticker: %w", err)
+		}
+		tickers = append(tickers, ticker)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate tickers: %w", err)
+	}
+
+	hasSPY := false
+	for _, t := range tickers {
+		if t == "SPY" {
+			hasSPY = true
+			break
+		}
+	}
+	if !hasSPY {
+		tickers = append(tickers, "SPY")
+	}
+	return tickers, nil
+}
+
 func (s *PostgresMarketDataStore) GetMarketPrice(ctx context.Context, ticker string) (models.MarketPrice, bool, error) {
 	if s.pool == nil {
 		return models.MarketPrice{}, false, nil
