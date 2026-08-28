@@ -30,6 +30,10 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
   const [inputQuery, setInputQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Set to true when a result is picked so handleOpenChange knows not to fire a
+  // freeform onChange call when the Popover closes (Radix can call onOpenChange(false)
+  // before React commits the batch from onSelect, leaving inputQuery stale).
+  const pickedRef = useRef(false)
 
   const { data: results = [] } = useQuery({
     queryKey: ["market-symbol-search", debouncedQuery],
@@ -45,8 +49,11 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
   }
 
   const handleOpenChange = (next: boolean) => {
-    if (!next && inputQuery.trim()) {
-      onChange(inputQuery.trim().toUpperCase())
+    if (!next) {
+      if (!pickedRef.current && inputQuery.trim()) {
+        onChange(inputQuery.trim().toUpperCase())
+      }
+      pickedRef.current = false
     }
     if (next) {
       setInputQuery("")
@@ -97,6 +104,7 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
                     key={r.symbol}
                     value={r.symbol}
                     onSelect={() => {
+                      pickedRef.current = true
                       onChange(r.symbol.toUpperCase(), r.asset_type)
                       setInputQuery("")
                       setDebouncedQuery("")
