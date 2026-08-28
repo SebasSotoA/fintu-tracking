@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
 import { render, screen, fireEvent, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { Trade } from "@/lib/types"
 import { EditTradeDialog } from "./edit-trade-dialog"
@@ -142,5 +143,31 @@ describe("EditTradeDialog", () => {
   it("never shows a cached-price warning", () => {
     renderDialog()
     expect(screen.queryByText(/No cached price yet/i)).not.toBeInTheDocument()
+  })
+
+  it("Commission label has an About Commission tooltip button", () => {
+    renderDialog()
+    expect(screen.getByRole("button", { name: /about commission/i })).toBeInTheDocument()
+  })
+
+  it("Commission helper text is in a tooltip, not a paragraph under the input", () => {
+    renderDialog()
+    const matches = screen.queryAllByText("Broker's closing fee per trade")
+    const asP = matches.filter((el) => el.tagName === "P")
+    expect(asP).toHaveLength(0)
+  })
+
+  it("Commission tooltip shows help text when button is hovered", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+    const helpButton = screen.getByRole("button", { name: /about commission/i })
+    await user.hover(helpButton)
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent("Broker's closing fee per trade")
+  })
+
+  it("does not show Mapped to trading fee text", () => {
+    renderDialog()
+    expect(screen.queryByText("Mapped to trading fee for this trade.")).not.toBeInTheDocument()
   })
 })

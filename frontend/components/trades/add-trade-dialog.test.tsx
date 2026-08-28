@@ -147,4 +147,25 @@ describe("AddTradeDialog", () => {
     renderDialog()
     expect(screen.queryByText(/No cached price yet/i)).not.toBeInTheDocument()
   })
+
+  it("Commission label has an About Commission tooltip button", () => {
+    renderDialog()
+    expect(screen.getByRole("button", { name: /about commission/i })).toBeInTheDocument()
+  })
+
+  it("Commission helper text is in a tooltip, not a paragraph under the input", () => {
+    renderDialog()
+    const matches = screen.queryAllByText("Broker's closing fee per trade")
+    const asP = matches.filter((el) => el.tagName === "P")
+    expect(asP).toHaveLength(0)
+  })
+
+  it("Commission tooltip shows help text when button is hovered", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+    const helpButton = screen.getByRole("button", { name: /about commission/i })
+    await user.hover(helpButton)
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent("Broker's closing fee per trade")
+  })
 })

@@ -21,10 +21,12 @@ import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { SingleDatePicker } from "@/components/filters/single-date-picker"
 import { SellTickerSelect } from "@/components/trades/sell-ticker-select"
 import { TickerSearch } from "@/components/trades/ticker-search"
-import { Decimal } from "@/lib/decimal"
+import { CircleHelp } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { updateTrade } from "@/lib/api/trades"
 import { getHoldings } from "@/lib/api/portfolio"
 import { toDateInputValue } from "@/lib/date-utils"
+import { Decimal } from "@/lib/decimal"
 import { BrokerSelect } from "@/components/brokers/broker-select"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import {
@@ -232,7 +234,23 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
           </ResponsiveFormGrid>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-closing_fee">Commission</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="edit-closing_fee">Commission</Label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="About Commission"
+                    className="inline-flex rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <CircleHelp className="size-3.5 shrink-0" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-pretty">
+                  Broker's closing fee per trade
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <Input
               id="edit-closing_fee"
               type="number"
@@ -242,7 +260,6 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               value={formData.closing_fee}
               onChange={(e) => setFormData({ ...formData, closing_fee: e.target.value })}
             />
-            <p className="text-xs text-muted-foreground">Mapped to trading fee for this trade.</p>
           </div>
 
           <div className="space-y-2">

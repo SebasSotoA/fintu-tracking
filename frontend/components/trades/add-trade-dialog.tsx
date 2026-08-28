@@ -21,7 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SingleDatePicker } from "@/components/filters/single-date-picker"
 import { SellTickerSelect } from "@/components/trades/sell-ticker-select"
 import { TickerSearch } from "@/components/trades/ticker-search"
-import { Plus } from "lucide-react"
+import { CircleHelp, Plus } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
 import { createTrade } from "@/lib/api/trades"
 import { getHoldings } from "@/lib/api/portfolio"
@@ -242,7 +243,23 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
             </ResponsiveFormGrid>
 
             <div className="space-y-2">
-              <Label htmlFor="closing_fee">Commission</Label>
+              <div className="flex items-center gap-1">
+                <Label htmlFor="closing_fee">Commission</Label>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="About Commission"
+                      className="inline-flex rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <CircleHelp className="size-3.5 shrink-0" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs text-pretty">
+                    Broker's closing fee per trade
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <Input
                 id="closing_fee"
                 type="number"
@@ -252,7 +269,6 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                 value={formData.closing_fee}
                 onChange={(e) => setFormData({ ...formData, closing_fee: e.target.value })}
               />
-              <p className="text-xs text-muted-foreground">Broker's closing fee per trade</p>
             </div>
 
             <div className="space-y-2">
