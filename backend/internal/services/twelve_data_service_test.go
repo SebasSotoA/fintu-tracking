@@ -1043,3 +1043,50 @@ func TestSearchSymbols_cappedAtEight(t *testing.T) {
 	}
 }
 
+func TestSearchSymbols_nonUSDCryptoPairsDropped(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{"symbol":"BTC/USD","instrument_name":"Bitcoin","exchange":"Coinbase","instrument_type":"Digital Currency","country":""},
+				{"symbol":"SOL/BTC","instrument_name":"Solana Bitcoin pair","exchange":"Binance","instrument_type":"Digital Currency","country":""},
+				{"symbol":"DOGE/BTC","instrument_name":"Dogecoin Bitcoin pair","exchange":"Binance","instrument_type":"Digital Currency","country":""},
+				{"symbol":"ETH/USD","instrument_name":"Ethereum","exchange":"Coinbase","instrument_type":"Digital Currency","country":""}
+			],
+			"status": "ok"
+		}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	results, err := svc.SearchSymbols(context.Background(), "bitcoin")
+	if err != nil {
+		t.Fatalf("SearchSymbols() error = %v", err)
+	}
+
+	for _, r := range results {
+		if strings.Contains(r.Symbol, "/") {
+			t.Errorf("result symbol %q contains '/' — non-USD pairs must be dropped", r.Symbol)
+		}
+	}
+
+	symbols := make(map[string]bool, len(results))
+	for _, r := range results {
+		symbols[r.Symbol] = true
+	}
+
+	if !symbols["BTC"] {
+		t.Errorf("expected BTC in results, got %v", results)
+	}
+	if !symbols["ETH"] {
+		t.Errorf("expected ETH in results, got %v", results)
+	}
+	if len(results) != 2 {
+		t.Errorf("len = %d, want 2 (BTC and ETH only, non-USD pairs dropped)", len(results))
+	}
+}
+

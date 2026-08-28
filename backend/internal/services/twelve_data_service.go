@@ -226,6 +226,9 @@ func (s *TwelveDataService) SearchSymbols(ctx context.Context, query string) ([]
 			continue
 		}
 		displaySymbol := strings.TrimSuffix(strings.ToUpper(symbol), "/USD")
+		if strings.Contains(displaySymbol, "/") {
+			continue
+		}
 		assetType := normalizeAssetType(r.InstrumentType)
 		if assetType == "" {
 			continue
