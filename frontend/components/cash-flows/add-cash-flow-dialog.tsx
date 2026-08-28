@@ -153,7 +153,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
         </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form id="add-cash-flow-form" onSubmit={handleSubmit} className="space-y-4">
-          <ResponsiveFormGrid>
+          <ResponsiveFormGrid className="md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="cf-type">Type</Label>
               <Select
@@ -167,7 +167,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
                   })
                 }
               >
-                <SelectTrigger id="cf-type">
+                <SelectTrigger id="cf-type" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -185,13 +185,12 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
               onChange={(date) => setFormData({ ...formData, date })}
               required
             />
+            <BrokerSelect
+              id="cf-broker"
+              value={formData.broker_id}
+              onChange={(value) => setFormData({ ...formData, broker_id: value })}
+            />
           </ResponsiveFormGrid>
-
-          <BrokerSelect
-            id="cf-broker"
-            value={formData.broker_id}
-            onChange={(value) => setFormData({ ...formData, broker_id: value })}
-          />
 
           {isTransfer && (
             <MoneyHeroInput
@@ -248,15 +247,9 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
           )}
 
           {isTransfer && (
-            <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">
-                Subtotal {MARKET_CONFIG.baseCurrency} (net + fee):{" "}
-                <span className="font-mono font-semibold text-foreground">${transferBreakdown.subtotalUsd}</span>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {MARKET_CONFIG.localCurrency} to wire:{" "}
-                <span className="font-mono font-semibold text-foreground">${transferBreakdown.localAmount}</span>
-              </p>
+            <div className="space-y-2">
+              <Label>Total ({MARKET_CONFIG.baseCurrency})</Label>
+              <div className="text-2xl font-bold font-mono">${transferBreakdown.subtotalUsd}</div>
             </div>
           )}
 
@@ -283,7 +276,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
           </div>
           </form>
         </DialogScrollBody>
-        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-end">
+        <div className="flex shrink-0 flex-col-reverse gap-2 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
             Cancel
           </Button>

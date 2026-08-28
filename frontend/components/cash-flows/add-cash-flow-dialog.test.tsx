@@ -71,11 +71,17 @@ describe("AddCashFlowDialog", () => {
     const content = screen.getByRole("dialog")
     const grids = within(content).getAllByTestId("responsive-form-grid")
     expect(grids.length).toBeGreaterThan(0)
-    grids.forEach((grid) => {
-      expect(grid).toHaveClass("grid-cols-1")
-      expect(grid).toHaveClass("md:grid-cols-2")
-      expect(grid).toHaveClass("gap-4")
-    })
+
+    const threeColGrid = grids.find((g) => g.classList.contains("md:grid-cols-3"))
+    expect(threeColGrid).toBeTruthy()
+    expect(within(threeColGrid as HTMLElement).getByRole("combobox", { name: /type/i })).toBeInTheDocument()
+    expect(within(threeColGrid as HTMLElement).getByRole("button", { name: /cash flow date/i })).toBeInTheDocument()
+    expect(within(threeColGrid as HTMLElement).getByText(/^Broker$/)).toBeInTheDocument()
+
+    const twoColGrid = grids.find((g) => g.classList.contains("md:grid-cols-2"))
+    expect(twoColGrid).toBeTruthy()
+    expect(within(twoColGrid as HTMLElement).getByLabelText(/Deposit fee USD/i)).toBeInTheDocument()
+    expect(within(twoColGrid as HTMLElement).getByLabelText(/FX rate COP\/USD/i)).toBeInTheDocument()
   })
 
   it("stacks footer buttons on mobile and rows them on desktop", () => {
@@ -84,9 +90,12 @@ describe("AddCashFlowDialog", () => {
     const dialog = screen.getByRole("dialog")
     const footer = dialog.querySelector(".flex-col-reverse") as HTMLElement
     expect(footer).toBeTruthy()
+    expect(footer).toHaveClass("shrink-0")
     expect(footer).toHaveClass("flex-col-reverse")
     expect(footer).toHaveClass("sm:flex-row")
     expect(footer).toHaveClass("sm:justify-end")
+    expect(footer).not.toHaveClass("pb-safe")
+    expect(footer).toHaveClass("pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]")
   })
 
   it("shows hero net USD input first for deposits with deposit amount label", () => {
@@ -130,20 +139,20 @@ describe("AddCashFlowDialog", () => {
     expect(within(feeRow as HTMLElement).getByLabelText(/FX rate COP\/USD/i)).toBe(fxInput)
   })
 
-  it("shows only subtotal and COP preview lines for transfers", async () => {
+  it("shows Total (USD) hero for transfers", async () => {
     const user = userEvent.setup()
     renderDialog()
 
+    expect(screen.getByText(/Total \(USD\)/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Subtotal USD \(net \+ fee\)/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/COP to wire/i)).not.toBeInTheDocument()
+
     await user.type(screen.getByLabelText(/Deposit amount/i), "100")
+    await user.clear(screen.getByLabelText(/Deposit fee USD/i))
     await user.type(screen.getByLabelText(/Deposit fee USD/i), "1.99")
     await user.type(screen.getByLabelText(/FX rate COP\/USD/i), "4000")
 
-    expect(screen.getByText(/Subtotal USD \(net \+ fee\)/i)).toBeInTheDocument()
-    expect(screen.getByText(/COP to wire/i)).toBeInTheDocument()
-    expect(screen.queryByText(/Deposit fee USD:/i)).not.toBeInTheDocument()
-
-    const previewLines = screen.getAllByText(/Subtotal USD \(net \+ fee\)|COP to wire/i)
-    expect(previewLines).toHaveLength(2)
+    expect(screen.getByText("$101.99")).toBeInTheDocument()
   })
 
   it("shows hero-styled USD amount for cash adjustment", async () => {

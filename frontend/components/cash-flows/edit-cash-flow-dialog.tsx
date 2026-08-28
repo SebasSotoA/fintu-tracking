@@ -202,7 +202,7 @@ export function EditCashFlowDialog({
               />
             )}
 
-            <ResponsiveFormGrid>
+            <ResponsiveFormGrid className="md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="edit-cf-type">Type</Label>
                 {formData.type === "fee" ? (
@@ -221,7 +221,7 @@ export function EditCashFlowDialog({
                       })
                     }
                   >
-                    <SelectTrigger id="edit-cf-type">
+                    <SelectTrigger id="edit-cf-type" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -240,13 +240,12 @@ export function EditCashFlowDialog({
                 onChange={(date) => setFormData({ ...formData, date })}
                 required
               />
+              <BrokerSelect
+                id="edit-cf-broker"
+                value={formData.broker_id}
+                onChange={(value) => setFormData({ ...formData, broker_id: value })}
+              />
             </ResponsiveFormGrid>
-
-            <BrokerSelect
-              id="edit-cf-broker"
-              value={formData.broker_id}
-              onChange={(value) => setFormData({ ...formData, broker_id: value })}
-            />
 
             {isTransfer && (
               <ResponsiveFormGrid>
@@ -282,15 +281,9 @@ export function EditCashFlowDialog({
             )}
 
             {isTransfer && (
-              <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">
-                  Subtotal {MARKET_CONFIG.baseCurrency} (net + fee):{" "}
-                  <span className="font-mono font-semibold text-foreground">${transferBreakdown.subtotalUsd}</span>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {MARKET_CONFIG.localCurrency} to wire:{" "}
-                  <span className="font-mono font-semibold text-foreground">${transferBreakdown.localAmount}</span>
-                </p>
+              <div className="space-y-2">
+                <Label>Total ({MARKET_CONFIG.baseCurrency})</Label>
+                <div className="text-2xl font-bold font-mono">${transferBreakdown.subtotalUsd}</div>
               </div>
             )}
 
@@ -317,7 +310,7 @@ export function EditCashFlowDialog({
             </div>
           </form>
         </DialogScrollBody>
-        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-end">
+        <div className="flex shrink-0 flex-col-reverse gap-2 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>
