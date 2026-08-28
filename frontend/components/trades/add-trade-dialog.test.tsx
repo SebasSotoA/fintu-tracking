@@ -71,11 +71,23 @@ describe("AddTradeDialog", () => {
     const content = screen.getByRole("dialog")
     const grids = within(content).getAllByTestId("responsive-form-grid")
     expect(grids.length).toBeGreaterThan(0)
+
+    // All grids share the base mobile-first classes
     grids.forEach((grid) => {
       expect(grid).toHaveClass("grid-cols-1")
-      expect(grid).toHaveClass("md:grid-cols-2")
       expect(grid).toHaveClass("gap-4")
     })
+
+    // Date+Ticker and Quantity+Price grids remain 2-column
+    const twoColGrids = grids.filter((g) => g.classList.contains("md:grid-cols-2"))
+    expect(twoColGrids.length).toBeGreaterThanOrEqual(2)
+
+    // Asset Type, Broker, and Side share a single 3-column grid
+    const metadataGrid = grids.find((g) => g.classList.contains("md:grid-cols-3"))
+    expect(metadataGrid).toBeTruthy()
+    expect(within(metadataGrid!).getByLabelText("Asset Type")).toBeInTheDocument()
+    expect(within(metadataGrid!).getByLabelText("Broker")).toBeInTheDocument()
+    expect(within(metadataGrid!).getByLabelText("Side")).toBeInTheDocument()
   })
 
   it("stacks footer buttons on mobile and rows them on desktop", () => {
@@ -87,6 +99,9 @@ describe("AddTradeDialog", () => {
     expect(footer).toHaveClass("flex-col-reverse")
     expect(footer).toHaveClass("sm:flex-row")
     expect(footer).toHaveClass("sm:justify-end")
+    expect(footer).toHaveClass("shrink-0")
+    expect(footer).toHaveClass("pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]")
+    expect(footer).not.toHaveClass("pb-safe")
   })
 
   it("submits a buy trade when the form is filled", async () => {

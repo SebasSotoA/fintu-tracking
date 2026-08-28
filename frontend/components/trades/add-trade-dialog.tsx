@@ -190,7 +190,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
               )}
             </ResponsiveFormGrid>
 
-            <ResponsiveFormGrid>
+            <ResponsiveFormGrid className="md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="asset_type">Asset Type</Label>
                 <Select
@@ -209,6 +209,11 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   </SelectContent>
                 </Select>
               </div>
+              <BrokerSelect
+                id="broker"
+                value={formData.broker_id}
+                onChange={(value) => setFormData({ ...formData, broker_id: value })}
+              />
               <div className="space-y-2">
                 <Label htmlFor="side">Side</Label>
                 <Select
@@ -231,12 +236,6 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                 </Select>
               </div>
             </ResponsiveFormGrid>
-
-            <BrokerSelect
-              id="broker"
-              value={formData.broker_id}
-              onChange={(value) => setFormData({ ...formData, broker_id: value })}
-            />
 
             <ResponsiveFormGrid>
               <div className="space-y-2">
@@ -297,7 +296,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
             {error && <p className="text-sm text-destructive">{error}</p>}
           </form>
         </DialogScrollBody>
-        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-end">
+        <div className="flex shrink-0 flex-col-reverse gap-2 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
             Cancel
           </Button>

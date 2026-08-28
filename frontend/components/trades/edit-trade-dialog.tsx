@@ -178,7 +178,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
             )}
           </ResponsiveFormGrid>
 
-          <ResponsiveFormGrid>
+          <ResponsiveFormGrid className="md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="edit-asset_type">Asset Type</Label>
               <Select
@@ -197,6 +197,11 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 </SelectContent>
               </Select>
             </div>
+            <BrokerSelect
+              id="edit-broker"
+              value={formData.broker_id}
+              onChange={(value) => setFormData({ ...formData, broker_id: value })}
+            />
             <div className="space-y-2">
               <Label htmlFor="edit-side">Side</Label>
               <Select
@@ -219,12 +224,6 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               </Select>
             </div>
           </ResponsiveFormGrid>
-
-          <BrokerSelect
-            id="edit-broker"
-            value={formData.broker_id}
-            onChange={(value) => setFormData({ ...formData, broker_id: value })}
-          />
 
           <ResponsiveFormGrid>
             <div className="space-y-2">
@@ -285,7 +284,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
           {error && <p className="text-sm text-destructive">{error}</p>}
           </form>
         </DialogScrollBody>
-        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-end">
+        <div className="flex shrink-0 flex-col-reverse gap-2 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>
