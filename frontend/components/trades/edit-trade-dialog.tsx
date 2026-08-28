@@ -23,7 +23,7 @@ import { SellTickerSelect } from "@/components/trades/sell-ticker-select"
 import { TickerSearch } from "@/components/trades/ticker-search"
 import { Decimal } from "@/lib/decimal"
 import { updateTrade } from "@/lib/api/trades"
-import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
+import { getHoldings } from "@/lib/api/portfolio"
 import { toDateInputValue } from "@/lib/date-utils"
 import { BrokerSelect } from "@/components/brokers/broker-select"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
@@ -65,29 +65,14 @@ function tradeToFormValues(trade: Trade): TradeFormValues {
 export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTradeDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [priceWarning, setPriceWarning] = useState<string | null>(null)
   const [formData, setFormData] = useState<TradeFormValues>(() => tradeToFormValues(trade))
 
   useEffect(() => {
     if (open) {
       setFormData(tradeToFormValues(trade))
-      setPriceWarning(null)
       setError(null)
     }
   }, [open, trade])
-
-  const handleTickerBlur = async (ticker = formData.ticker.trim().toUpperCase()) => {
-    if (!ticker) {
-      setPriceWarning(null)
-      return
-    }
-    try {
-      await getMarketPrice(ticker)
-      setPriceWarning(null)
-    } catch {
-      setPriceWarning("No cached price yet. Use Refresh Prices on the dashboard after saving.")
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -155,26 +140,20 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                           ? "crypto"
                           : "stock",
                   })
-                  setPriceWarning(null)
                 }}
               />
             ) : (
-              <div className="space-y-2">
-                <TickerSearch
-                  id="edit-ticker"
-                  value={formData.ticker}
-                  onChange={(ticker, assetType) => {
-                    setFormData({
-                      ...formData,
-                      ticker,
-                      ...(assetType ? { asset_type: assetType } : {}),
-                    })
-                    setPriceWarning(null)
-                    void handleTickerBlur(ticker.trim().toUpperCase())
-                  }}
-                />
-                {priceWarning && <p className="text-xs text-destructive">{priceWarning}</p>}
-              </div>
+              <TickerSearch
+                id="edit-ticker"
+                value={formData.ticker}
+                onChange={(ticker, assetType) => {
+                  setFormData({
+                    ...formData,
+                    ticker,
+                    ...(assetType ? { asset_type: assetType } : {}),
+                  })
+                }}
+              />
             )}
           </ResponsiveFormGrid>
 
@@ -187,7 +166,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                   setFormData({ ...formData, asset_type: value })
                 }
               >
-                <SelectTrigger id="edit-asset_type">
+                <SelectTrigger id="edit-asset_type" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -214,7 +193,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                   })
                 }
               >
-                <SelectTrigger id="edit-side">
+                <SelectTrigger id="edit-side" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

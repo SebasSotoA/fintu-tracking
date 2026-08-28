@@ -24,7 +24,7 @@ import { TickerSearch } from "@/components/trades/ticker-search"
 import { Plus } from "lucide-react"
 import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
 import { createTrade } from "@/lib/api/trades"
-import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
+import { getHoldings } from "@/lib/api/portfolio"
 import { BrokerSelect } from "@/components/brokers/broker-select"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import {
@@ -66,22 +66,8 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
   const [open, setOpen] = useState(autoOpen ?? false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [priceWarning, setPriceWarning] = useState<string | null>(null)
   const overrides = { ticker: initialTicker, asset_type: initialAssetType, side: initialSide }
   const [formData, setFormData] = useState<TradeFormValues>(() => emptyForm(overrides))
-
-  const handleTickerBlur = async (ticker = formData.ticker.trim().toUpperCase()) => {
-    if (!ticker) {
-      setPriceWarning(null)
-      return
-    }
-    try {
-      await getMarketPrice(ticker)
-      setPriceWarning(null)
-    } catch {
-      setPriceWarning("No cached price yet. Use Refresh Prices on the dashboard after saving.")
-    }
-  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -106,7 +92,6 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
       showToast.success("Trade added")
       setOpen(false)
       setFormData(emptyForm(overrides))
-      setPriceWarning(null)
       await invalidateAfterTradeMutation(queryClient)
       router.refresh()
     } catch (err) {
@@ -165,28 +150,20 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                             ? "crypto"
                             : "stock",
                     })
-                    setPriceWarning(null)
                   }}
                 />
               ) : (
-                <div className="space-y-2">
-                  <TickerSearch
-                    id="ticker"
-                    value={formData.ticker}
-                    onChange={(ticker, assetType) => {
-                      setFormData({
-                        ...formData,
-                        ticker,
-                        ...(assetType ? { asset_type: assetType } : {}),
-                      })
-                      setPriceWarning(null)
-                      void handleTickerBlur(ticker.trim().toUpperCase())
-                    }}
-                  />
-                  {priceWarning && (
-                    <p className="text-xs text-destructive">{priceWarning}</p>
-                  )}
-                </div>
+                <TickerSearch
+                  id="ticker"
+                  value={formData.ticker}
+                  onChange={(ticker, assetType) => {
+                    setFormData({
+                      ...formData,
+                      ticker,
+                      ...(assetType ? { asset_type: assetType } : {}),
+                    })
+                  }}
+                />
               )}
             </ResponsiveFormGrid>
 
@@ -199,7 +176,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                     setFormData({ ...formData, asset_type: value })
                   }
                 >
-                  <SelectTrigger id="asset_type">
+                  <SelectTrigger id="asset_type" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -226,7 +203,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   })
                 }
                 >
-                  <SelectTrigger id="side">
+                  <SelectTrigger id="side" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

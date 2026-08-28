@@ -35,11 +35,12 @@ vi.mock("@/components/ui/popover", async () => {
       React.createElement(React.Fragment, null, children),
     PopoverContent: ({
       children,
+      className,
     }: {
       children: React.ReactNode
       align?: string
       className?: string
-    }) => React.createElement("div", null, children),
+    }) => React.createElement("div", { "data-testid": "popover-content", className }, children),
   }
 })
 
@@ -150,5 +151,34 @@ describe("TickerSearch", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith("BTC", "crypto")
+  })
+
+  it("renders both results when two items share the same symbol but differ in asset_type", async () => {
+    const user = userEvent.setup()
+    const { searchMarketSymbols } = await import("@/lib/api/portfolio")
+    vi.mocked(searchMarketSymbols).mockResolvedValue([
+      { symbol: "ACME", name: "Acme Stock", asset_type: "stock" },
+      { symbol: "ACME", name: "Acme ETF", asset_type: "etf" },
+    ])
+
+    renderWithProviders(<TickerSearch id="ticker" value="" onChange={vi.fn()} />)
+
+    const input = screen.getByPlaceholderText("Search ticker...")
+    await user.type(input, "acme")
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Acme Stock")).toBeInTheDocument()
+        expect(screen.getByText("Acme ETF")).toBeInTheDocument()
+      },
+      { timeout: 2000 },
+    )
+  })
+
+  it("popover content has trigger-width and min-width classes", () => {
+    renderWithProviders(<TickerSearch id="ticker" value="" onChange={vi.fn()} />)
+    const popoverContent = screen.getByTestId("popover-content")
+    expect(popoverContent.className).toContain("min-w-[18rem]")
+    expect(popoverContent.className).toContain("w-[var(--radix-popover-trigger-width)]")
   })
 })

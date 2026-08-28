@@ -128,4 +128,19 @@ describe("EditTradeDialog", () => {
 
     expect(await screen.findByRole("option", { name: "Crypto" })).toBeInTheDocument()
   })
+
+  it("Asset Type SelectTrigger has w-full class", () => {
+    renderDialog()
+    expect(screen.getByLabelText("Asset Type")).toHaveClass("w-full")
+  })
+
+  it("Side SelectTrigger has w-full class", () => {
+    renderDialog()
+    expect(screen.getByLabelText("Side")).toHaveClass("w-full")
+  })
+
+  it("never shows a cached-price warning", () => {
+    renderDialog()
+    expect(screen.queryByText(/No cached price yet/i)).not.toBeInTheDocument()
+  })
 })

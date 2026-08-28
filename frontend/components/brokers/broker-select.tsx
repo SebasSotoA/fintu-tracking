@@ -19,7 +19,7 @@ export function BrokerSelect({ id, value, onChange, label = "Broker", country }:
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger id={id}>
+        <SelectTrigger id={id} className="w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

@@ -87,7 +87,7 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
             <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[14rem] p-0" align="start">
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[18rem] p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
               placeholder="Search ticker..."
@@ -101,7 +101,7 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
               <CommandGroup>
                 {results.map((r) => (
                   <CommandItem
-                    key={r.symbol}
+                    key={`${r.symbol}-${r.asset_type}`}
                     value={r.symbol}
                     onSelect={() => {
                       pickedRef.current = true

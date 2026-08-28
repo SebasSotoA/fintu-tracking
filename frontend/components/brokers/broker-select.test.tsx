@@ -20,7 +20,9 @@ vi.mock("@/components/ui/select", () => ({
   SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => (
     <option value={value}>{children}</option>
   ),
-  SelectTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  SelectTrigger: ({ children, className }: { children?: React.ReactNode; className?: string }) => (
+    <span data-testid="select-trigger" className={className}>{children}</span>
+  ),
   SelectValue: ({ placeholder }: { placeholder?: string }) => <option value="">{placeholder}</option>,
 }))
 
@@ -64,5 +66,17 @@ describe("BrokerSelect", () => {
     await user.selectOptions(select, "gbm-mexico")
 
     expect(onChange).toHaveBeenCalledWith("gbm-mexico")
+  })
+
+  it("SelectTrigger has w-full class", () => {
+    render(
+      <BrokerSelect
+        id="broker"
+        value=""
+        onChange={() => {}}
+      />,
+    )
+
+    expect(screen.getByTestId("select-trigger")).toHaveClass("w-full")
   })
 })
