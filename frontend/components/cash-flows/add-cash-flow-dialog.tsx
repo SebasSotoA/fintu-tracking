@@ -40,7 +40,7 @@ import { showToast } from "@/lib/toast"
 
 const emptyForm = () => ({
   date: new Date().toISOString().split("T")[0],
-  type: "deposit" as "deposit" | "withdrawal" | "cash_adjustment",
+  type: "deposit" as "deposit" | "withdrawal",
   amount: "",
   fx_rate: "",
   deposit_fee_usd: "",
@@ -81,10 +81,6 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    if (formData.type === "cash_adjustment" && !formData.notes.trim()) {
-      showToast.error("Cash adjustment requires notes")
-      return
-    }
     setIsLoading(true)
 
     try {
@@ -149,7 +145,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
       <ResponsiveDialogContent className="flex max-h-[100dvh] md:max-h-[90vh] max-w-[calc(100%-2rem)] flex-col gap-0 p-0 sm:max-w-3xl">
         <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
           <ResponsiveDialogTitle>Add Cash Flow</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>Record a deposit, withdrawal, or cash adjustment</ResponsiveDialogDescription>
+          <ResponsiveDialogDescription>Record a deposit or withdrawal</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form id="add-cash-flow-form" onSubmit={handleSubmit} className="space-y-4">
@@ -158,7 +154,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
               <Label htmlFor="cf-type">Type</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value: "deposit" | "withdrawal" | "cash_adjustment") =>
+                onValueChange={(value: "deposit" | "withdrawal") =>
                   setFormData({
                     ...formData,
                     type: value,
@@ -173,7 +169,6 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
                 <SelectContent>
                   <SelectItem value="deposit">Deposit</SelectItem>
                   <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                  <SelectItem value="cash_adjustment">Cash adjustment</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -198,17 +193,6 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
               label={netUsdLabel}
               value={formData.net_usd}
               onChange={(net_usd) => setFormData({ ...formData, net_usd })}
-              required
-            />
-          )}
-
-          {!isTransfer && (
-            <MoneyHeroInput
-              id="cf-amount"
-              label={`Amount (${MARKET_CONFIG.baseCurrency})`}
-              value={formData.amount}
-              onChange={(amount) => setFormData({ ...formData, amount })}
-              placeholder="10.00"
               required
             />
           )}
@@ -255,24 +239,14 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
 
           <div className="space-y-2">
             <Label htmlFor="cf-notes">
-              Notes {formData.type === "cash_adjustment" ? "(required)" : "(optional)"}
+              Notes <span className="text-xs font-normal text-muted-foreground">(optional)</span>
             </Label>
             <NotesTextarea
               id="cf-notes"
-              placeholder={
-                formData.type === "cash_adjustment"
-                  ? "Adjust buy power without changing deposit history"
-                  : "Additional details..."
-              }
+              placeholder="Additional details..."
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              required={formData.type === "cash_adjustment"}
             />
-            {formData.type === "cash_adjustment" && (
-              <p className="text-xs text-muted-foreground">
-                Adjust buy power without changing deposit history.
-              </p>
-            )}
           </div>
           </form>
         </DialogScrollBody>

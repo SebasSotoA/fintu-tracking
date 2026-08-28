@@ -25,6 +25,36 @@ describe("MoneyHeroInput", () => {
     expect(borderWrapper).toContainElement(screen.getByText("$"))
   })
 
+  it("$ prefix has h-16 and items-center for vertical centering", () => {
+    render(
+      <MoneyHeroInput
+        id="amount"
+        label="Deposit amount"
+        value="100"
+        onChange={vi.fn()}
+      />,
+    )
+
+    const dollar = screen.getByText("$")
+    expect(dollar).toHaveClass("h-16")
+    expect(dollar).toHaveClass("items-center")
+  })
+
+  it("input has md:h-16 and md:text-3xl to prevent desktop size reset", () => {
+    render(
+      <MoneyHeroInput
+        id="amount"
+        label="Deposit amount"
+        value="100"
+        onChange={vi.fn()}
+      />,
+    )
+
+    const input = screen.getByLabelText("Deposit amount")
+    expect(input).toHaveClass("md:h-16")
+    expect(input).toHaveClass("md:text-3xl")
+  })
+
   it("calls onChange when user types", async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()

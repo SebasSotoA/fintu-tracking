@@ -155,16 +155,17 @@ describe("AddCashFlowDialog", () => {
     expect(screen.getByText("$101.99")).toBeInTheDocument()
   })
 
-  it("shows hero-styled USD amount for cash adjustment", async () => {
-    const user = userEvent.setup()
+  it("type select does not include Cash adjustment option", () => {
     renderDialog()
 
-    await selectCashFlowType(user, "cash_adjustment")
+    // Description must not mention cash adjustment
+    const description = document.querySelector('[data-slot="dialog-description"]')
+    expect(description?.textContent).not.toMatch(/cash adjustment/i)
 
-    const amountInput = screen.getByLabelText(/Amount \(USD\)/i)
-    expect(amountInput).toHaveClass("font-mono")
-    expect(amountInput).toHaveClass("text-3xl")
-    expect(screen.getByText("$")).toBeInTheDocument()
-    expect(screen.queryByText(/^USD amount$/)).not.toBeInTheDocument()
+    // The hidden native select must not expose cash_adjustment
+    const hiddenSelect = document.querySelector('select[aria-hidden="true"]') as HTMLSelectElement
+    expect(hiddenSelect).toBeTruthy()
+    const optionValues = Array.from(hiddenSelect.options).map((o) => o.value)
+    expect(optionValues).not.toContain("cash_adjustment")
   })
 })

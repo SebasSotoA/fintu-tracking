@@ -227,7 +227,9 @@ export function EditCashFlowDialog({
                     <SelectContent>
                       <SelectItem value="deposit">Deposit</SelectItem>
                       <SelectItem value="withdrawal">Withdrawal</SelectItem>
-                      <SelectItem value="cash_adjustment">Cash adjustment</SelectItem>
+                      {formData.type === "cash_adjustment" && (
+                        <SelectItem value="cash_adjustment">Cash adjustment</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 )}

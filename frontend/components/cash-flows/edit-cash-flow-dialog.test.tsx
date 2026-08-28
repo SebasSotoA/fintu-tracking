@@ -131,6 +131,15 @@ describe("EditCashFlowDialog", () => {
     expect(within(feeRow as HTMLElement).getByLabelText(/FX rate COP\/USD/i)).toBe(fxInput)
   })
 
+  it("deposit edit does not show Cash adjustment in type select", () => {
+    renderEditDialog()
+
+    const hiddenSelect = document.querySelector('select[aria-hidden="true"]') as HTMLSelectElement
+    expect(hiddenSelect).toBeTruthy()
+    const optionValues = Array.from(hiddenSelect.options).map((o) => o.value)
+    expect(optionValues).not.toContain("cash_adjustment")
+  })
+
   it("shows Total (USD) hero for transfers", () => {
     renderEditDialog()
 

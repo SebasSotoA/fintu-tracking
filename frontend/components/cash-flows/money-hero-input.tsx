@@ -29,7 +29,7 @@ export function MoneyHeroInput({
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
       <div className="flex items-center rounded-md border border-input bg-transparent shadow-xs focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]">
-        <span className="pl-3 text-3xl font-bold font-mono text-muted-foreground">$</span>
+        <span className="flex h-16 items-center pl-3 text-3xl font-bold font-mono text-muted-foreground">$</span>
         <Input
           id={id}
           type="number"
@@ -40,7 +40,7 @@ export function MoneyHeroInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={cn(
-            "h-16 border-0 text-3xl font-bold font-mono shadow-none focus-visible:ring-0",
+            "h-16 md:h-16 border-0 text-3xl md:text-3xl py-0 leading-none font-bold font-mono shadow-none focus-visible:ring-0",
             "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
           )}
         />
