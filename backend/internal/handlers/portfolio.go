@@ -138,7 +138,7 @@ func ListMarketPrices(w http.ResponseWriter, r *http.Request) {
 }
 
 // SearchMarketPrices queries Twelve Data's symbol index for tickers matching the given
-// query string and returns up to 20 normalized results.
+// query string and returns up to 8 results (US equities/ETFs + crypto, deduped, exact match first).
 func SearchMarketPrices(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	if userID == "" {

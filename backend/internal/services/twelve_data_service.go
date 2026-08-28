@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -160,7 +161,7 @@ func FormatSymbol(ticker, assetType string) string {
 }
 
 // SearchSymbols queries Twelve Data's /symbol_search endpoint for tickers matching the query.
-// Returns up to 20 results sorted by relevance.
+// Returns up to 8 results (US equities/ETFs + crypto, deduped, exact match first).
 func (s *TwelveDataService) SearchSymbols(ctx context.Context, query string) ([]SearchResult, error) {
 	if s.apiKey == "" {
 		return nil, fmt.Errorf("TWELVE_DATA_API_KEY environment variable is not set")
@@ -209,6 +210,7 @@ func (s *TwelveDataService) SearchSymbols(ctx context.Context, query string) ([]
 			InstrumentName string `json:"instrument_name"`
 			InstrumentType string `json:"instrument_type"`
 			Exchange       string `json:"exchange"`
+			Country        string `json:"country"`
 		} `json:"data"`
 		Status string `json:"status"`
 	}
@@ -216,6 +218,7 @@ func (s *TwelveDataService) SearchSymbols(ctx context.Context, query string) ([]
 		return nil, fmt.Errorf("failed to decode search response: %w", err)
 	}
 
+	seen := make(map[string]bool, len(envelope.Data))
 	results := make([]SearchResult, 0, len(envelope.Data))
 	for _, r := range envelope.Data {
 		symbol := strings.TrimSpace(r.Symbol)
@@ -224,6 +227,22 @@ func (s *TwelveDataService) SearchSymbols(ctx context.Context, query string) ([]
 		}
 		displaySymbol := strings.TrimSuffix(strings.ToUpper(symbol), "/USD")
 		assetType := normalizeAssetType(r.InstrumentType)
+		if assetType == "" {
+			continue
+		}
+
+		if assetType == "stock" || assetType == "etf" {
+			if !strings.EqualFold(strings.TrimSpace(r.Country), "United States") {
+				continue
+			}
+		}
+
+		key := displaySymbol + "|" + assetType
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+
 		name := strings.TrimSpace(r.InstrumentName)
 		if name == "" {
 			name = strings.TrimSpace(r.Exchange)
@@ -236,8 +255,13 @@ func (s *TwelveDataService) SearchSymbols(ctx context.Context, query string) ([]
 		})
 	}
 
-	if len(results) > 20 {
-		results = results[:20]
+	upperQuery := strings.ToUpper(query)
+	sort.SliceStable(results, func(i, j int) bool {
+		return results[i].Symbol == upperQuery && results[j].Symbol != upperQuery
+	})
+
+	if len(results) > 8 {
+		results = results[:8]
 	}
 
 	return results, nil
@@ -506,6 +530,7 @@ func (s *TwelveDataService) fetchBatchChunk(ctx context.Context, base string, ti
 }
 
 // normalizeAssetType converts Twelve Data's instrument_type strings to Fintu's internal types.
+// Returns an empty string for unrecognised types (forex, indices, etc.) so callers can skip them.
 func normalizeAssetType(tdType string) string {
 	tdType = strings.TrimSpace(strings.ToLower(tdType))
 	switch {
@@ -513,8 +538,10 @@ func normalizeAssetType(tdType string) string {
 		return "crypto"
 	case strings.Contains(tdType, "etf"):
 		return "etf"
-	default:
+	case strings.Contains(tdType, "stock"), strings.Contains(tdType, "equity"), strings.Contains(tdType, "common"):
 		return "stock"
+	default:
+		return ""
 	}
 }
 

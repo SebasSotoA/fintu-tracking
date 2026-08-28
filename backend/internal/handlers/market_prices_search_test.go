@@ -75,7 +75,7 @@ func TestSearchMarketPrices_successReturnsResults(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
 			"data": [
-				{"symbol":"AAPL","instrument_name":"Apple Inc","exchange":"NASDAQ","instrument_type":"Common Stock"}
+				{"symbol":"AAPL","instrument_name":"Apple Inc","exchange":"NASDAQ","instrument_type":"Common Stock","country":"United States"}
 			],
 			"status": "ok"
 		}`))

@@ -786,9 +786,9 @@ func TestSearchSymbols_parsesDataWrapperAndNormalizesTypes(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
 			"data": [
-				{"symbol":"AAPL","instrument_name":"Apple Inc","exchange":"NASDAQ","instrument_type":"Common Stock"},
-				{"symbol":"SPY","instrument_name":"SPDR S&P 500 ETF","exchange":"NYSE","instrument_type":"ETF"},
-				{"symbol":"BTC/USD","instrument_name":"Bitcoin","exchange":"Coinbase","instrument_type":"Digital Currency"}
+				{"symbol":"AAPL","instrument_name":"Apple Inc","exchange":"NASDAQ","instrument_type":"Common Stock","country":"United States"},
+				{"symbol":"SPY","instrument_name":"SPDR S&P 500 ETF","exchange":"NYSE","instrument_type":"ETF","country":"United States"},
+				{"symbol":"BTC/USD","instrument_name":"Bitcoin","exchange":"Coinbase","instrument_type":"Digital Currency","country":""}
 			],
 			"status": "ok"
 		}`))
@@ -862,6 +862,184 @@ func TestSearchSymbols_emptyOrWhitespaceQueryReturnsError(t *testing.T) {
 	_, err := svc.SearchSymbols(context.Background(), "   ")
 	if err == nil {
 		t.Fatal("expected error for whitespace-only query")
+	}
+}
+
+func TestSearchSymbols_cryptoDedupedAcrossExchanges(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{"symbol":"BTC/USD","instrument_name":"Bitcoin","exchange":"Coinbase","instrument_type":"Digital Currency","country":""},
+				{"symbol":"BTC/USD","instrument_name":"Bitcoin","exchange":"Binance","instrument_type":"Digital Currency","country":""}
+			],
+			"status": "ok"
+		}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	results, err := svc.SearchSymbols(context.Background(), "BTC")
+	if err != nil {
+		t.Fatalf("SearchSymbols() error = %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("len = %d, want 1 (deduped across exchanges)", len(results))
+	}
+	if results[0].Symbol != "BTC" {
+		t.Errorf("symbol = %q, want BTC", results[0].Symbol)
+	}
+	if results[0].AssetType != "crypto" {
+		t.Errorf("asset_type = %q, want crypto", results[0].AssetType)
+	}
+}
+
+func TestSearchSymbols_nonUSStockDropped(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{"symbol":"AAPL","instrument_name":"Apple Inc","exchange":"NASDAQ","instrument_type":"Common Stock","country":"United States"},
+				{"symbol":"AAPL","instrument_name":"Apple Inc","exchange":"LSE","instrument_type":"Common Stock","country":"United Kingdom"}
+			],
+			"status": "ok"
+		}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	results, err := svc.SearchSymbols(context.Background(), "AAPL")
+	if err != nil {
+		t.Fatalf("SearchSymbols() error = %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("len = %d, want 1 (US listing only)", len(results))
+	}
+	if results[0].Symbol != "AAPL" {
+		t.Errorf("symbol = %q, want AAPL", results[0].Symbol)
+	}
+}
+
+func TestSearchSymbols_australianStockDropped(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{"symbol":"BTC","instrument_name":"BTC Health Ltd","exchange":"ASX","instrument_type":"Common Stock","country":"Australia"}
+			],
+			"status": "ok"
+		}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	results, err := svc.SearchSymbols(context.Background(), "BTC")
+	if err != nil {
+		t.Fatalf("SearchSymbols() error = %v", err)
+	}
+	if len(results) != 0 {
+		t.Fatalf("len = %d, want 0 (Australian stock dropped)", len(results))
+	}
+}
+
+func TestSearchSymbols_forexAndIndexOmitted(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{"symbol":"EUR/USD","instrument_name":"Euro vs US Dollar","exchange":"FX","instrument_type":"Physical Currency","country":""},
+				{"symbol":"SPX","instrument_name":"S&P 500 Index","exchange":"NYSE","instrument_type":"Index","country":"United States"}
+			],
+			"status": "ok"
+		}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	results, err := svc.SearchSymbols(context.Background(), "test")
+	if err != nil {
+		t.Fatalf("SearchSymbols() error = %v", err)
+	}
+	if len(results) != 0 {
+		t.Fatalf("len = %d, want 0 (forex and index omitted)", len(results))
+	}
+}
+
+func TestSearchSymbols_exactMatchSortedFirst(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{"symbol":"BTCX","instrument_name":"BTC Exchange Inc","exchange":"NASDAQ","instrument_type":"Common Stock","country":"United States"},
+				{"symbol":"BTC/USD","instrument_name":"Bitcoin","exchange":"Coinbase","instrument_type":"Digital Currency","country":""}
+			],
+			"status": "ok"
+		}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	results, err := svc.SearchSymbols(context.Background(), "BTC")
+	if err != nil {
+		t.Fatalf("SearchSymbols() error = %v", err)
+	}
+	if len(results) < 2 {
+		t.Fatalf("len = %d, want at least 2", len(results))
+	}
+	if results[0].Symbol != "BTC" {
+		t.Errorf("first result symbol = %q, want BTC (exact match first)", results[0].Symbol)
+	}
+}
+
+func TestSearchSymbols_cappedAtEight(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[
+			{"symbol":"AA","instrument_name":"AA Inc","exchange":"NYSE","instrument_type":"Common Stock","country":"United States"},
+			{"symbol":"BB","instrument_name":"BB Inc","exchange":"NYSE","instrument_type":"Common Stock","country":"United States"},
+			{"symbol":"CC","instrument_name":"CC Inc","exchange":"NYSE","instrument_type":"Common Stock","country":"United States"},
+			{"symbol":"DD","instrument_name":"DD Inc","exchange":"NYSE","instrument_type":"Common Stock","country":"United States"},
+			{"symbol":"EE","instrument_name":"EE Inc","exchange":"NYSE","instrument_type":"Common Stock","country":"United States"},
+			{"symbol":"FF","instrument_name":"FF Inc","exchange":"NYSE","instrument_type":"Common Stock","country":"United States"},
+			{"symbol":"GG","instrument_name":"GG Inc","exchange":"NYSE","instrument_type":"Common Stock","country":"United States"},
+			{"symbol":"HH","instrument_name":"HH Inc","exchange":"NYSE","instrument_type":"Common Stock","country":"United States"},
+			{"symbol":"II","instrument_name":"II Inc","exchange":"NYSE","instrument_type":"Common Stock","country":"United States"},
+			{"symbol":"BTC/USD","instrument_name":"Bitcoin","exchange":"Coinbase","instrument_type":"Digital Currency","country":""}
+		],"status":"ok"}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	results, err := svc.SearchSymbols(context.Background(), "test")
+	if err != nil {
+		t.Fatalf("SearchSymbols() error = %v", err)
+	}
+	if len(results) != 8 {
+		t.Errorf("len = %d, want 8 (capped at 8)", len(results))
 	}
 }
 
