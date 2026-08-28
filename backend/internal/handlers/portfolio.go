@@ -137,6 +137,34 @@ func ListMarketPrices(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, prices)
 }
 
+// SearchMarketPrices queries Twelve Data's symbol index for tickers matching the given
+// query string and returns up to 20 normalized results.
+func SearchMarketPrices(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	if userID == "" {
+		httpx.Error(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	if q == "" {
+		httpx.Error(w, http.StatusBadRequest, "q is required")
+		return
+	}
+
+	results, err := twelveDataSvc.SearchSymbols(r.Context(), q)
+	if err != nil {
+		if strings.Contains(err.Error(), "TWELVE_DATA_API_KEY") {
+			httpx.Error(w, http.StatusServiceUnavailable, err.Error())
+			return
+		}
+		httpx.Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, results)
+}
+
 // GetMarketPrice returns a specific market price
 func GetMarketPrice(w http.ResponseWriter, r *http.Request) {
 	ticker := chi.URLParam(r, "ticker")

@@ -175,7 +175,7 @@ func CreateTrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.AssetType != "stock" && req.AssetType != "etf" {
+	if !isValidAssetType(req.AssetType) {
 		httpx.Error(w, http.StatusBadRequest, "Invalid asset type")
 		return
 	}
@@ -313,7 +313,7 @@ func UpdateTrade(w http.ResponseWriter, r *http.Request) {
 		existing.Ticker = ticker
 	}
 	if req.AssetType != nil {
-		if *req.AssetType != "stock" && *req.AssetType != "etf" {
+		if !isValidAssetType(*req.AssetType) {
 			httpx.Error(w, http.StatusBadRequest, "Invalid asset type")
 			return
 		}
@@ -482,6 +482,10 @@ func DeleteTrade(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, map[string]any{"message": "Trade deleted successfully"})
+}
+
+func isValidAssetType(assetType string) bool {
+	return assetType == "stock" || assetType == "etf" || assetType == "crypto"
 }
 
 func scanTradeRow(rows pgx.Rows) (models.Trade, error) {

@@ -137,12 +137,16 @@ func (s *cronFakeStore) GetLatestFxRate(_ context.Context, userID string) (model
 	return models.RateResult{}, false, nil
 }
 
-func (s *cronFakeStore) ListHeldTickers(_ context.Context, userID string) ([]string, error) {
+func (s *cronFakeStore) ListHeldTickers(_ context.Context, userID string) ([]models.HeldTicker, error) {
 	return nil, nil
 }
 
-func (s *cronFakeStore) ListAllHeldTickers(_ context.Context) ([]string, error) {
-	return []string{"AAPL", "MSFT", "SPY"}, nil
+func (s *cronFakeStore) ListAllHeldTickers(_ context.Context) ([]models.HeldTicker, error) {
+	return []models.HeldTicker{
+		{Ticker: "AAPL", AssetType: "stock"},
+		{Ticker: "MSFT", AssetType: "stock"},
+		{Ticker: "SPY", AssetType: "etf"},
+	}, nil
 }
 
 func (s *cronFakeStore) GetMarketPrice(_ context.Context, ticker string) (models.MarketPrice, bool, error) {

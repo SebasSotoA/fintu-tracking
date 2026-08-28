@@ -39,7 +39,7 @@ func TestFetchQuote_success(t *testing.T) {
 	svc.httpClient = server.Client()
 	svc.baseURL = server.URL
 
-	price, day, currency, err := svc.FetchQuote(context.Background(), "aapl")
+	price, day, currency, err := svc.FetchQuote(context.Background(), "aapl", "")
 	if err != nil {
 		t.Fatalf("FetchQuote() error = %v", err)
 	}
@@ -66,7 +66,7 @@ func TestFetchQuote_rateLimitHTTP429(t *testing.T) {
 	svc.httpClient = server.Client()
 	svc.baseURL = server.URL
 
-	_, _, _, err := svc.FetchQuote(context.Background(), "AAPL")
+	_, _, _, err := svc.FetchQuote(context.Background(), "AAPL", "")
 	if err == nil {
 		t.Fatal("expected rate limit error")
 	}
@@ -87,7 +87,7 @@ func TestFetchQuote_apiErrorBody(t *testing.T) {
 	svc.httpClient = server.Client()
 	svc.baseURL = server.URL
 
-	_, _, _, err := svc.FetchQuote(context.Background(), "AAPL")
+	_, _, _, err := svc.FetchQuote(context.Background(), "AAPL", "")
 	if err == nil {
 		t.Fatal("expected API error")
 	}
@@ -100,7 +100,7 @@ func TestFetchQuote_missingAPIKey(t *testing.T) {
 	svc := NewTwelveDataService(newFakeMarketDataStore())
 	svc.apiKey = ""
 
-	_, _, _, err := svc.FetchQuote(context.Background(), "AAPL")
+	_, _, _, err := svc.FetchQuote(context.Background(), "AAPL", "")
 	if err == nil {
 		t.Fatal("expected missing key error")
 	}
@@ -119,7 +119,7 @@ func TestNewTwelveDataService_readsEnvKey(t *testing.T) {
 
 func TestRefreshMarketPrices_skipsFreshTickers(t *testing.T) {
 	store := newFakeMarketDataStore()
-	store.heldTickers = []string{"AAPL", "MSFT"}
+	store.heldTickers = []HeldTicker{{Ticker: "AAPL", AssetType: "stock"}, {Ticker: "MSFT", AssetType: "stock"}}
 	store.marketPrices["AAPL"] = models.MarketPrice{Ticker: "AAPL", Price: "180.00", Currency: "USD", UpdatedAt: time.Now()}
 	store.marketPrices["MSFT"] = models.MarketPrice{Ticker: "MSFT", Price: "330.00", Currency: "USD", UpdatedAt: time.Now()}
 
@@ -153,7 +153,7 @@ func TestRefreshMarketPrices_fetchesOnlyStaleTickers(t *testing.T) {
 	defer server.Close()
 
 	store := newFakeMarketDataStore()
-	store.heldTickers = []string{"AAPL", "MSFT"}
+	store.heldTickers = []HeldTicker{{Ticker: "AAPL", AssetType: "stock"}, {Ticker: "MSFT", AssetType: "stock"}}
 	store.marketPrices["AAPL"] = models.MarketPrice{Ticker: "AAPL", Price: "180.00", Currency: "USD", UpdatedAt: time.Now().Add(-48 * time.Hour)}
 	store.marketPrices["MSFT"] = models.MarketPrice{Ticker: "MSFT", Price: "330.00", Currency: "USD", UpdatedAt: time.Now()}
 
@@ -191,7 +191,7 @@ func TestRefreshMarketPrices_handlesEmptyHoldings(t *testing.T) {
 
 func TestRefreshMarketPrices_allowsFirstRefreshAndRecordsTimestamp(t *testing.T) {
 	store := newFakeMarketDataStore()
-	store.heldTickers = []string{"AAPL"}
+	store.heldTickers = []HeldTicker{{Ticker: "AAPL", AssetType: "stock"}}
 	store.marketPrices["AAPL"] = models.MarketPrice{Ticker: "AAPL", Price: "180.00", Currency: "USD", UpdatedAt: time.Now()}
 
 	svc := NewTwelveDataService(store)
@@ -255,7 +255,7 @@ func TestRefreshMarketPrices_propagatesRateLimit(t *testing.T) {
 	defer server.Close()
 
 	store := newFakeMarketDataStore()
-	store.heldTickers = []string{"AAPL", "MSFT"}
+	store.heldTickers = []HeldTicker{{Ticker: "AAPL", AssetType: "stock"}, {Ticker: "MSFT", AssetType: "stock"}}
 
 	svc := NewTwelveDataService(store)
 	svc.apiKey = "test-key"
@@ -291,7 +291,7 @@ func TestFetchBatchPrices_buildsBatchURLWithCommaSeparatedSymbols(t *testing.T) 
 	svc.httpClient = server.Client()
 	svc.baseURL = server.URL
 
-	prices, err := svc.FetchBatchPrices(context.Background(), []string{"AAPL", "MSFT"})
+	prices, err := svc.FetchBatchPrices(context.Background(), []HeldTicker{{Ticker: "AAPL"}, {Ticker: "MSFT"}})
 	if err != nil {
 		t.Fatalf("FetchBatchPrices() error = %v", err)
 	}
@@ -338,9 +338,9 @@ func TestFetchBatchPrices_splitsWhenTickersExceedMaxBatch(t *testing.T) {
 	}))
 	defer server.Close()
 
-	tickers := make([]string, 0, 25)
+	tickers := make([]HeldTicker, 0, 25)
 	for i := 0; i < 25; i++ {
-		tickers = append(tickers, fmt.Sprintf("T%02d", i))
+		tickers = append(tickers, HeldTicker{Ticker: fmt.Sprintf("T%02d", i)})
 	}
 
 	svc := NewTwelveDataService(newFakeMarketDataStore())
@@ -374,7 +374,7 @@ func TestFetchBatchPrices_returnsRateLimitErrorOnHTTP429(t *testing.T) {
 	svc.httpClient = server.Client()
 	svc.baseURL = server.URL
 
-	_, err := svc.FetchBatchPrices(context.Background(), []string{"AAPL"})
+	_, err := svc.FetchBatchPrices(context.Background(), []HeldTicker{{Ticker: "AAPL"}})
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -388,7 +388,7 @@ func TestFetchBatchPrices_missingAPIKeyReturnsError(t *testing.T) {
 	svc := NewTwelveDataService(newFakeMarketDataStore())
 	svc.apiKey = ""
 
-	_, err := svc.FetchBatchPrices(context.Background(), []string{"AAPL"})
+	_, err := svc.FetchBatchPrices(context.Background(), []HeldTicker{{Ticker: "AAPL"}})
 	if err == nil {
 		t.Fatal("expected missing key error")
 	}
@@ -411,7 +411,7 @@ func TestFetchBatchPrices_normalizesAndDedupsTickers(t *testing.T) {
 	svc.httpClient = server.Client()
 	svc.baseURL = server.URL
 
-	prices, err := svc.FetchBatchPrices(context.Background(), []string{"aapl", " AAPL "})
+	prices, err := svc.FetchBatchPrices(context.Background(), []HeldTicker{{Ticker: "aapl"}, {Ticker: " AAPL "}})
 	if err != nil {
 		t.Fatalf("FetchBatchPrices() error = %v", err)
 	}
@@ -432,8 +432,8 @@ func TestListAllHeldTickers_fakeIncludesSPY(t *testing.T) {
 		t.Fatalf("ListAllHeldTickers() error = %v", err)
 	}
 	hasSPY := false
-	for _, tk := range tickers {
-		if tk == "SPY" {
+	for _, ht := range tickers {
+		if ht.Ticker == "SPY" {
 			hasSPY = true
 		}
 	}
@@ -445,7 +445,11 @@ func TestListAllHeldTickers_fakeIncludesSPY(t *testing.T) {
 func TestListAllHeldTickers_fakeRespectsConfiguredValue(t *testing.T) {
 	store := newFakeMarketDataStore()
 	store.allHeldTickersSet = true
-	store.allHeldTickers = []string{"VOO", "QQQ", "SPY"}
+	store.allHeldTickers = []HeldTicker{
+		{Ticker: "VOO", AssetType: "etf"},
+		{Ticker: "QQQ", AssetType: "etf"},
+		{Ticker: "SPY", AssetType: "etf"},
+	}
 
 	tickers, err := store.ListAllHeldTickers(context.Background())
 	if err != nil {
@@ -454,8 +458,8 @@ func TestListAllHeldTickers_fakeRespectsConfiguredValue(t *testing.T) {
 	if len(tickers) != 3 {
 		t.Errorf("tickers len = %d, want 3", len(tickers))
 	}
-	if tickers[2] != "SPY" {
-		t.Errorf("last ticker = %q, want SPY", tickers[2])
+	if tickers[2].Ticker != "SPY" {
+		t.Errorf("last ticker = %q, want SPY", tickers[2].Ticker)
 	}
 }
 
@@ -464,7 +468,11 @@ func TestListAllHeldTickers_fakeRespectsConfiguredValue(t *testing.T) {
 func TestRefreshAllMarketPrices_callsListAllHeldTickersNotListHeldTickers(t *testing.T) {
 	store := newFakeMarketDataStore()
 	store.allHeldTickersSet = true
-	store.allHeldTickers = []string{"AAPL", "MSFT", "SPY"}
+	store.allHeldTickers = []HeldTicker{
+		{Ticker: "AAPL", AssetType: "stock"},
+		{Ticker: "MSFT", AssetType: "stock"},
+		{Ticker: "SPY", AssetType: "etf"},
+	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -489,7 +497,7 @@ func TestRefreshAllMarketPrices_callsListAllHeldTickersNotListHeldTickers(t *tes
 func TestRefreshAllMarketPrices_doesNotCallRecordMarketPriceRefresh(t *testing.T) {
 	store := newFakeMarketDataStore()
 	store.allHeldTickersSet = true
-	store.allHeldTickers = []string{"AAPL", "SPY"}
+	store.allHeldTickers = []HeldTicker{{Ticker: "AAPL", AssetType: "stock"}, {Ticker: "SPY", AssetType: "etf"}}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -514,7 +522,11 @@ func TestRefreshAllMarketPrices_doesNotCallRecordMarketPriceRefresh(t *testing.T
 func TestRefreshAllMarketPrices_upsertsAllPrices(t *testing.T) {
 	store := newFakeMarketDataStore()
 	store.allHeldTickersSet = true
-	store.allHeldTickers = []string{"AAPL", "MSFT", "SPY"}
+	store.allHeldTickers = []HeldTicker{
+		{Ticker: "AAPL", AssetType: "stock"},
+		{Ticker: "MSFT", AssetType: "stock"},
+		{Ticker: "SPY", AssetType: "etf"},
+	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -551,7 +563,11 @@ func TestRefreshAllMarketPrices_upsertsAllPrices(t *testing.T) {
 func TestRefreshAllMarketPrices_skipsAllWhenEverythingFresh(t *testing.T) {
 	store := newFakeMarketDataStore()
 	store.allHeldTickersSet = true
-	store.allHeldTickers = []string{"AAPL", "MSFT", "SPY"}
+	store.allHeldTickers = []HeldTicker{
+		{Ticker: "AAPL", AssetType: "stock"},
+		{Ticker: "MSFT", AssetType: "stock"},
+		{Ticker: "SPY", AssetType: "etf"},
+	}
 	now := time.Now()
 	store.marketPrices["AAPL"] = models.MarketPrice{Ticker: "AAPL", Price: "180.00", Currency: "USD", UpdatedAt: now}
 	store.marketPrices["MSFT"] = models.MarketPrice{Ticker: "MSFT", Price: "330.00", Currency: "USD", UpdatedAt: now}
@@ -585,7 +601,11 @@ func TestRefreshAllMarketPrices_skipsAllWhenEverythingFresh(t *testing.T) {
 func TestRefreshAllMarketPrices_refreshesAllWhenStale(t *testing.T) {
 	store := newFakeMarketDataStore()
 	store.allHeldTickersSet = true
-	store.allHeldTickers = []string{"AAPL", "MSFT", "SPY"}
+	store.allHeldTickers = []HeldTicker{
+		{Ticker: "AAPL", AssetType: "stock"},
+		{Ticker: "MSFT", AssetType: "stock"},
+		{Ticker: "SPY", AssetType: "etf"},
+	}
 	staleTime := time.Now().Add(-48 * time.Hour)
 	store.marketPrices["AAPL"] = models.MarketPrice{Ticker: "AAPL", Price: "180.00", Currency: "USD", UpdatedAt: staleTime}
 	store.marketPrices["MSFT"] = models.MarketPrice{Ticker: "MSFT", Price: "330.00", Currency: "USD", UpdatedAt: staleTime}
@@ -617,7 +637,7 @@ func TestRefreshAllMarketPrices_refreshesAllWhenStale(t *testing.T) {
 func TestRefreshAllMarketPrices_handlesEmptyHeldTickers(t *testing.T) {
 	store := newFakeMarketDataStore()
 	store.allHeldTickersSet = true
-	store.allHeldTickers = []string{}
+	store.allHeldTickers = []HeldTicker{}
 
 	svc := NewTwelveDataService(store)
 	result, err := svc.RefreshAllMarketPrices(context.Background())
@@ -632,7 +652,7 @@ func TestRefreshAllMarketPrices_handlesEmptyHeldTickers(t *testing.T) {
 func TestRefreshAllMarketPrices_noCooldownEnforced(t *testing.T) {
 	store := newFakeMarketDataStore()
 	store.allHeldTickersSet = true
-	store.allHeldTickers = []string{"AAPL", "SPY"}
+	store.allHeldTickers = []HeldTicker{{Ticker: "AAPL", AssetType: "stock"}, {Ticker: "SPY", AssetType: "etf"}}
 	store.lastRefresh["some-user"] = time.Now()
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -652,6 +672,196 @@ func TestRefreshAllMarketPrices_noCooldownEnforced(t *testing.T) {
 	}
 	if result.Updated != 2 {
 		t.Errorf("updated = %d, want 2 (no cooldown)", result.Updated)
+	}
+}
+
+// --- FormatSymbol ---
+
+func TestFormatSymbol_cryptoAppendsUSD(t *testing.T) {
+	got := FormatSymbol("BTC", "crypto")
+	if got != "BTC/USD" {
+		t.Errorf("FormatSymbol(BTC, crypto) = %q, want BTC/USD", got)
+	}
+}
+
+func TestFormatSymbol_cryptoLowercaseAppendsUSD(t *testing.T) {
+	got := FormatSymbol("btc", "crypto")
+	if got != "BTC/USD" {
+		t.Errorf("FormatSymbol(btc, crypto) = %q, want BTC/USD", got)
+	}
+}
+
+func TestFormatSymbol_cryptoAlreadyHasSlashNoDoubleSuffix(t *testing.T) {
+	got := FormatSymbol("BTC/USD", "crypto")
+	if got != "BTC/USD" {
+		t.Errorf("FormatSymbol(BTC/USD, crypto) = %q, want BTC/USD", got)
+	}
+}
+
+func TestFormatSymbol_stockUnchangedExceptUppercase(t *testing.T) {
+	got := FormatSymbol("aapl", "stock")
+	if got != "AAPL" {
+		t.Errorf("FormatSymbol(aapl, stock) = %q, want AAPL", got)
+	}
+}
+
+func TestFormatSymbol_emptyAssetTypeUnchangedExceptUppercase(t *testing.T) {
+	got := FormatSymbol("aapl", "")
+	if got != "AAPL" {
+		t.Errorf("FormatSymbol(aapl, '') = %q, want AAPL", got)
+	}
+}
+
+// --- FetchQuote crypto ---
+
+func TestFetchQuote_cryptoSymbolFormattedAsBTCUSD(t *testing.T) {
+	var capturedSymbol string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedSymbol = r.URL.Query().Get("symbol")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"symbol":"BTC/USD",
+			"currency":"USD",
+			"datetime":"2026-05-22",
+			"close":"64000.00"
+		}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	price, _, _, err := svc.FetchQuote(context.Background(), "BTC", "crypto")
+	if err != nil {
+		t.Fatalf("FetchQuote() error = %v", err)
+	}
+	if capturedSymbol != "BTC/USD" {
+		t.Errorf("symbol = %q, want BTC/USD", capturedSymbol)
+	}
+	if price != "64000.00" {
+		t.Errorf("price = %q, want 64000.00", price)
+	}
+}
+
+// --- FetchBatchPrices crypto ---
+
+func TestFetchBatchPrices_cryptoSymbolRequestedAsBTCUSDAndKeyedAsBTC(t *testing.T) {
+	var capturedSymbol string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		capturedSymbol = r.URL.Query().Get("symbol")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"BTC/USD":{"price":"64000","currency":"USD"}}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	prices, err := svc.FetchBatchPrices(context.Background(), []HeldTicker{{Ticker: "BTC", AssetType: "crypto"}})
+	if err != nil {
+		t.Fatalf("FetchBatchPrices() error = %v", err)
+	}
+	if capturedSymbol != "BTC/USD" {
+		t.Errorf("symbol param = %q, want BTC/USD", capturedSymbol)
+	}
+	if _, ok := prices["BTC"]; !ok {
+		t.Errorf("expected result keyed by BTC, got %v", prices)
+	}
+	if _, ok := prices["BTC/USD"]; ok {
+		t.Errorf("expected no BTC/USD key in results, got %v", prices)
+	}
+	if prices["BTC"].Price != "64000" {
+		t.Errorf("price = %q, want 64000", prices["BTC"].Price)
+	}
+}
+
+// --- SearchSymbols ---
+
+func TestSearchSymbols_parsesDataWrapperAndNormalizesTypes(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{"symbol":"AAPL","instrument_name":"Apple Inc","exchange":"NASDAQ","instrument_type":"Common Stock"},
+				{"symbol":"SPY","instrument_name":"SPDR S&P 500 ETF","exchange":"NYSE","instrument_type":"ETF"},
+				{"symbol":"BTC/USD","instrument_name":"Bitcoin","exchange":"Coinbase","instrument_type":"Digital Currency"}
+			],
+			"status": "ok"
+		}`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	results, err := svc.SearchSymbols(context.Background(), "test")
+	if err != nil {
+		t.Fatalf("SearchSymbols() error = %v", err)
+	}
+	if len(results) != 3 {
+		t.Fatalf("len = %d, want 3", len(results))
+	}
+	if results[0].AssetType != "stock" {
+		t.Errorf("AAPL asset_type = %q, want stock", results[0].AssetType)
+	}
+	if results[1].AssetType != "etf" {
+		t.Errorf("SPY asset_type = %q, want etf", results[1].AssetType)
+	}
+	if results[2].AssetType != "crypto" {
+		t.Errorf("BTC asset_type = %q, want crypto", results[2].AssetType)
+	}
+	if results[2].Symbol != "BTC" {
+		t.Errorf("BTC symbol = %q, want BTC (USD stripped)", results[2].Symbol)
+	}
+}
+
+func TestSearchSymbols_non200ReturnsError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`internal server error`))
+	}))
+	defer server.Close()
+
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+	svc.httpClient = server.Client()
+	svc.baseURL = server.URL
+
+	_, err := svc.SearchSymbols(context.Background(), "AAPL")
+	if err == nil {
+		t.Fatal("expected error for non-200 status")
+	}
+	if !strings.Contains(err.Error(), "500") {
+		t.Errorf("error = %q, want HTTP 500 mention", err.Error())
+	}
+}
+
+func TestSearchSymbols_missingAPIKeyReturnsError(t *testing.T) {
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = ""
+
+	_, err := svc.SearchSymbols(context.Background(), "AAPL")
+	if err == nil {
+		t.Fatal("expected missing API key error")
+	}
+	if !strings.Contains(err.Error(), "TWELVE_DATA_API_KEY") {
+		t.Errorf("error = %q, want TWELVE_DATA_API_KEY mention", err.Error())
+	}
+}
+
+func TestSearchSymbols_emptyOrWhitespaceQueryReturnsError(t *testing.T) {
+	svc := NewTwelveDataService(newFakeMarketDataStore())
+	svc.apiKey = "test-key"
+
+	_, err := svc.SearchSymbols(context.Background(), "   ")
+	if err == nil {
+		t.Fatal("expected error for whitespace-only query")
 	}
 }
 

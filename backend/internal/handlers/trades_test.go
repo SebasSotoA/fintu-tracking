@@ -7,6 +7,29 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func TestIsValidAssetType(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		assetType string
+		want      bool
+	}{
+		{"stock", true},
+		{"etf", true},
+		{"crypto", true},
+		{"", false},
+		{"bond", false},
+		{"STOCK", false},
+		{"ETF", false},
+	}
+	for _, tc := range cases {
+		got := isValidAssetType(tc.assetType)
+		if got != tc.want {
+			t.Errorf("isValidAssetType(%q) = %v, want %v", tc.assetType, got, tc.want)
+		}
+	}
+}
+
 func TestValidateSellQuantityAgainstNetHoldings_AllowsSellWithinOpeningPosition(t *testing.T) {
 	t.Parallel()
 

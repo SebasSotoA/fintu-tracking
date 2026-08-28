@@ -16,9 +16,9 @@ type fakeMarketDataStore struct {
 	fxRates           map[string]models.RateResult
 	latestFxRate      *models.RateResult
 	marketPrices      map[string]models.MarketPrice
-	heldTickers       []string
-	allHeldTickers    []string
-	allHeldTickersSet  bool
+	heldTickers       []HeldTicker
+	allHeldTickers    []HeldTicker
+	allHeldTickersSet bool
 	lastRefresh       map[string]time.Time
 	upsertFxCalls     []upsertFxCall
 	upsertPriceCalls  []upsertPriceCall
@@ -66,15 +66,19 @@ func (f *fakeMarketDataStore) GetLatestFxRate(_ context.Context, userID string) 
 	return models.RateResult{}, false, nil
 }
 
-func (f *fakeMarketDataStore) ListHeldTickers(_ context.Context, userID string) ([]string, error) {
+func (f *fakeMarketDataStore) ListHeldTickers(_ context.Context, userID string) ([]HeldTicker, error) {
 	return f.heldTickers, nil
 }
 
-func (f *fakeMarketDataStore) ListAllHeldTickers(_ context.Context) ([]string, error) {
+func (f *fakeMarketDataStore) ListAllHeldTickers(_ context.Context) ([]HeldTicker, error) {
 	if f.allHeldTickersSet {
 		return f.allHeldTickers, nil
 	}
-	return []string{"AAPL", "MSFT", "SPY"}, nil
+	return []HeldTicker{
+		{Ticker: "AAPL", AssetType: "stock"},
+		{Ticker: "MSFT", AssetType: "stock"},
+		{Ticker: "SPY", AssetType: "etf"},
+	}, nil
 }
 
 func (f *fakeMarketDataStore) GetMarketPrice(_ context.Context, ticker string) (models.MarketPrice, bool, error) {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -88,20 +89,27 @@ type batchPriceResponse map[string]struct {
 	Currency string `json:"currency"`
 }
 
+// SearchResult represents a single symbol search match from Twelve Data.
+type SearchResult struct {
+	Symbol    string `json:"symbol"`
+	Name      string `json:"name"`
+	AssetType string `json:"asset_type"`
+}
+
 // FetchBatchPrices fetches the latest price for every ticker in a single batched call
 // to Twelve Data's /price endpoint. Tickers are split into chunks of
 // config.MaxBatchSymbols to keep requests within provider limits. The returned map is
-// keyed by the upper-cased ticker.
-func (s *TwelveDataService) FetchBatchPrices(ctx context.Context, tickers []string) (map[string]BatchPrice, error) {
+// keyed by the bare stored ticker (e.g. "BTC", not "BTC/USD").
+func (s *TwelveDataService) FetchBatchPrices(ctx context.Context, tickers []HeldTicker) (map[string]BatchPrice, error) {
 	if s.apiKey == "" {
 		return nil, fmt.Errorf("TWELVE_DATA_API_KEY environment variable is not set")
 	}
 
-	normalized := make([]string, 0, len(tickers))
-	for _, t := range tickers {
-		t = strings.TrimSpace(strings.ToUpper(t))
-		if t != "" {
-			normalized = append(normalized, t)
+	normalized := make([]HeldTicker, 0, len(tickers))
+	for _, ht := range tickers {
+		ticker := strings.TrimSpace(strings.ToUpper(ht.Ticker))
+		if ticker != "" {
+			normalized = append(normalized, HeldTicker{Ticker: ticker, AssetType: ht.AssetType})
 		}
 	}
 	if len(normalized) == 0 {
@@ -141,14 +149,37 @@ func (s *TwelveDataService) FetchBatchPrices(ctx context.Context, tickers []stri
 	return results, nil
 }
 
-// fetchBatchChunk performs a single batch /price request for the given chunk of
-// tickers and returns the parsed results.
-func (s *TwelveDataService) fetchBatchChunk(ctx context.Context, base string, tickers []string) (map[string]BatchPrice, error) {
-	symbolParam := strings.Join(tickers, ",")
+// FormatSymbol converts a bare ticker into the symbol format expected by Twelve Data.
+// Crypto symbols need a /USD suffix (e.g. BTC → BTC/USD); stocks and ETFs use the bare ticker.
+func FormatSymbol(ticker, assetType string) string {
+	ticker = strings.TrimSpace(strings.ToUpper(ticker))
+	if assetType == "crypto" && !strings.Contains(ticker, "/") {
+		return ticker + "/USD"
+	}
+	return ticker
+}
+
+// SearchSymbols queries Twelve Data's /symbol_search endpoint for tickers matching the query.
+// Returns up to 20 results sorted by relevance.
+func (s *TwelveDataService) SearchSymbols(ctx context.Context, query string) ([]SearchResult, error) {
+	if s.apiKey == "" {
+		return nil, fmt.Errorf("TWELVE_DATA_API_KEY environment variable is not set")
+	}
+
+	query = strings.TrimSpace(query)
+	if len(query) < 1 {
+		return nil, fmt.Errorf("query must be at least 1 character")
+	}
+
+	base := s.baseURL
+	if base == "" {
+		base = config.TwelveDataBaseURL
+	}
+
 	apiURL := fmt.Sprintf(
-		"%s/price?symbol=%s&apikey=%s",
-		base,
-		url.QueryEscape(symbolParam),
+		"%s/symbol_search?symbol=%s&apikey=%s",
+		strings.TrimRight(base, "/"),
+		url.QueryEscape(query),
 		url.QueryEscape(s.apiKey),
 	)
 
@@ -159,66 +190,62 @@ func (s *TwelveDataService) fetchBatchChunk(ctx context.Context, base string, ti
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("http request failed: %w", err)
+		return nil, fmt.Errorf("search request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-
-	if resp.StatusCode == http.StatusTooManyRequests {
-		retryAfter := parseRetryAfter(resp.Header.Get("Retry-After"))
-		return nil, &RateLimitError{RetryAfter: retryAfter}
+		return nil, fmt.Errorf("failed to read search response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("batch /price returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		return nil, fmt.Errorf("symbol_search returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
 
-	var parsed batchPriceResponse
-	if err := json.Unmarshal(body, &parsed); err != nil {
-		return nil, fmt.Errorf("failed to decode batch response: %w", err)
+	var envelope struct {
+		Data []struct {
+			Symbol         string `json:"symbol"`
+			InstrumentName string `json:"instrument_name"`
+			InstrumentType string `json:"instrument_type"`
+			Exchange       string `json:"exchange"`
+		} `json:"data"`
+		Status string `json:"status"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil {
+		return nil, fmt.Errorf("failed to decode search response: %w", err)
 	}
 
-	results := make(map[string]BatchPrice, len(tickers))
-	for _, ticker := range tickers {
-		entry, ok := parsed[ticker]
-		if !ok {
-			fmt.Printf("twelve_data: ticker %s missing from batch response\n", ticker)
+	results := make([]SearchResult, 0, len(envelope.Data))
+	for _, r := range envelope.Data {
+		symbol := strings.TrimSpace(r.Symbol)
+		if symbol == "" {
 			continue
 		}
-		price := strings.TrimSpace(entry.Price)
-		if price == "" {
-			fmt.Printf("twelve_data: ticker %s returned empty price\n", ticker)
-			continue
+		displaySymbol := strings.TrimSuffix(strings.ToUpper(symbol), "/USD")
+		assetType := normalizeAssetType(r.InstrumentType)
+		name := strings.TrimSpace(r.InstrumentName)
+		if name == "" {
+			name = strings.TrimSpace(r.Exchange)
 		}
-		currency := strings.TrimSpace(entry.Currency)
-		if currency == "" {
-			currency = config.DefaultMarketCurrency
-		}
-		results[ticker] = BatchPrice{Price: price, Currency: currency}
+
+		results = append(results, SearchResult{
+			Symbol:    displaySymbol,
+			Name:      name,
+			AssetType: assetType,
+		})
+	}
+
+	if len(results) > 20 {
+		results = results[:20]
 	}
 
 	return results, nil
 }
 
-// parseRetryAfter converts a Retry-After header value into a Duration. Twelve Data
-// returns seconds; if parsing fails or the header is absent a default is used.
-func parseRetryAfter(value string) time.Duration {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return 60 * time.Second
-	}
-	if seconds, err := strconv.Atoi(value); err == nil && seconds > 0 {
-		return time.Duration(seconds) * time.Second
-	}
-	return 60 * time.Second
-}
-
 // FetchQuote returns the latest price, trading day, and currency via the /quote endpoint.
-func (s *TwelveDataService) FetchQuote(ctx context.Context, ticker string) (price, latestDay, currency string, err error) {
+// assetType is used to format the symbol correctly for the provider (e.g. "crypto" → BTC/USD).
+func (s *TwelveDataService) FetchQuote(ctx context.Context, ticker, assetType string) (price, latestDay, currency string, err error) {
 	if s.apiKey == "" {
 		return "", "", "", fmt.Errorf("TWELVE_DATA_API_KEY environment variable is not set")
 	}
@@ -228,6 +255,8 @@ func (s *TwelveDataService) FetchQuote(ctx context.Context, ticker string) (pric
 		return "", "", "", fmt.Errorf("ticker is required")
 	}
 
+	formattedSymbol := FormatSymbol(ticker, assetType)
+
 	base := s.baseURL
 	if base == "" {
 		base = config.TwelveDataBaseURL
@@ -236,7 +265,7 @@ func (s *TwelveDataService) FetchQuote(ctx context.Context, ticker string) (pric
 	apiURL := fmt.Sprintf(
 		"%s/quote?symbol=%s&apikey=%s",
 		strings.TrimRight(base, "/"),
-		url.QueryEscape(ticker),
+		url.QueryEscape(formattedSymbol),
 		url.QueryEscape(s.apiKey),
 	)
 
@@ -403,6 +432,105 @@ func (s *TwelveDataService) RefreshAllMarketPrices(ctx context.Context) (Refresh
 	return result, nil
 }
 
+// fetchBatchChunk performs a single batch /price request for the given chunk of
+// tickers and returns results keyed by the bare stored ticker (not the
+// provider-formatted symbol, e.g. "BTC" not "BTC/USD").
+func (s *TwelveDataService) fetchBatchChunk(ctx context.Context, base string, tickers []HeldTicker) (map[string]BatchPrice, error) {
+	formatted := make([]string, 0, len(tickers))
+	reverseMap := make(map[string]string, len(tickers))
+	for _, ht := range tickers {
+		sym := FormatSymbol(ht.Ticker, ht.AssetType)
+		formatted = append(formatted, sym)
+		reverseMap[sym] = ht.Ticker
+	}
+
+	symbolParam := strings.Join(formatted, ",")
+	apiURL := fmt.Sprintf(
+		"%s/price?symbol=%s&apikey=%s",
+		base,
+		url.QueryEscape(symbolParam),
+		url.QueryEscape(s.apiKey),
+	)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		retryAfter := parseRetryAfter(resp.Header.Get("Retry-After"))
+		return nil, &RateLimitError{RetryAfter: retryAfter}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("batch /price returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var parsed batchPriceResponse
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return nil, fmt.Errorf("failed to decode batch response: %w", err)
+	}
+
+	results := make(map[string]BatchPrice, len(tickers))
+	for _, ht := range tickers {
+		sym := FormatSymbol(ht.Ticker, ht.AssetType)
+		entry, ok := parsed[sym]
+		if !ok {
+			log.Printf("twelve_data: ticker %s missing from batch response", sym)
+			continue
+		}
+		price := strings.TrimSpace(entry.Price)
+		if price == "" {
+			log.Printf("twelve_data: ticker %s returned empty price", sym)
+			continue
+		}
+		currency := strings.TrimSpace(entry.Currency)
+		if currency == "" {
+			currency = config.DefaultMarketCurrency
+		}
+		results[ht.Ticker] = BatchPrice{Price: price, Currency: currency}
+	}
+
+	return results, nil
+}
+
+// normalizeAssetType converts Twelve Data's instrument_type strings to Fintu's internal types.
+func normalizeAssetType(tdType string) string {
+	tdType = strings.TrimSpace(strings.ToLower(tdType))
+	switch {
+	case strings.Contains(tdType, "crypto"), strings.Contains(tdType, "digital currency"):
+		return "crypto"
+	case strings.Contains(tdType, "etf"):
+		return "etf"
+	default:
+		return "stock"
+	}
+}
+
+// parseRetryAfter converts a Retry-After header value into a Duration. Twelve Data
+// returns seconds; if parsing fails or the header is absent a default is used.
+func parseRetryAfter(value string) time.Duration {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 60 * time.Second
+	}
+	if seconds, err := strconv.Atoi(value); err == nil && seconds > 0 {
+		return time.Duration(seconds) * time.Second
+	}
+	return 60 * time.Second
+}
+
 // checkCooldown returns a RateLimitError if the user has refreshed prices too recently.
 func (s *TwelveDataService) checkCooldown(ctx context.Context, userID string) error {
 	lastRefresh, ok, err := s.store.GetLastMarketPriceRefresh(ctx, userID)
@@ -421,10 +549,15 @@ func (s *TwelveDataService) checkCooldown(ctx context.Context, userID string) er
 	return nil
 }
 
-// listStaleTickers returns tickers that have no cached market price or whose cached
-// price is older than the configured TTL.
-func (s *TwelveDataService) listStaleTickers(ctx context.Context, tickers []string) ([]string, error) {
-	prices, err := s.store.GetMarketPrices(ctx, tickers)
+// listStaleTickers returns held tickers that have no cached market price or whose
+// cached price is older than the configured TTL.
+func (s *TwelveDataService) listStaleTickers(ctx context.Context, tickers []HeldTicker) ([]HeldTicker, error) {
+	tickerStrings := make([]string, 0, len(tickers))
+	for _, ht := range tickers {
+		tickerStrings = append(tickerStrings, ht.Ticker)
+	}
+
+	prices, err := s.store.GetMarketPrices(ctx, tickerStrings)
 	if err != nil {
 		return nil, err
 	}
@@ -436,10 +569,10 @@ func (s *TwelveDataService) listStaleTickers(ctx context.Context, tickers []stri
 		}
 	}
 
-	stale := make([]string, 0, len(tickers))
-	for _, ticker := range tickers {
-		if !fresh[ticker] {
-			stale = append(stale, ticker)
+	stale := make([]HeldTicker, 0, len(tickers))
+	for _, ht := range tickers {
+		if !fresh[ht.Ticker] {
+			stale = append(stale, ht)
 		}
 	}
 	return stale, nil

@@ -22,8 +22,8 @@ import (
 
 // Deps holds wired services required to build the Fiber application.
 type Deps struct {
-	BillingSvc     *services.BillingService
-	TwelveDataSvc  *services.TwelveDataService
+	BillingSvc    *services.BillingService
+	TwelveDataSvc *services.TwelveDataService
 }
 
 // Bootstrap connects to the database and initializes handler service singletons.
@@ -142,6 +142,7 @@ func NewApp(deps *Deps) chi.Router {
 				r.Delete("/trades/{id}", handlers.DeleteTrade)
 
 				r.Get("/market-prices", handlers.ListMarketPrices)
+				r.Get("/market-prices/search", handlers.SearchMarketPrices)
 				r.Get("/market-prices/{ticker}", handlers.GetMarketPrice)
 				r.Post("/market-prices/refresh", handlers.RefreshMarketPrices)
 

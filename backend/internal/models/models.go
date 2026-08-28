@@ -196,6 +196,13 @@ type MarketPrice struct {
 	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
+// HeldTicker carries a ticker symbol together with its asset type so that
+// formatting helpers can produce the correct provider symbol (e.g. BTC → BTC/USD for crypto).
+type HeldTicker struct {
+	Ticker    string
+	AssetType string
+}
+
 // PortfolioSnapshot represents a historical snapshot of portfolio state
 type PortfolioSnapshot struct {
 	ID               string    `json:"id" db:"id"`

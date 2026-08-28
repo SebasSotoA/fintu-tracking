@@ -88,13 +88,13 @@ func (s *PostgresMarketDataStore) GetLatestFxRate(ctx context.Context, userID st
 	return models.RateResult{Rate: rate, Date: today, Source: source}, true, nil
 }
 
-func (s *PostgresMarketDataStore) ListHeldTickers(ctx context.Context, userID string) ([]string, error) {
+func (s *PostgresMarketDataStore) ListHeldTickers(ctx context.Context, userID string) ([]models.HeldTicker, error) {
 	if s.pool == nil {
 		return nil, fmt.Errorf("database pool is not initialized")
 	}
 
 	query := `
-		SELECT ticker
+		SELECT ticker, MAX(asset_type) AS asset_type
 		FROM trades
 		WHERE user_id = $1
 		GROUP BY ticker
@@ -108,13 +108,13 @@ func (s *PostgresMarketDataStore) ListHeldTickers(ctx context.Context, userID st
 	}
 	defer rows.Close()
 
-	tickers := make([]string, 0)
+	tickers := make([]models.HeldTicker, 0)
 	for rows.Next() {
-		var ticker string
-		if err := rows.Scan(&ticker); err != nil {
+		var ht models.HeldTicker
+		if err := rows.Scan(&ht.Ticker, &ht.AssetType); err != nil {
 			return nil, fmt.Errorf("scan ticker: %w", err)
 		}
-		tickers = append(tickers, ticker)
+		tickers = append(tickers, ht)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate tickers: %w", err)
@@ -122,13 +122,13 @@ func (s *PostgresMarketDataStore) ListHeldTickers(ctx context.Context, userID st
 	return tickers, nil
 }
 
-func (s *PostgresMarketDataStore) ListAllHeldTickers(ctx context.Context) ([]string, error) {
+func (s *PostgresMarketDataStore) ListAllHeldTickers(ctx context.Context) ([]models.HeldTicker, error) {
 	if s.pool == nil {
 		return nil, fmt.Errorf("database pool is not initialized")
 	}
 
 	query := `
-		SELECT ticker
+		SELECT ticker, MAX(asset_type) AS asset_type
 		FROM trades
 		GROUP BY ticker
 		HAVING SUM(CASE WHEN side = 'buy' THEN quantity ELSE -quantity END) > 0
@@ -141,27 +141,27 @@ func (s *PostgresMarketDataStore) ListAllHeldTickers(ctx context.Context) ([]str
 	}
 	defer rows.Close()
 
-	tickers := make([]string, 0)
+	tickers := make([]models.HeldTicker, 0)
 	for rows.Next() {
-		var ticker string
-		if err := rows.Scan(&ticker); err != nil {
+		var ht models.HeldTicker
+		if err := rows.Scan(&ht.Ticker, &ht.AssetType); err != nil {
 			return nil, fmt.Errorf("scan ticker: %w", err)
 		}
-		tickers = append(tickers, ticker)
+		tickers = append(tickers, ht)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate tickers: %w", err)
 	}
 
 	hasSPY := false
-	for _, t := range tickers {
-		if t == "SPY" {
+	for _, ht := range tickers {
+		if ht.Ticker == "SPY" {
 			hasSPY = true
 			break
 		}
 	}
 	if !hasSPY {
-		tickers = append(tickers, "SPY")
+		tickers = append(tickers, models.HeldTicker{Ticker: "SPY", AssetType: "etf"})
 	}
 	return tickers, nil
 }
