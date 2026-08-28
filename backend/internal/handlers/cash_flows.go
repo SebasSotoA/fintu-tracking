@@ -493,7 +493,7 @@ func validateBrokerID(ctx context.Context, userID string, brokerID *string) erro
 
 	var found bool
 	err := database.GetPool().QueryRow(ctx,
-		`SELECT true FROM brokers WHERE id = $1 AND user_id = $2`, *brokerID, userID,
+		`SELECT true FROM brokers WHERE preset_id = $1 AND user_id = $2`, *brokerID, userID,
 	).Scan(&found)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

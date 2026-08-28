@@ -103,7 +103,8 @@ describe("AddCashFlowDialog", () => {
     const children = Array.from(formElement.children)
     const heroIndex = children.findIndex((el) => el.contains(netInput))
     const typeIndex = children.findIndex((el) => el.contains(typeSelect))
-    expect(heroIndex).toBeLessThan(typeIndex)
+    // Type select comes first (before the hero input)
+    expect(typeIndex).toBeLessThan(heroIndex)
   })
 
   it("uses withdrawal debited label for hero net USD input", async () => {

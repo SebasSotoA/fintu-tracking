@@ -207,7 +207,7 @@ export function EditCashFlowDialog({
                 <Label htmlFor="edit-cf-type">Type</Label>
                 {formData.type === "fee" ? (
                   <p id="edit-cf-type" className="flex h-9 items-center text-sm font-mono">
-                    Fee (linked)
+                    Brokerage fee
                   </p>
                 ) : (
                   <Select
@@ -258,7 +258,7 @@ export function EditCashFlowDialog({
                   <Input
                     id="edit-cf-deposit-fee"
                     type="number"
-                    step="0.01"
+                    step="0.0001"
                     min="0"
                     placeholder="1.99"
                     value={formData.deposit_fee_usd}
@@ -270,7 +270,7 @@ export function EditCashFlowDialog({
                   <Input
                     id="edit-cf-fx-rate"
                     type="number"
-                    step="0.01"
+                    step="0.0001"
                     min="0"
                     placeholder="3532.531"
                     value={formData.fx_rate}

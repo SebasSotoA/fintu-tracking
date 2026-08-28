@@ -204,7 +204,6 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   <SelectContent>
                     <SelectItem value="stock">Stock</SelectItem>
                     <SelectItem value="etf">ETF</SelectItem>
-                    <SelectItem value="crypto">Crypto</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -275,7 +274,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                 value={formData.closing_fee}
                 onChange={(e) => setFormData({ ...formData, closing_fee: e.target.value })}
               />
-              <p className="text-xs text-muted-foreground">Mapped to trading fee for this trade.</p>
+              <p className="text-xs text-muted-foreground">Broker's closing fee per trade</p>
             </div>
 
             <div className="space-y-2">

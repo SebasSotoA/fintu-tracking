@@ -153,27 +153,6 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
         </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form id="add-cash-flow-form" onSubmit={handleSubmit} className="space-y-4">
-          {isTransfer && (
-            <MoneyHeroInput
-              id="cf-net-usd"
-              label={netUsdLabel}
-              value={formData.net_usd}
-              onChange={(net_usd) => setFormData({ ...formData, net_usd })}
-              required
-            />
-          )}
-
-          {!isTransfer && (
-            <MoneyHeroInput
-              id="cf-amount"
-              label={`Amount (${MARKET_CONFIG.baseCurrency})`}
-              value={formData.amount}
-              onChange={(amount) => setFormData({ ...formData, amount })}
-              placeholder="10.00"
-              required
-            />
-          )}
-
           <ResponsiveFormGrid>
             <div className="space-y-2">
               <Label htmlFor="cf-type">Type</Label>
@@ -215,6 +194,27 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
           />
 
           {isTransfer && (
+            <MoneyHeroInput
+              id="cf-net-usd"
+              label={netUsdLabel}
+              value={formData.net_usd}
+              onChange={(net_usd) => setFormData({ ...formData, net_usd })}
+              required
+            />
+          )}
+
+          {!isTransfer && (
+            <MoneyHeroInput
+              id="cf-amount"
+              label={`Amount (${MARKET_CONFIG.baseCurrency})`}
+              value={formData.amount}
+              onChange={(amount) => setFormData({ ...formData, amount })}
+              placeholder="10.00"
+              required
+            />
+          )}
+
+          {isTransfer && (
             <ResponsiveFormGrid>
               <div className="space-y-2">
                 <Label htmlFor="cf-deposit-fee">
@@ -236,7 +236,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
                 <Input
                   id="cf-fx-rate"
                   type="number"
-                  step="0.01"
+                  step="0.0001"
                   min="0"
                   placeholder="3532.531"
                   value={formData.fx_rate}

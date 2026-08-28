@@ -192,7 +192,6 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 <SelectContent>
                   <SelectItem value="stock">Stock</SelectItem>
                   <SelectItem value="etf">ETF</SelectItem>
-                  <SelectItem value="crypto">Crypto</SelectItem>
                 </SelectContent>
               </Select>
             </div>
