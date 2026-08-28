@@ -54,3 +54,15 @@ export async function refreshMarketPrices(): Promise<RefreshResult> {
   return apiClient.post<RefreshResult>("/api/market-prices/refresh", {})
 }
 
+export interface SymbolSearchResult {
+  symbol: string
+  name: string
+  asset_type: "stock" | "etf" | "crypto"
+}
+
+export async function searchMarketSymbols(query: string): Promise<SymbolSearchResult[]> {
+  const q = query.trim()
+  if (!q) return []
+  return apiClient.get<SymbolSearchResult[]>(`/api/market-prices/search?q=${encodeURIComponent(q)}`)
+}
+

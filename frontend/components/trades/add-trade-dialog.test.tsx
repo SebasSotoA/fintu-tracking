@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, fireEvent, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { AddTradeDialog } from "./add-trade-dialog"
@@ -15,6 +15,7 @@ vi.mock("@/lib/api/trades", () => ({
 vi.mock("@/lib/api/portfolio", () => ({
   getHoldings: vi.fn(() => Promise.resolve([])),
   getMarketPrice: vi.fn(() => Promise.resolve({ ticker: "AAPL", price: "150.00", currency: "USD", updated_at: "" })),
+  searchMarketSymbols: vi.fn(() => Promise.resolve([])),
 }))
 
 vi.mock("@/lib/api/query-keys", () => ({
@@ -91,9 +92,15 @@ describe("AddTradeDialog", () => {
   it("submits a buy trade when the form is filled", async () => {
     const user = userEvent.setup()
     const { createTrade } = await import("@/lib/api/trades")
-    renderDialog()
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <AddTradeDialog autoOpen initialTicker="AAPL" />
+      </QueryClientProvider>,
+    )
 
-    await user.type(screen.getByLabelText("Ticker"), "AAPL")
     await user.type(screen.getByLabelText("Quantity"), "10")
     await user.type(screen.getByLabelText("Price"), "150")
 
@@ -101,5 +108,13 @@ describe("AddTradeDialog", () => {
     await user.click(submitButton)
 
     expect(createTrade).toHaveBeenCalled()
+  })
+
+  it("shows Crypto option in asset type select", async () => {
+    renderDialog()
+
+    fireEvent.click(screen.getByLabelText("Asset Type"))
+
+    expect(await screen.findByRole("option", { name: "Crypto" })).toBeInTheDocument()
   })
 })

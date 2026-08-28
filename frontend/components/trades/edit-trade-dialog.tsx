@@ -20,6 +20,7 @@ import { ResponsiveFormGrid } from "@/components/ui/responsive-form-grid"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { SingleDatePicker } from "@/components/filters/single-date-picker"
 import { SellTickerSelect } from "@/components/trades/sell-ticker-select"
+import { TickerSearch } from "@/components/trades/ticker-search"
 import { Decimal } from "@/lib/decimal"
 import { updateTrade } from "@/lib/api/trades"
 import { getHoldings, getMarketPrice } from "@/lib/api/portfolio"
@@ -75,8 +76,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
     }
   }, [open, trade])
 
-  const handleTickerBlur = async () => {
-    const ticker = formData.ticker.trim().toUpperCase()
+  const handleTickerBlur = async (ticker = formData.ticker.trim().toUpperCase()) => {
     if (!ticker) {
       setPriceWarning(null)
       return
@@ -160,17 +160,18 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               />
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="edit-ticker">Ticker</Label>
-                <Input
+                <TickerSearch
                   id="edit-ticker"
-                  placeholder="AAPL"
                   value={formData.ticker}
-                  onChange={(e) => {
-                    setFormData({ ...formData, ticker: e.target.value })
+                  onChange={(ticker, assetType) => {
+                    setFormData({
+                      ...formData,
+                      ticker,
+                      ...(assetType ? { asset_type: assetType } : {}),
+                    })
                     setPriceWarning(null)
+                    void handleTickerBlur(ticker.trim().toUpperCase())
                   }}
-                  onBlur={handleTickerBlur}
-                  required
                 />
                 {priceWarning && <p className="text-xs text-destructive">{priceWarning}</p>}
               </div>
@@ -192,6 +193,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 <SelectContent>
                   <SelectItem value="stock">Stock</SelectItem>
                   <SelectItem value="etf">ETF</SelectItem>
+                  <SelectItem value="crypto">Crypto</SelectItem>
                 </SelectContent>
               </Select>
             </div>

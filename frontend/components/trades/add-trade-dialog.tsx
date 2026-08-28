@@ -20,6 +20,7 @@ import { NotesTextarea } from "@/components/ui/notes-textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { SingleDatePicker } from "@/components/filters/single-date-picker"
 import { SellTickerSelect } from "@/components/trades/sell-ticker-select"
+import { TickerSearch } from "@/components/trades/ticker-search"
 import { Plus } from "lucide-react"
 import { invalidateAfterTradeMutation } from "@/lib/api/query-keys"
 import { createTrade } from "@/lib/api/trades"
@@ -69,8 +70,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
   const overrides = { ticker: initialTicker, asset_type: initialAssetType, side: initialSide }
   const [formData, setFormData] = useState<TradeFormValues>(() => emptyForm(overrides))
 
-  const handleTickerBlur = async () => {
-    const ticker = formData.ticker.trim().toUpperCase()
+  const handleTickerBlur = async (ticker = formData.ticker.trim().toUpperCase()) => {
     if (!ticker) {
       setPriceWarning(null)
       return
@@ -170,17 +170,18 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                 />
               ) : (
                 <div className="space-y-2">
-                  <Label htmlFor="ticker">Ticker</Label>
-                  <Input
+                  <TickerSearch
                     id="ticker"
-                    placeholder="AAPL"
                     value={formData.ticker}
-                    onChange={(e) => {
-                      setFormData({ ...formData, ticker: e.target.value })
+                    onChange={(ticker, assetType) => {
+                      setFormData({
+                        ...formData,
+                        ticker,
+                        ...(assetType ? { asset_type: assetType } : {}),
+                      })
                       setPriceWarning(null)
+                      void handleTickerBlur(ticker.trim().toUpperCase())
                     }}
-                    onBlur={handleTickerBlur}
-                    required
                   />
                   {priceWarning && (
                     <p className="text-xs text-destructive">{priceWarning}</p>
@@ -204,6 +205,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   <SelectContent>
                     <SelectItem value="stock">Stock</SelectItem>
                     <SelectItem value="etf">ETF</SelectItem>
+                    <SelectItem value="crypto">Crypto</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
