@@ -77,17 +77,27 @@ describe("PerformanceInsightStrip", () => {
     mockGetFxImpact.mockResolvedValue(baseFxImpact)
   })
 
-  it("renders four labels DEPOSITED / ARRIVED AT BROKER / FX IMPACT / FEES PAID", async () => {
+  it("renders four labels COP DEPOSITED / ARRIVED AT BROKER / FX IMPACT / FEES PAID", async () => {
     renderStrip()
-    expect(await screen.findByText("DEPOSITED")).toBeInTheDocument()
+    expect(await screen.findByText("COP DEPOSITED")).toBeInTheDocument()
     expect(screen.getByText("ARRIVED AT BROKER")).toBeInTheDocument()
     expect(screen.getByText("FX IMPACT")).toBeInTheDocument()
     expect(screen.getByText("FEES PAID")).toBeInTheDocument()
+    expect(screen.queryByText("DEPOSITED")).not.toBeInTheDocument()
+  })
+
+  it("formats COP deposited with a COP prefix, not a dollar sign", async () => {
+    renderStrip()
+    await screen.findByText("COP DEPOSITED")
+    const tile = tileByLabel("COP DEPOSITED")
+    expect(within(tile).getByText("COP 48.000.000")).toBeInTheDocument()
+    expect(within(tile).queryByText(/\$/)).not.toBeInTheDocument()
+    expect(within(tile).getByText("Total sent to broker")).toBeInTheDocument()
   })
 
   it("does not render You're up copy", async () => {
     renderStrip()
-    await screen.findByText("DEPOSITED")
+    await screen.findByText("COP DEPOSITED")
     expect(screen.queryByText(/you're up/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/you're down/i)).not.toBeInTheDocument()
   })

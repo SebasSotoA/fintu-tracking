@@ -163,4 +163,56 @@ describe("DateRangePicker", () => {
       )
     })
   })
+
+  it("keeps the Date label visible by default on desktop (trades/cash-flows)", () => {
+    renderPicker({ isMobile: false })
+    const label = screen.getByText("Date")
+    expect(label).not.toHaveClass("sr-only")
+    expect(label.parentElement).toHaveClass("space-y-1.5")
+  })
+
+  it("keeps the Date label visible by default on mobile (trades/cash-flows)", () => {
+    renderPicker({ isMobile: true })
+    const label = screen.getByText("Date")
+    expect(label).not.toHaveClass("sr-only")
+    expect(label.parentElement).toHaveClass("space-y-1.5")
+  })
+
+  it("renders the label as sr-only when hideLabel is true on desktop", () => {
+    useIsMobileMock.mockReturnValue(false)
+    render(
+      <DateRangePicker
+        id="perf-date-range"
+        label="Date range"
+        ariaLabel="Filter performance chart by date range"
+        value={EMPTY_TRADE_DATE_RANGE}
+        onChange={vi.fn()}
+        formatLabel={() => "All time"}
+        hideLabel
+      />,
+    )
+    const label = screen.getByText("Date range")
+    expect(label).toHaveClass("sr-only")
+    expect(label.parentElement).not.toHaveClass("space-y-1.5")
+    expect(screen.getByRole("button", { name: /filter performance chart by date range/i })).toBeInTheDocument()
+  })
+
+  it("renders the label as sr-only when hideLabel is true on mobile", () => {
+    useIsMobileMock.mockReturnValue(true)
+    render(
+      <DateRangePicker
+        id="perf-date-range"
+        label="Date range"
+        ariaLabel="Filter performance chart by date range"
+        value={EMPTY_TRADE_DATE_RANGE}
+        onChange={vi.fn()}
+        formatLabel={() => "All time"}
+        hideLabel
+      />,
+    )
+    const label = document.querySelector('label[for="perf-date-range"]')
+    expect(label).toHaveTextContent("Date range")
+    expect(label).toHaveClass("sr-only")
+    expect(label?.parentElement).not.toHaveClass("space-y-1.5")
+  })
 })

@@ -75,7 +75,27 @@ describe("PerformanceNowCard", () => {
     expect(await screen.findByText("Net worth")).toBeInTheDocument()
     expect(screen.getByText("$12,000.00")).toBeInTheDocument()
     expect(screen.getByText(/\+\$2,000\.00/)).toBeInTheDocument()
-    expect(screen.getByText(/\+20\.00% on money invested/)).toBeInTheDocument()
+    expect(screen.getByText(/\(\+20\.00% on money invested\)/)).toBeInTheDocument()
+  })
+
+  it("renders signed gain and percent on two separate lines", async () => {
+    renderCard()
+    const gain = await screen.findByText(/\+\$2,000\.00/)
+    const pct = screen.getByText(/\(\+20\.00% on money invested\)/)
+    expect(gain.closest("p")).not.toBe(pct.closest("p"))
+    expect(gain).toHaveClass("font-semibold")
+    expect(pct).toHaveClass("text-sm", "text-muted-foreground")
+    expect(gain.closest(".gap-3")).toBeTruthy()
+  })
+
+  it("formats COP rows with COP prefix and shows current FX rate, not a conversion of deposits", async () => {
+    renderCard()
+    await screen.findByText("COP deposited")
+    expect(screen.getByText("COP 48.000.000")).toBeInTheDocument()
+    expect(screen.getByText("Recorded pesos, not a conversion")).toBeInTheDocument()
+    expect(screen.getByText("COP 49.200.000")).toBeInTheDocument()
+    expect(screen.getByText(/at 4,100\.00 COP\/USD/)).toBeInTheDocument()
+    expect(screen.queryByText(/\$ 48/)).not.toBeInTheDocument()
   })
 
   it("does not label gain as vs previous period or You're up", async () => {

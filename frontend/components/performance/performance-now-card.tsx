@@ -37,11 +37,17 @@ function formatSignedUSD(value: Decimal): string {
 }
 
 function formatCOP(value: Decimal): string {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
+  const formatted = new Intl.NumberFormat("es-CO", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
+  }).format(value.toNumber())
+  return `${MARKET_CONFIG.localCurrency} ${formatted}`
+}
+
+function formatRate(value: Decimal): string {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value.toNumber())
 }
 
@@ -129,21 +135,20 @@ export function PerformanceNowCard({
       <CardContent className="flex flex-col gap-4 py-5">
         <MetricLabel label="Net worth" tooltip={PERFORMANCE_TOOLTIPS.netWorth} />
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-3">
           <h2 className="text-3xl font-bold font-mono tracking-tight tabular-nums md:text-4xl text-foreground">
             {formatUSD(new Decimal(netWorth.net_worth || "0"))}
           </h2>
-          <p className="text-sm text-muted-foreground font-mono tabular-nums">
-            <span className="text-foreground font-semibold">
+          <div>
+            <p className="text-foreground font-semibold font-mono tabular-nums">
               {formatSignedUSD(gainLoss)}
-            </span>
-            {" "}
+            </p>
             {gainPct !== null && (
-              <span className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground font-mono tabular-nums">
                 ({formatSignedPct(gainPct)} on money invested)
-              </span>
+              </p>
             )}
-          </p>
+          </div>
         </div>
 
         {showXirr && (
@@ -156,22 +161,32 @@ export function PerformanceNowCard({
         )}
 
         {showCopBridge && (
-          <div className="rounded-md bg-muted/50 px-3 py-2.5 space-y-1.5 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
-                COP deposited
-              </span>
-              <span className="font-mono tabular-nums text-foreground">
-                {formatCOP(new Decimal(netWorth.total_deposited_cop || "0"))}
-              </span>
+          <div className="rounded-md bg-muted/50 px-3 py-2.5 space-y-2 text-sm">
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
+                  COP deposited
+                </span>
+                <span className="font-mono tabular-nums text-foreground">
+                  {formatCOP(new Decimal(netWorth.total_deposited_cop || "0"))}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Recorded pesos, not a conversion
+              </p>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
-                Worth in COP today
-              </span>
-              <span className="font-mono tabular-nums text-foreground">
-                {formatCOP(worthCopToday)}
-              </span>
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
+                  Worth in COP today
+                </span>
+                <span className="font-mono tabular-nums text-foreground">
+                  {formatCOP(worthCopToday)}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground font-mono tabular-nums">
+                at {formatRate(currentRate)} {MARKET_CONFIG.localCurrency}/USD
+              </p>
             </div>
           </div>
         )}

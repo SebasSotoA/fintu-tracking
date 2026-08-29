@@ -40,6 +40,7 @@ export interface DateRangePickerProps {
   value: TradeDateRange
   onChange: (value: TradeDateRange) => void
   formatLabel: (range: TradeDateRange) => string
+  hideLabel?: boolean
 }
 
 function DateRangePickerContent({
@@ -157,6 +158,7 @@ export function DateRangePicker({
   value,
   onChange,
   formatLabel,
+  hideLabel = false,
 }: DateRangePickerProps) {
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
@@ -229,10 +231,16 @@ export function DateRangePicker({
     </div>
   )
 
+  const rootClassName = cn(!hideLabel && "space-y-1.5")
+  const labelClassName = cn(
+    "text-xs text-muted-foreground",
+    hideLabel && "sr-only",
+  )
+
   if (isMobile === undefined) {
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={id} className="text-xs text-muted-foreground">
+      <div className={rootClassName}>
+        <Label htmlFor={id} className={labelClassName}>
           {label}
         </Label>
         {TriggerButton}
@@ -242,8 +250,8 @@ export function DateRangePicker({
 
   if (isMobile) {
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={id} className="text-xs text-muted-foreground md:hidden">
+      <div className={rootClassName}>
+        <Label htmlFor={id} className={cn(labelClassName, !hideLabel && "md:hidden")}>
           {label}
         </Label>
         <Drawer open={open} onOpenChange={setOpen}>
@@ -278,8 +286,8 @@ export function DateRangePicker({
   }
 
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground">
+    <div className={rootClassName}>
+      <Label htmlFor={id} className={labelClassName}>
         {label}
       </Label>
       <Popover open={open} onOpenChange={setOpen}>

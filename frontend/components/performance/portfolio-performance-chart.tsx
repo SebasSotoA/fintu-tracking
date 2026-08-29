@@ -175,6 +175,7 @@ export function PortfolioPerformanceChart() {
             value={selectedRange}
             onChange={setSelectedRange}
             formatLabel={formatPerfRangeLabel}
+            hideLabel
           />
         </div>
       </CardHeader>

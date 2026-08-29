@@ -35,12 +35,11 @@ function formatSignedUSD(value: Decimal): string {
 }
 
 function formatCOP(value: Decimal): string {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
+  const formatted = new Intl.NumberFormat("es-CO", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value.toNumber())
+  return `${MARKET_CONFIG.localCurrency} ${formatted}`
 }
 
 function hasCopDeposit(value: string | undefined): boolean {
@@ -121,7 +120,7 @@ export function PerformanceInsightStrip({
       data-testid="performance-insight-strip"
     >
       <KpiTile
-        label="DEPOSITED"
+        label="COP DEPOSITED"
         value={depositedCop}
         caption={depositedCaption}
       />

@@ -16,23 +16,27 @@ vi.mock("@/lib/api/analytics", () => ({
 vi.mock("@/components/filters/date-range-picker", () => ({
   DateRangePicker: ({
     ariaLabel,
+    label,
+    hideLabel,
     value,
     onChange,
     formatLabel,
   }: {
     ariaLabel: string
+    label: string
+    hideLabel?: boolean
     value: TradeDateRange
     onChange: (next: TradeDateRange) => void
     formatLabel: (range: TradeDateRange) => string
   }) => (
     <div>
-      <span>{formatLabel(value)}</span>
+      {!hideLabel && <span>{label}</span>}
       <button
         type="button"
         aria-label={ariaLabel}
         onClick={() => onChange({ from: "2025-01-15", to: "2025-02-01" })}
       >
-        Date range
+        {formatLabel(value)}
       </button>
     </div>
   ),
@@ -124,11 +128,12 @@ describe("PortfolioPerformanceChart", () => {
     expect(screen.queryByTestId("area-chart")).toBeNull()
   })
 
-  it("has an All time button and DateRangePicker, and no Month/Quarter/Year chips", async () => {
+  it("has an All time button and calendar trigger, with no visible Date range label", async () => {
     renderChart()
     const allTime = await screen.findByRole("button", { name: "All time" })
     expect(allTime).toHaveAttribute("aria-pressed", "true")
     expect(screen.getByRole("button", { name: /filter.*date range/i })).toBeInTheDocument()
+    expect(screen.queryByText("Date range")).not.toBeInTheDocument()
     expect(screen.queryByRole("radio", { name: /month/i })).toBeNull()
     expect(screen.queryByRole("radio", { name: /quarter/i })).toBeNull()
     expect(screen.queryByRole("radio", { name: /year/i })).toBeNull()
