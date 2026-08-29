@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ChevronsUpDown } from "lucide-react"
+import { ChevronsUpDown, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -12,6 +12,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { searchMarketSymbols } from "@/lib/api/portfolio"
@@ -117,20 +118,29 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
                 ))}
               </CommandGroup>
               {inputQuery.trim() && (
-                <CommandGroup>
-                  <CommandItem
-                    value={`__use__${inputQuery.trim().toUpperCase()}`}
-                    onSelect={() => {
-                      pickedRef.current = true
-                      onChange(inputQuery.trim().toUpperCase())
-                      setInputQuery("")
-                      setDebouncedQuery("")
-                      setOpen(false)
-                    }}
-                  >
-                    Use {inputQuery.trim().toUpperCase()}
-                  </CommandItem>
-                </CommandGroup>
+                <>
+                  <CommandSeparator alwaysRender />
+                  <CommandGroup heading="Custom ticker">
+                    <CommandItem
+                      data-testid="use-custom-ticker"
+                      value={`__use__${inputQuery.trim().toUpperCase()}`}
+                      className="text-muted-foreground"
+                      onSelect={() => {
+                        pickedRef.current = true
+                        onChange(inputQuery.trim().toUpperCase())
+                        setInputQuery("")
+                        setDebouncedQuery("")
+                        setOpen(false)
+                      }}
+                    >
+                      <Plus className="size-4 text-muted-foreground" aria-hidden={true} />
+                      <span>
+                        Use <span className="font-mono">{inputQuery.trim().toUpperCase()}</span>
+                      </span>
+                      <span className="ml-auto text-xs text-muted-foreground">not in list</span>
+                    </CommandItem>
+                  </CommandGroup>
+                </>
               )}
             </CommandList>
           </Command>

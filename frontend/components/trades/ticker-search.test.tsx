@@ -185,7 +185,7 @@ describe("TickerSearch", () => {
     const input = screen.getByPlaceholderText("Search ticker...")
     await user.type(input, "foo")
 
-    await waitFor(() => expect(screen.getByText("Use FOO")).toBeInTheDocument(), { timeout: 2000 })
+    await waitFor(() => expect(screen.getByTestId("use-custom-ticker")).toBeInTheDocument(), { timeout: 2000 })
   })
 
   it("Use {query} item also appears when search results exist", async () => {
@@ -201,7 +201,7 @@ describe("TickerSearch", () => {
     await user.type(input, "foo")
 
     await waitFor(() => expect(screen.getByText("Foo Corp")).toBeInTheDocument(), { timeout: 2000 })
-    expect(screen.getByText("Use FOO")).toBeInTheDocument()
+    expect(screen.getByTestId("use-custom-ticker")).toBeInTheDocument()
   })
 
   it("clicking Use FOO calls onChange with one argument only (no asset_type)", async () => {
@@ -215,12 +215,68 @@ describe("TickerSearch", () => {
     const input = screen.getByPlaceholderText("Search ticker...")
     await user.type(input, "foo")
 
-    await waitFor(() => screen.getByText("Use FOO"), { timeout: 2000 })
-    fireEvent.click(screen.getByText("Use FOO"))
+    await waitFor(() => screen.getByTestId("use-custom-ticker"), { timeout: 2000 })
+    fireEvent.click(screen.getByTestId("use-custom-ticker"))
 
     expect(onChange).toHaveBeenCalledTimes(1)
     expect(onChange).toHaveBeenCalledWith("FOO")
     expect(onChange.mock.calls[0]).toHaveLength(1)
+  })
+
+  it("Use row shows Custom ticker group heading when visible", async () => {
+    const user = userEvent.setup()
+    const { searchMarketSymbols } = await import("@/lib/api/portfolio")
+    vi.mocked(searchMarketSymbols).mockResolvedValue([])
+
+    renderWithProviders(<TickerSearch id="ticker" value="" onChange={vi.fn()} />)
+
+    const input = screen.getByPlaceholderText("Search ticker...")
+    await user.type(input, "foo")
+
+    await waitFor(() => expect(screen.getByTestId("use-custom-ticker")).toBeInTheDocument(), { timeout: 2000 })
+    expect(screen.getByText("Custom ticker")).toBeInTheDocument()
+  })
+
+  it("Use row has a command separator above it", async () => {
+    const user = userEvent.setup()
+    const { searchMarketSymbols } = await import("@/lib/api/portfolio")
+    vi.mocked(searchMarketSymbols).mockResolvedValue([])
+
+    renderWithProviders(<TickerSearch id="ticker" value="" onChange={vi.fn()} />)
+
+    const input = screen.getByPlaceholderText("Search ticker...")
+    await user.type(input, "foo")
+
+    await waitFor(() => expect(screen.getByTestId("use-custom-ticker")).toBeInTheDocument(), { timeout: 2000 })
+    expect(document.querySelector('[data-slot="command-separator"]')).toBeInTheDocument()
+  })
+
+  it("Use item is visually distinct with text-muted-foreground class", async () => {
+    const user = userEvent.setup()
+    const { searchMarketSymbols } = await import("@/lib/api/portfolio")
+    vi.mocked(searchMarketSymbols).mockResolvedValue([])
+
+    renderWithProviders(<TickerSearch id="ticker" value="" onChange={vi.fn()} />)
+
+    const input = screen.getByPlaceholderText("Search ticker...")
+    await user.type(input, "foo")
+
+    await waitFor(() => expect(screen.getByTestId("use-custom-ticker")).toBeInTheDocument(), { timeout: 2000 })
+    expect(screen.getByTestId("use-custom-ticker").className).toContain("text-muted-foreground")
+  })
+
+  it("Use item shows not in list hint", async () => {
+    const user = userEvent.setup()
+    const { searchMarketSymbols } = await import("@/lib/api/portfolio")
+    vi.mocked(searchMarketSymbols).mockResolvedValue([])
+
+    renderWithProviders(<TickerSearch id="ticker" value="" onChange={vi.fn()} />)
+
+    const input = screen.getByPlaceholderText("Search ticker...")
+    await user.type(input, "foo")
+
+    await waitFor(() => expect(screen.getByTestId("use-custom-ticker")).toBeInTheDocument(), { timeout: 2000 })
+    expect(screen.getByText("not in list")).toBeInTheDocument()
   })
 
   it("popover content has trigger-width and min-width classes", () => {
