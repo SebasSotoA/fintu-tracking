@@ -233,7 +233,8 @@ func CreateTrade(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := validateBrokerID(r.Context(), userID, req.BrokerID); err != nil {
+	resolvedBrokerID, err := resolveBrokerID(r.Context(), brokerService, userID, req.BrokerID)
+	if err != nil {
 		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -253,7 +254,7 @@ func CreateTrade(w http.ResponseWriter, r *http.Request) {
 		id, userID, date, req.Ticker, req.AssetType, req.Side,
 		isOpeningPosition, req.Quantity, req.Price, req.Notes,
 		depositFee.StringFixed(2), tradingFee.StringFixed(2), closingFee.StringFixed(2),
-		req.BrokerID,
+		resolvedBrokerID,
 	).Scan(
 		&trade.ID, &trade.UserID, &trade.Date, &trade.Ticker, &trade.AssetType,
 		&trade.Side, &trade.IsOpeningPosition, &trade.Quantity, &trade.Price,
@@ -339,7 +340,8 @@ func UpdateTrade(w http.ResponseWriter, r *http.Request) {
 	if req.BrokerID != nil {
 		existing.BrokerID = req.BrokerID
 	}
-	if err := validateBrokerID(r.Context(), userID, existing.BrokerID); err != nil {
+	resolvedBrokerID, err := resolveBrokerID(r.Context(), brokerService, userID, existing.BrokerID)
+	if err != nil {
 		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -430,7 +432,7 @@ func UpdateTrade(w http.ResponseWriter, r *http.Request) {
 
 	result, err := database.GetPool().Exec(context.Background(), updateQuery,
 		existing.Date, existing.Ticker, existing.AssetType, existing.Side, existing.IsOpeningPosition,
-		existing.Quantity, existing.Price, notes, existing.BrokerID,
+		existing.Quantity, existing.Price, notes, resolvedBrokerID,
 		depositFee.StringFixed(2), tradingFee.StringFixed(2), closingFee.StringFixed(2),
 		id, userID,
 	)

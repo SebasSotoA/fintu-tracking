@@ -167,7 +167,8 @@ func CreateCashFlow(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := validateBrokerID(r.Context(), userID, req.BrokerID); err != nil {
+	resolvedBrokerID, err := resolveBrokerID(r.Context(), brokerService, userID, req.BrokerID)
+	if err != nil {
 		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -222,7 +223,7 @@ func CreateCashFlow(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = database.GetPool().QueryRow(context.Background(), query,
-		id, userID, date, req.Type, req.Currency, req.Amount, fxRateStr, usdAmount.String(), req.BrokerID, req.Notes,
+		id, userID, date, req.Type, req.Currency, req.Amount, fxRateStr, usdAmount.String(), resolvedBrokerID, req.Notes,
 		req.FeeType, req.RelatedTradeID, req.RelatedCashFlowID, req.RelatedType).
 		Scan(
 			&cashFlow.ID, &cashFlow.UserID, &cashFlow.Date, &cashFlow.Type, &cashFlow.Currency,
@@ -321,7 +322,8 @@ func UpdateCashFlow(w http.ResponseWriter, r *http.Request) {
 		existingCF.RelatedType = req.RelatedType
 	}
 
-	if err := validateBrokerID(r.Context(), userID, existingCF.BrokerID); err != nil {
+	resolvedBrokerID, err := resolveBrokerID(r.Context(), brokerService, userID, existingCF.BrokerID)
+	if err != nil {
 		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -389,7 +391,7 @@ func UpdateCashFlow(w http.ResponseWriter, r *http.Request) {
 
 	result, err := database.GetPool().Exec(context.Background(), updateQuery,
 		existingCF.Date, existingCF.Type, existingCF.Currency, existingCF.Amount,
-		existingCF.FxRate, usdAmount.String(), existingCF.BrokerID, existingCF.Notes,
+		existingCF.FxRate, usdAmount.String(), resolvedBrokerID, existingCF.Notes,
 		existingCF.FeeType, existingCF.RelatedTradeID, existingCF.RelatedCashFlowID, existingCF.RelatedType,
 		id, userID)
 
@@ -482,24 +484,6 @@ func isValidCashFlowCurrency(currency string) bool {
 func validateFeeLinkage(flowType string, relatedCashFlowID *string, relatedTradeID *string) error {
 	if flowType == "fee" && relatedCashFlowID == nil && relatedTradeID == nil {
 		return fmt.Errorf("Standalone fees are not supported; fees must be linked to a deposit, withdrawal, or trade")
-	}
-	return nil
-}
-
-func validateBrokerID(ctx context.Context, userID string, brokerID *string) error {
-	if brokerID == nil || *brokerID == "" {
-		return nil
-	}
-
-	var found bool
-	err := database.GetPool().QueryRow(ctx,
-		`SELECT true FROM brokers WHERE preset_id = $1 AND user_id = $2`, *brokerID, userID,
-	).Scan(&found)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return fmt.Errorf("invalid broker_id")
-		}
-		return fmt.Errorf("validating broker: %w", err)
 	}
 	return nil
 }
