@@ -15,6 +15,34 @@ vi.mock("@/lib/api/portfolio", () => ({
   searchMarketSymbols: vi.fn(() => Promise.resolve([])),
 }))
 
+vi.mock("@/lib/api/brokers", () => ({
+  listBrokers: vi.fn(() => Promise.resolve({ brokers: [], presets: [] })),
+}))
+
+vi.mock("@/components/trades/ticker-search", () => ({
+  TickerSearch: ({
+    id,
+    value,
+    onChange,
+  }: {
+    id: string
+    value: string
+    onChange: (ticker: string, assetType?: string) => void
+    disabled?: boolean
+  }) => (
+    <div data-testid="ticker-search-mock">
+      <label htmlFor={id}>Ticker</label>
+      <span id={id}>{value}</span>
+      <button type="button" data-testid="pick-qqq-etf" onClick={() => onChange("QQQ", "etf")}>
+        Pick QQQ ETF
+      </button>
+      <button type="button" data-testid="use-xyz" onClick={() => onChange("XYZ")}>
+        Use XYZ
+      </button>
+    </div>
+  ),
+}))
+
 vi.mock("@/components/ui/calendar", () => ({
   Calendar: ({
     onSelect,
@@ -122,8 +150,12 @@ describe("EditTradeDialog", () => {
     expect(footer).not.toHaveClass("pb-safe")
   })
 
-  it("shows Crypto option in asset type select", async () => {
+  it("shows Crypto option in asset type select after unlocking", async () => {
+    const user = userEvent.setup()
     renderDialog()
+
+    // Asset Type starts locked on edit; unlock it first via custom ticker pick
+    await user.click(screen.getByTestId("use-xyz"))
 
     fireEvent.click(screen.getByLabelText("Asset Type"))
 
@@ -169,5 +201,32 @@ describe("EditTradeDialog", () => {
   it("does not show Mapped to trading fee text", () => {
     renderDialog()
     expect(screen.queryByText("Mapped to trading fee for this trade.")).not.toBeInTheDocument()
+  })
+
+  it("existing trade starts with Asset Type select disabled (locked)", () => {
+    renderDialog()
+    expect(screen.getByLabelText("Asset Type")).toBeDisabled()
+  })
+
+  it("search pick of a new ticker re-locks Asset Type", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(screen.getByTestId("use-xyz"))
+    expect(screen.getByLabelText("Asset Type")).not.toBeDisabled()
+
+    await user.click(screen.getByTestId("pick-qqq-etf"))
+    expect(screen.getByLabelText("Asset Type")).toBeDisabled()
+  })
+
+  it("custom Use ticker unlocks Asset Type select", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    expect(screen.getByLabelText("Asset Type")).toBeDisabled()
+
+    await user.click(screen.getByTestId("use-xyz"))
+
+    expect(screen.getByLabelText("Asset Type")).not.toBeDisabled()
   })
 })

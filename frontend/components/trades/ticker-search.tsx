@@ -116,6 +116,22 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
                   </CommandItem>
                 ))}
               </CommandGroup>
+              {inputQuery.trim() && (
+                <CommandGroup>
+                  <CommandItem
+                    value={`__use__${inputQuery.trim().toUpperCase()}`}
+                    onSelect={() => {
+                      pickedRef.current = true
+                      onChange(inputQuery.trim().toUpperCase())
+                      setInputQuery("")
+                      setDebouncedQuery("")
+                      setOpen(false)
+                    }}
+                  >
+                    Use {inputQuery.trim().toUpperCase()}
+                  </CommandItem>
+                </CommandGroup>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>

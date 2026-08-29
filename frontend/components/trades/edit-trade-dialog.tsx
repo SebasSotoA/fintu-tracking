@@ -68,10 +68,13 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState<TradeFormValues>(() => tradeToFormValues(trade))
+  // Existing trades start locked (asset type is known from stored trade).
+  const [assetTypeLocked, setAssetTypeLocked] = useState(true)
 
   useEffect(() => {
     if (open) {
       setFormData(tradeToFormValues(trade))
+      setAssetTypeLocked(true)
       setError(null)
     }
   }, [open, trade])
@@ -132,6 +135,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 id="edit-ticker"
                 value={formData.ticker}
                 onChange={(ticker, holding) => {
+                  setAssetTypeLocked(true)
                   setFormData({
                     ...formData,
                     ticker,
@@ -149,11 +153,13 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 id="edit-ticker"
                 value={formData.ticker}
                 onChange={(ticker, assetType) => {
-                  setFormData({
-                    ...formData,
-                    ticker,
-                    ...(assetType ? { asset_type: assetType } : {}),
-                  })
+                  if (assetType) {
+                    setAssetTypeLocked(true)
+                    setFormData({ ...formData, ticker, asset_type: assetType })
+                  } else {
+                    setAssetTypeLocked(false)
+                    setFormData({ ...formData, ticker, asset_type: "stock" })
+                  }
                 }}
               />
             )}
@@ -167,8 +173,9 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                 onValueChange={(value: "stock" | "etf" | "crypto") =>
                   setFormData({ ...formData, asset_type: value })
                 }
+                disabled={assetTypeLocked}
               >
-                <SelectTrigger id="edit-asset_type" className="w-full">
+                <SelectTrigger id="edit-asset_type" className="w-full" disabled={assetTypeLocked}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,13 +194,14 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               <Label htmlFor="edit-side">Side</Label>
               <Select
                 value={formData.side}
-                onValueChange={(value: "buy" | "sell") =>
+                onValueChange={(value: "buy" | "sell") => {
+                  if (value === "sell") setAssetTypeLocked(false)
                   setFormData({
                     ...formData,
                     side: value,
                     ticker: value === "buy" ? formData.ticker : trade.side === "sell" ? formData.ticker : "",
                   })
-                }
+                }}
               >
                 <SelectTrigger id="edit-side" className="w-full">
                   <SelectValue />

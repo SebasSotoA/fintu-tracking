@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
-import { render, screen, fireEvent, within } from "@testing-library/react"
+import { render, screen, fireEvent, within, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { AddTradeDialog } from "./add-trade-dialog"
@@ -20,6 +20,55 @@ vi.mock("@/lib/api/portfolio", () => ({
 
 vi.mock("@/lib/api/query-keys", () => ({
   invalidateAfterTradeMutation: vi.fn(),
+}))
+
+vi.mock("@/lib/api/brokers", () => ({
+  listBrokers: vi.fn(() => Promise.resolve({ brokers: [], presets: [] })),
+}))
+
+vi.mock("@/components/trades/ticker-search", () => ({
+  TickerSearch: ({
+    id,
+    value,
+    onChange,
+  }: {
+    id: string
+    value: string
+    onChange: (ticker: string, assetType?: string) => void
+    disabled?: boolean
+  }) => (
+    <div data-testid="ticker-search-mock">
+      <label htmlFor={id}>Ticker</label>
+      <span id={id}>{value}</span>
+      <button type="button" data-testid="pick-qqq-etf" onClick={() => onChange("QQQ", "etf")}>
+        Pick QQQ ETF
+      </button>
+      <button type="button" data-testid="use-xyz" onClick={() => onChange("XYZ")}>
+        Use XYZ
+      </button>
+    </div>
+  ),
+}))
+
+vi.mock("@/components/trades/sell-ticker-select", () => ({
+  SellTickerSelect: ({
+    onChange,
+  }: {
+    id: string
+    value: string
+    onChange: (ticker: string, holding?: { assetType?: string }) => void
+    disabled?: boolean
+  }) => (
+    <div data-testid="sell-ticker-select-mock">
+      <button
+        type="button"
+        data-testid="pick-sell-aapl"
+        onClick={() => onChange("AAPL", { assetType: "stock" })}
+      >
+        Pick AAPL (stock)
+      </button>
+    </div>
+  ),
 }))
 
 vi.mock("@/components/ui/calendar", () => ({
@@ -167,5 +216,47 @@ describe("AddTradeDialog", () => {
     await user.hover(helpButton)
     const tooltip = await screen.findByRole("tooltip")
     expect(tooltip).toHaveTextContent("Broker's closing fee per trade")
+  })
+
+  it("search pick locks Asset Type select to the picked type", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(screen.getByTestId("pick-qqq-etf"))
+
+    const trigger = screen.getByLabelText("Asset Type")
+    expect(trigger).toBeDisabled()
+  })
+
+  it("custom Use ticker unlocks Asset Type select and resets to stock", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.click(screen.getByTestId("pick-qqq-etf"))
+    expect(screen.getByLabelText("Asset Type")).toBeDisabled()
+
+    await user.click(screen.getByTestId("use-xyz"))
+
+    const trigger = screen.getByLabelText("Asset Type")
+    expect(trigger).not.toBeDisabled()
+  })
+
+  it("sell side: picking from SellTickerSelect locks Asset Type", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    fireEvent.click(screen.getByLabelText("Side"))
+    await waitFor(() => screen.findByRole("option", { name: "Sell" }))
+    const sellOption = await screen.findByRole("option", { name: "Sell" })
+    fireEvent.click(sellOption)
+
+    await user.click(screen.getByTestId("pick-sell-aapl"))
+
+    expect(screen.getByLabelText("Asset Type")).toBeDisabled()
+  })
+
+  it("Asset Type starts unlocked for a new trade", () => {
+    renderDialog()
+    expect(screen.getByLabelText("Asset Type")).not.toBeDisabled()
   })
 })

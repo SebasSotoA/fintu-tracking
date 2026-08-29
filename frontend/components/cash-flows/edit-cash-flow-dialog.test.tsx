@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
 import { render, screen, within } from "@testing-library/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { CashFlow } from "@/lib/types"
 import { EditCashFlowDialog } from "./edit-cash-flow-dialog"
 
@@ -7,6 +8,10 @@ vi.mock("@/lib/api/cash-flows", () => ({
   createCashFlow: vi.fn(),
   updateCashFlow: vi.fn(),
   deleteCashFlow: vi.fn(),
+}))
+
+vi.mock("@/lib/api/brokers", () => ({
+  listBrokers: vi.fn(() => Promise.resolve({ brokers: [], presets: [] })),
 }))
 
 vi.mock("@/components/ui/calendar", () => ({
@@ -47,14 +52,19 @@ const depositCashFlow: CashFlow = {
 }
 
 function renderEditDialog(cashFlow: CashFlow = depositCashFlow) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
   return render(
-    <EditCashFlowDialog
-      cashFlow={cashFlow}
-      cashFlows={[cashFlow]}
-      open
-      onOpenChange={() => {}}
-      onSuccess={() => {}}
-    />,
+    <QueryClientProvider client={queryClient}>
+      <EditCashFlowDialog
+        cashFlow={cashFlow}
+        cashFlows={[cashFlow]}
+        open
+        onOpenChange={() => {}}
+        onSuccess={() => {}}
+      />
+    </QueryClientProvider>,
   )
 }
 

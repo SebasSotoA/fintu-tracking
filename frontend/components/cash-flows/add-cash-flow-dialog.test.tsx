@@ -16,6 +16,10 @@ vi.mock("@/lib/api/query-keys", () => ({
   invalidateAfterCashFlowMutation: vi.fn(),
 }))
 
+vi.mock("@/lib/api/brokers", () => ({
+  listBrokers: vi.fn(() => Promise.resolve({ brokers: [], presets: [] })),
+}))
+
 vi.mock("@/components/ui/calendar", () => ({
   Calendar: ({
     onSelect,

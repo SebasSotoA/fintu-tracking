@@ -69,6 +69,8 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
   const [error, setError] = useState<string | null>(null)
   const overrides = { ticker: initialTicker, asset_type: initialAssetType, side: initialSide }
   const [formData, setFormData] = useState<TradeFormValues>(() => emptyForm(overrides))
+  // Locked when a search result sets the asset type; unlocked for custom/freeform tickers.
+  const [assetTypeLocked, setAssetTypeLocked] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -93,6 +95,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
       showToast.success("Trade added")
       setOpen(false)
       setFormData(emptyForm(overrides))
+      setAssetTypeLocked(false)
       await invalidateAfterTradeMutation(queryClient)
       router.refresh()
     } catch (err) {
@@ -108,7 +111,10 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
     <ResponsiveDialog
       open={open}
       onOpenChange={(next) => {
-        if (next) setFormData(emptyForm(overrides))
+        if (next) {
+          setFormData(emptyForm(overrides))
+          setAssetTypeLocked(false)
+        }
         setOpen(next)
       }}
     >
@@ -141,6 +147,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   id="ticker"
                   value={formData.ticker}
                   onChange={(ticker, holding) => {
+                    setAssetTypeLocked(true)
                     setFormData({
                       ...formData,
                       ticker,
@@ -158,11 +165,13 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   id="ticker"
                   value={formData.ticker}
                   onChange={(ticker, assetType) => {
-                    setFormData({
-                      ...formData,
-                      ticker,
-                      ...(assetType ? { asset_type: assetType } : {}),
-                    })
+                    if (assetType) {
+                      setAssetTypeLocked(true)
+                      setFormData({ ...formData, ticker, asset_type: assetType })
+                    } else {
+                      setAssetTypeLocked(false)
+                      setFormData({ ...formData, ticker, asset_type: "stock" })
+                    }
                   }}
                 />
               )}
@@ -176,8 +185,9 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                   onValueChange={(value: "stock" | "etf" | "crypto") =>
                     setFormData({ ...formData, asset_type: value })
                   }
+                  disabled={assetTypeLocked}
                 >
-                  <SelectTrigger id="asset_type" className="w-full">
+                  <SelectTrigger id="asset_type" className="w-full" disabled={assetTypeLocked}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -196,13 +206,14 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
                 <Label htmlFor="side">Side</Label>
                 <Select
                   value={formData.side}
-                  onValueChange={(value: "buy" | "sell") =>
+                  onValueChange={(value: "buy" | "sell") => {
+                  if (value === "sell") setAssetTypeLocked(false)
                   setFormData({
                     ...formData,
                     side: value,
                     ticker: value === "buy" ? formData.ticker : "",
                   })
-                }
+                }}
                 >
                   <SelectTrigger id="side" className="w-full">
                     <SelectValue />

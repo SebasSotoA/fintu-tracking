@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeAll } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { BrokerSelect } from "./broker-select"
 
 vi.mock("@/lib/market-config/market-config", () => ({
@@ -10,8 +11,43 @@ vi.mock("@/lib/market-config/market-config", () => ({
   },
 }))
 
+vi.mock("@/lib/api/brokers", () => ({
+  listBrokers: vi.fn(() =>
+    Promise.resolve({
+      brokers: [
+        {
+          id: "uuid-hapi",
+          preset_id: "hapi-colombia",
+          name: "Hapi",
+          user_id: "u1",
+          country: "co",
+          base_currency: "USD",
+          local_currency: "COP",
+          deposit_fee_type: "percentage",
+          deposit_fee_value: "0.009",
+          withdrawal_fee_type: "none",
+          withdrawal_fee_value: "0",
+          created_at: "",
+          updated_at: "",
+        },
+      ],
+      presets: [],
+    }),
+  ),
+}))
+
 vi.mock("@/components/ui/select", () => ({
-  Select: ({ value, onValueChange, children, id }: { value?: string; onValueChange?: (value: string) => void; children?: React.ReactNode; id?: string }) => (
+  Select: ({
+    value,
+    onValueChange,
+    children,
+    id,
+  }: {
+    value?: string
+    onValueChange?: (value: string) => void
+    children?: React.ReactNode
+    id?: string
+  }) => (
     <select id={id} value={value} onChange={(e) => onValueChange?.(e.target.value)} data-testid="select">
       {children}
     </select>
@@ -21,7 +57,9 @@ vi.mock("@/components/ui/select", () => ({
     <option value={value}>{children}</option>
   ),
   SelectTrigger: ({ children, className }: { children?: React.ReactNode; className?: string }) => (
-    <span data-testid="select-trigger" className={className}>{children}</span>
+    <span data-testid="select-trigger" className={className}>
+      {children}
+    </span>
   ),
   SelectValue: ({ placeholder }: { placeholder?: string }) => <option value="">{placeholder}</option>,
 }))
@@ -32,9 +70,16 @@ beforeAll(() => {
   HTMLElement.prototype.releasePointerCapture = vi.fn()
 })
 
+function renderWithQuery(ui: React.ReactElement) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+}
+
 describe("BrokerSelect", () => {
   it("defaults to presets for the configured default country", () => {
-    render(
+    renderWithQuery(
       <BrokerSelect
         id="broker"
         value=""
@@ -53,7 +98,7 @@ describe("BrokerSelect", () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
 
-    render(
+    renderWithQuery(
       <BrokerSelect
         id="broker"
         value=""
@@ -69,7 +114,7 @@ describe("BrokerSelect", () => {
   })
 
   it("SelectTrigger has w-full class", () => {
-    render(
+    renderWithQuery(
       <BrokerSelect
         id="broker"
         value=""
@@ -78,5 +123,33 @@ describe("BrokerSelect", () => {
     )
 
     expect(screen.getByTestId("select-trigger")).toHaveClass("w-full")
+  })
+
+  it("maps a broker UUID value to its preset_id so the trigger shows the correct name", async () => {
+    renderWithQuery(
+      <BrokerSelect
+        id="broker"
+        value="uuid-hapi"
+        onChange={() => {}}
+      />,
+    )
+
+    await waitFor(() => {
+      const select = screen.getByTestId("select") as HTMLSelectElement
+      expect(select.value).toBe("hapi-colombia")
+    })
+  })
+
+  it("preset_id value passthrough still works (no UUID in brokers list)", () => {
+    renderWithQuery(
+      <BrokerSelect
+        id="broker"
+        value="hapi-colombia"
+        onChange={() => {}}
+      />,
+    )
+
+    const select = screen.getByTestId("select") as HTMLSelectElement
+    expect(select.value).toBe("hapi-colombia")
   })
 })
