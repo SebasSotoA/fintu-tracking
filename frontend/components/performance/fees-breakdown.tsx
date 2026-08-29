@@ -84,7 +84,7 @@ export function FeesBreakdown() {
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
           Fees paid
         </h3>
-        <p className="text-2xl font-bold font-mono tabular-nums text-destructive mb-4">
+        <p className="text-2xl font-bold font-mono tabular-nums text-foreground mb-4">
           {formatUSD(grandTotal)}
         </p>
         <div className="space-y-2.5">
@@ -95,7 +95,7 @@ export function FeesBreakdown() {
               </span>
               <span className="text-sm text-muted-foreground">Deposit & withdrawal fees</span>
             </div>
-            <span className="text-sm font-mono font-semibold tabular-nums text-destructive">
+            <span className="text-sm font-mono font-semibold tabular-nums text-muted-foreground">
               {formatUSD(transferTotal)}
             </span>
           </div>
@@ -106,7 +106,7 @@ export function FeesBreakdown() {
               </span>
               <span className="text-sm text-muted-foreground">Trade commissions</span>
             </div>
-            <span className="text-sm font-mono font-semibold tabular-nums text-destructive">
+            <span className="text-sm font-mono font-semibold tabular-nums text-muted-foreground">
               {formatUSD(tradingTotal)}
             </span>
           </div>
@@ -118,7 +118,7 @@ export function FeesBreakdown() {
         )}
         <Link
           href="/cash-flows"
-          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
         >
           View full breakdown
           <ArrowRight className="size-4" aria-hidden />

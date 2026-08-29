@@ -19,8 +19,12 @@ vi.mock("next/dynamic", () => ({
   },
 }))
 
-vi.mock("./performance-summary-card", () => ({
-  PerformanceSummaryCard: () => <div data-testid="performance-summary" />,
+vi.mock("./performance-insight-strip", () => ({
+  PerformanceInsightStrip: () => <div data-testid="performance-insight-strip" />,
+}))
+
+vi.mock("./performance-now-card", () => ({
+  PerformanceNowCard: () => <div data-testid="performance-now-card" />,
 }))
 
 vi.mock("./fees-breakdown", () => ({
@@ -50,13 +54,15 @@ function sectionTestIds(container: HTMLElement): string[] {
 }
 
 describe("PerformanceContent", () => {
-  it("renders 2x2 grid: summary + chart on top, fees + fx on bottom", () => {
+  it("renders insight strip, now card + chart, then fees + fx", () => {
     const { container } = render(<PerformanceContent netWorth={netWorth} />)
     expect(sectionTestIds(container)).toEqual([
-      "performance-summary",
+      "performance-insight-strip",
+      "performance-now-card",
       "portfolio-performance-chart",
       "fees-breakdown",
       "fx-impact-card",
     ])
+    expect(container.querySelector("[data-testid='performance-summary']")).toBeNull()
   })
 })

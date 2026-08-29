@@ -10,7 +10,6 @@ import type { FxImpactReport } from "@/lib/api/analytics"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
-import { cn } from "@/lib/utils"
 
 function formatUSD(value: Decimal): string {
   return new Intl.NumberFormat("en-US", {
@@ -77,18 +76,14 @@ export function FxImpactCard(): React.JSX.Element {
     )
   }
 
-  const isPositive = fxImpactUsd.greaterThanOrEqualTo(0)
-  const impactLabel = isPositive ? "FX made you" : "FX cost you"
-  const colorClass = isPositive ? "text-success" : "text-destructive"
-
   return (
     <Card>
       <CardContent className="py-6">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
           FX impact
         </h3>
-        <p className={cn("text-2xl font-bold font-mono tabular-nums mb-4", colorClass)}>
-          {impactLabel} {formatUSD(fxImpactUsd.abs())}
+        <p className="text-2xl font-bold font-mono tabular-nums text-foreground mb-4">
+          {`${fxImpactUsd.greaterThanOrEqualTo(0) ? "+" : "−"}${formatUSD(fxImpactUsd.abs())}`}
         </p>
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
@@ -106,7 +101,7 @@ export function FxImpactCard(): React.JSX.Element {
           {!rateChangePct.isZero() && (
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Rate change</span>
-              <span className={cn("font-mono tabular-nums", rateChangePct.greaterThan(0) ? "text-success" : "text-destructive")}>
+              <span className="font-mono tabular-nums text-foreground">
                 {rateChangePct.greaterThan(0) ? "+" : ""}{rateChangePct.toFixed(2)}%
               </span>
             </div>
@@ -114,7 +109,7 @@ export function FxImpactCard(): React.JSX.Element {
         </div>
         <Link
           href="/cash-flows"
-          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
         >
           View FX details
           <ArrowRight className="size-4" aria-hidden />

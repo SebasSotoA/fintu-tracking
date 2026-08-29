@@ -19,17 +19,32 @@ import {
 } from "@/lib/api/analytics"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Button } from "@/components/ui/button"
+import { DateRangePicker } from "@/components/filters/date-range-picker"
 import { queryKeys } from "@/lib/api/query-keys"
 import Decimal from "decimal.js"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { CHART_HEIGHT_SHORT } from "@/lib/chart-sizes"
+import {
+  EMPTY_TRADE_DATE_RANGE,
+  type TradeDateRange,
+} from "@/lib/trades/trade-filters"
 
-const INTERVAL_OPTIONS: { value: PerformanceInterval; label: string }[] = [
-  { value: "month", label: "Month" },
-  { value: "quarter", label: "Quarter" },
-  { value: "year", label: "Year" },
-]
+function intervalFromRange(range: TradeDateRange): PerformanceInterval {
+  if (!range.from) return "year"
+  const from = new Date(range.from)
+  const to = range.to ? new Date(range.to) : new Date()
+  const days = (to.getTime() - from.getTime()) / 86_400_000
+  if (days <= 90) return "day"
+  if (days <= 365) return "week"
+  return "month"
+}
+
+function formatPerfRangeLabel(range: TradeDateRange): string {
+  if (!range.from) return "All time"
+  if (!range.to || range.to === range.from) return range.from
+  return `${range.from} – ${range.to}`
+}
 
 function formatChartDate(date: string): string {
   const parsed = new Date(date)
@@ -65,7 +80,9 @@ function ChartTooltipContent({ active, payload }: ChartTooltipProps) {
 }
 
 export function PortfolioPerformanceChart() {
-  const [interval, setInterval] = useState<PerformanceInterval>("month")
+  const [selectedRange, setSelectedRange] = useState<TradeDateRange>(EMPTY_TRADE_DATE_RANGE)
+  const interval = intervalFromRange(selectedRange)
+  const isAllTime = selectedRange.from === null && selectedRange.to === null
 
   const { data: points = [], isLoading, error } = useQuery<PerformancePoint[]>({
     queryKey: queryKeys.performanceTimeSeries(interval),
@@ -74,13 +91,22 @@ export function PortfolioPerformanceChart() {
     placeholderData: keepPreviousData,
   })
 
+  const filtered = useMemo(() => {
+    if (!selectedRange.from) return points
+    return points.filter((p) => {
+      if (selectedRange.from && p.date < selectedRange.from) return false
+      if (selectedRange.to && p.date > selectedRange.to) return false
+      return true
+    })
+  }, [points, selectedRange])
+
   const chartData = useMemo(
     () =>
-      points.map((point) => ({
+      filtered.map((point) => ({
         label: formatChartDate(point.date),
         value: new Decimal(point.portfolio_value || "0").toNumber(),
       })),
-    [points],
+    [filtered],
   )
 
   const isPositiveTrend = useMemo(() => {
@@ -127,26 +153,30 @@ export function PortfolioPerformanceChart() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
           Your money over time
         </CardTitle>
-        <ToggleGroup
-          type="single"
-          value={interval}
-          onValueChange={(value) => {
-            if (value) setInterval(value as PerformanceInterval)
-          }}
-          variant="outline"
-          size="sm"
-          aria-label="Performance interval"
-        >
-          {INTERVAL_OPTIONS.map((option) => (
-            <ToggleGroupItem key={option.value} value={option.value} aria-label={option.label}>
-              {option.label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant={isAllTime ? "default" : "outline"}
+            size="sm"
+            className="h-8 px-2.5 text-sm"
+            aria-pressed={isAllTime}
+            onClick={() => setSelectedRange(EMPTY_TRADE_DATE_RANGE)}
+          >
+            All time
+          </Button>
+          <DateRangePicker
+            id="perf-date-range"
+            label="Date range"
+            ariaLabel="Filter performance chart by date range"
+            value={selectedRange}
+            onChange={setSelectedRange}
+            formatLabel={formatPerfRangeLabel}
+          />
+        </div>
       </CardHeader>
       <CardContent>
         {chartData.length < 2 ? (

@@ -1,0 +1,181 @@
+"use client"
+
+import type React from "react"
+import { useQuery } from "@tanstack/react-query"
+import Decimal from "decimal.js"
+import { MetricLabel } from "@/components/analytics/metric-primitives"
+import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips"
+import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  getFxImpact,
+  getNetWorth,
+  getReturnAttribution,
+  type FxImpactReport,
+  type ReturnAttribution,
+} from "@/lib/api/analytics"
+import { queryKeys } from "@/lib/api/query-keys"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import type { NetWorthData } from "@/lib/types"
+
+export interface PerformanceNowCardProps {
+  initialNetWorth?: NetWorthData | null
+}
+
+function formatUSD(value: Decimal): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: MARKET_CONFIG.baseCurrency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value.toNumber())
+}
+
+function formatSignedUSD(value: Decimal): string {
+  const sign = value.greaterThanOrEqualTo(0) ? "+" : "−"
+  return `${sign}${formatUSD(value.abs())}`
+}
+
+function formatCOP(value: Decimal): string {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value.toNumber())
+}
+
+function formatSignedPct(value: Decimal): string {
+  const sign = value.greaterThanOrEqualTo(0) ? "+" : "−"
+  return `${sign}${value.abs().toFixed(2)}%`
+}
+
+function hasCopDeposit(value: string | undefined): boolean {
+  return value != null && value !== ""
+}
+
+export function PerformanceNowCard({
+  initialNetWorth = null,
+}: PerformanceNowCardProps): React.JSX.Element {
+  const netWorthQuery = useQuery<NetWorthData>({
+    queryKey: queryKeys.netWorth(),
+    queryFn: () => getNetWorth(),
+    initialData: initialNetWorth ?? undefined,
+    staleTime: 60_000,
+  })
+
+  const attributionQuery = useQuery<ReturnAttribution>({
+    queryKey: queryKeys.returnAttribution(),
+    queryFn: () => getReturnAttribution(),
+    staleTime: 60_000,
+  })
+
+  const fxQuery = useQuery<FxImpactReport>({
+    queryKey: ["fx-impact"],
+    queryFn: () => getFxImpact(),
+    staleTime: 60_000,
+  })
+
+  const netWorth = netWorthQuery.data
+  const isLoading =
+    (netWorthQuery.isLoading && !netWorth) ||
+    (attributionQuery.isLoading && !attributionQuery.data) ||
+    (fxQuery.isLoading && !fxQuery.data)
+
+  if (isLoading) {
+    return (
+      <Card data-testid="performance-now-card">
+        <CardContent className="space-y-4 py-5">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-10 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-16 w-full rounded-md" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!netWorth) {
+    return (
+      <Card className="border-destructive/50" data-testid="performance-now-card">
+        <CardContent className="py-6">
+          <p className="text-sm text-muted-foreground">
+            Performance data unavailable. Try refreshing the page.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const gainLoss = new Decimal(netWorth.total_gain_loss || "0")
+  const startingCapital = new Decimal(attributionQuery.data?.starting_capital || "0")
+  const gainPct = startingCapital.isZero()
+    ? null
+    : gainLoss.div(startingCapital).mul(100)
+
+  const xirr = new Decimal(netWorth.xirr || "0")
+  const showXirr = xirr.isFinite() && !xirr.isZero()
+
+  const currentRate = new Decimal(fxQuery.data?.current_rate || "0")
+  const showCopBridge =
+    hasCopDeposit(netWorth.total_deposited_cop) &&
+    currentRate.isFinite() &&
+    !currentRate.isZero()
+  const worthCopToday = new Decimal(netWorth.net_worth || "0").mul(currentRate)
+
+  return (
+    <Card className="h-full" data-testid="performance-now-card">
+      <CardContent className="flex flex-col gap-4 py-5">
+        <MetricLabel label="Net worth" tooltip={PERFORMANCE_TOOLTIPS.netWorth} />
+
+        <div className="flex flex-col gap-1">
+          <h2 className="text-3xl font-bold font-mono tracking-tight tabular-nums md:text-4xl text-foreground">
+            {formatUSD(new Decimal(netWorth.net_worth || "0"))}
+          </h2>
+          <p className="text-sm text-muted-foreground font-mono tabular-nums">
+            <span className="text-foreground font-semibold">
+              {formatSignedUSD(gainLoss)}
+            </span>
+            {" "}
+            {gainPct !== null && (
+              <span className="text-muted-foreground">
+                ({formatSignedPct(gainPct)} on money invested)
+              </span>
+            )}
+          </p>
+        </div>
+
+        {showXirr && (
+          <div className="flex items-center justify-between">
+            <MetricLabel label="XIRR" tooltip={PERFORMANCE_TOOLTIPS.xirr} />
+            <span className="text-sm font-mono font-semibold tabular-nums text-foreground">
+              {formatSignedPct(xirr)}
+            </span>
+          </div>
+        )}
+
+        {showCopBridge && (
+          <div className="rounded-md bg-muted/50 px-3 py-2.5 space-y-1.5 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
+                COP deposited
+              </span>
+              <span className="font-mono tabular-nums text-foreground">
+                {formatCOP(new Decimal(netWorth.total_deposited_cop || "0"))}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
+                Worth in COP today
+              </span>
+              <span className="font-mono tabular-nums text-foreground">
+                {formatCOP(worthCopToday)}
+              </span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

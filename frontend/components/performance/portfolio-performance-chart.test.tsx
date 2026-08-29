@@ -1,9 +1,11 @@
+import type { ReactNode } from "react"
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { PortfolioPerformanceChart } from "./portfolio-performance-chart"
 import type { PerformancePoint } from "@/lib/api/analytics"
+import type { TradeDateRange } from "@/lib/trades/trade-filters"
 
 const mockGetPerformanceTimeSeries = vi.fn()
 
@@ -11,8 +13,33 @@ vi.mock("@/lib/api/analytics", () => ({
   getPerformanceTimeSeries: (...args: unknown[]) => mockGetPerformanceTimeSeries(...args),
 }))
 
+vi.mock("@/components/filters/date-range-picker", () => ({
+  DateRangePicker: ({
+    ariaLabel,
+    value,
+    onChange,
+    formatLabel,
+  }: {
+    ariaLabel: string
+    value: TradeDateRange
+    onChange: (next: TradeDateRange) => void
+    formatLabel: (range: TradeDateRange) => string
+  }) => (
+    <div>
+      <span>{formatLabel(value)}</span>
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        onClick={() => onChange({ from: "2025-01-15", to: "2025-02-01" })}
+      >
+        Date range
+      </button>
+    </div>
+  ),
+}))
+
 vi.mock("recharts", () => ({
-  AreaChart: ({ children }: { children: React.ReactNode }) => (
+  AreaChart: ({ children }: { children: ReactNode }) => (
     <div data-testid="area-chart">{children}</div>
   ),
   Area: () => null,
@@ -20,7 +47,7 @@ vi.mock("recharts", () => ({
   YAxis: () => null,
   CartesianGrid: () => null,
   Tooltip: () => null,
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+  ResponsiveContainer: ({ children }: { children: ReactNode }) => (
     <div data-testid="responsive-container">{children}</div>
   ),
 }))
@@ -63,11 +90,12 @@ describe("PortfolioPerformanceChart", () => {
     mockGetPerformanceTimeSeries.mockResolvedValue(timeSeriesFixture)
   })
 
-  it("fetches performance time series with month interval by default", async () => {
+  it("fetches performance time series with year interval for all time", async () => {
     renderChart()
     await waitFor(() => {
-      expect(mockGetPerformanceTimeSeries).toHaveBeenCalledWith("month")
+      expect(mockGetPerformanceTimeSeries).toHaveBeenCalledWith("year")
     })
+    expect(mockGetPerformanceTimeSeries).not.toHaveBeenCalledWith("quarter")
   })
 
   it("renders chart when points exist", async () => {
@@ -96,16 +124,35 @@ describe("PortfolioPerformanceChart", () => {
     expect(screen.queryByTestId("area-chart")).toBeNull()
   })
 
-  it("refetches when interval changes to quarter", async () => {
+  it("has an All time button and DateRangePicker, and no Month/Quarter/Year chips", async () => {
+    renderChart()
+    const allTime = await screen.findByRole("button", { name: "All time" })
+    expect(allTime).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: /filter.*date range/i })).toBeInTheDocument()
+    expect(screen.queryByRole("radio", { name: /month/i })).toBeNull()
+    expect(screen.queryByRole("radio", { name: /quarter/i })).toBeNull()
+    expect(screen.queryByRole("radio", { name: /year/i })).toBeNull()
+    expect(screen.queryByText("Month")).toBeNull()
+    expect(screen.queryByText("Quarter")).toBeNull()
+    expect(screen.queryByText("Year")).toBeNull()
+  })
+
+  it("client-filters points by selected range and derives day interval", async () => {
     const user = userEvent.setup()
     renderChart()
     await waitFor(() => {
-      expect(screen.getByRole("radio", { name: /quarter/i })).toBeInTheDocument()
+      expect(screen.getByTestId("area-chart")).toBeInTheDocument()
     })
-    expect(mockGetPerformanceTimeSeries).toHaveBeenCalledWith("month")
-    await user.click(screen.getByRole("radio", { name: /quarter/i }))
+    await user.click(screen.getByRole("button", { name: /filter.*date range/i }))
     await waitFor(() => {
-      expect(mockGetPerformanceTimeSeries).toHaveBeenCalledWith("quarter")
+      expect(mockGetPerformanceTimeSeries).toHaveBeenCalledWith("day")
     })
+    expect(mockGetPerformanceTimeSeries).not.toHaveBeenCalledWith("quarter")
+    await waitFor(() => {
+      expect(screen.queryByTestId("area-chart")).toBeNull()
+      expect(screen.getByText(/no performance data yet/i)).toBeInTheDocument()
+    })
+    const allTime = screen.getByRole("button", { name: "All time" })
+    expect(allTime).toHaveAttribute("aria-pressed", "false")
   })
 })

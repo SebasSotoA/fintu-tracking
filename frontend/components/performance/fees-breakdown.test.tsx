@@ -71,10 +71,24 @@ describe("FeesBreakdown", () => {
     expect(await screen.findByText(/unlinked fee row/i)).toBeInTheDocument()
   })
 
-  it("links to full breakdown on /cash-flows", async () => {
+  it("links to full breakdown on /cash-flows with foreground not primary", async () => {
     renderFees()
 
     const link = await screen.findByRole("link", { name: /view full breakdown/i })
     expect(link).toHaveAttribute("href", "/cash-flows")
+    expect(link.className).toContain("text-foreground")
+    expect(link.className).not.toContain("text-primary")
+  })
+
+  it("renders grand total in text-foreground not text-destructive", async () => {
+    mockListCashFlows.mockResolvedValue([
+      cashFlow({ id: "f1", usd_amount: "1.99", related_type: "deposit" }),
+      cashFlow({ id: "f2", usd_amount: "2.50", related_type: "trade" }),
+    ])
+    renderFees()
+
+    const total = await screen.findByText("$4.49")
+    expect(total).toHaveClass("text-foreground")
+    expect(total).not.toHaveClass("text-destructive")
   })
 })
