@@ -30,7 +30,7 @@ func GetActivityFeed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, date, kind, sub_kind, ticker, direction, amount_usd, details
+		SELECT id, date, kind, sub_kind, ticker, direction, amount_usd, details, asset_type
 		FROM (
 			(SELECT
 				id,
@@ -40,7 +40,8 @@ func GetActivityFeed(w http.ResponseWriter, r *http.Request) {
 				ticker,
 				CASE WHEN side = 'buy' THEN 'out' ELSE 'in' END AS direction,
 				ABS(total)::text AS amount_usd,
-				side || ' ' || quantity || ' ' || ticker || ' @ $' || price AS details
+				side || ' ' || quantity || ' ' || ticker || ' @ $' || price AS details,
+				asset_type
 			FROM trades
 			WHERE user_id = $1
 			ORDER BY date DESC
@@ -68,7 +69,8 @@ func GetActivityFeed(w http.ResponseWriter, r *http.Request) {
 					WHEN type = 'cash_adjustment' THEN 'Cash adjustment: $' || usd_amount
 					WHEN type = 'fee' THEN 'Fee (' || COALESCE(fee_type, 'other') || '): $' || usd_amount
 					ELSE type || ': $' || usd_amount
-				END AS details
+				END AS details,
+				'' AS asset_type
 			FROM cash_flows
 			WHERE user_id = $1
 			ORDER BY date DESC
@@ -88,7 +90,7 @@ func GetActivityFeed(w http.ResponseWriter, r *http.Request) {
 	items := make([]models.ActivityItem, 0, limit)
 	for rows.Next() {
 		var item models.ActivityItem
-		if err := rows.Scan(&item.ID, &item.Date, &item.Kind, &item.SubKind, &item.Ticker, &item.Direction, &item.AmountUSD, &item.Details); err != nil {
+		if err := rows.Scan(&item.ID, &item.Date, &item.Kind, &item.SubKind, &item.Ticker, &item.Direction, &item.AmountUSD, &item.Details, &item.AssetType); err != nil {
 			httpx.Error(w, http.StatusInternalServerError, err.Error())
 			return
 		}

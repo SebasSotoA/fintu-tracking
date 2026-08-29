@@ -472,6 +472,7 @@ type ActivityItem struct {
 	Kind      string    `json:"kind"`       // "trade" | "deposit" | "withdrawal" | "fee" | "cash_adjustment"
 	SubKind   string    `json:"sub_kind"`   // trade: "buy"/"sell"; fee: fee_type; deposit/withdrawal/cash_adjustment: ""
 	Ticker    string    `json:"ticker"`     // only for trades
+	AssetType string    `json:"asset_type"` // trade asset type (stock, etf, crypto); "" for cash flows
 	Direction string    `json:"direction"`  // "in" (deposit/buy/credit) or "out" (withdrawal/sell/fee)
 	AmountUSD string    `json:"amount_usd"` // absolute USD amount
 	Details   string    `json:"details"`    // human-readable summary line
