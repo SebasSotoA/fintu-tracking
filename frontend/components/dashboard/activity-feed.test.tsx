@@ -58,6 +58,7 @@ describe("ActivityFeed", () => {
         kind: "trade",
         sub_kind: "buy",
         ticker: "AAPL",
+        asset_type: "stock",
         direction: "out",
         amount_usd: "1500.00",
         details: "Bought AAPL",

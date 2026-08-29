@@ -133,7 +133,7 @@ interface RowAvatarProps {
 
 function RowAvatar({ item }: RowAvatarProps) {
   if (item.kind === "trade" && item.ticker) {
-    return <TickerLogo ticker={item.ticker} assetType={null} size={32} />
+    return <TickerLogo ticker={item.ticker} assetType={item.asset_type ?? null} size={32} />
   }
 
   const Icon =

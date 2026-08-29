@@ -17,12 +17,14 @@ interface TickerLogoProps {
 }
 
 const TICKER_LOGO_BASE = "https://raw.githubusercontent.com/nvstly/icons/main/ticker_icons"
+const CRYPTO_LOGO_BASE = "https://raw.githubusercontent.com/nvstly/icons/main/crypto_icons"
 
-function getLogoUrl(ticker: string): string | null {
+function getLogoUrl(ticker: string, assetType?: AssetType | string | null): string | null {
   if (!ticker) return null
   const cleaned = ticker.trim().toUpperCase()
   if (!cleaned) return null
-  return `${TICKER_LOGO_BASE}/${encodeURIComponent(cleaned)}.png`
+  const base = assetType === "crypto" ? CRYPTO_LOGO_BASE : TICKER_LOGO_BASE
+  return `${base}/${encodeURIComponent(cleaned)}.png`
 }
 
 function FallbackIcon({ assetType }: { assetType?: string | null }) {
@@ -37,7 +39,7 @@ export function TickerLogo({
   size = 32,
   className,
 }: TickerLogoProps) {
-  const url = getLogoUrl(ticker)
+  const url = getLogoUrl(ticker, assetType)
   const [failed, setFailed] = React.useState(false)
   const showImage = url && !failed
 

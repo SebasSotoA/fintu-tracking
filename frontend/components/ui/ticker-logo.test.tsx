@@ -18,11 +18,27 @@ describe("TickerLogo", () => {
     vi.restoreAllMocks()
   })
 
-  it("renders the TradingView image when a ticker is provided", () => {
+  it("renders the nvstly ticker_icons image for a stock ticker", () => {
     render(<TickerLogo ticker="AAPL" assetType="stock" />)
     const img = screen.getByTestId("next-image")
     expect(img.getAttribute("data-src")).toBe(
       "https://raw.githubusercontent.com/nvstly/icons/main/ticker_icons/AAPL.png",
+    )
+  })
+
+  it("renders the nvstly crypto_icons image for a crypto ticker", () => {
+    render(<TickerLogo ticker="BTC" assetType="crypto" />)
+    const img = screen.getByTestId("next-image")
+    expect(img.getAttribute("data-src")).toBe(
+      "https://raw.githubusercontent.com/nvstly/icons/main/crypto_icons/BTC.png",
+    )
+  })
+
+  it("renders the nvstly ticker_icons image for an ETF ticker", () => {
+    render(<TickerLogo ticker="QQQ" assetType="etf" />)
+    const img = screen.getByTestId("next-image")
+    expect(img.getAttribute("data-src")).toBe(
+      "https://raw.githubusercontent.com/nvstly/icons/main/ticker_icons/QQQ.png",
     )
   })
 

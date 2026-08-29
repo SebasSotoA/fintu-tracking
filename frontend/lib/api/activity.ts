@@ -6,6 +6,7 @@ export interface ActivityItem {
   kind: "trade" | "deposit" | "withdrawal" | "fee" | "cash_adjustment"
   sub_kind: string
   ticker: string
+  asset_type?: string
   direction: "in" | "out"
   amount_usd: string
   details: string
