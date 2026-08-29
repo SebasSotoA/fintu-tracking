@@ -120,7 +120,8 @@ describe("EditCashFlowDialog", () => {
 
     const netInput = screen.getByLabelText(/Deposit amount/i)
     expect(netInput).toHaveClass("font-mono")
-    expect(netInput).toHaveClass("text-3xl")
+    expect(netInput).toHaveClass("text-base")
+    expect(netInput).not.toHaveClass("text-3xl")
     expect(screen.queryByText(/USD to receive in Hapi/i)).not.toBeInTheDocument()
   })
 
