@@ -8,11 +8,12 @@ export const PERFORMANCE_TOOLTIPS = {
   fxImpact:
     "Difference between the exchange rate you received and today's rate, applied to your invested capital. This is a measurement — not a gain or loss judgement.",
   currentValue: "What your portfolio is worth right now: holdings + cash.",
-  netWorth: "Current market value of all holdings plus uninvested cash, in USD.",
+  netWorth:
+    "Current market value of all holdings plus uninvested cash, in USD. Gain is USD profit or loss; the percent is that gain divided by money invested.",
   xirr: "Annualised return (XIRR) on your actual cash flows — money in, money out, and current value. A real-world performance rate that accounts for timing.",
-  copDeposited: "Total pesos sent to the broker, converted at each deposit's exchange rate.",
+  copDeposited: "Recorded pesos you sent to the broker — not a conversion.",
   worthInCopToday:
-    "What your portfolio would be worth if converted back to COP at today's exchange rate.",
+    "USD net worth converted at today's exchange rate.",
   deposited: "Total COP you sent to the broker across all deposits.",
   arrivedAtBroker:
     "USD that actually cleared into your brokerage account, after wire and transfer fees were deducted.",

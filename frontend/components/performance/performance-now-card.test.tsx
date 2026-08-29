@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { NetWorthData } from "@/lib/types"
 import { PerformanceNowCard } from "./performance-now-card"
@@ -70,32 +71,46 @@ describe("PerformanceNowCard", () => {
     mockGetFxImpact.mockResolvedValue(baseFxImpact)
   })
 
-  it("renders Net worth and gain percent on money invested", async () => {
+  it("renders Net worth and a single gain line with signed USD and percent", async () => {
     renderCard()
     expect(await screen.findByText("Net worth")).toBeInTheDocument()
     expect(screen.getByText("$12,000.00")).toBeInTheDocument()
-    expect(screen.getByText(/\+\$2,000\.00/)).toBeInTheDocument()
-    expect(screen.getByText(/\(\+20\.00% on money invested\)/)).toBeInTheDocument()
+    const gainLine = screen.getByText(/\$2,000\.00/)
+    expect(gainLine).toHaveTextContent(/\+\$2,000\.00/)
+    expect(gainLine).toHaveTextContent("+20.00%")
+    expect(gainLine).not.toHaveTextContent(/on money invested/)
+    expect(screen.queryByText(/on money invested/)).not.toBeInTheDocument()
   })
 
-  it("renders signed gain and percent on two separate lines", async () => {
+  it("renders signed gain and percent on one muted mono line", async () => {
     renderCard()
-    const gain = await screen.findByText(/\+\$2,000\.00/)
-    const pct = screen.getByText(/\(\+20\.00% on money invested\)/)
-    expect(gain.closest("p")).not.toBe(pct.closest("p"))
-    expect(gain).toHaveClass("font-semibold")
-    expect(pct).toHaveClass("text-sm", "text-muted-foreground")
-    expect(gain.closest(".gap-3")).toBeTruthy()
+    const gainLine = await screen.findByText(/\$2,000\.00/)
+    expect(gainLine).toHaveTextContent("+20.00%")
+    expect(gainLine).toHaveClass("text-sm", "text-muted-foreground", "font-mono")
   })
 
-  it("formats COP rows with COP prefix and shows current FX rate, not a conversion of deposits", async () => {
+  it("formats COP rows with COP prefix and no body copy under the figures", async () => {
     renderCard()
     await screen.findByText("COP deposited")
     expect(screen.getByText("COP 48.000.000")).toBeInTheDocument()
-    expect(screen.getByText("Recorded pesos, not a conversion")).toBeInTheDocument()
+    expect(screen.getByText("Worth today")).toBeInTheDocument()
     expect(screen.getByText("COP 49.200.000")).toBeInTheDocument()
-    expect(screen.getByText(/at 4,100\.00 COP\/USD/)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /about cop deposited/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /about worth today/i })).toBeInTheDocument()
+    expect(screen.queryByText(/Recorded pesos/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/at 4,100\.00 COP\/USD/)).not.toBeInTheDocument()
+    expect(screen.queryByText("Worth in COP today")).not.toBeInTheDocument()
     expect(screen.queryByText(/\$ 48/)).not.toBeInTheDocument()
+  })
+
+  it("puts the FX rate in the Worth today tooltip, not in the card body", async () => {
+    const user = userEvent.setup()
+    renderCard()
+    await screen.findByText("Worth today")
+    expect(screen.queryByText(/4,100\.00 COP\/USD/)).not.toBeInTheDocument()
+    await user.hover(screen.getByRole("button", { name: /about worth today/i }))
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent("4,100.00 COP/USD")
   })
 
   it("does not label gain as vs previous period or You're up", async () => {
@@ -120,6 +135,6 @@ describe("PerformanceNowCard", () => {
     renderCard({ ...baseNetWorth, total_deposited_cop: undefined })
     await screen.findByText("Net worth")
     expect(screen.queryByText("COP deposited")).not.toBeInTheDocument()
-    expect(screen.queryByText("Worth in COP today")).not.toBeInTheDocument()
+    expect(screen.queryByText("Worth today")).not.toBeInTheDocument()
   })
 })

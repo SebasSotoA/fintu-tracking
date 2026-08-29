@@ -139,16 +139,11 @@ export function PerformanceNowCard({
           <h2 className="text-3xl font-bold font-mono tracking-tight tabular-nums md:text-4xl text-foreground">
             {formatUSD(new Decimal(netWorth.net_worth || "0"))}
           </h2>
-          <div>
-            <p className="text-foreground font-semibold font-mono tabular-nums">
-              {formatSignedUSD(gainLoss)}
-            </p>
-            {gainPct !== null && (
-              <p className="text-sm text-muted-foreground font-mono tabular-nums">
-                ({formatSignedPct(gainPct)} on money invested)
-              </p>
-            )}
-          </div>
+          <p className="text-sm text-muted-foreground font-mono tabular-nums">
+            {gainPct === null
+              ? formatSignedUSD(gainLoss)
+              : `${formatSignedUSD(gainLoss)} · ${formatSignedPct(gainPct)}`}
+          </p>
         </div>
 
         {showXirr && (
@@ -162,31 +157,23 @@ export function PerformanceNowCard({
 
         {showCopBridge && (
           <div className="rounded-md bg-muted/50 px-3 py-2.5 space-y-2 text-sm">
-            <div className="space-y-0.5">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
-                  COP deposited
-                </span>
-                <span className="font-mono tabular-nums text-foreground">
-                  {formatCOP(new Decimal(netWorth.total_deposited_cop || "0"))}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Recorded pesos, not a conversion
-              </p>
+            <div className="flex items-center justify-between gap-2">
+              <MetricLabel
+                label="COP deposited"
+                tooltip={PERFORMANCE_TOOLTIPS.copDeposited}
+              />
+              <span className="font-mono tabular-nums text-foreground">
+                {formatCOP(new Decimal(netWorth.total_deposited_cop || "0"))}
+              </span>
             </div>
-            <div className="space-y-0.5">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
-                  Worth in COP today
-                </span>
-                <span className="font-mono tabular-nums text-foreground">
-                  {formatCOP(worthCopToday)}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground font-mono tabular-nums">
-                at {formatRate(currentRate)} {MARKET_CONFIG.localCurrency}/USD
-              </p>
+            <div className="flex items-center justify-between gap-2">
+              <MetricLabel
+                label="Worth today"
+                tooltip={`${PERFORMANCE_TOOLTIPS.worthInCopToday} (${formatRate(currentRate)} ${MARKET_CONFIG.localCurrency}/USD)`}
+              />
+              <span className="font-mono tabular-nums text-foreground">
+                {formatCOP(worthCopToday)}
+              </span>
             </div>
           </div>
         )}
