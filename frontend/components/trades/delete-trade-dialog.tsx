@@ -7,6 +7,7 @@ import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
@@ -49,14 +50,14 @@ export function DeleteTradeDialog({ trade, open, onOpenChange, onSuccess }: Dele
             Are you sure you want to delete this trade for {trade.ticker}? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <AlertDialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className="w-full sm:w-auto">
             Cancel
           </Button>
           <Button variant="destructive" onClick={handleDelete} disabled={isLoading} className="w-full sm:w-auto">
             {isLoading ? "Deleting..." : "Delete"}
           </Button>
-        </div>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   )
