@@ -41,6 +41,7 @@ export interface DateRangePickerProps {
   onChange: (value: TradeDateRange) => void
   formatLabel: (range: TradeDateRange) => string
   hideLabel?: boolean
+  popoverAlign?: "start" | "center" | "end"
 }
 
 function DateRangePickerContent({
@@ -159,6 +160,7 @@ export function DateRangePicker({
   onChange,
   formatLabel,
   hideLabel = false,
+  popoverAlign = "start",
 }: DateRangePickerProps) {
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
@@ -292,7 +294,11 @@ export function DateRangePicker({
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>{TriggerButton}</PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent
+          className="w-auto p-0"
+          align={popoverAlign}
+          collisionPadding={8}
+        >
           <DateRangePickerContent
             mode={mode}
             setMode={setMode}

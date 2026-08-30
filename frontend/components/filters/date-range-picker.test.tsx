@@ -42,7 +42,13 @@ vi.mock("@/components/ui/calendar", () => ({
   ),
 }))
 
-function renderPicker({ isMobile = false }: { isMobile?: boolean } = {}) {
+function renderPicker({
+  isMobile = false,
+  popoverAlign,
+}: {
+  isMobile?: boolean
+  popoverAlign?: "start" | "center" | "end"
+} = {}) {
   useIsMobileMock.mockReturnValue(isMobile)
   const onChange = vi.fn()
   return {
@@ -55,6 +61,7 @@ function renderPicker({ isMobile = false }: { isMobile?: boolean } = {}) {
         value={EMPTY_TRADE_DATE_RANGE}
         onChange={onChange}
         formatLabel={(range) => (range.from ? `${range.from} – ${range.to ?? ""}` : "All dates")}
+        popoverAlign={popoverAlign}
       />,
     ),
   }
@@ -75,6 +82,28 @@ describe("DateRangePicker", () => {
     await user.click(screen.getAllByRole("button", { name: /filter cash flows by date/i })[0])
     expect(document.querySelector("[data-slot='popover-content']")).toBeInTheDocument()
     expect(document.querySelector("[data-slot='drawer-content']")).not.toBeInTheDocument()
+  })
+
+  it("aligns the desktop popover to start by default", async () => {
+    const user = userEvent.setup()
+    renderPicker({ isMobile: false })
+
+    await user.click(screen.getAllByRole("button", { name: /filter cash flows by date/i })[0])
+    expect(document.querySelector("[data-slot='popover-content']")).toHaveAttribute(
+      "data-align",
+      "start",
+    )
+  })
+
+  it("aligns the desktop popover to end when popoverAlign is end", async () => {
+    const user = userEvent.setup()
+    renderPicker({ isMobile: false, popoverAlign: "end" })
+
+    await user.click(screen.getAllByRole("button", { name: /filter cash flows by date/i })[0])
+    expect(document.querySelector("[data-slot='popover-content']")).toHaveAttribute(
+      "data-align",
+      "end",
+    )
   })
 
   it("renders a drawer on mobile", async () => {

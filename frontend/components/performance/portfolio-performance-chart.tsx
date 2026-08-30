@@ -176,6 +176,7 @@ export function PortfolioPerformanceChart() {
             onChange={setSelectedRange}
             formatLabel={formatPerfRangeLabel}
             hideLabel
+            popoverAlign="end"
           />
         </div>
       </CardHeader>

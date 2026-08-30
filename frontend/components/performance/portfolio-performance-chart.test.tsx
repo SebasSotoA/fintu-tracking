@@ -13,33 +13,41 @@ vi.mock("@/lib/api/analytics", () => ({
   getPerformanceTimeSeries: (...args: unknown[]) => mockGetPerformanceTimeSeries(...args),
 }))
 
+let lastDateRangePickerProps: {
+  ariaLabel: string
+  label: string
+  hideLabel?: boolean
+  value: TradeDateRange
+  onChange: (next: TradeDateRange) => void
+  formatLabel: (range: TradeDateRange) => string
+  popoverAlign?: "start" | "center" | "end"
+} | null = null
+
 vi.mock("@/components/filters/date-range-picker", () => ({
-  DateRangePicker: ({
-    ariaLabel,
-    label,
-    hideLabel,
-    value,
-    onChange,
-    formatLabel,
-  }: {
+  DateRangePicker: (props: {
     ariaLabel: string
     label: string
     hideLabel?: boolean
     value: TradeDateRange
     onChange: (next: TradeDateRange) => void
     formatLabel: (range: TradeDateRange) => string
-  }) => (
-    <div>
-      {!hideLabel && <span>{label}</span>}
-      <button
-        type="button"
-        aria-label={ariaLabel}
-        onClick={() => onChange({ from: "2025-01-15", to: "2025-02-01" })}
-      >
-        {formatLabel(value)}
-      </button>
-    </div>
-  ),
+    popoverAlign?: "start" | "center" | "end"
+  }) => {
+    lastDateRangePickerProps = props
+    const { ariaLabel, label, hideLabel, value, onChange, formatLabel } = props
+    return (
+      <div>
+        {!hideLabel && <span>{label}</span>}
+        <button
+          type="button"
+          aria-label={ariaLabel}
+          onClick={() => onChange({ from: "2025-01-15", to: "2025-02-01" })}
+        >
+          {formatLabel(value)}
+        </button>
+      </div>
+    )
+  },
 }))
 
 vi.mock("recharts", () => ({
@@ -91,6 +99,7 @@ function renderChart() {
 describe("PortfolioPerformanceChart", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    lastDateRangePickerProps = null
     mockGetPerformanceTimeSeries.mockResolvedValue(timeSeriesFixture)
   })
 
@@ -140,6 +149,14 @@ describe("PortfolioPerformanceChart", () => {
     expect(screen.queryByText("Month")).toBeNull()
     expect(screen.queryByText("Quarter")).toBeNull()
     expect(screen.queryByText("Year")).toBeNull()
+  })
+
+  it("passes popoverAlign end so the calendar lines up with the right-side trigger", async () => {
+    renderChart()
+    await waitFor(() => {
+      expect(lastDateRangePickerProps).not.toBeNull()
+    })
+    expect(lastDateRangePickerProps?.popoverAlign).toBe("end")
   })
 
   it("client-filters points by selected range and derives day interval", async () => {
