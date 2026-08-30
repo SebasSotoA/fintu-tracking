@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest"
-import { sidebarLabelClass } from "./app-sidebar-constants"
+import { navActive, navIdle, sidebarLabelClass } from "./app-sidebar-constants"
+
+describe("navIdle and navActive", () => {
+  it("uses semantic foreground in light and does not use unprefixed hover:text-white", () => {
+    expect(navIdle).toContain("hover:text-foreground")
+    expect(navActive).toContain("text-foreground")
+    expect(navIdle.replaceAll("dark:hover:text-white", "")).not.toContain("hover:text-white")
+  })
+})
 
 describe("sidebarLabelClass", () => {
   it("hides labels when collapsed", () => {

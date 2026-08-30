@@ -158,15 +158,15 @@ export function CashFlowsList({
     const base =
       "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0"
     if (type === "deposit") {
-      return cn(base, "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/20")
+      return cn(base, "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-inset ring-emerald-400/20")
     }
     if (type === "withdrawal") {
-      return cn(base, "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-400/20")
+      return cn(base, "bg-amber-500/15 text-amber-800 dark:text-amber-300 ring-1 ring-inset ring-amber-400/20")
     }
     if (type === "fee") {
-      return cn(base, "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-400/20")
+      return cn(base, "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-400/20")
     }
-    return cn(base, "bg-white/10 text-white/80")
+    return cn(base, "bg-muted text-muted-foreground")
   }, [])
 
   const renderMobileCard = useCallback(

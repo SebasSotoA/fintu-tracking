@@ -25,7 +25,7 @@ export function NotificationsBell() {
           data-testid="notifications-bell"
           className={cn(
             "relative inline-flex size-9 items-center justify-center rounded-lg text-foreground/70",
-            "transition-colors hover:bg-white/[0.06] hover:text-foreground",
+            "transition-colors hover:bg-muted hover:text-foreground dark:hover:bg-white/[0.06]",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
           )}
         >
@@ -46,7 +46,7 @@ export function NotificationsBell() {
         sideOffset={8}
         className="w-[min(420px,calc(100vw-2rem))] p-0"
       >
-        <div className="px-4 py-3 border-b border-white/5">
+        <div className="px-4 py-3 border-b border-border">
           <p className="text-sm font-semibold text-foreground">Notifications</p>
           <p className="text-xs text-muted-foreground">
             Portfolio health alerts

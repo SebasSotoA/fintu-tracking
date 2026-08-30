@@ -45,8 +45,8 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
   }
 
   const userIcon = (
-    <div className="flex size-8 items-center justify-center rounded-lg bg-white/[0.06] ring-1 ring-white/10">
-      <User className="size-4 text-white/85" aria-hidden />
+    <div className="flex size-8 items-center justify-center rounded-lg bg-muted ring-1 ring-border dark:bg-white/[0.06] dark:ring-white/10">
+      <User className="size-4 text-foreground dark:text-white/85" aria-hidden />
     </div>
   )
 
@@ -58,7 +58,7 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
         data-testid="my-account-button"
         className={cn(
           "flex h-9 min-h-9 w-full items-center gap-3 rounded-lg text-left transition-colors duration-200",
-          "hover:bg-white/[0.05] hover:text-white",
+          "hover:bg-muted hover:text-foreground dark:hover:bg-white/[0.05] dark:hover:text-white",
         )}
       >
         <span className={navIconCellClass}>{userIcon}</span>
@@ -66,7 +66,7 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
           className={cn("min-w-0 flex-1 overflow-hidden leading-none", label)}
           aria-hidden={collapsed}
         >
-          <p className="truncate font-sans text-sm font-bold text-white">My account</p>
+          <p className="truncate font-sans text-sm font-bold text-foreground dark:text-white">My account</p>
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
             Portfolio
           </p>
@@ -113,12 +113,12 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
         data-testid="my-account-button-topbar"
         className={cn(
           "flex items-center gap-2 rounded-full p-1 pr-3 transition-colors",
-          "hover:bg-white/[0.06]",
+          "hover:bg-muted dark:hover:bg-white/[0.06]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
         )}
       >
-        <div className="flex size-8 items-center justify-center rounded-full bg-white/[0.06] ring-1 ring-white/10">
-          <User className="size-4 text-white/85" aria-hidden />
+        <div className="flex size-8 items-center justify-center rounded-full bg-muted ring-1 ring-border dark:bg-white/[0.06] dark:ring-white/10">
+          <User className="size-4 text-foreground dark:text-white/85" aria-hidden />
         </div>
         <ChevronDown
           className={cn(

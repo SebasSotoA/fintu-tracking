@@ -50,7 +50,7 @@ export function NotificationsPopover({ alerts }: NotificationsPopoverProps) {
             className="flex items-start gap-3 px-4 py-3 text-sm"
             data-testid="notification-item"
           >
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-white/80 ring-1 ring-white/10">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground ring-1 ring-border dark:bg-white/[0.06] dark:text-white/80 dark:ring-white/10">
               <Icon className="size-4" aria-hidden />
             </div>
             <div className="flex-1 min-w-0">

@@ -73,11 +73,11 @@ export function TopHoldingsCard({
                   size={28}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-white truncate">{holding.ticker}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{holding.ticker}</p>
                   <p className="text-[11px] text-muted-foreground truncate">{assetLabel}</p>
                 </div>
                 <div className="flex flex-col items-end gap-0.5 shrink-0">
-                  <span className="text-sm font-mono font-semibold tabular-nums text-white">
+                  <span className="text-sm font-mono font-semibold tabular-nums text-foreground">
                     {formatMoney(holding.marketValue)}
                   </span>
                   <span className="text-[10px] font-mono tabular-nums text-muted-foreground">

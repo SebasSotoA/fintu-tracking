@@ -47,28 +47,28 @@ function getBadge(kind: ActivityItem["kind"]): BadgeStyle {
   if (kind === "trade") {
     return {
       label: "TRADE",
-      classes: "bg-blue-500/15 text-blue-300 ring-1 ring-inset ring-blue-400/20",
+      classes: "bg-blue-500/15 text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-400/20",
     }
   }
   if (kind === "deposit" || kind === "withdrawal") {
     return {
       label: kind === "deposit" ? "DEPOSIT" : "WITHDRAW",
-      classes: "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/20",
+      classes: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-inset ring-emerald-400/20",
     }
   }
   if (kind === "fee") {
     return {
       label: "FEE",
-      classes: "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-400/20",
+      classes: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-400/20",
     }
   }
   if (kind === "cash_adjustment") {
     return {
       label: "ADJUST",
-      classes: "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-400/20",
+      classes: "bg-amber-500/15 text-amber-800 dark:text-amber-300 ring-1 ring-inset ring-amber-400/20",
     }
   }
-  return { label: "ITEM", classes: "bg-white/10 text-white/80" }
+  return { label: "ITEM", classes: "bg-muted text-muted-foreground" }
 }
 
 function getTitle(kind: ActivityItem["kind"], subKind: string): string {
@@ -149,7 +149,7 @@ function RowAvatar({ item }: RowAvatarProps) {
 
   return (
     <div
-      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-white/85 ring-1 ring-white/10"
+      className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground ring-1 ring-border dark:bg-white/[0.06] dark:text-white/85 dark:ring-white/10"
       aria-hidden
     >
       <Icon className="size-4" />
@@ -173,12 +173,12 @@ export function ActivityFeedItem({ item }: ActivityFeedItemProps) {
   return (
     <Link
       href={getLinkUrl(item.kind)}
-      className="group flex items-center justify-between gap-3 py-2 transition-colors hover:bg-white/[0.02]"
+      className="group flex items-center justify-between gap-3 py-2 transition-colors hover:bg-muted/50 dark:hover:bg-white/[0.02]"
     >
       <div className="flex items-center gap-3 min-w-0">
         <RowAvatar item={item} />
         <div className="flex items-center gap-2 min-w-0">
-          <p className="text-sm font-medium text-white shrink-0">{title}</p>
+          <p className="text-sm font-medium text-foreground shrink-0">{title}</p>
           <span
             className={cn(
               "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0",

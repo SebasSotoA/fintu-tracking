@@ -12,9 +12,9 @@ const AlertIcon: Record<Exclude<HealthAlertType, "large_move">, React.ComponentT
 }
 
 const severityStyles: Record<string, string> = {
-  destructive: "border-white/10 bg-white/[0.04] text-foreground",
-  warning: "border-white/10 bg-white/[0.04] text-foreground",
-  info: "border-white/10 bg-white/[0.04] text-foreground",
+  destructive: "border-border bg-muted/50 text-foreground dark:border-white/10 dark:bg-white/[0.04]",
+  warning: "border-border bg-muted/50 text-foreground dark:border-white/10 dark:bg-white/[0.04]",
+  info: "border-border bg-muted/50 text-foreground dark:border-white/10 dark:bg-white/[0.04]",
 }
 
 export function PortfolioHealthBanner() {
@@ -30,7 +30,7 @@ export function PortfolioHealthBanner() {
         const IconComp = alert.type === "large_move"
           ? (alert.direction === "down" ? TrendingDown : TrendingUp)
           : AlertIcon[alert.type as Exclude<HealthAlertType, "large_move">]
-        const iconColor = "text-white/80"
+        const iconColor = "text-foreground dark:text-white/80"
 
         return (
           <div

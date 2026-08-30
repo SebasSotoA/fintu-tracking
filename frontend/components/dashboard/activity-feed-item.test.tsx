@@ -38,6 +38,11 @@ describe("ActivityFeedItem", () => {
     expect(logo.getAttribute("data-asset-type")).toBe("crypto")
   })
 
+  it("uses text-foreground on the activity title", () => {
+    render(<ActivityFeedItem item={makeTrade()} />)
+    expect(screen.getByText("Buy").className).toContain("text-foreground")
+  })
+
   it("passes asset_type to TickerLogo for a stock trade", () => {
     render(<ActivityFeedItem item={makeTrade({ ticker: "AAPL", asset_type: "stock" })} />)
     const logo = screen.getByTestId("ticker-logo")

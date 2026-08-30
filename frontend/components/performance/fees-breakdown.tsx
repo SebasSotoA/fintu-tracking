@@ -90,7 +90,7 @@ export function FeesBreakdown() {
         <div className="space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={cn(BADGE_BASE, "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-400/20")}>
+              <span className={cn(BADGE_BASE, "bg-amber-500/15 text-amber-800 dark:text-amber-300 ring-1 ring-inset ring-amber-400/20")}>
                 Transfer
               </span>
               <span className="text-sm text-muted-foreground">Deposit & withdrawal fees</span>
@@ -101,7 +101,7 @@ export function FeesBreakdown() {
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={cn(BADGE_BASE, "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-400/20")}>
+              <span className={cn(BADGE_BASE, "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-400/20")}>
                 Trading
               </span>
               <span className="text-sm text-muted-foreground">Trade commissions</span>

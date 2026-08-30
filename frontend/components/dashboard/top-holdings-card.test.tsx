@@ -52,6 +52,7 @@ describe("TopHoldingsCard", () => {
     expect(tickerNodes[0]).toHaveTextContent("BTC")
     expect(tickerNodes[1]).toHaveTextContent("VOO")
     expect(tickerNodes[2]).toHaveTextContent("AAPL")
+    expect(tickerNodes[0].className).toContain("text-foreground")
   })
 
   it("renders percentages of total portfolio", () => {

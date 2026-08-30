@@ -19,12 +19,14 @@ export const navItemTransition = "transition-all duration-200 ease-[cubic-bezier
 
 export const navIdle = cn(
   navItemTransition,
-  "text-sidebar-foreground/70 hover:bg-white/[0.05] hover:text-white",
+  "text-sidebar-foreground hover:bg-muted hover:text-foreground",
+  "dark:text-sidebar-foreground/70 dark:hover:bg-white/[0.05] dark:hover:text-white",
 )
 
 export const navActive = cn(
   navItemTransition,
-  "bg-white/[0.08] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]",
+  "bg-muted text-foreground",
+  "dark:bg-white/[0.08] dark:text-white dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]",
 )
 
 export function sidebarLabelClass(collapsed: boolean) {

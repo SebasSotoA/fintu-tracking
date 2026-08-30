@@ -159,6 +159,28 @@ describe("AppNav", () => {
     expect(sidebar.className).toContain("ease-in-out")
   })
 
+  it("uses text-foreground on the active Dashboard link", () => {
+    renderAppNav(false)
+
+    const sidebar = screen.getByTestId("app-sidebar")
+    const dashboardLink = within(sidebar).getByRole("link", { name: "Dashboard" })
+    expect(dashboardLink.className).toContain("text-foreground")
+  })
+
+  it("uses muted-foreground idle classes on mobile bottom nav", () => {
+    renderAppNav(false)
+
+    const sidebar = screen.getByTestId("app-sidebar")
+    const tradesLinks = screen.getAllByRole("link", { name: "Trades" })
+    const mobileTrades = tradesLinks.find((el) => !sidebar.contains(el))
+
+    expect(mobileTrades).toBeDefined()
+    expect(mobileTrades?.className).toContain("text-muted-foreground")
+    expect(mobileTrades?.className).toContain("hover:text-primary")
+    expect(mobileTrades?.className).not.toContain("text-foreground/40")
+    expect(mobileTrades?.className).toContain("focus-visible:ring-2")
+  })
+
   it("opens profile config dialog when Configuration is selected from account menu", async () => {
     const user = userEvent.setup()
     renderAppNav(false)

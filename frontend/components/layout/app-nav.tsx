@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils"
 import {
   navIconCellClass,
   navIdle,
+  navActive,
+  navItemTransition,
   RAIL_PL,
   RAIL_PR,
   sidebarLabelClass,
@@ -83,8 +85,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                 alt=""
                 width={28}
                 height={28}
-                className="size-7 object-contain transition-opacity duration-75 group-hover:opacity-0"
-                style={{ mixBlendMode: "screen" }}
+                className="size-7 object-contain transition-opacity duration-75 group-hover:opacity-0 dark:mix-blend-screen"
                 priority
               />
               <PanelRightOpen
@@ -101,7 +102,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                   "focus-visible:ring-2 focus-visible:ring-primary/40",
                 )}
               >
-                <span className={cn(navIconCellClass, "shrink-0")} aria-hidden style={{ mixBlendMode: "screen" }}>
+                <span className={cn(navIconCellClass, "shrink-0 dark:mix-blend-screen")} aria-hidden>
                   <Image
                     src="/fintu-aqua-icon.svg"
                     alt=""
@@ -152,15 +153,20 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                   className={cn(
                     "absolute top-0 h-9 w-9 rounded-lg transition-colors duration-200",
                     collapsed && isActive
-                      ? "bg-white/[0.08] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
+                      ? "bg-muted dark:bg-white/[0.08] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
                       : collapsed
-                        ? "group-hover:bg-white/[0.05]"
+                        ? "group-hover:bg-muted dark:group-hover:bg-white/[0.05]"
                         : "",
                   )}
                 />
                 <span
                   aria-hidden
-                  className="absolute top-0 flex h-9 w-9 items-center justify-center [&_svg]:m-auto"
+                  className={cn(
+                    "absolute top-0 flex h-9 w-9 items-center justify-center [&_svg]:m-auto",
+                    isActive
+                      ? "text-foreground dark:text-white"
+                      : "text-sidebar-foreground dark:text-sidebar-foreground/70",
+                  )}
                 >
                   <Icon className="size-4 shrink-0" aria-hidden />
                 </span>
@@ -169,11 +175,12 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                   aria-label={collapsed ? item.label : undefined}
                   className={cn(
                     "absolute inset-0 flex items-center rounded-lg pl-11 text-sm transition-colors duration-200",
+                    isActive ? "font-semibold" : "font-medium",
                     !collapsed && isActive
-                      ? "bg-white/[0.08] text-white font-semibold shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
+                      ? navActive
                       : isActive
-                        ? "font-semibold text-white"
-                        : "font-medium text-sidebar-foreground/70 hover:bg-white/[0.05] hover:text-white",
+                        ? cn(navItemTransition, "text-foreground dark:text-white")
+                        : navIdle,
                   )}
                 >
                   <span className={cn("overflow-hidden", label)} aria-hidden={collapsed}>
@@ -209,12 +216,13 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
               href={item.href}
               className={cn(
                 "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors duration-75",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 isActive
                   ? "bg-primary-container/20 text-primary"
-                  : "text-foreground/40 hover:text-primary",
+                  : "text-muted-foreground hover:text-primary",
               )}
             >
-              <Icon className="size-5" />
+              <Icon className="size-5" aria-hidden />
               <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">
                 {item.label}
               </span>

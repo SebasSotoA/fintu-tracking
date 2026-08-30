@@ -78,19 +78,19 @@ const BADGE_BASE =
 
 function getAssetBadgeClasses(assetType: Trade["asset_type"]): string {
   if (assetType === "crypto") {
-    return cn(BADGE_BASE, "bg-sky-500/15 text-sky-300 ring-1 ring-inset ring-sky-400/20")
+    return cn(BADGE_BASE, "bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-inset ring-sky-400/20")
   }
   if (assetType === "etf") {
-    return cn(BADGE_BASE, "bg-violet-500/15 text-violet-300 ring-1 ring-inset ring-violet-400/20")
+    return cn(BADGE_BASE, "bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-1 ring-inset ring-violet-400/20")
   }
-  return cn(BADGE_BASE, "bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-400/20")
+  return cn(BADGE_BASE, "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-400/20")
 }
 
 function getSideBadgeClasses(side: Trade["side"]): string {
   if (side === "buy") {
-    return cn(BADGE_BASE, "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/20")
+    return cn(BADGE_BASE, "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-inset ring-emerald-400/20")
   }
-  return cn(BADGE_BASE, "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-400/20")
+  return cn(BADGE_BASE, "bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-1 ring-inset ring-rose-400/20")
 }
 
 function TradeTickerFilter({

@@ -116,6 +116,7 @@ describe("AccountMenu", () => {
 
     expect(screen.getByTestId("my-account-button")).toHaveTextContent("My account")
     expect(screen.getByTestId("my-account-button")).toHaveTextContent("Portfolio")
+    expect(screen.getByText("My account").className).toContain("text-foreground")
   })
 
   it("shows icon-only trigger when sidebar is collapsed", () => {
