@@ -49,7 +49,7 @@ export function formatAxisDateKey(dateKey: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
-/** Recharts calls this per point; only the last (current) point gets the pulsing halo. */
+/** Recharts calls this per point; only the last (current) point is marked. */
 function CurrentRateDot(
   props: { cx?: number; cy?: number; index?: number },
   lastIndex: number,
@@ -60,25 +60,7 @@ function CurrentRateDot(
 
   return (
     <g key={index} aria-hidden="true">
-      <circle cx={cx} cy={cy} r={4} fill="var(--primary)" fillOpacity={0.3}>
-        <animate attributeName="r" values="4;7;4" dur="2.2s" repeatCount="indefinite" />
-        <animate
-          attributeName="fill-opacity"
-          values="0.38;0.12;0.38"
-          dur="2.2s"
-          repeatCount="indefinite"
-        />
-      </circle>
-      <circle
-        cx={cx}
-        cy={cy}
-        r={3}
-        fill="var(--primary)"
-        className="drop-shadow-[0_0_4px_var(--primary)]"
-      >
-        <animate attributeName="opacity" values="1;0.82;1" dur="1.8s" repeatCount="indefinite" />
-      </circle>
-      <circle cx={cx} cy={cy} r={1.5} fill="var(--background)" />
+      <circle cx={cx} cy={cy} r={3} fill="var(--chart-3)" />
     </g>
   )
 }
@@ -154,6 +136,12 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
     <div className="h-[140px] w-full [&_.recharts-wrapper]:overflow-visible [&_.recharts-surface]:overflow-visible [&_svg]:overflow-visible">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 16 }}>
+          <defs>
+            <linearGradient id="fxRateGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.32} />
+              <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
           <XAxis
             dataKey="dateKey"
             ticks={xTicks}
@@ -186,10 +174,9 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
           <Area
             type="monotone"
             dataKey="rate"
-            stroke="var(--primary)"
+            stroke="var(--chart-3)"
             strokeWidth={2.5}
-            fill="var(--primary)"
-            fillOpacity={0.16}
+            fill="url(#fxRateGradient)"
             isAnimationActive={false}
             dot={(dotProps) => CurrentRateDot(dotProps, lastIndex)}
             activeDot={false}
