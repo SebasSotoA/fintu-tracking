@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Toaster } from "@/components/ui/sonner"
+import { ThemeProvider } from "@/components/theme-provider"
 import { isSubscriptionRequiredError, isUnauthorizedError } from "@/lib/api/errors"
 
 const queryClient = new QueryClient({
@@ -48,10 +49,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [client] = useState(() => queryClient)
 
   return (
-    <QueryClientProvider client={client}>
-      {children}
-      <QueryErrorHandler />
-      <Toaster />
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="fintu-theme">
+      <QueryClientProvider client={client}>
+        {children}
+        <QueryErrorHandler />
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }

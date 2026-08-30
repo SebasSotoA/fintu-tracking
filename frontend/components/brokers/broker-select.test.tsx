@@ -140,6 +140,32 @@ describe("BrokerSelect", () => {
     })
   })
 
+  it("hides the Broker label when hideLabel is true", () => {
+    renderWithQuery(
+      <BrokerSelect
+        id="broker"
+        value=""
+        onChange={() => {}}
+        hideLabel
+      />,
+    )
+
+    expect(screen.queryByText("Broker")).not.toBeInTheDocument()
+  })
+
+  it("hides the Broker label when label is empty", () => {
+    renderWithQuery(
+      <BrokerSelect
+        id="broker"
+        value=""
+        onChange={() => {}}
+        label=""
+      />,
+    )
+
+    expect(screen.queryByText("Broker")).not.toBeInTheDocument()
+  })
+
   it("preset_id value passthrough still works (no UUID in brokers list)", () => {
     renderWithQuery(
       <BrokerSelect

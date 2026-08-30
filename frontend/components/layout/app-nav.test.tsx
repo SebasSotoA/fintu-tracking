@@ -7,6 +7,13 @@ import type { Profile } from "@/lib/api/me"
 
 const mockSignOut = vi.fn()
 
+vi.mock("next-themes", () => ({
+  useTheme: () => ({
+    theme: "dark",
+    setTheme: vi.fn(),
+  }),
+}))
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/dashboard",
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -159,7 +166,9 @@ describe("AppNav", () => {
     await user.click(screen.getByTestId("my-account-button"))
     await user.click(screen.getByRole("menuitem", { name: "Configuration" }))
 
-    expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument()
+    expect(screen.getByText("Theme")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument()
   })
 
