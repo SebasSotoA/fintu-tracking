@@ -284,6 +284,7 @@ type FXImpactReport struct {
 	RateChangePct     string            `json:"rate_change_pct"`
 	FXImpactUSD       string            `json:"fx_impact_usd"`
 	FXImpactPct       string            `json:"fx_impact_pct"`
+	UsdConverted      string            `json:"usd_converted"`    // USD recorded on COP deposits that have an FX rate
 	ImpactByPeriod    map[string]string `json:"impact_by_period"` // Monthly/quarterly breakdown
 }
 
@@ -564,10 +565,10 @@ type AnalyticsPerformanceTradeRow struct {
 // used by the return-attribution holdings value calculation. The price/cost
 // columns are nullable (LEFT JOIN + aggregates), hence pointer types.
 type AnalyticsReturnAttributionHoldingRow struct {
-	Ticker        string
-	NetQuantity   *string
-	TotalCost     *string
-	CurrentPrice  *string
+	Ticker       string
+	NetQuantity  *string
+	TotalCost    *string
+	CurrentPrice *string
 }
 
 // AnalyticsRealizedPLRow is one trades row used to compute realized P/L by
@@ -593,8 +594,8 @@ type AnalyticsSPYPriceRow struct {
 // AnalyticsLocalCurrencyTotals holds the local-currency deposit/withdrawal
 // totals returned by the net-worth summary query.
 type AnalyticsLocalCurrencyTotals struct {
-	TotalDeposited   string
-	TotalWithdrawn   string
+	TotalDeposited string
+	TotalWithdrawn string
 }
 
 // AnalyticsReturnAttributionFeesRow holds the per-fee-type totals returned by

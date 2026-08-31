@@ -16,6 +16,7 @@ func (s *AnalyticsService) CalculateFXImpact(ctx context.Context, userID string)
 		RateChangePct:     "0",
 		FXImpactUSD:       "0",
 		FXImpactPct:       "0",
+		UsdConverted:      "0",
 		ImpactByPeriod:    make(map[string]string),
 	}
 
@@ -25,6 +26,7 @@ func (s *AnalyticsService) CalculateFXImpact(ctx context.Context, userID string)
 	}
 	avgRate, usdDeposited := weightedAvgFXRate(fxRows)
 	report.AvgInvestmentRate = avgRate
+	report.UsdConverted = usdDeposited.String()
 
 	currentRate, err := s.repo.GetLatestFXRate(ctx, userID)
 	if err != nil {

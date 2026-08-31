@@ -420,6 +420,7 @@ func TestAnalyticsService_Unit_CalculateFXImpact_WeightedAverageFromCashFlows(t 
 	assert.True(t, dec(report.FXImpactUSD).Equal(wantUSD), "FXImpactUSD = %s, want %s", report.FXImpactUSD, wantUSD)
 	wantPct := wantUSD.Div(dec("200")).Mul(decimal.NewFromInt(100))
 	assert.True(t, dec(report.FXImpactPct).Equal(wantPct), "FXImpactPct = %s, want %s", report.FXImpactPct, wantPct)
+	assert.True(t, dec(report.UsdConverted).Equal(dec("200")), "UsdConverted = %s, want 200", report.UsdConverted)
 }
 
 func TestAnalyticsService_Unit_CalculateFXImpact_ZeroRatesLeaveImpactZero(t *testing.T) {
@@ -444,6 +445,7 @@ func TestAnalyticsService_Unit_CalculateFXImpact_ZeroRatesLeaveImpactZero(t *tes
 		require.NoError(t, err)
 		assert.Equal(t, "0", report.FXImpactUSD)
 		assert.Equal(t, "0", report.FXImpactPct)
+		assert.True(t, dec(report.UsdConverted).Equal(dec("200")), "UsdConverted = %s, want 200", report.UsdConverted)
 	})
 
 	t.Run("avg rate zero", func(t *testing.T) {
@@ -459,6 +461,7 @@ func TestAnalyticsService_Unit_CalculateFXImpact_ZeroRatesLeaveImpactZero(t *tes
 		assert.Equal(t, "0", report.AvgInvestmentRate)
 		assert.Equal(t, "0", report.FXImpactUSD)
 		assert.Equal(t, "0", report.FXImpactPct)
+		assert.Equal(t, "0", report.UsdConverted)
 	})
 }
 
