@@ -181,10 +181,10 @@ export function FxRateManager() {
             <div className="flex justify-center md:px-1" aria-hidden="true">
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="icon"
                 tabIndex={-1}
-                className="pointer-events-none h-12 w-12 shrink-0 rounded-full ring-2 ring-primary/30 shadow-sm"
+                className="pointer-events-none h-12 w-12 shrink-0 rounded-full border border-primary/40 bg-primary/15 text-primary shadow-sm"
               >
                 <ArrowLeftRight className="h-5 w-5 text-primary" />
               </Button>

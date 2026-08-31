@@ -60,7 +60,7 @@ function CurrentRateDot(
 
   return (
     <g key={index} aria-hidden="true">
-      <circle cx={cx} cy={cy} r={3} fill="var(--chart-3)" />
+      <circle cx={cx} cy={cy} r={3} fill="var(--primary)" />
     </g>
   )
 }
@@ -138,8 +138,8 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
         <AreaChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 16 }}>
           <defs>
             <linearGradient id="fxRateGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--chart-3)" stopOpacity={0.32} />
-              <stop offset="100%" stopColor="var(--chart-3)" stopOpacity={0} />
+              <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.32} />
+              <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
             </linearGradient>
           </defs>
           <XAxis
@@ -174,7 +174,7 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
           <Area
             type="monotone"
             dataKey="rate"
-            stroke="var(--chart-3)"
+            stroke="var(--primary)"
             strokeWidth={2.5}
             fill="url(#fxRateGradient)"
             isAnimationActive={false}
