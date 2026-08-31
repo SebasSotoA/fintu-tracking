@@ -119,6 +119,16 @@ describe("AccountMenu", () => {
     expect(screen.getByText("My account").className).toContain("text-foreground")
   })
 
+  it("gives the expanded sidebar trigger roomy hover padding", () => {
+    renderAccountMenu({ variant: "sidebar", collapsed: false })
+
+    const trigger = screen.getByTestId("my-account-button")
+    expect(trigger.className).toContain("min-h-11")
+    expect(trigger.className).toContain("px-2")
+    expect(trigger.className).toContain("py-2")
+    expect(trigger.className.split(/\s+/)).not.toContain("h-9")
+  })
+
   it("shows icon-only trigger when sidebar is collapsed", () => {
     renderAccountMenu({ variant: "sidebar", collapsed: true })
 
@@ -126,6 +136,15 @@ describe("AccountMenu", () => {
     expect(trigger).toHaveAttribute("aria-label", "My account")
     const labelContainer = within(trigger).getByText("My account").parentElement
     expect(labelContainer).toHaveAttribute("aria-hidden", "true")
+  })
+
+  it("keeps the collapsed sidebar trigger compact without extra padding", () => {
+    renderAccountMenu({ variant: "sidebar", collapsed: true })
+
+    const trigger = screen.getByTestId("my-account-button")
+    expect(trigger.className).toContain("h-9")
+    expect(trigger.className).not.toContain("px-2")
+    expect(trigger.className).not.toContain("py-2")
   })
 
   it("opens menu with Configuration and Log out items", async () => {
