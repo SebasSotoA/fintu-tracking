@@ -179,15 +179,12 @@ export function FxRateManager() {
             </div>
 
             <div className="flex justify-center md:px-1" aria-hidden="true">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                tabIndex={-1}
-                className="pointer-events-none h-12 w-12 shrink-0 rounded-full border border-primary/40 bg-primary/15 text-primary shadow-sm"
+              <div
+                data-testid="fx-convert-swap"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-surface-container"
               >
-                <ArrowLeftRight className="h-5 w-5 text-primary" />
-              </Button>
+                <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
+              </div>
             </div>
 
             <div className="flex min-h-[5.5rem] flex-1 flex-col justify-center rounded-xl border border-border bg-surface-container p-4">

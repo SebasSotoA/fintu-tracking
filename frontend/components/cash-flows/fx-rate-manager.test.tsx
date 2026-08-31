@@ -21,19 +21,19 @@ vi.mock("./fx-rate-sparkline", () => ({
 }))
 
 describe("FxRateManager swap control", () => {
-  it("styles the converter swap arrows with primary indigo, not sky or chart-3", () => {
+  it("renders a decorative non-interactive swap mark matching the converter cards", () => {
     const { container } = render(<FxRateManager />)
 
-    const swap = container.querySelector("button.pointer-events-none")
+    const swap = container.querySelector('[data-testid="fx-convert-swap"]')
     expect(swap).toBeTruthy()
-    expect(swap).toHaveAttribute("tabindex", "-1")
-    expect(swap?.className).toContain("text-primary")
-    expect(swap?.className).toContain("border-primary/40")
-    expect(swap?.className).toContain("bg-primary/15")
-    expect(swap?.className).not.toMatch(/sky|chart-3/)
+    expect(swap?.tagName.toLowerCase()).not.toBe("button")
+    expect(swap?.closest("button")).toBeNull()
+    expect(swap?.className).toContain("border-border")
+    expect(swap?.className).toContain("bg-surface-container")
+    expect(swap?.className).not.toMatch(/text-primary|chart-3/)
 
     const iconClass = swap?.querySelector("svg")?.getAttribute("class") ?? ""
-    expect(iconClass).toContain("text-primary")
-    expect(iconClass).not.toMatch(/sky|chart-3/)
+    expect(iconClass).toContain("text-muted-foreground")
+    expect(iconClass).not.toMatch(/text-primary|chart-3/)
   })
 })
