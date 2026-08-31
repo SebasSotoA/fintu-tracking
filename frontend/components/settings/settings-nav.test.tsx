@@ -131,5 +131,16 @@ describe("SettingsNav", () => {
     renderNav({ isMobile: false, activeId: "general" })
     expect(screen.getByRole("button", { name: "General" })).toHaveClass("h-9")
     expect(screen.getByRole("button", { name: "General" })).not.toHaveClass("min-h-11")
+    expect(screen.getByRole("button", { name: "General" })).toHaveClass("rounded-md")
+    expect(screen.getByRole("button", { name: "General" })).not.toHaveClass("rounded-full")
+  })
+
+  it("uses sidebar pressed contrast on the active General button", () => {
+    renderNav({ activeId: "general" })
+
+    const general = screen.getByRole("button", { name: "General" })
+    expect(general.className).toContain("bg-primary/10")
+    expect(general.className).toContain("text-foreground")
+    expect(general.className).not.toMatch(/(?:^|\s)bg-muted(?:\s|$)/)
   })
 })

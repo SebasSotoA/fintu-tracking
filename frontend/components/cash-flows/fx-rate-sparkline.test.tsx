@@ -32,8 +32,12 @@ vi.mock("recharts", () => ({
       </svg>
     )
   },
-  XAxis: () => null,
-  YAxis: () => null,
+  XAxis: (props: { tick?: { fill?: string } }) => (
+    <div data-testid="fx-xaxis" data-tick-fill={props.tick?.fill} />
+  ),
+  YAxis: (props: { tick?: { fill?: string } }) => (
+    <div data-testid="fx-yaxis" data-tick-fill={props.tick?.fill} />
+  ),
   Tooltip: () => null,
   ReferenceLine: () => <div data-testid="fx-rate-reference-line" />,
   ResponsiveContainer: ({ children }: { children: ReactNode }) => (
@@ -71,5 +75,18 @@ describe("FxRateSparkline series theme", () => {
     expect(stops[0].getAttribute("stop-opacity")).toBe("0.32")
     expect(stops[1].getAttribute("stop-color")).toBe("var(--primary)")
     expect(stops[1].getAttribute("stop-opacity")).toBe("0")
+  })
+
+  it("uses foreground tick fill on both axes", () => {
+    const { container } = render(
+      <FxRateSparkline points={[{ date: "2026-04-26", rate: "4100" }]} />,
+    )
+
+    expect(container.querySelector("[data-testid='fx-xaxis']")?.getAttribute("data-tick-fill")).toBe(
+      "var(--foreground)",
+    )
+    expect(container.querySelector("[data-testid='fx-yaxis']")?.getAttribute("data-tick-fill")).toBe(
+      "var(--foreground)",
+    )
   })
 })

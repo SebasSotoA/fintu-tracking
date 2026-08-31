@@ -148,7 +148,7 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
             interval={0}
             tickFormatter={formatAxisDateKey}
             padding={{ right: 16 }}
-            tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+            tick={{ fontSize: 10, fill: "var(--foreground)" }}
             tickLine={false}
             axisLine={false}
           />
@@ -156,7 +156,7 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
             width={72}
             domain={[min - padding, max + padding]}
             tickCount={4}
-            tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
+            tick={{ fontSize: 10, fill: "var(--foreground)" }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => (typeof v === "number" ? formatRate(v) : String(v))}

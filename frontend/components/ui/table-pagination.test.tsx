@@ -26,6 +26,7 @@ describe("TablePagination", () => {
 
     buttons.forEach((button) => {
       expect(button).toHaveClass("min-h-11", "min-w-11")
+      expect(button.className).toContain("text-foreground")
     })
   })
 

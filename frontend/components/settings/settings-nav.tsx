@@ -2,6 +2,7 @@
 
 import type { ReactElement } from "react"
 import { Search, Settings, User } from "lucide-react"
+import { navActive, navIdle } from "@/components/layout/app-sidebar-constants"
 import { Input } from "@/components/ui/input"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -100,14 +101,12 @@ function SettingsNavItem({
       aria-current={active ? "page" : undefined}
       onClick={() => onSelect(category.id)}
       className={cn(
-        "relative flex items-center gap-2 rounded-full px-3 text-sm font-medium",
+        "relative flex items-center gap-2 rounded-md px-3 text-sm font-medium",
         "outline-none transition-colors duration-150",
         "focus-visible:ring-2 focus-visible:ring-ring/50",
         "motion-reduce:transition-none",
         variant === "rail" ? "h-9 w-full" : "min-h-11 shrink-0",
-        active
-          ? "bg-muted text-foreground dark:bg-white/[0.08] dark:text-white dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
-          : "text-muted-foreground hover:bg-muted/70 hover:text-foreground dark:hover:bg-white/[0.05] dark:hover:text-white",
+        active ? navActive : navIdle,
       )}
     >
       {active ? (

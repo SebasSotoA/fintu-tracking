@@ -161,7 +161,7 @@ export function FxRateManager() {
 
       {latestRate && canonical > 0 && (
         <div className="mb-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center">
-            <div className="flex min-h-[5.5rem] flex-1 flex-col justify-center rounded-xl border border-border bg-surface-container p-4">
+            <div className="flex min-h-[5.5rem] flex-1 flex-col justify-center rounded-xl border border-border bg-card p-4 shadow-sm">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {MARKET_CONFIG.baseCurrencyLabel}
               </span>
@@ -181,13 +181,13 @@ export function FxRateManager() {
             <div className="flex justify-center md:px-1" aria-hidden="true">
               <div
                 data-testid="fx-convert-swap"
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-surface-container"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm"
               >
-                <ArrowLeftRight className="h-5 w-5 text-muted-foreground" />
+                <ArrowLeftRight className="h-5 w-5 text-foreground" />
               </div>
             </div>
 
-            <div className="flex min-h-[5.5rem] flex-1 flex-col justify-center rounded-xl border border-border bg-surface-container p-4">
+            <div className="flex min-h-[5.5rem] flex-1 flex-col justify-center rounded-xl border border-border bg-card p-4 shadow-sm">
               <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {MARKET_CONFIG.localCurrencyLabel}
               </span>

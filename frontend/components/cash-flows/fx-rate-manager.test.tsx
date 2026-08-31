@@ -29,11 +29,13 @@ describe("FxRateManager swap control", () => {
     expect(swap?.tagName.toLowerCase()).not.toBe("button")
     expect(swap?.closest("button")).toBeNull()
     expect(swap?.className).toContain("border-border")
-    expect(swap?.className).toContain("bg-surface-container")
+    expect(swap?.className).toContain("bg-card")
+    expect(swap?.className).toContain("text-foreground")
     expect(swap?.className).not.toMatch(/text-primary|chart-3/)
 
     const iconClass = swap?.querySelector("svg")?.getAttribute("class") ?? ""
-    expect(iconClass).toContain("text-muted-foreground")
+    expect(iconClass).toContain("text-foreground")
+    expect(iconClass.replaceAll("dark:text-white", "")).not.toContain("text-white")
     expect(iconClass).not.toMatch(/text-primary|chart-3/)
   })
 })

@@ -167,6 +167,30 @@ describe("AppNav", () => {
     expect(dashboardLink.className).toContain("text-foreground")
   })
 
+  it("keeps the active Dashboard icon inside the link with a primary-tinted press", () => {
+    renderAppNav(false)
+
+    const sidebar = screen.getByTestId("app-sidebar")
+    const dashboardLink = within(sidebar).getByRole("link", { name: "Dashboard" })
+    expect(dashboardLink.querySelector("svg")).toBeTruthy()
+    expect(dashboardLink.className).toContain("bg-primary/10")
+    expect(dashboardLink.className).toContain("gap-2")
+    expect(dashboardLink).toHaveAttribute("aria-current", "page")
+  })
+
+  it("paints the collapsed active icon on a rounded primary-tinted cell", () => {
+    renderAppNav(true)
+
+    const sidebar = screen.getByTestId("app-sidebar")
+    const dashboardLink = within(sidebar).getByRole("link", { name: "Dashboard" })
+    const iconCell = dashboardLink.querySelector("svg")?.parentElement
+
+    expect(dashboardLink.querySelector("svg")).toBeTruthy()
+    expect(dashboardLink.className).not.toContain("gap-2")
+    expect(iconCell?.className).toContain("rounded-md")
+    expect(iconCell?.className).toContain("bg-primary/10")
+  })
+
   it("uses muted-foreground idle classes on mobile bottom nav", () => {
     renderAppNav(false)
 

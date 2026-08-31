@@ -148,41 +148,35 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
               pathname === item.href || pathname?.startsWith(`${item.href}/`)
             return (
               <div key={item.href} className="group relative h-9 min-h-9 w-full">
-                <span
-                  aria-hidden
-                  className={cn(
-                    "absolute top-0 h-9 w-9 rounded-lg transition-colors duration-200",
-                    collapsed && isActive
-                      ? "bg-muted dark:bg-white/[0.08] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]"
-                      : collapsed
-                        ? "group-hover:bg-muted dark:group-hover:bg-white/[0.05]"
-                        : "",
-                  )}
-                />
-                <span
-                  aria-hidden
-                  className={cn(
-                    "absolute top-0 flex h-9 w-9 items-center justify-center [&_svg]:m-auto",
-                    isActive
-                      ? "text-foreground dark:text-white"
-                      : "text-sidebar-foreground dark:text-sidebar-foreground/70",
-                  )}
-                >
-                  <Icon className="size-4 shrink-0" aria-hidden />
-                </span>
                 <Link
                   href={item.href}
                   aria-label={collapsed ? item.label : undefined}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "absolute inset-0 flex items-center rounded-lg pl-11 text-sm transition-colors duration-200",
+                    "flex h-9 w-full items-center rounded-md text-sm",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    !collapsed && "gap-2",
                     isActive ? "font-semibold" : "font-medium",
-                    !collapsed && isActive
-                      ? navActive
-                      : isActive
+                    collapsed
+                      ? isActive
                         ? cn(navItemTransition, "text-foreground dark:text-white")
+                        : navIdle
+                      : isActive
+                        ? navActive
                         : navIdle,
                   )}
                 >
+                  <span
+                    className={cn(
+                      navIconCellClass,
+                      collapsed && "rounded-md",
+                      collapsed && isActive && navActive,
+                      collapsed && !isActive && "group-hover:bg-muted dark:group-hover:bg-white/[0.05]",
+                    )}
+                    aria-hidden
+                  >
+                    <Icon className="size-4 shrink-0" />
+                  </span>
                   <span className={cn("overflow-hidden", label)} aria-hidden={collapsed}>
                     {item.label}
                   </span>
