@@ -20,12 +20,16 @@ describe("FilterSelect", () => {
     )
 
     const trigger = screen.getByRole("combobox")
-    expect(trigger).toHaveClass("h-10")
+    expect(trigger).toHaveClass("h-9")
     expect(trigger).toHaveClass("w-full")
     expect(trigger).toHaveClass("sm:w-[7.5rem]")
+    expect(trigger).toHaveClass("bg-background")
+    expect(trigger).toHaveClass("border-border")
+    expect(trigger).not.toHaveClass("bg-transparent")
+    expect(trigger.className).toContain("dark:bg-input/30")
   })
 
-  it("allows a custom triggerClassName to override the default", () => {
+  it("allows a custom triggerClassName to override the default width without dropping shared styles", () => {
     render(
       <FilterSelect
         id="status"
@@ -33,12 +37,17 @@ describe("FilterSelect", () => {
         value="all"
         options={options}
         onChange={() => {}}
-        triggerClassName="custom-class"
+        triggerClassName="w-full md:w-[7.5rem]"
       />,
     )
 
     const trigger = screen.getByRole("combobox")
-    expect(trigger).toHaveClass("custom-class")
-    expect(trigger).not.toHaveClass("w-full")
+    expect(trigger).toHaveClass("w-full")
+    expect(trigger).toHaveClass("md:w-[7.5rem]")
+    expect(trigger).not.toHaveClass("sm:w-[7.5rem]")
+    expect(trigger).toHaveClass("h-9")
+    expect(trigger).toHaveClass("bg-background")
+    expect(trigger).toHaveClass("border-border")
+    expect(trigger).not.toHaveClass("bg-transparent")
   })
 })

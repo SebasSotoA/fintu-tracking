@@ -2,6 +2,8 @@
 
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { filterTriggerClassName } from "@/components/filters/filter-trigger"
+import { cn } from "@/lib/utils"
 
 export function FilterSelect<T extends string>({
   id,
@@ -26,7 +28,15 @@ export function FilterSelect<T extends string>({
         {label}
       </Label>
       <Select value={value} onValueChange={(next) => onChange(next as T)}>
-        <SelectTrigger id={id} className={triggerClassName ?? "h-10 w-full sm:w-[7.5rem]"} aria-label={ariaLabel ?? label}>
+        <SelectTrigger
+          id={id}
+          className={cn(
+            filterTriggerClassName,
+            "data-[size=default]:h-9",
+            triggerClassName ?? "w-full sm:w-[7.5rem]",
+          )}
+          aria-label={ariaLabel ?? label}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card"
 import { MobileActions } from "@/components/ui/mobile-actions"
 import { Label } from "@/components/ui/label"
 import { FilterSelect } from "@/components/filters/filter-select"
+import { filterTriggerClassName } from "@/components/filters/filter-trigger"
 import {
   Command,
   CommandEmpty,
@@ -16,7 +17,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { MobileFilterDrawer } from "@/components/ui/mobile-filter-drawer"
-import { Check, ChevronsUpDown, Download, Pencil, Trash2 } from "lucide-react"
+import { Check, ChevronDown, Download, Pencil, Trash2 } from "lucide-react"
 import { Decimal, formatCurrency, format } from "@/lib/decimal"
 import { formatCalendarDate } from "@/lib/date-utils"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
@@ -107,7 +108,7 @@ function TradeTickerFilter({
 
   return (
     <div className="space-y-1.5 md:w-auto">
-      <Label htmlFor="trade-filter-ticker" className="text-xs text-muted-foreground md:hidden">
+      <Label htmlFor="trade-filter-ticker" className="text-xs text-muted-foreground">
         Ticker
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
@@ -120,11 +121,12 @@ function TradeTickerFilter({
             aria-expanded={open}
             aria-label="Filter trades by ticker"
             className={cn(
-              "h-9 w-full justify-between px-3 text-sm md:w-[9.5rem]",
+              filterTriggerClassName,
+              "w-full md:w-[9.5rem] justify-between",
             )}
           >
             <span className="truncate">{label}</span>
-            <ChevronsUpDown className="ml-1 size-4 shrink-0 opacity-50" />
+            <ChevronDown className="size-4 opacity-50" aria-hidden />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[14rem] p-0" align="start">

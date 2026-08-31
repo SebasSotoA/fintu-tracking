@@ -138,6 +138,31 @@ describe("TradesList", () => {
     expect(screen.getByTestId("mobile-filter-drawer")).toHaveClass("md:hidden")
   })
 
+  it("shows the Ticker filter label on desktop, matching Side/Asset/Date", () => {
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,
+    )
+
+    const tickerLabels = screen.getAllByText("Ticker")
+    expect(tickerLabels.length).toBeGreaterThan(0)
+    for (const label of tickerLabels) {
+      expect(label).not.toHaveClass("md:hidden")
+    }
+  })
+
+  it("gives the ticker trigger the shared filter chrome and a trailing chevron", () => {
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,
+    )
+
+    const trigger = screen.getByRole("combobox", { name: /filter trades by ticker/i })
+    expect(trigger).toHaveClass("h-9")
+    expect(trigger).toHaveClass("bg-background")
+    expect(trigger).toHaveClass("border-border")
+    expect(trigger).not.toHaveClass("h-11")
+    expect(trigger.querySelector("svg")).not.toBeNull()
+  })
+
   it("opens the mobile filter drawer and shows filter form fields", () => {
     renderWithProviders(
       <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,

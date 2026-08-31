@@ -75,6 +75,17 @@ describe("DateRangePicker", () => {
     )
   })
 
+  it("uses the shared filter trigger look: outline card, h-9, trailing chevron", () => {
+    renderPicker()
+    const trigger = screen.getAllByRole("button", { name: /filter cash flows by date/i })[0]
+    expect(trigger).toHaveClass("bg-background")
+    expect(trigger).toHaveClass("h-9")
+    expect(trigger).not.toHaveClass("h-8")
+    expect(trigger).not.toHaveClass("h-11")
+    expect(trigger.className).toContain("dark:bg-input/30")
+    expect(trigger.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2)
+  })
+
   it("renders a popover on desktop", async () => {
     const user = userEvent.setup()
     renderPicker({ isMobile: false })

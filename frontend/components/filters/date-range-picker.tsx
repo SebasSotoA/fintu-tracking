@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import type { DateRange } from "react-day-picker"
-import { CalendarIcon } from "lucide-react"
+import { CalendarIcon, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { filterTriggerClassName } from "@/components/filters/filter-trigger"
 import { Calendar } from "@/components/ui/calendar"
 import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -209,11 +210,15 @@ export function DateRangePicker({
       variant="outline"
       aria-label={ariaLabel}
       className={cn(
-        "h-8 min-w-[11rem] justify-start gap-2 px-2.5 text-sm md:h-9",
+        filterTriggerClassName,
+        "min-w-[11rem] w-full md:w-auto justify-between",
       )}
     >
-      <CalendarIcon className="size-3.5 shrink-0 opacity-70" />
-      <span className="truncate">{triggerLabel}</span>
+      <span className="flex min-w-0 items-center gap-2">
+        <CalendarIcon className="size-3.5 shrink-0 opacity-70" aria-hidden />
+        <span className="truncate">{triggerLabel}</span>
+      </span>
+      <ChevronDown className="size-4 opacity-50" aria-hidden />
     </Button>
   )
 
