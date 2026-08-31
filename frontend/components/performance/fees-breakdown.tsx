@@ -9,6 +9,7 @@ import { Decimal, formatCurrency } from "@/lib/decimal"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { getFeeBreakdown, type FeeBreakdown } from "@/lib/api/analytics"
 import { listCashFlowsForExport } from "@/lib/api/cash-flows"
 import { queryKeys } from "@/lib/api/query-keys"
 import { cn } from "@/lib/utils"
@@ -20,13 +21,6 @@ function isTransferFee(cf: CashFlow): boolean {
       cf.related_type === "withdrawal" ||
       cf.fee_type === "deposit" ||
       cf.fee_type === "withdrawal")
-  )
-}
-
-function isTradingFee(cf: CashFlow): boolean {
-  return (
-    cf.type === "fee" &&
-    (cf.related_type === "trade" || cf.fee_type === "trading" || cf.fee_type === "closing")
   )
 }
 
@@ -51,21 +45,26 @@ function formatUSD(value: Decimal): string {
 }
 
 export function FeesBreakdown() {
-  const { data: cashFlows = [], isLoading } = useQuery<CashFlow[]>({
+  const { data: cashFlows = [], isLoading: cashFlowsLoading } = useQuery<CashFlow[]>({
     queryKey: queryKeys.cashFlowsExport(),
     queryFn: () => listCashFlowsForExport(),
     staleTime: 60_000,
   })
 
+  const { data: feeBreakdown, isLoading: breakdownLoading } = useQuery<FeeBreakdown>({
+    queryKey: queryKeys.feeBreakdown(),
+    queryFn: () => getFeeBreakdown(),
+    staleTime: 60_000,
+  })
+
   const transferFees = useMemo(() => cashFlows.filter(isTransferFee), [cashFlows])
-  const tradingFees = useMemo(() => cashFlows.filter(isTradingFee), [cashFlows])
   const standaloneFees = useMemo(() => cashFlows.filter(isStandaloneFee), [cashFlows])
 
   const transferTotal = sumAmount(transferFees)
-  const tradingTotal = sumAmount(tradingFees)
+  const tradingTotal = new Decimal(feeBreakdown?.trading_fees || "0")
   const grandTotal = transferTotal.add(tradingTotal)
 
-  if (isLoading) {
+  if (cashFlowsLoading || breakdownLoading) {
     return (
       <Card>
         <CardContent className="space-y-3 py-6">

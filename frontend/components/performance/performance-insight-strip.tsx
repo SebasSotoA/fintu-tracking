@@ -4,7 +4,6 @@ import type React from "react"
 import { useQuery } from "@tanstack/react-query"
 import Decimal from "decimal.js"
 import { KpiTile } from "@/components/dashboard/kpi-tile"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   getFxImpact,
   getNetWorth,
@@ -134,25 +133,11 @@ export function PerformanceInsightStrip({
         value={fxValue}
         caption={fxCaption}
       />
-      <FeesPaidTile value={feesValue} caption={feesCaption} />
+      <KpiTile
+        label="FEES PAID"
+        value={feesValue}
+        caption={feesCaption}
+      />
     </div>
-  )
-}
-
-function FeesPaidTile({ value, caption }: { value: string; caption: string }) {
-  return (
-    <Card>
-      <CardContent className="flex flex-col gap-2 py-5">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
-          FEES PAID
-        </p>
-        <p className="text-2xl font-bold font-mono tabular-nums text-muted-foreground leading-tight">
-          {value}
-        </p>
-        <div className="flex items-center gap-1 text-[11px]">
-          <span className="text-muted-foreground truncate">{caption}</span>
-        </div>
-      </CardContent>
-    </Card>
   )
 }

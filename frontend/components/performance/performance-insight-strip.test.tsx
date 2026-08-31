@@ -113,4 +113,13 @@ describe("PerformanceInsightStrip", () => {
     expect(fxTile.querySelector(".text-success")).toBeNull()
     expect(fxTile.querySelector(".text-destructive")).toBeNull()
   })
+
+  it("renders FEES PAID amount with foreground not muted colour", async () => {
+    renderStrip()
+    await screen.findByText("FEES PAID")
+    const feesTile = tileByLabel("FEES PAID")
+    const value = within(feesTile).getByText("$150.00")
+    expect(value).toHaveClass("text-foreground")
+    expect(value).not.toHaveClass("text-muted-foreground")
+  })
 })
