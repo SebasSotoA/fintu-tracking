@@ -22,6 +22,10 @@ describe("DataTableColumnToggle", () => {
       />,
     )
     const button = screen.getByRole("button", { name: /View/i })
+    expect(button).toHaveClass("bg-card")
+    expect(button).not.toHaveClass("bg-background")
+    expect(button.className).toContain("dark:bg-white/[0.08]")
+    expect(button.className).not.toContain("dark:bg-input/30")
     fireEvent.click(button)
     expect(screen.getByText("Alpha")).toBeInTheDocument()
     expect(screen.getByText("Beta")).toBeInTheDocument()

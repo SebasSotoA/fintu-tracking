@@ -7,6 +7,7 @@ import { MobileActions } from "@/components/ui/mobile-actions"
 import { Label } from "@/components/ui/label"
 import { FilterSelect } from "@/components/filters/filter-select"
 import { filterTriggerClassName } from "@/components/filters/filter-trigger"
+import { surfaceControlClassName } from "@/components/ui/surface-control"
 import {
   Command,
   CommandEmpty,
@@ -500,7 +501,7 @@ export function TradesList({
               type="button"
               variant="outline"
               size="sm"
-              className="gap-2"
+              className={cn(surfaceControlClassName, "gap-2")}
               onClick={handleExport}
               disabled={total === 0 || exporting}
             >

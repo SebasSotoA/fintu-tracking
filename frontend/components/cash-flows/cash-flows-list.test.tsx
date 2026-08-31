@@ -191,6 +191,16 @@ describe("CashFlowsList", () => {
     expect(screen.queryByText(/show trade fee audit rows/i)).not.toBeInTheDocument()
   })
 
+  it("gives the Export button the shared surface chrome", () => {
+    renderWithProviders(
+      <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={1} pageSize={10} />,
+    )
+
+    const exportButton = screen.getByRole("button", { name: /export/i })
+    expect(exportButton).toHaveClass("bg-card")
+    expect(exportButton).not.toHaveClass("bg-background")
+  })
+
   it("Add Cash Flow button is visible in the toolbar when list has rows", () => {
     renderWithProviders(
       <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={1} pageSize={10} />,

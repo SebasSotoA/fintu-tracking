@@ -157,10 +157,21 @@ describe("TradesList", () => {
 
     const trigger = screen.getByRole("combobox", { name: /filter trades by ticker/i })
     expect(trigger).toHaveClass("h-9")
-    expect(trigger).toHaveClass("bg-background")
+    expect(trigger).toHaveClass("bg-card")
+    expect(trigger).not.toHaveClass("bg-background")
     expect(trigger).toHaveClass("border-border")
     expect(trigger).not.toHaveClass("h-11")
     expect(trigger.querySelector("svg")).not.toBeNull()
+  })
+
+  it("gives the Export button the shared surface chrome", () => {
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,
+    )
+
+    const exportButton = screen.getByRole("button", { name: /export/i })
+    expect(exportButton).toHaveClass("bg-card")
+    expect(exportButton).not.toHaveClass("bg-background")
   })
 
   it("opens the mobile filter drawer and shows filter form fields", () => {

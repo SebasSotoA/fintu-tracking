@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { MobileActions } from "@/components/ui/mobile-actions"
 import { FilterSelect } from "@/components/filters/filter-select"
+import { surfaceControlClassName } from "@/components/ui/surface-control"
 import { DateRangePicker } from "@/components/filters/date-range-picker"
 import { MobileFilterDrawer } from "@/components/ui/mobile-filter-drawer"
 import { Download, Pencil, Trash2, LinkIcon } from "lucide-react"
@@ -532,7 +533,7 @@ export function CashFlowsList({
               type="button"
               variant="outline"
               size="sm"
-              className="gap-2 shrink-0"
+              className={cn(surfaceControlClassName, "gap-2 shrink-0")}
               onClick={handleExport}
               disabled={total === 0 || exporting}
             >

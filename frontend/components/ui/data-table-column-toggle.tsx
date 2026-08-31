@@ -12,6 +12,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { surfaceControlClassName } from "@/components/ui/surface-control"
 import { cn } from "@/lib/utils"
 import type { DataTableColumn } from "@/components/ui/data-table"
 
@@ -78,7 +79,7 @@ export function DataTableColumnToggle<T>({
             paddingRight: "0.9rem",
             minWidth: "5.5rem",
           }}
-          className={cn("gap-2", className)}
+          className={cn(surfaceControlClassName, "gap-2", className)}
         >
           <Columns3 className="size-4 shrink-0" />
           <span className="whitespace-nowrap">View</span>
