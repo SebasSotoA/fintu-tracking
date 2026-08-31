@@ -17,6 +17,12 @@ export const navIconCellClass =
 
 export const navItemTransition = "transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
 
+/** Light: knock out the black square and fill the F glyph black. Dark: aqua via screen. */
+export const navLogoBlendClass = cn(
+  "invert grayscale contrast-[1000%] mix-blend-multiply",
+  "dark:invert-0 dark:grayscale-0 dark:contrast-100 dark:mix-blend-screen",
+)
+
 export const navIdle = cn(
   navItemTransition,
   "text-foreground hover:bg-muted hover:text-foreground",

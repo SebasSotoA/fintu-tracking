@@ -18,6 +18,7 @@ import {
   navIdle,
   navActive,
   navItemTransition,
+  navLogoBlendClass,
   RAIL_PL,
   RAIL_PR,
   sidebarLabelClass,
@@ -80,14 +81,16 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
               aria-label="Expand sidebar"
               data-testid="app-sidebar-collapse"
             >
-              <Image
-                src="/fintu-aqua-icon.svg"
-                alt=""
-                width={28}
-                height={28}
-                className="size-7 object-contain transition-opacity duration-75 group-hover:opacity-0 dark:mix-blend-screen"
-                priority
-              />
+              <span className={navLogoBlendClass}>
+                <Image
+                  src="/fintu-aqua-icon.svg"
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="size-7 object-contain transition-opacity duration-75 group-hover:opacity-0"
+                  priority
+                />
+              </span>
               <PanelRightOpen
                 className="pointer-events-none absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity duration-75 group-hover:opacity-100"
                 aria-hidden
@@ -102,7 +105,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                   "focus-visible:ring-2 focus-visible:ring-primary/40",
                 )}
               >
-                <span className={cn(navIconCellClass, "shrink-0 dark:mix-blend-screen")} aria-hidden>
+                <span className={cn(navIconCellClass, "shrink-0", navLogoBlendClass)} aria-hidden>
                   <Image
                     src="/fintu-aqua-icon.svg"
                     alt=""

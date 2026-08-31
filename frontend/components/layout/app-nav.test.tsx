@@ -228,4 +228,27 @@ describe("AppNav", () => {
 
     expect(mockSignOut).toHaveBeenCalledTimes(1)
   })
+
+  it("wraps the expanded brand logo with light multiply and dark screen blend", () => {
+    renderAppNav(false)
+
+    const sidebar = screen.getByTestId("app-sidebar")
+    const brandLink = within(sidebar).getByRole("link", { name: "Fintu" })
+    const iconWrapper = brandLink.querySelector("img")?.parentElement
+
+    expect(iconWrapper?.className).toContain("mix-blend-multiply")
+    expect(iconWrapper?.className).toContain("dark:mix-blend-screen")
+  })
+
+  it("wraps the collapsed expand-button logo with blend classes and does not invert the overlay icon", () => {
+    renderAppNav(true)
+
+    const expandButton = screen.getByTestId("app-sidebar-collapse")
+    const iconWrapper = expandButton.querySelector("img")?.parentElement
+    const overlayIcon = expandButton.querySelector("svg")
+
+    expect(iconWrapper?.className).toContain("mix-blend-multiply")
+    expect(iconWrapper?.className).toContain("dark:mix-blend-screen")
+    expect(overlayIcon?.getAttribute("class") ?? overlayIcon?.className).not.toContain("invert")
+  })
 })
