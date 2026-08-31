@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shopspring/decimal"
 	"fintu-tracking-backend/internal/models"
+	"github.com/shopspring/decimal"
 )
 
 // FeeService handles fee attribution, reconciliation, and analysis. It holds a
@@ -27,9 +27,9 @@ type DateRange struct {
 	EndDate   *time.Time
 }
 
-// GetTotalFeesByType returns aggregate fees broken down by type. The repository
-// returns raw per-type and per-month rows; the service composes them into a
-// FeeBreakdown, bucketing fee types and summing the total.
+// GetTotalFeesByType returns aggregate fees broken down by type. Cash-flow fee
+// rows populate deposit/closing/maintenance/other; trading fees come from
+// SUM(trades.total_fees) so cash-flow "trading" rows are ignored.
 func (s *FeeService) GetTotalFeesByType(ctx context.Context, userID string, dateRange *DateRange) (models.FeeBreakdown, error) {
 	breakdown := models.FeeBreakdown{
 		DepositFees:     "0",
@@ -49,22 +49,41 @@ func (s *FeeService) GetTotalFeesByType(ctx context.Context, userID string, date
 
 	totalFees := decimal.Zero
 	for _, row := range rows {
-		amt, _ := decimal.NewFromString(row.Total)
+		if row.FeeType == "trading" {
+			continue
+		}
+		amt, parseErr := decimal.NewFromString(row.Total)
+		totalStr := row.Total
+		if parseErr != nil {
+			amt = decimal.Zero
+			totalStr = "0"
+		}
 		totalFees = totalFees.Add(amt)
 
 		switch row.FeeType {
 		case "deposit":
-			breakdown.DepositFees = row.Total
-		case "trading":
-			breakdown.TradingFees = row.Total
+			breakdown.DepositFees = totalStr
 		case "closing":
-			breakdown.ClosingFees = row.Total
+			breakdown.ClosingFees = totalStr
 		case "maintenance":
-			breakdown.MaintenanceFees = row.Total
+			breakdown.MaintenanceFees = totalStr
 		default:
-			breakdown.OtherFees = row.Total
+			breakdown.OtherFees = totalStr
 		}
 	}
+
+	totalTradeFees, err := s.repo.GetTotalTradeFees(ctx, userID)
+	if err != nil {
+		return breakdown, fmt.Errorf("failed to get total trade fees: %w", err)
+	}
+	tradeFees, parseErr := decimal.NewFromString(totalTradeFees)
+	if parseErr != nil {
+		tradeFees = decimal.Zero
+		breakdown.TradingFees = "0"
+	} else {
+		breakdown.TradingFees = totalTradeFees
+	}
+	totalFees = totalFees.Add(tradeFees)
 
 	breakdown.TotalFees = totalFees.String()
 

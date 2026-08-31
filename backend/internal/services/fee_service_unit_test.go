@@ -137,6 +137,7 @@ func TestFeeService_GetTotalFeesByType_Unit_ComposesBreakdown(t *testing.T) {
 			{MonthKey: "2024-02", Total: "12.50"},
 			{MonthKey: "2024-03", Total: "2"},
 		},
+		totalTradeFees: "12.50",
 	}
 	svc := NewFeeService(fake)
 
@@ -159,11 +160,76 @@ func TestFeeService_GetTotalFeesByType_Unit_ComposesBreakdown(t *testing.T) {
 	assert.Equal(t, 1, fake.feesByMonthCalls)
 }
 
+func TestFeeService_GetTotalFeesByType_Unit_TradingFeesFromTradesWhenNoCashFlowTrading(t *testing.T) {
+	fake := &fakeFeeRepository{
+		feesByType: []models.FeeTypeTotal{
+			{FeeType: "deposit", Total: "5"},
+			{FeeType: "maintenance", Total: "2"},
+		},
+		totalTradeFees: "8",
+	}
+	svc := NewFeeService(fake)
+
+	breakdown, err := svc.GetTotalFeesByType(context.Background(), "user-1", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "8", breakdown.TradingFees)
+	assert.Equal(t, "5", breakdown.DepositFees)
+	assert.Equal(t, "2", breakdown.MaintenanceFees)
+	assert.Equal(t, "15", breakdown.TotalFees)
+}
+
+func TestFeeService_GetTotalFeesByType_Unit_IgnoresCashFlowTradingWhenTradesDiffer(t *testing.T) {
+	fake := &fakeFeeRepository{
+		feesByType: []models.FeeTypeTotal{
+			{FeeType: "deposit", Total: "5"},
+			{FeeType: "trading", Total: "99"},
+		},
+		totalTradeFees: "8",
+	}
+	svc := NewFeeService(fake)
+
+	breakdown, err := svc.GetTotalFeesByType(context.Background(), "user-1", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "8", breakdown.TradingFees)
+	assert.Equal(t, "13", breakdown.TotalFees)
+}
+
+func TestFeeService_GetTotalFeesByType_Unit_EmptyTradeFeesParseAsZero(t *testing.T) {
+	fake := &fakeFeeRepository{
+		feesByType: []models.FeeTypeTotal{
+			{FeeType: "deposit", Total: "5"},
+		},
+		totalTradeFees: "",
+	}
+	svc := NewFeeService(fake)
+
+	breakdown, err := svc.GetTotalFeesByType(context.Background(), "user-1", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "0", breakdown.TradingFees)
+	assert.Equal(t, "5", breakdown.TotalFees)
+}
+
+func TestFeeService_GetTotalFeesByType_Unit_InvalidCashFlowAmountCountsAsZero(t *testing.T) {
+	fake := &fakeFeeRepository{
+		feesByType: []models.FeeTypeTotal{
+			{FeeType: "deposit", Total: "not-a-number"},
+		},
+		totalTradeFees: "0",
+	}
+	svc := NewFeeService(fake)
+
+	breakdown, err := svc.GetTotalFeesByType(context.Background(), "user-1", nil)
+	require.NoError(t, err)
+	assert.Equal(t, "0", breakdown.DepositFees)
+	assert.Equal(t, "0", breakdown.TotalFees)
+}
+
 func TestFeeService_GetTotalFeesByType_Unit_BucketsOtherForUnknownTypes(t *testing.T) {
 	fake := &fakeFeeRepository{
 		feesByType: []models.FeeTypeTotal{
 			{FeeType: "withdrawal", Total: "3"},
 		},
+		totalTradeFees: "0",
 	}
 	svc := NewFeeService(fake)
 
@@ -183,6 +249,18 @@ func TestFeeService_GetTotalFeesByType_Unit_PropagatesRepoError(t *testing.T) {
 	_, err := svc.GetTotalFeesByType(context.Background(), "user-1", nil)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, fake.feesByTypeErr)
+}
+
+func TestFeeService_GetTotalFeesByType_Unit_PropagatesTradeFeesError(t *testing.T) {
+	fake := &fakeFeeRepository{
+		totalTradeFeesErr: errors.New("db unavailable"),
+	}
+	svc := NewFeeService(fake)
+
+	_, err := svc.GetTotalFeesByType(context.Background(), "user-1", nil)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "failed to get total trade fees")
+	assert.ErrorIs(t, err, fake.totalTradeFeesErr)
 }
 
 // --- GetFeeImpactOnReturn --------------------------------------------------

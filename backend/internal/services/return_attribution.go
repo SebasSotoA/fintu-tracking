@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/shopspring/decimal"
 	"fintu-tracking-backend/internal/models"
+	"github.com/shopspring/decimal"
 )
 
 // CalculateReturnAttribution decomposes portfolio returns into components
@@ -36,16 +36,27 @@ func (s *AnalyticsService) CalculateReturnAttribution(ctx context.Context, userI
 	}
 	attribution.StartingCapital = startingCapital.String()
 
-	fees, err := s.repo.GetReturnAttributionFees(ctx, userID)
+	transferFees, err := s.repo.GetTransferFees(ctx, userID)
 	if err != nil {
-		return attribution, fmt.Errorf("failed to calculate fee impact: %w", err)
+		return attribution, fmt.Errorf("failed to calculate transfer fees: %w", err)
 	}
-	attribution.DepositFeesImpact = fees.DepositFees
-	attribution.TradingFeesImpact = fees.TradingFees
-	attribution.ClosingFeesImpact = fees.ClosingFees
-	attribution.TotalFeesImpact = fees.TotalFees
+	tradingFees, err := s.repo.GetTradingFees(ctx, userID)
+	if err != nil {
+		return attribution, fmt.Errorf("failed to calculate trading fees: %w", err)
+	}
 
-	totalFees, _ := decimal.NewFromString(attribution.TotalFeesImpact)
+	transferDec, parseErr := decimal.NewFromString(transferFees)
+	if parseErr != nil {
+		transferDec = decimal.Zero
+	}
+	tradingDec, parseErr := decimal.NewFromString(tradingFees)
+	if parseErr != nil {
+		tradingDec = decimal.Zero
+	}
+	totalFees := transferDec.Add(tradingDec)
+	attribution.DepositFeesImpact = transferDec.String()
+	attribution.TradingFeesImpact = tradingDec.String()
+	attribution.TotalFeesImpact = totalFees.String()
 
 	holdingRows, err := s.repo.GetReturnAttributionHoldings(ctx, userID)
 	if err != nil {

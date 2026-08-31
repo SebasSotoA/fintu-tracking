@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/shopspring/decimal"
 	"fintu-tracking-backend/internal/models"
+	"github.com/shopspring/decimal"
 )
 
 // CalculateFXImpact analyzes the impact of exchange rate changes
@@ -23,7 +23,7 @@ func (s *AnalyticsService) CalculateFXImpact(ctx context.Context, userID string)
 	if err != nil {
 		return report, fmt.Errorf("failed to load fx-impact cash flows: %w", err)
 	}
-	avgRate := weightedAvgFXRate(fxRows)
+	avgRate, usdDeposited := weightedAvgFXRate(fxRows)
 	report.AvgInvestmentRate = avgRate
 
 	currentRate, err := s.repo.GetLatestFXRate(ctx, userID)
@@ -43,8 +43,13 @@ func (s *AnalyticsService) CalculateFXImpact(ctx context.Context, userID string)
 		report.RateChangePct = rateChange.String()
 	}
 
-	report.FXImpactUSD = "0"
-	report.FXImpactPct = "0"
+	if !avg.IsZero() && !current.IsZero() {
+		impactUSD := usdDeposited.Mul(current.Sub(avg)).Div(current)
+		report.FXImpactUSD = impactUSD.String()
+		if !usdDeposited.IsZero() {
+			report.FXImpactPct = impactUSD.Div(usdDeposited).Mul(decimal.NewFromInt(100)).String()
+		}
+	}
 
 	periods, err := s.repo.GetFXRatePeriods(ctx, userID)
 	if err == nil {
@@ -57,9 +62,9 @@ func (s *AnalyticsService) CalculateFXImpact(ctx context.Context, userID string)
 }
 
 // weightedAvgFXRate computes SUM(usd_amount * fx_rate) / SUM(usd_amount) over
-// deposit cash flows with a non-null fx_rate, returning "0" when not
-// computable (no rows or zero total amount).
-func weightedAvgFXRate(rows []models.AnalyticsFXImpactCashFlowRow) string {
+// deposit cash flows with a non-null fx_rate. It returns "0" and a zero USD
+// total when not computable (no rows or zero total amount).
+func weightedAvgFXRate(rows []models.AnalyticsFXImpactCashFlowRow) (avgRate string, usdDeposited decimal.Decimal) {
 	weightedSum := decimal.Zero
 	totalAmount := decimal.Zero
 	for _, row := range rows {
@@ -78,7 +83,7 @@ func weightedAvgFXRate(rows []models.AnalyticsFXImpactCashFlowRow) string {
 		totalAmount = totalAmount.Add(amount)
 	}
 	if totalAmount.IsZero() {
-		return "0"
+		return "0", decimal.Zero
 	}
-	return weightedSum.Div(totalAmount).String()
+	return weightedSum.Div(totalAmount).String(), totalAmount
 }

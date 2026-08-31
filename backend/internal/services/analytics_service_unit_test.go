@@ -16,44 +16,44 @@ import (
 // It does not require a database; each field controls what the corresponding
 // method returns so a test can drive the service with deterministic data.
 type fakeAnalyticsRepository struct {
-	holdingTrades     []models.AnalyticsHoldingTradeRow
-	holdingTradesErr  error
-	marketPrices      []models.AnalyticsMarketPriceRow
-	marketPricesErr   error
-	fxImpactCashFlows []models.AnalyticsFXImpactCashFlowRow
-	fxImpactErr       error
-	latestFXRate      string
-	latestFXRateErr   error
-	fxRatePeriods     []models.AnalyticsFXRatePeriodRow
-	fxRatePeriodsErr  error
-	cashFlowsBalance    string
-	cashFlowsBalanceErr error
-	netTradeCashFlow    string
-	netTradeCashFlowErr error
-	netInvested      string
-	netInvestedErr   error
-	transferFees     string
-	transferFeesErr  error
-	tradingFees      string
-	tradingFeesErr   error
-	xirrCashFlows    []models.AnalyticsXIRRCashFlowRow
-	xirrCashFlowsErr error
-	localCurrencyTotals    models.AnalyticsLocalCurrencyTotals
-	localCurrencyTotalsErr error
-	returnAttributionFees    models.AnalyticsReturnAttributionFeesRow
-	returnAttributionFeesErr error
+	holdingTrades                []models.AnalyticsHoldingTradeRow
+	holdingTradesErr             error
+	marketPrices                 []models.AnalyticsMarketPriceRow
+	marketPricesErr              error
+	fxImpactCashFlows            []models.AnalyticsFXImpactCashFlowRow
+	fxImpactErr                  error
+	latestFXRate                 string
+	latestFXRateErr              error
+	fxRatePeriods                []models.AnalyticsFXRatePeriodRow
+	fxRatePeriodsErr             error
+	cashFlowsBalance             string
+	cashFlowsBalanceErr          error
+	netTradeCashFlow             string
+	netTradeCashFlowErr          error
+	netInvested                  string
+	netInvestedErr               error
+	transferFees                 string
+	transferFeesErr              error
+	tradingFees                  string
+	tradingFeesErr               error
+	xirrCashFlows                []models.AnalyticsXIRRCashFlowRow
+	xirrCashFlowsErr             error
+	localCurrencyTotals          models.AnalyticsLocalCurrencyTotals
+	localCurrencyTotalsErr       error
+	returnAttributionFees        models.AnalyticsReturnAttributionFeesRow
+	returnAttributionFeesErr     error
 	returnAttributionHoldings    []models.AnalyticsReturnAttributionHoldingRow
 	returnAttributionHoldingsErr error
-	performanceSnapshots    []models.AnalyticsPerformanceSnapshotRow
-	performanceSnapshotsErr error
-	performanceCashFlows    []models.AnalyticsPerformanceCashFlowRow
-	performanceCashFlowsErr error
-	performanceTrades    []models.AnalyticsPerformanceTradeRow
-	performanceTradesErr error
-	realizedPLTrades    []models.AnalyticsRealizedPLRow
-	realizedPLTradesErr error
-	spyPrices    []models.AnalyticsSPYPriceRow
-	spyPricesErr error
+	performanceSnapshots         []models.AnalyticsPerformanceSnapshotRow
+	performanceSnapshotsErr      error
+	performanceCashFlows         []models.AnalyticsPerformanceCashFlowRow
+	performanceCashFlowsErr      error
+	performanceTrades            []models.AnalyticsPerformanceTradeRow
+	performanceTradesErr         error
+	realizedPLTrades             []models.AnalyticsRealizedPLRow
+	realizedPLTradesErr          error
+	spyPrices                    []models.AnalyticsSPYPriceRow
+	spyPricesErr                 error
 }
 
 func (f *fakeAnalyticsRepository) LoadHoldingTrades(ctx context.Context, userID string) ([]models.AnalyticsHoldingTradeRow, error) {
@@ -259,12 +259,12 @@ func TestAnalyticsService_Unit_GetNetWorthSummary_ComputesFromBalancesAndHolding
 		marketPrices: []models.AnalyticsMarketPriceRow{
 			{Ticker: "AAPL", Price: "200"},
 		},
-		cashFlowsBalance:   "1000",
-		netTradeCashFlow:   "750",
-		netInvested:        "1000",
-		transferFees:       "0",
-		tradingFees:        "0",
-		xirrCashFlows:      nil,
+		cashFlowsBalance:    "1000",
+		netTradeCashFlow:    "750",
+		netInvested:         "1000",
+		transferFees:        "0",
+		tradingFees:         "0",
+		xirrCashFlows:       nil,
 		localCurrencyTotals: models.AnalyticsLocalCurrencyTotals{TotalDeposited: "4000000", TotalWithdrawn: "0"},
 	}
 	svc := NewAnalyticsService(fake)
@@ -282,11 +282,11 @@ func TestAnalyticsService_Unit_GetNetWorthSummary_ZeroHoldingsGivesZeroNetWorth(
 	t.Parallel()
 
 	fake := &fakeAnalyticsRepository{
-		cashFlowsBalance:   "0",
-		netTradeCashFlow:   "0",
-		netInvested:        "0",
-		transferFees:       "0",
-		tradingFees:        "0",
+		cashFlowsBalance:    "0",
+		netTradeCashFlow:    "0",
+		netInvested:         "0",
+		transferFees:        "0",
+		tradingFees:         "0",
 		localCurrencyTotals: models.AnalyticsLocalCurrencyTotals{},
 	}
 	svc := NewAnalyticsService(fake)
@@ -307,13 +307,9 @@ func TestAnalyticsService_Unit_CalculateReturnAttribution_ComputesFromHoldingsAn
 	cost := "750"
 	price := "200"
 	fake := &fakeAnalyticsRepository{
-		netInvested: "1000",
-		returnAttributionFees: models.AnalyticsReturnAttributionFeesRow{
-			DepositFees: "10",
-			TradingFees: "5",
-			ClosingFees: "0",
-			TotalFees:   "15",
-		},
+		netInvested:  "1000",
+		transferFees: "10",
+		tradingFees:  "5",
 		returnAttributionHoldings: []models.AnalyticsReturnAttributionHoldingRow{
 			{Ticker: "AAPL", NetQuantity: &netQty, TotalCost: &cost, CurrentPrice: &price},
 		},
@@ -329,17 +325,19 @@ func TestAnalyticsService_Unit_CalculateReturnAttribution_ComputesFromHoldingsAn
 	assert.Equal(t, "1250", attr.NetPosition)
 	assert.Equal(t, "10", attr.DepositFeesImpact)
 	assert.Equal(t, "5", attr.TradingFeesImpact)
+	assert.Equal(t, "0", attr.ClosingFeesImpact)
 }
 
 func TestAnalyticsService_Unit_CalculateReturnAttribution_EmptyHoldingsGivesZeroMarketGains(t *testing.T) {
 	t.Parallel()
 
 	fake := &fakeAnalyticsRepository{
-		netInvested:             "0",
-		returnAttributionFees:   models.AnalyticsReturnAttributionFeesRow{},
+		netInvested:               "0",
+		transferFees:              "0",
+		tradingFees:               "0",
 		returnAttributionHoldings: nil,
-		cashFlowsBalance:        "0",
-		netTradeCashFlow:        "0",
+		cashFlowsBalance:          "0",
+		netTradeCashFlow:          "0",
 	}
 	svc := NewAnalyticsService(fake)
 
@@ -417,6 +415,51 @@ func TestAnalyticsService_Unit_CalculateFXImpact_WeightedAverageFromCashFlows(t 
 	require.NoError(t, err)
 	assert.Equal(t, "4250", report.AvgInvestmentRate)
 	assert.Equal(t, "4500", report.CurrentRate)
+
+	wantUSD := dec("200").Mul(dec("4500").Sub(dec("4250"))).Div(dec("4500"))
+	assert.True(t, dec(report.FXImpactUSD).Equal(wantUSD), "FXImpactUSD = %s, want %s", report.FXImpactUSD, wantUSD)
+	wantPct := wantUSD.Div(dec("200")).Mul(decimal.NewFromInt(100))
+	assert.True(t, dec(report.FXImpactPct).Equal(wantPct), "FXImpactPct = %s, want %s", report.FXImpactPct, wantPct)
+}
+
+func TestAnalyticsService_Unit_CalculateFXImpact_ZeroRatesLeaveImpactZero(t *testing.T) {
+	t.Parallel()
+
+	rate4000 := "4000"
+	rate4500 := "4500"
+	deposits := []models.AnalyticsFXImpactCashFlowRow{
+		{USDAmount: "100", FXRate: &rate4000},
+		{USDAmount: "100", FXRate: &rate4500},
+	}
+
+	t.Run("current rate zero", func(t *testing.T) {
+		t.Parallel()
+		fake := &fakeAnalyticsRepository{
+			fxImpactCashFlows: deposits,
+			latestFXRate:      "0",
+		}
+		svc := NewAnalyticsService(fake)
+
+		report, err := svc.CalculateFXImpact(context.Background(), "user-1")
+		require.NoError(t, err)
+		assert.Equal(t, "0", report.FXImpactUSD)
+		assert.Equal(t, "0", report.FXImpactPct)
+	})
+
+	t.Run("avg rate zero", func(t *testing.T) {
+		t.Parallel()
+		fake := &fakeAnalyticsRepository{
+			fxImpactCashFlows: nil,
+			latestFXRate:      "4500",
+		}
+		svc := NewAnalyticsService(fake)
+
+		report, err := svc.CalculateFXImpact(context.Background(), "user-1")
+		require.NoError(t, err)
+		assert.Equal(t, "0", report.AvgInvestmentRate)
+		assert.Equal(t, "0", report.FXImpactUSD)
+		assert.Equal(t, "0", report.FXImpactPct)
+	})
 }
 
 func TestAnalyticsService_Unit_CalculateFXImpact_NoCashFlowsGivesZeroAvg(t *testing.T) {
@@ -466,7 +509,8 @@ func TestWeightedAvgFXRate_WeightedByAmount(t *testing.T) {
 		{USDAmount: "100", FXRate: &rate4000},
 		{USDAmount: "300", FXRate: &rate4500},
 	}
-	got := weightedAvgFXRate(rows)
+	got, usd := weightedAvgFXRate(rows)
 	want := dec("4375")
 	assert.True(t, dec(got).Equal(want), "weighted avg = %s, want %s", got, want)
+	assert.True(t, usd.Equal(dec("400")), "usd deposited = %s, want 400", usd)
 }
