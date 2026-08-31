@@ -59,6 +59,7 @@ export interface FxImpactReport {
   fx_impact_usd: string
   fx_impact_pct: string
   impact_by_period: Record<string, string>
+  usd_converted: string
 }
 
 /** Row in GET /api/analytics/fee-efficiency when group_by=ticker */
@@ -140,7 +141,8 @@ export async function getPerformanceTimeSeries(
 }
 
 export async function getFxImpact(): Promise<FxImpactReport> {
-  return apiClient.get<FxImpactReport>("/api/analytics/fx-impact")
+  const data = await apiClient.get<FxImpactReport>("/api/analytics/fx-impact")
+  return { ...data, usd_converted: data.usd_converted ?? "0" }
 }
 
 export async function getFeeEfficiency(groupBy = "ticker"): Promise<FeeEfficiencyData> {

@@ -49,6 +49,7 @@ const baseFxImpact = {
   fx_impact_usd: "-12.40",
   fx_impact_pct: "-0.12",
   impact_by_period: {},
+  usd_converted: "1130.00",
 }
 
 function renderStrip(netWorth: NetWorthData | null = baseNetWorth) {

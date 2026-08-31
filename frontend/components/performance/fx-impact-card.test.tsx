@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { FxImpactCard } from "./fx-impact-card"
 
@@ -16,6 +17,7 @@ const baseFxImpact = {
   fx_impact_usd: "12.40",
   fx_impact_pct: "0.12",
   impact_by_period: {},
+  usd_converted: "1130.00",
 }
 
 function renderCard() {
@@ -56,5 +58,33 @@ describe("FxImpactCard", () => {
     expect(link).toHaveClass("text-foreground")
     expect(link).not.toHaveClass("text-primary")
     expect(link).toHaveAttribute("href", "/cash-flows")
+  })
+
+  it("renders formatted USD from COP deposits", async () => {
+    renderCard()
+    expect(await screen.findByText("USD from COP deposits")).toBeInTheDocument()
+    expect(screen.getByText("$1,130.00")).toBeInTheDocument()
+  })
+
+  it("shows FX impact tooltip that mentions deposits and not a cash loss", async () => {
+    const user = userEvent.setup()
+    renderCard()
+    await screen.findByText("FX impact")
+    await user.hover(screen.getByRole("button", { name: /about fx impact/i }))
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent(/deposits/i)
+    expect(tooltip).toHaveTextContent(/not a cash (gain or )?loss/i)
+  })
+
+  it("shows USD from COP deposits tooltip that mentions deposited pesos and not net worth", async () => {
+    const user = userEvent.setup()
+    renderCard()
+    await screen.findByText("USD from COP deposits")
+    await user.hover(screen.getByRole("button", { name: /about usd from cop deposits/i }))
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent(/pesos/i)
+    expect(tooltip).toHaveTextContent(/deposited/i)
+    expect(tooltip).toHaveTextContent(/not.*net worth/i)
+    expect(tooltip).not.toHaveTextContent(/usd_amount/i)
   })
 })

@@ -6,7 +6,7 @@ export const PERFORMANCE_TOOLTIPS = {
     "How much your holdings went up or down in value from market moves, before fees.",
   feesPaid: "All fees the broker charged you: deposit, trading, and closing fees.",
   fxImpact:
-    "Difference between the exchange rate you received and today's rate, applied to your invested capital. This is a measurement — not a gain or loss judgement.",
+    "Not a cash gain or loss in the brokerage. Applies the gap between the average COP/USD you converted at and today's rate to the USD recorded on those COP deposits.",
   currentValue: "What your portfolio is worth right now: holdings + cash.",
   netWorth:
     "Current market value of all holdings plus uninvested cash, in USD. Gain is USD profit or loss; the percent is that gain divided by money invested.",
@@ -17,8 +17,10 @@ export const PERFORMANCE_TOOLTIPS = {
   deposited: "Total COP you sent to the broker across all deposits.",
   arrivedAtBroker:
     "USD that actually cleared into your brokerage account, after wire and transfer fees were deducted.",
+  usdConverted:
+    "Dollars those pesos bought when you deposited. Not your current net worth, and not after later trades.",
   fxImpactTile:
-    "Difference between the exchange rate you received and today's rate, applied to your invested capital. This is a measurement — not a gain or loss judgement.",
+    "Not a cash gain or loss in the brokerage. Applies the gap between the average COP/USD you converted at and today's rate to the USD recorded on those COP deposits.",
   feesPaidTile:
     "Total fees charged by the broker: deposit/withdrawal wire fees plus trading commissions.",
 } as const

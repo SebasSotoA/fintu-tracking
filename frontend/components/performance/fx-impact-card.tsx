@@ -7,6 +7,8 @@ import { ArrowRight } from "lucide-react"
 import Decimal from "decimal.js"
 import { getFxImpact } from "@/lib/api/analytics"
 import type { FxImpactReport } from "@/lib/api/analytics"
+import { MetricLabel } from "@/components/analytics/metric-primitives"
+import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
@@ -60,6 +62,7 @@ export function FxImpactCard(): React.JSX.Element {
   const currentRate = new Decimal(data.current_rate || "0")
   const fxImpactUsd = new Decimal(data.fx_impact_usd || "0")
   const rateChangePct = new Decimal(data.rate_change_pct || "0")
+  const usdConverted = new Decimal(data.usd_converted || "0")
 
   if (avgRate.isZero() && currentRate.isZero()) {
     return (
@@ -79,13 +82,24 @@ export function FxImpactCard(): React.JSX.Element {
   return (
     <Card>
       <CardContent className="py-6">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-          FX impact
-        </h3>
+        <MetricLabel
+          label="FX impact"
+          tooltip={PERFORMANCE_TOOLTIPS.fxImpact}
+          className="mb-1"
+        />
         <p className="text-2xl font-bold font-mono tabular-nums text-foreground mb-4">
           {`${fxImpactUsd.greaterThanOrEqualTo(0) ? "+" : "−"}${formatUSD(fxImpactUsd.abs())}`}
         </p>
         <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <MetricLabel
+              label="USD from COP deposits"
+              tooltip={PERFORMANCE_TOOLTIPS.usdConverted}
+            />
+            <span className="font-mono tabular-nums">
+              {formatUSD(usdConverted)}
+            </span>
+          </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Average rate</span>
             <span className="font-mono tabular-nums">
