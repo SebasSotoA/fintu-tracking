@@ -48,6 +48,9 @@ func TestProfileService_GetOrCreateProfile_CreatesDefaultForNewUser(t *testing.T
 	if profile.SubscriptionStatus == nil || *profile.SubscriptionStatus != "active" {
 		t.Errorf("SubscriptionStatus = %v, want %q", profile.SubscriptionStatus, "active")
 	}
+	if profile.Locale != nil {
+		t.Errorf("Locale = %v, want nil for a new profile", profile.Locale)
+	}
 
 	t.Cleanup(func() {
 		execSvcSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userID)
@@ -244,6 +247,70 @@ func TestProfileService_UpdateOnboarding_DoesNotAffectOtherUsers(t *testing.T) {
 	}
 	if profileB.OnboardingCompleted {
 		t.Error("userB OnboardingCompleted = true after userA completed")
+	}
+
+	t.Cleanup(func() {
+		execSvcSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userA)
+		execSvcSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userB)
+		execSvcSQL(t, "DELETE FROM profiles WHERE user_id = $1", userA)
+		execSvcSQL(t, "DELETE FROM profiles WHERE user_id = $1", userB)
+	})
+}
+
+func TestProfileService_UpdateProfile_LocaleOnly_PersistsWithoutBroker(t *testing.T) {
+	skipIfNoSvcTestDB(t)
+
+	userID := newTestUserID(t)
+	svc := newTestProfileService(t)
+
+	locale := "es"
+	profile, err := svc.UpdateProfile(context.Background(), userID, models.UpdateProfileRequest{
+		Locale: &locale,
+	})
+	if err != nil {
+		t.Fatalf("UpdateProfile locale-only: %v", err)
+	}
+	if profile.Locale == nil || *profile.Locale != "es" {
+		t.Errorf("Locale = %v, want %q", profile.Locale, "es")
+	}
+	if profile.OnboardingCompleted {
+		t.Error("OnboardingCompleted = true, want false after locale-only patch")
+	}
+
+	got, err := svc.GetProfile(context.Background(), userID)
+	if err != nil {
+		t.Fatalf("GetProfile: %v", err)
+	}
+	if got.Locale == nil || *got.Locale != "es" {
+		t.Errorf("persisted Locale = %v, want %q", got.Locale, "es")
+	}
+
+	t.Cleanup(func() {
+		execSvcSQL(t, "DELETE FROM subscriptions WHERE user_id = $1", userID)
+		execSvcSQL(t, "DELETE FROM profiles WHERE user_id = $1", userID)
+	})
+}
+
+func TestProfileService_UpdateProfile_LocaleDoesNotAffectOtherUsers(t *testing.T) {
+	skipIfNoSvcTestDB(t)
+
+	userA := newTestUserID(t)
+	userB := newTestUserID(t)
+	svc := newTestProfileService(t)
+
+	locale := "es"
+	if _, err := svc.UpdateProfile(context.Background(), userA, models.UpdateProfileRequest{
+		Locale: &locale,
+	}); err != nil {
+		t.Fatalf("UpdateProfile userA: %v", err)
+	}
+
+	profileB, err := svc.GetOrCreateProfile(context.Background(), userB)
+	if err != nil {
+		t.Fatalf("GetOrCreateProfile userB: %v", err)
+	}
+	if profileB.Locale != nil {
+		t.Errorf("userB Locale = %v, want nil after userA locale update", profileB.Locale)
 	}
 
 	t.Cleanup(func() {

@@ -88,6 +88,7 @@ type Profile struct {
 	UserID              string    `json:"user_id" db:"user_id"`
 	Country             string    `json:"country" db:"country"`
 	BrokerPresetID      *string   `json:"broker_preset_id,omitempty" db:"broker_preset_id"`
+	Locale              *string   `json:"locale" db:"locale"`
 	OnboardingCompleted bool      `json:"onboarding_completed" db:"onboarding_completed"`
 	OnboardingStep      string    `json:"onboarding_step" db:"onboarding_step"`
 	PlanID              *string   `json:"plan_id,omitempty" db:"plan_id"`
@@ -104,8 +105,14 @@ type UpdateOnboardingRequest struct {
 
 // UpdateProfileRequest is the body for PATCH /api/me/profile.
 type UpdateProfileRequest struct {
-	Country        string `json:"country"`
-	BrokerPresetID string `json:"broker_preset_id"`
+	Country        string  `json:"country"`
+	BrokerPresetID string  `json:"broker_preset_id"`
+	Locale         *string `json:"locale,omitempty"`
+}
+
+// IsLocaleOnly reports whether the request updates language without country or broker.
+func (r UpdateProfileRequest) IsLocaleOnly() bool {
+	return r.Country == "" && r.BrokerPresetID == ""
 }
 
 // Plan represents a subscription tier and its feature limits.

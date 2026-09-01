@@ -22,7 +22,8 @@ type ProfileRepository interface {
 	UpdateOnboarding(ctx context.Context, userID string, req models.UpdateOnboardingRequest) (*models.Profile, error)
 
 	// UpdateProfile updates country and broker preset without altering onboarding
-	// state. The caller is responsible for ensuring the profile exists first and
+	// state. Locale-only requests update language without requiring country or broker.
+	// The caller is responsible for ensuring the profile exists first and
 	// for any broker creation side effects when the preset changes.
 	UpdateProfile(ctx context.Context, userID string, req models.UpdateProfileRequest) (*models.Profile, error)
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"fintu-tracking-backend/internal/config"
@@ -69,6 +70,7 @@ func UpdateOnboarding(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateProfile updates country and broker preset without altering onboarding state.
+// A locale-only body is valid so onboarding-incomplete users can persist language.
 func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.RequireUserID(r)
 	if !ok {
@@ -81,12 +83,8 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-	if req.Country == "" || req.BrokerPresetID == "" {
-		httpx.Error(w, http.StatusBadRequest, "country and broker_preset_id are required")
-		return
-	}
-	if config.GetBrokerPreset(req.BrokerPresetID) == nil {
-		httpx.Error(w, http.StatusBadRequest, "Unknown broker preset")
+	if err := validateUpdateProfileRequest(req); err != nil {
+		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -97,4 +95,30 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, p)
+}
+
+func validateUpdateProfileRequest(req models.UpdateProfileRequest) error {
+	if req.IsLocaleOnly() {
+		if req.Locale == nil {
+			return errors.New("locale, or country and broker_preset_id, is required")
+		}
+		if !validLocale(*req.Locale) {
+			return errors.New("invalid locale")
+		}
+		return nil
+	}
+	if req.Country == "" || req.BrokerPresetID == "" {
+		return errors.New("country and broker_preset_id are required")
+	}
+	if config.GetBrokerPreset(req.BrokerPresetID) == nil {
+		return errors.New("Unknown broker preset")
+	}
+	if req.Locale != nil && !validLocale(*req.Locale) {
+		return errors.New("invalid locale")
+	}
+	return nil
+}
+
+func validLocale(locale string) bool {
+	return locale == "en" || locale == "es"
 }

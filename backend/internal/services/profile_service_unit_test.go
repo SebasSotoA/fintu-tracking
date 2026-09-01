@@ -25,7 +25,7 @@ type fakeProfileRepository struct {
 
 	updateOnboarding      *models.Profile
 	updateOnboardingErr   error
-	updateOnboardingCalls  int
+	updateOnboardingCalls int
 	updateOnboardingArgs  models.UpdateOnboardingRequest
 
 	updateProfile      *models.Profile
@@ -107,6 +107,7 @@ func (f *fakeProfileRepository) UpdateProfile(ctx context.Context, userID string
 		UserID:              userID,
 		Country:             req.Country,
 		BrokerPresetID:      &preset,
+		Locale:              req.Locale,
 		OnboardingCompleted: true,
 		OnboardingStep:      step,
 	}, nil
@@ -144,14 +145,14 @@ func (f *fakeBillingService) HasActiveSubscription(ctx context.Context, userID s
 
 // fakeBrokerService is a fake BrokerServiceInterface for ProfileService unit tests.
 type fakeBrokerService struct {
-	preset          *models.Broker
-	presetErr       error
-	presetCalls     int
-	presetLastID    string
-	depositFee      *string
-	depositErr      error
-	withdrawalFee   *string
-	withdrawalErr   error
+	preset        *models.Broker
+	presetErr     error
+	presetCalls   int
+	presetLastID  string
+	depositFee    *string
+	depositErr    error
+	withdrawalFee *string
+	withdrawalErr error
 }
 
 func (f *fakeBrokerService) GetOrCreateBrokerFromPreset(ctx context.Context, userID, presetID string) (*models.Broker, error) {
@@ -369,4 +370,59 @@ func TestProfileService_Unit_UpdateProfile_PropagatesBrokerError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "creating broker from preset")
 	assert.Equal(t, 0, repo.updateProfileCalls, "profile not updated when broker creation fails")
+}
+
+func TestProfileService_Unit_UpdateProfile_LocaleOnly_DoesNotCreateBroker(t *testing.T) {
+	current := &models.Profile{
+		UserID:         "u1",
+		BrokerPresetID: nil,
+	}
+	repo := &fakeProfileRepository{
+		getOrCreate: current,
+		getProfile:  current,
+	}
+	brokers := &fakeBrokerService{}
+	billing := &fakeBillingService{}
+	svc := NewProfileService(repo, billing, brokers)
+
+	locale := "es"
+	profile, err := svc.UpdateProfile(context.Background(), "u1", models.UpdateProfileRequest{
+		Locale: &locale,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, profile)
+	assert.Equal(t, 0, brokers.presetCalls, "locale-only patch must not create a broker")
+	assert.Equal(t, 1, repo.updateProfileCalls)
+	require.NotNil(t, repo.updateProfileArgs.Locale)
+	assert.Equal(t, "es", *repo.updateProfileArgs.Locale)
+	assert.Equal(t, "", repo.updateProfileArgs.Country)
+	assert.Equal(t, "", repo.updateProfileArgs.BrokerPresetID)
+}
+
+func TestProfileService_Unit_UpdateProfile_PassesLocaleWithCountryBroker(t *testing.T) {
+	existingPreset := "hapi-colombia"
+	current := &models.Profile{
+		UserID:         "u1",
+		BrokerPresetID: &existingPreset,
+	}
+	repo := &fakeProfileRepository{
+		getOrCreate: current,
+		getProfile:  current,
+	}
+	brokers := &fakeBrokerService{}
+	billing := &fakeBillingService{}
+	svc := NewProfileService(repo, billing, brokers)
+
+	locale := "es"
+	_, err := svc.UpdateProfile(context.Background(), "u1", models.UpdateProfileRequest{
+		Country:        "mx",
+		BrokerPresetID: "gbm-mexico",
+		Locale:         &locale,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 1, brokers.presetCalls)
+	require.NotNil(t, repo.updateProfileArgs.Locale)
+	assert.Equal(t, "es", *repo.updateProfileArgs.Locale)
+	assert.Equal(t, "mx", repo.updateProfileArgs.Country)
+	assert.Equal(t, "gbm-mexico", repo.updateProfileArgs.BrokerPresetID)
 }

@@ -74,10 +74,15 @@ func (s *ProfileService) UpdateOnboarding(ctx context.Context, userID string, re
 }
 
 // UpdateProfile updates country and broker preset without changing onboarding state.
+// Locale-only requests skip broker creation so onboarding-incomplete users can persist language.
 func (s *ProfileService) UpdateProfile(ctx context.Context, userID string, req models.UpdateProfileRequest) (*models.Profile, error) {
 	current, err := s.GetOrCreateProfile(ctx, userID)
 	if err != nil {
 		return nil, err
+	}
+
+	if req.IsLocaleOnly() {
+		return s.repo.UpdateProfile(ctx, userID, req)
 	}
 
 	presetChanged := current.BrokerPresetID == nil || *current.BrokerPresetID != req.BrokerPresetID
