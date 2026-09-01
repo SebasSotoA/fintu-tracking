@@ -41,7 +41,7 @@ export function KpiTile({
   return (
     <Card className={className}>
       <CardContent className="flex flex-col gap-2 py-5">
-        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+        <p className="text-[10px] font-medium uppercase leading-tight tracking-wide text-muted-foreground">
           {label}
         </p>
         <p className="text-2xl font-bold font-mono tabular-nums text-foreground leading-tight">

@@ -160,17 +160,19 @@ export function PerformanceNowCard({
 
         {showCopBridge && (
           <div className="rounded-md bg-muted/50 px-3 py-2.5 space-y-2 text-sm">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-3">
               <MetricLabel
+                className="min-w-0"
                 label={t("performance.copDeposited")}
                 tooltip={tooltips.copDeposited}
               />
-              <span className="font-mono tabular-nums text-foreground">
+              <span className="shrink-0 font-mono tabular-nums text-foreground">
                 {formatCOP(new Decimal(netWorth.total_deposited_cop || "0"))}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-3">
               <MetricLabel
+                className="min-w-0"
                 label={t("performance.worthToday")}
                 tooltip={t("performance.worthTodayTooltip", {
                   tooltip: tooltips.worthInCopToday,
@@ -178,7 +180,7 @@ export function PerformanceNowCard({
                   pair: formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency),
                 })}
               />
-              <span className="font-mono tabular-nums text-foreground">
+              <span className="shrink-0 font-mono tabular-nums text-foreground">
                 {formatCOP(worthCopToday)}
               </span>
             </div>

@@ -21,15 +21,15 @@ export function MetricLabel({
 }): React.JSX.Element {
   const { t } = useLocale()
   return (
-    <div className={cn("flex items-center gap-1", className)}>
-      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+    <div className={cn("flex min-w-0 items-center gap-1", className)}>
+      <span className="min-w-0 truncate text-xs font-medium uppercase leading-tight tracking-wide text-muted-foreground">
         {label}
       </span>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            className="inline-flex rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex shrink-0 rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={t("dashboard.aboutMetric", { label })}
           >
             <CircleHelp className="size-3.5 shrink-0" />

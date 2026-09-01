@@ -53,7 +53,10 @@ const baseFxImpact = {
   usd_converted: "1130.00",
 }
 
-function renderStrip(netWorth: NetWorthData | null = baseNetWorth) {
+function renderStrip(
+  netWorth: NetWorthData | null = baseNetWorth,
+  locale: "en" | "es" = "en",
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
@@ -61,6 +64,7 @@ function renderStrip(netWorth: NetWorthData | null = baseNetWorth) {
     <QueryClientProvider client={queryClient}>
       <PerformanceInsightStrip initialNetWorth={netWorth} />
     </QueryClientProvider>,
+    { locale },
   )
 }
 
@@ -79,19 +83,32 @@ describe("PerformanceInsightStrip", () => {
     mockGetFxImpact.mockResolvedValue(baseFxImpact)
   })
 
-  it("renders four labels COP DEPOSITED / ARRIVED AT BROKER / FX IMPACT / FEES PAID", async () => {
+  it("renders four labels COP sent / USD received / FX IMPACT / Fees", async () => {
     renderStrip()
-    expect(await screen.findByText("COP DEPOSITED")).toBeInTheDocument()
-    expect(screen.getByText("ARRIVED AT BROKER")).toBeInTheDocument()
+    expect(await screen.findByText(/cop sent/i)).toBeInTheDocument()
+    expect(screen.getByText(/usd received/i)).toBeInTheDocument()
     expect(screen.getByText("FX IMPACT")).toBeInTheDocument()
-    expect(screen.getByText("FEES PAID")).toBeInTheDocument()
-    expect(screen.queryByText("DEPOSITED")).not.toBeInTheDocument()
+    expect(screen.getByText(/^fees$/i)).toBeInTheDocument()
+    expect(screen.queryByText(/cop deposited/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/arrived at broker/i)).not.toBeInTheDocument()
   })
 
-  it("formats COP deposited with a COP prefix, not a dollar sign", async () => {
+  it("shows USD received in English, not Arrived at broker", async () => {
     renderStrip()
-    await screen.findByText("COP DEPOSITED")
-    const tile = tileByLabel("COP DEPOSITED")
+    expect(await screen.findByText(/usd received/i)).toBeInTheDocument()
+    expect(screen.queryByText(/arrived at broker/i)).not.toBeInTheDocument()
+  })
+
+  it("shows USD en cuenta in Spanish, not llegó", async () => {
+    renderStrip(baseNetWorth, "es")
+    expect(await screen.findByText(/usd en cuenta/i)).toBeInTheDocument()
+    expect(screen.queryByText(/llegó/i)).not.toBeInTheDocument()
+  })
+
+  it("formats COP sent with a COP prefix, not a dollar sign", async () => {
+    renderStrip()
+    await screen.findByText(/cop sent/i)
+    const tile = tileByLabel("COP sent")
     expect(within(tile).getByText("COP 48.000.000")).toBeInTheDocument()
     expect(within(tile).queryByText(/\$/)).not.toBeInTheDocument()
     expect(within(tile).getByText("Total sent to broker")).toBeInTheDocument()
@@ -99,7 +116,7 @@ describe("PerformanceInsightStrip", () => {
 
   it("does not render You're up copy", async () => {
     renderStrip()
-    await screen.findByText("COP DEPOSITED")
+    await screen.findByText(/cop sent/i)
     expect(screen.queryByText(/you're up/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/you're down/i)).not.toBeInTheDocument()
   })
@@ -116,10 +133,10 @@ describe("PerformanceInsightStrip", () => {
     expect(fxTile.querySelector(".text-destructive")).toBeNull()
   })
 
-  it("renders FEES PAID amount with foreground not muted colour", async () => {
+  it("renders Fees amount with foreground not muted colour", async () => {
     renderStrip()
-    await screen.findByText("FEES PAID")
-    const feesTile = tileByLabel("FEES PAID")
+    await screen.findByText(/^fees$/i)
+    const feesTile = tileByLabel("Fees")
     const value = within(feesTile).getByText("$150.00")
     expect(value).toHaveClass("text-foreground")
     expect(value).not.toHaveClass("text-muted-foreground")

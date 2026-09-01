@@ -76,11 +76,23 @@ function getBadge(kind: ActivityItem["kind"], t: Translate): BadgeStyle {
   return { label: t("dashboard.badgeItem"), classes: "bg-muted text-muted-foreground" }
 }
 
+const FEE_TITLE_KEYS: Record<string, MessageKey> = {
+  closing: "dashboard.feeClosing",
+  deposit: "dashboard.feeDeposit",
+  trading: "dashboard.feeTrading",
+  withdrawal: "dashboard.feeWithdrawal",
+  maintenance: "dashboard.feeMaintenance",
+  other: "dashboard.feeOther",
+}
+
 function getTitle(kind: ActivityItem["kind"], subKind: string, t: Translate): string {
   if (kind === "trade") return subKind === "buy" ? t("trades.buy") : t("trades.sell")
   if (kind === "deposit") return t("cash.deposit")
   if (kind === "withdrawal") return t("cash.withdrawal")
-  if (kind === "fee") return subKind ? t("dashboard.feeWithKind", { kind: capitalize(subKind) }) : t("cash.fee")
+  if (kind === "fee") {
+    const key = FEE_TITLE_KEYS[subKind.toLowerCase()]
+    return key ? t(key) : t("cash.fee")
+  }
   if (kind === "cash_adjustment") return t("cash.cashAdjustment")
   return capitalize(kind)
 }

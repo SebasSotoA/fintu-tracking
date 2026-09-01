@@ -9,6 +9,14 @@ describe("MetricLabel", () => {
     expect(screen.getByText("Net return")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /about net return/i })).toBeInTheDocument()
   })
+
+  it("uses compact tracking and min-w-0 so the label can shrink beside the help icon", () => {
+    renderWithLocale(<MetricLabel label="COP enviado" tooltip="Pesos enviados." />)
+    const label = screen.getByText("COP enviado")
+    expect(label).toHaveClass("min-w-0", "truncate", "leading-tight", "tracking-wide")
+    expect(label).not.toHaveClass("tracking-wider")
+    expect(label.parentElement).toHaveClass("min-w-0")
+  })
 })
 
 describe("StatCell", () => {

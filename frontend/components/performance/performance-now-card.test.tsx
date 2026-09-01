@@ -54,7 +54,10 @@ const baseFxImpact = {
   usd_converted: "1130.00",
 }
 
-function renderCard(netWorth: NetWorthData | null = baseNetWorth) {
+function renderCard(
+  netWorth: NetWorthData | null = baseNetWorth,
+  locale: "en" | "es" = "en",
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
@@ -62,6 +65,7 @@ function renderCard(netWorth: NetWorthData | null = baseNetWorth) {
     <QueryClientProvider client={queryClient}>
       <PerformanceNowCard initialNetWorth={netWorth} />
     </QueryClientProvider>,
+    { locale },
   )
 }
 
@@ -93,11 +97,11 @@ describe("PerformanceNowCard", () => {
 
   it("formats COP rows with COP prefix and no body copy under the figures", async () => {
     renderCard()
-    await screen.findByText("COP deposited")
+    await screen.findByText(/cop sent/i)
     expect(screen.getByText("COP 48.000.000")).toBeInTheDocument()
     expect(screen.getByText("Worth today")).toBeInTheDocument()
     expect(screen.getByText("COP 49.200.000")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /about cop deposited/i })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /about cop sent/i })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /about worth today/i })).toBeInTheDocument()
     expect(screen.queryByText(/Recorded pesos/)).not.toBeInTheDocument()
     expect(screen.queryByText(/at 4,100\.00 COP\/USD/)).not.toBeInTheDocument()
@@ -136,7 +140,13 @@ describe("PerformanceNowCard", () => {
     mockGetFxImpact.mockResolvedValue({ ...baseFxImpact, current_rate: "0" })
     renderCard({ ...baseNetWorth, total_deposited_cop: undefined })
     await screen.findByText("Net worth")
-    expect(screen.queryByText("COP deposited")).not.toBeInTheDocument()
+    expect(screen.queryByText(/cop sent/i)).not.toBeInTheDocument()
     expect(screen.queryByText("Worth today")).not.toBeInTheDocument()
+  })
+
+  it("shows COP enviado on the Spanish COP bridge, not depositado", async () => {
+    renderCard(baseNetWorth, "es")
+    expect(await screen.findByText(/cop enviado/i)).toBeInTheDocument()
+    expect(screen.queryByText(/depositado/i)).not.toBeInTheDocument()
   })
 })

@@ -31,6 +31,20 @@ function makeTrade(overrides: Partial<ActivityItem> = {}): ActivityItem {
   }
 }
 
+function makeFee(overrides: Partial<ActivityItem> = {}): ActivityItem {
+  return {
+    id: "2",
+    date: "2026-01-01",
+    kind: "fee",
+    sub_kind: "closing",
+    ticker: "",
+    direction: "out",
+    amount_usd: "10.00",
+    details: "closing fee",
+    ...overrides,
+  }
+}
+
 describe("ActivityFeedItem", () => {
   it("passes asset_type to TickerLogo for a crypto trade", () => {
     renderWithLocale(<ActivityFeedItem item={makeTrade({ ticker: "BTC", asset_type: "crypto" })} />)
@@ -69,5 +83,29 @@ describe("ActivityFeedItem", () => {
     renderWithLocale(<ActivityFeedItem item={makeTrade({ date: "2026-01-15" })} />, { locale: "es" })
     expect(screen.getByText(/ene/i)).toBeInTheDocument()
     expect(screen.queryByText(/jan/i)).not.toBeInTheDocument()
+  })
+
+  it("titles a closing fee in English without interpolating raw subKind", () => {
+    renderWithLocale(<ActivityFeedItem item={makeFee({ sub_kind: "closing" })} />)
+    expect(screen.getByText("Closing fee")).toBeInTheDocument()
+    expect(screen.queryByText(/comisión de closing/i)).not.toBeInTheDocument()
+  })
+
+  it("titles a deposit fee in English without interpolating raw subKind", () => {
+    renderWithLocale(<ActivityFeedItem item={makeFee({ sub_kind: "deposit" })} />)
+    expect(screen.getByText("Deposit fee")).toBeInTheDocument()
+    expect(screen.queryByText(/comisión de deposit/i)).not.toBeInTheDocument()
+  })
+
+  it("titles a closing fee in Spanish as Comisión de cierre", () => {
+    renderWithLocale(<ActivityFeedItem item={makeFee({ sub_kind: "closing" })} />, { locale: "es" })
+    expect(screen.getByText("Comisión de cierre")).toBeInTheDocument()
+    expect(screen.queryByText(/comisión de closing/i)).not.toBeInTheDocument()
+  })
+
+  it("titles a deposit fee in Spanish as Comisión de depósito", () => {
+    renderWithLocale(<ActivityFeedItem item={makeFee({ sub_kind: "deposit" })} />, { locale: "es" })
+    expect(screen.getByText("Comisión de depósito")).toBeInTheDocument()
+    expect(screen.queryByText(/comisión de deposit/i)).not.toBeInTheDocument()
   })
 })
