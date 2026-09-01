@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
 import { render, screen, fireEvent, within, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
+import { EnglishLocaleWrapper, renderWithLocale } from "@/lib/i18n/test-utils"
 import { AddTradeDialog } from "./add-trade-dialog"
 
 vi.mock("next/navigation", () => ({
@@ -263,5 +263,19 @@ describe("AddTradeDialog", () => {
   it("Asset Type starts unlocked for a new trade", () => {
     renderDialog()
     expect(screen.getByLabelText("Asset Type")).not.toBeDisabled()
+  })
+
+  it("shows Spanish dialog title when locale is es", () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    renderWithLocale(
+      <QueryClientProvider client={queryClient}>
+        <AddTradeDialog autoOpen />
+      </QueryClientProvider>,
+      { locale: "es" },
+    )
+
+    expect(screen.getByRole("heading", { name: "Agregar operación" })).toBeInTheDocument()
   })
 })

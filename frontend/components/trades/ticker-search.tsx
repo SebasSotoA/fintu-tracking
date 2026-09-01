@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { searchMarketSymbols } from "@/lib/api/portfolio"
 import type { SymbolSearchResult } from "@/lib/api/portfolio"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/components/locale-provider"
 
 interface TickerSearchProps {
   id: string
@@ -27,6 +28,7 @@ interface TickerSearchProps {
 }
 
 export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProps) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const [inputQuery, setInputQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
@@ -64,11 +66,11 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
     setOpen(next)
   }
 
-  const label = value ? value.toUpperCase() : "Search ticker"
+  const label = value ? value.toUpperCase() : t("trades.searchTicker")
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>Ticker</Label>
+      <Label htmlFor={id}>{t("trades.ticker")}</Label>
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
@@ -78,7 +80,7 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
             role="combobox"
             disabled={disabled}
             aria-expanded={open}
-            aria-label="Search ticker"
+            aria-label={t("trades.searchTicker")}
             className={cn(
               "h-9 w-full justify-between px-3 font-normal",
               !value && "text-muted-foreground",
@@ -91,13 +93,13 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
         <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[18rem] p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="Search ticker..."
+              placeholder={t("trades.searchTickerPlaceholder")}
               value={inputQuery}
               onValueChange={handleValueChange}
             />
             <CommandList>
               <CommandEmpty>
-                {debouncedQuery.length >= 1 ? "No ticker found" : "Type to search"}
+                {debouncedQuery.length >= 1 ? t("trades.noTickerFoundShort") : t("trades.typeToSearch")}
               </CommandEmpty>
               <CommandGroup>
                 {results.map((r) => (
@@ -120,7 +122,7 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
               {inputQuery.trim() && (
                 <>
                   <CommandSeparator alwaysRender />
-                  <CommandGroup heading="Custom ticker">
+                  <CommandGroup heading={t("trades.customTicker")}>
                     <CommandItem
                       data-testid="use-custom-ticker"
                       value={`__use__${inputQuery.trim().toUpperCase()}`}
@@ -135,9 +137,9 @@ export function TickerSearch({ id, value, onChange, disabled }: TickerSearchProp
                     >
                       <Plus className="size-4 text-muted-foreground" aria-hidden={true} />
                       <span>
-                        Use <span className="font-mono">{inputQuery.trim().toUpperCase()}</span>
+                        {t("trades.useTicker", { ticker: inputQuery.trim().toUpperCase() })}
                       </span>
-                      <span className="ml-auto text-xs text-muted-foreground">not in list</span>
+                      <span className="ml-auto text-xs text-muted-foreground">{t("trades.notInList")}</span>
                     </CommandItem>
                   </CommandGroup>
                 </>

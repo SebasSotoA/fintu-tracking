@@ -246,6 +246,7 @@ export const es = {
     noOpenPositions: "No hay posiciones abiertas",
     selectTickerToSell: "Seleccionar ticker para vender",
     availableShares: "Disponible: {qty} acciones",
+    youHold: "Tienes {qty} acciones de {ticker}",
   },
   cash: {
     add: "Agregar flujo de caja",
@@ -261,7 +262,7 @@ export const es = {
     delete: "Eliminar",
     deleteTitle: "Eliminar flujo de caja",
     deleteDescription:
-      "¿Seguro que quieres eliminar este {type}? Esta acción no se puede deshacer.",
+      "¿Seguro que quieres eliminar este registro ({type})? Esta acción no se puede deshacer.",
     deleted: "Flujo de caja eliminado",
     deleteFailed: "No se pudo eliminar el flujo de caja",
     deleting: "Eliminando...",
@@ -331,8 +332,12 @@ export const es = {
     fetchFailed: "No se pudo consultar la tasa de cambio",
     noChartData: "Aún no hay datos del gráfico",
     loadingChart: "Cargando gráfico de tasa de cambio",
+    amountIn: "Monto en {currency}",
+    feeNote: "{label} para el {date}",
   },
   filters: {
+    title: "Filtros",
+    close: "Cerrar",
     pickADate: "Elige una fecha",
     selectADate: "Selecciona una fecha",
     selectDayOrRange: "Selecciona un día o un rango de fechas",
@@ -423,6 +428,7 @@ export const es = {
     hoursAgo: "hace {hours}h",
     daysAgo: "hace {days}d",
     asset: "Activo",
+    cash: "Efectivo",
     tooltips: {
       portfolioTotal:
         "Valor total del portafolio: valor de mercado actual de las tenencias más el poder de compra disponible en {currency}.",

@@ -28,6 +28,7 @@ import {
   type SettingsRowDef,
 } from "@/components/settings/settings-catalog"
 import {
+  localizeValidationMessage,
   profileSetupSchema,
   type ProfileSetupForm,
 } from "@/components/onboarding/profile-setup-fields"
@@ -293,7 +294,9 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
                           </Select>
                         </SettingsRow>
                         {errors.country ? (
-                          <p className="px-4 pb-3 text-destructive text-sm">{errors.country.message}</p>
+                          <p className="px-4 pb-3 text-destructive text-sm">
+                            {localizeValidationMessage(errors.country.message, t)}
+                          </p>
                         ) : null}
                       </div>
                     )
@@ -311,7 +314,9 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
                         />
                       </SettingsRow>
                       {errors.brokerPresetId ? (
-                        <p className="px-4 pb-3 text-destructive text-sm">{errors.brokerPresetId.message}</p>
+                        <p className="px-4 pb-3 text-destructive text-sm">
+                          {localizeValidationMessage(errors.brokerPresetId.message, t)}
+                        </p>
                       ) : null}
                     </div>
                   )

@@ -244,6 +244,7 @@ export const en = {
     noOpenPositions: "No open positions",
     selectTickerToSell: "Select ticker to sell",
     availableShares: "Available: {qty} shares",
+    youHold: "You hold {qty} shares of {ticker}",
   },
   cash: {
     add: "Add Cash Flow",
@@ -329,8 +330,12 @@ export const en = {
     fetchFailed: "Failed to fetch exchange rate",
     noChartData: "No chart data yet",
     loadingChart: "Loading exchange rate chart",
+    amountIn: "Amount in {currency}",
+    feeNote: "{label} for {date}",
   },
   filters: {
+    title: "Filters",
+    close: "Close",
     pickADate: "Pick a date",
     selectADate: "Select a date",
     selectDayOrRange: "Select a day or a range of dates",
@@ -421,6 +426,7 @@ export const en = {
     hoursAgo: "{hours}h ago",
     daysAgo: "{days}d ago",
     asset: "Asset",
+    cash: "Cash",
     tooltips: {
       portfolioTotal:
         "Total portfolio value: current market value of holdings plus available buy power in {currency}.",

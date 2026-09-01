@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
 import { act, render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { TickerSearch } from "./ticker-search"
 
 vi.mock("@/lib/api/portfolio", () => ({
@@ -54,7 +55,11 @@ function renderWithProviders(ui: ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+  return render(
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </EnglishLocaleWrapper>,
+  )
 }
 
 describe("TickerSearch", () => {

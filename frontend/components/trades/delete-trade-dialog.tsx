@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { deleteTrade } from "@/lib/api/trades"
 import { showToast } from "@/lib/toast"
+import { useLocale } from "@/components/locale-provider"
 
 interface DeleteTradeDialogProps {
   trade: Trade
@@ -22,6 +23,7 @@ interface DeleteTradeDialogProps {
 }
 
 export function DeleteTradeDialog({ trade, open, onOpenChange, onSuccess }: DeleteTradeDialogProps) {
+  const { t } = useLocale()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleDelete = async () => {
@@ -29,12 +31,12 @@ export function DeleteTradeDialog({ trade, open, onOpenChange, onSuccess }: Dele
 
     try {
       await deleteTrade(trade.id)
-      showToast.success("Trade deleted")
+      showToast.success(t("trades.deleted"))
       onOpenChange(false)
       onSuccess()
     } catch (err) {
       showToast.error(
-        err instanceof Error ? err.message : "Failed to delete trade",
+        err instanceof Error ? err.message : t("trades.deleteFailed"),
       )
     } finally {
       setIsLoading(false)
@@ -45,17 +47,17 @@ export function DeleteTradeDialog({ trade, open, onOpenChange, onSuccess }: Dele
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Trade</AlertDialogTitle>
+          <AlertDialogTitle>{t("trades.deleteTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this trade for {trade.ticker}? This action cannot be undone.
+            {t("trades.deleteDescription", { ticker: trade.ticker })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className="w-full sm:w-auto">
-            Cancel
+            {t("trades.cancel")}
           </Button>
           <Button variant="destructive" onClick={handleDelete} disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? "Deleting..." : "Delete"}
+            {isLoading ? t("trades.deleting") : t("trades.delete")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

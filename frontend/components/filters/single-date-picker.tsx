@@ -144,7 +144,7 @@ export function SingleDatePicker({
   required,
   disabled,
 }: SingleDatePickerProps) {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [draftDay, setDraftDay] = useState<Date | undefined>()
@@ -165,7 +165,7 @@ export function SingleDatePicker({
     setDisplayMonth(parsed ?? today)
   }, [open, value, today])
 
-  const triggerLabel = value ? formatCalendarDate(value, intlLocale(locale)) : "Pick a date"
+  const triggerLabel = value ? formatCalendarDate(value, intlLocale(locale)) : t("filters.pickADate")
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
@@ -205,10 +205,10 @@ export function SingleDatePicker({
   const Footer = (
     <div className="flex items-center justify-end gap-2 border-t border-border p-3">
       <Button type="button" variant="ghost" size="sm" onClick={handleClear}>
-        Clear
+        {t("filters.clear")}
       </Button>
       <Button type="button" size="sm" onClick={handleApply} disabled={!draftDay}>
-        Apply
+        {t("filters.apply")}
       </Button>
     </div>
   )
@@ -238,7 +238,7 @@ export function SingleDatePicker({
             <DrawerHeader className="pb-2 text-left">
               <DrawerTitle>{label}</DrawerTitle>
               <p id={`${id}-description`} className="text-sm text-muted-foreground">
-                Select a date
+                {t("filters.selectADate")}
               </p>
             </DrawerHeader>
             <div className="px-4 py-2">
@@ -255,7 +255,7 @@ export function SingleDatePicker({
             <DrawerFooter className="px-4 pb-6">
               <DrawerClose asChild>
                 <Button type="button" variant="outline" size="sm" className="w-full">
-                  Cancel
+                  {t("filters.cancel")}
                 </Button>
               </DrawerClose>
               {Footer}

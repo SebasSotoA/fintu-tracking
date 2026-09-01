@@ -2,6 +2,7 @@ import type { ReactElement } from "react"
 import { describe, expect, it, vi } from "vitest"
 import { render, screen, fireEvent } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { SellTickerSelect } from "./sell-ticker-select"
 
 vi.mock("@/lib/api/portfolio", () => ({
@@ -13,7 +14,11 @@ function renderWithProviders(ui: ReactElement) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>)
+  return render(
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </EnglishLocaleWrapper>,
+  )
 }
 
 describe("SellTickerSelect", () => {

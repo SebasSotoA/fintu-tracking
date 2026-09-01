@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import { render } from "@testing-library/react"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { FxRateManager } from "./fx-rate-manager"
 
 vi.mock("@tanstack/react-query", () => ({
@@ -22,7 +23,11 @@ vi.mock("./fx-rate-sparkline", () => ({
 
 describe("FxRateManager swap control", () => {
   it("renders a decorative non-interactive swap mark matching the converter cards", () => {
-    const { container } = render(<FxRateManager />)
+    const { container } = render(
+      <EnglishLocaleWrapper>
+        <FxRateManager />
+      </EnglishLocaleWrapper>,
+    )
 
     const swap = container.querySelector('[data-testid="fx-convert-swap"]')
     expect(swap).toBeTruthy()

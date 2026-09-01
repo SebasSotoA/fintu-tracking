@@ -11,17 +11,19 @@ interface TradeDateFilterProps {
 }
 
 export function TradeDateFilter({ value, onChange }: TradeDateFilterProps) {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const dateLocale = intlLocale(locale)
 
   return (
     <DateRangePicker
       id="trade-filter-date"
-      label="Date"
-      ariaLabel="Filter trades by date"
+      label={t("trades.date")}
+      ariaLabel={t("trades.filterByDate")}
       value={value}
       onChange={onChange}
-      formatLabel={(range) => formatTradeDateRangeLabel(range, dateLocale)}
+      formatLabel={(range) =>
+        range.from ? formatTradeDateRangeLabel(range, dateLocale) : t("filters.allDates")
+      }
     />
   )
 }

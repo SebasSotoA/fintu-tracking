@@ -76,13 +76,18 @@ export function buildTradePayload(values: TradeFormValues) {
   return payload
 }
 
+export interface SellQuantityError {
+  qty: string
+  ticker: string
+}
+
 export function validateSellQuantity(
   holdings: Holding[],
   ticker: string,
   side: "buy" | "sell",
   quantity: string,
   editingTrade?: Trade,
-): string | null {
+): SellQuantityError | null {
   if (side !== "sell") return null
 
   const selling = new Decimal(quantity)
@@ -97,7 +102,7 @@ export function validateSellQuantity(
   }
 
   if (selling.gt(available)) {
-    return `You hold ${available.toFixed(4)} shares of ${symbol}`
+    return { qty: available.toFixed(4), ticker: symbol }
   }
   return null
 }

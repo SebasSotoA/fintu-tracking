@@ -31,7 +31,7 @@ export function DatePickerDayHeader({
   onYearClick,
   onMonthClick,
 }: DatePickerDayHeaderProps) {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const monthName = displayDate.toLocaleString(intlLocale(locale), { month: "long" })
   const year = displayDate.getFullYear()
 
@@ -42,7 +42,7 @@ export function DatePickerDayHeader({
         variant="ghost"
         size="sm"
         className="h-8 px-2 font-medium"
-        aria-label={`Select month ${monthName}`}
+        aria-label={t("filters.selectMonth", { month: monthName })}
         onClick={onMonthClick}
       >
         {monthName}
@@ -52,7 +52,7 @@ export function DatePickerDayHeader({
         variant="ghost"
         size="sm"
         className="h-8 px-2 font-medium"
-        aria-label={`Select year ${year}`}
+        aria-label={t("filters.selectYear", { year })}
         onClick={onYearClick}
       >
         {year}
@@ -77,6 +77,7 @@ export function DatePickerDayHeaderWithNav({
   canGoPrevious,
   canGoNext,
 }: DatePickerDayHeaderWithNavProps) {
+  const { t } = useLocale()
   return (
     <div className="flex items-center justify-between px-3 pt-3">
       <Button
@@ -84,7 +85,7 @@ export function DatePickerDayHeaderWithNav({
         variant="ghost"
         size="icon"
         className="size-8"
-        aria-label="Previous month"
+        aria-label={t("filters.previousMonth")}
         disabled={!canGoPrevious}
         onClick={onPreviousMonth}
       >
@@ -100,7 +101,7 @@ export function DatePickerDayHeaderWithNav({
         variant="ghost"
         size="icon"
         className="size-8"
-        aria-label="Next month"
+        aria-label={t("filters.nextMonth")}
         disabled={!canGoNext}
         onClick={onNextMonth}
       >
@@ -141,6 +142,7 @@ export function YearGridPicker({
   selectedYear,
   onSelectYear,
 }: YearGridPickerProps) {
+  const { t } = useLocale()
   const [pageStart, setPageStart] = useState(() =>
     getYearPageStart(focusYear, minYear, YEARS_PER_PAGE),
   )
@@ -171,7 +173,7 @@ export function YearGridPicker({
           variant="ghost"
           size="icon"
           className="size-8"
-          aria-label="Previous years"
+          aria-label={t("filters.previousYears")}
           disabled={!canGoPrev}
           onClick={() => setPageStart((current) => Math.max(minYear, current - YEARS_PER_PAGE))}
         >
@@ -185,7 +187,7 @@ export function YearGridPicker({
           variant="ghost"
           size="icon"
           className="size-8"
-          aria-label="Next years"
+          aria-label={t("filters.nextYears")}
           disabled={!canGoNext}
           onClick={() => setPageStart((current) => current + YEARS_PER_PAGE)}
         >
@@ -199,7 +201,7 @@ export function YearGridPicker({
             type="button"
             variant="ghost"
             size="sm"
-            aria-label={`Select year ${year}`}
+            aria-label={t("filters.selectYear", { year })}
             className={cn(
               "h-8 font-normal tabular-nums",
               selectedYear === year && "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -221,7 +223,7 @@ export interface MonthGridPickerProps {
 }
 
 export function MonthGridPicker({ year, selectedMonth, onSelectMonth }: MonthGridPickerProps) {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const intl = intlLocale(locale)
   const longNames = listMonthNames(intl, "long")
   const shortNames = listMonthNames(intl, "short")
@@ -236,7 +238,7 @@ export function MonthGridPicker({ year, selectedMonth, onSelectMonth }: MonthGri
             type="button"
             variant="ghost"
             size="sm"
-            aria-label={`Select ${monthName} ${year}`}
+            aria-label={t("filters.selectMonthYear", { month: monthName, year })}
             className={cn(
               "h-8 font-normal",
               selectedMonth === monthIndex && "bg-primary text-primary-foreground hover:bg-primary/90",

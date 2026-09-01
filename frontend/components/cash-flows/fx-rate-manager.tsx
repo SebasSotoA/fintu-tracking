@@ -9,6 +9,7 @@ import { queryKeys } from "@/lib/api/query-keys"
 import { fetchCurrentRate, getFxRateChart } from "@/lib/api/fx-rates"
 import { FxRateSparkline } from "@/components/cash-flows/fx-rate-sparkline"
 import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
+import { useLocale } from "@/components/locale-provider"
 
 type ConvertLastEdited = "base" | "local"
 
@@ -46,6 +47,7 @@ function formatBaseAmount(d: Decimal): string {
 }
 
 export function FxRateManager() {
+  const { t } = useLocale()
   const queryClient = useQueryClient()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -85,7 +87,7 @@ export function FxRateManager() {
         queryClient.invalidateQueries({ queryKey: queryKeys.netWorth() }),
       ])
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch exchange rate")
+      setError(err instanceof Error ? err.message : t("cash.fetchFailed"))
     } finally {
       setIsRefreshing(false)
     }
@@ -144,7 +146,7 @@ export function FxRateManager() {
           onClick={handleRefreshRate}
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-          {isRefreshing ? "Fetching…" : "Refresh rate"}
+          {isRefreshing ? t("cash.fetching") : t("cash.refreshRate")}
         </Button>
       </div>
 
@@ -152,9 +154,9 @@ export function FxRateManager() {
 
       {(!latestRate || canonical <= 0) && (
         <div className="mb-6 rounded-xl border border-dashed border-border bg-surface-container p-8 text-center">
-          <p className="mb-4 text-muted-foreground">No exchange rate on file yet.</p>
+          <p className="mb-4 text-muted-foreground">{t("cash.noRate")}</p>
           <Button type="button" variant="secondary" disabled={isRefreshing} onClick={handleRefreshRate}>
-            {isRefreshing ? "Fetching rate…" : "Fetch rate"}
+            {isRefreshing ? t("cash.fetchingRate") : t("cash.fetchRate")}
           </Button>
         </div>
       )}
@@ -170,7 +172,7 @@ export function FxRateManager() {
                 type="text"
                 inputMode="decimal"
                 autoComplete="off"
-                aria-label={`Amount in ${MARKET_CONFIG.baseCurrency}`}
+                aria-label={t("cash.amountIn", { currency: MARKET_CONFIG.baseCurrency })}
                 className="mt-1 w-full cursor-text border-0 bg-transparent p-0 font-mono text-2xl font-semibold tabular-nums text-foreground outline-none focus:outline-none focus-visible:outline-none"
                 value={convertBase}
                 onChange={(e) => handleConvertBaseChange(e.target.value)}
@@ -196,7 +198,7 @@ export function FxRateManager() {
                 type="text"
                 inputMode="decimal"
                 autoComplete="off"
-                aria-label={`Amount in ${MARKET_CONFIG.localCurrency}`}
+                aria-label={t("cash.amountIn", { currency: MARKET_CONFIG.localCurrency })}
                 className="mt-1 w-full cursor-text border-0 bg-transparent p-0 font-mono text-2xl font-semibold tabular-nums text-foreground outline-none focus:outline-none focus-visible:outline-none"
                 value={convertLocal}
                 onChange={(e) => handleConvertLocalChange(e.target.value)}

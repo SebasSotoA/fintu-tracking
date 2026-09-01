@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { screen, fireEvent } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { DateRangePicker } from "./date-range-picker"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import {
   EMPTY_TRADE_DATE_RANGE,
   applyTradeDatePreset,
@@ -53,7 +54,7 @@ function renderPicker({
   const onChange = vi.fn()
   return {
     onChange,
-    ...render(
+    ...renderWithLocale(
       <DateRangePicker
         id="cf-filter-date"
         label="Date"
@@ -143,7 +144,7 @@ describe("DateRangePicker", () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
 
-    render(
+    renderWithLocale(
       <DateRangePicker
         id="cf-filter-date"
         label="Date"
@@ -222,7 +223,7 @@ describe("DateRangePicker", () => {
 
   it("renders the label as sr-only when hideLabel is true on desktop", () => {
     useIsMobileMock.mockReturnValue(false)
-    render(
+    renderWithLocale(
       <DateRangePicker
         id="perf-date-range"
         label="Date range"
@@ -241,7 +242,7 @@ describe("DateRangePicker", () => {
 
   it("renders the label as sr-only when hideLabel is true on mobile", () => {
     useIsMobileMock.mockReturnValue(true)
-    render(
+    renderWithLocale(
       <DateRangePicker
         id="perf-date-range"
         label="Date range"

@@ -36,6 +36,7 @@ import {
 import { BrokerSelect } from "@/components/brokers/broker-select"
 import { computeCashFlowBrokerFeeUSD } from "@/lib/brokers/broker-presets"
 import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
+import { useLocale } from "@/components/locale-provider"
 import { showToast } from "@/lib/toast"
 
 const emptyForm = () => ({
@@ -50,6 +51,7 @@ const emptyForm = () => ({
 })
 
 export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: boolean; children?: React.ReactNode }) {
+  const { t } = useLocale()
   const router = useRouter()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(autoOpen)
@@ -62,9 +64,14 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
     feeUsd: formData.deposit_fee_usd,
     fxRate: formData.fx_rate,
   })
-  const feeLabel = formData.type === "withdrawal" ? `Withdrawal fee ${MARKET_CONFIG.baseCurrency}` : `Deposit fee ${MARKET_CONFIG.baseCurrency}`
+  const feeLabel =
+    formData.type === "withdrawal"
+      ? t("cash.withdrawalFee", { currency: MARKET_CONFIG.baseCurrency })
+      : t("cash.depositFee", { currency: MARKET_CONFIG.baseCurrency })
   const netUsdLabel =
-    formData.type === "withdrawal" ? `${MARKET_CONFIG.baseCurrency} debited from broker` : "Deposit amount"
+    formData.type === "withdrawal"
+      ? t("cash.usdDebited", { currency: MARKET_CONFIG.baseCurrency })
+      : t("cash.depositAmount")
   const transferAmount = computeCopFromNetUsd({
     netUsd: formData.net_usd,
     feeUsd: formData.deposit_fee_usd,
@@ -110,24 +117,24 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
             related_trade_id: null,
             related_cash_flow_id: deposit.id,
             related_type: transferType,
-            notes: `${feeLabel} for ${formData.date}`,
+            notes: t("cash.feeNote", { label: feeLabel, date: formData.date }),
           })
         } catch {
-          showToast.error("Deposit saved but fee entry failed")
+          showToast.error(t("cash.feeSavedFailed"))
           await invalidateAfterCashFlowMutation(queryClient)
           router.refresh()
           return
         }
       }
 
-      showToast.success("Cash flow added")
+      showToast.success(t("cash.added"))
       setOpen(false)
       setFormData(emptyForm())
       await invalidateAfterCashFlowMutation(queryClient)
       router.refresh()
     } catch (err) {
       showToast.error(
-        err instanceof Error ? err.message : "Failed to add cash flow",
+        err instanceof Error ? err.message : t("cash.addFailed"),
       )
     } finally {
       setIsLoading(false)
@@ -139,19 +146,19 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
       <ResponsiveDialogTrigger asChild>
         <Button className="gap-2 w-full md:w-auto">
           <Plus className="h-4 w-4" />
-          {children ?? "Add Cash Flow"}
+          {children ?? t("cash.add")}
         </Button>
       </ResponsiveDialogTrigger>
       <ResponsiveDialogContent className="flex max-h-[100dvh] md:max-h-[90vh] max-w-[calc(100%-2rem)] flex-col gap-0 p-0 sm:max-w-3xl">
         <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
-          <ResponsiveDialogTitle>Add Cash Flow</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>Record a deposit or withdrawal</ResponsiveDialogDescription>
+          <ResponsiveDialogTitle>{t("cash.add")}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>{t("cash.addDescription")}</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form id="add-cash-flow-form" onSubmit={handleSubmit} className="space-y-4">
           <ResponsiveFormGrid className="md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="cf-type">Type</Label>
+              <Label htmlFor="cf-type">{t("cash.type")}</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value: "deposit" | "withdrawal") =>
@@ -167,15 +174,15 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="deposit">Deposit</SelectItem>
-                  <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                  <SelectItem value="deposit">{t("cash.deposit")}</SelectItem>
+                  <SelectItem value="withdrawal">{t("cash.withdrawal")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <SingleDatePicker
               id="cf-date"
-              label="Date"
-              ariaLabel="Cash flow date"
+              label={t("cash.date")}
+              ariaLabel={t("cash.cashFlowDate")}
               value={formData.date}
               onChange={(date) => setFormData({ ...formData, date })}
               required
@@ -202,7 +209,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
               <div className="space-y-2">
                 <Label htmlFor="cf-deposit-fee">
                   {feeLabel}{" "}
-                  <span className="text-xs font-normal text-muted-foreground">optional</span>
+                  <span className="text-xs font-normal text-muted-foreground">{t("cash.optional")}</span>
                 </Label>
                 <Input
                   id="cf-deposit-fee"
@@ -215,7 +222,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cf-fx-rate">FX rate {formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency)}</Label>
+                <Label htmlFor="cf-fx-rate">{t("cash.fxRate", { pair: formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency) })}</Label>
                 <Input
                   id="cf-fx-rate"
                   type="number"
@@ -232,18 +239,18 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
 
           {isTransfer && (
             <div className="space-y-2">
-              <Label>Total ({MARKET_CONFIG.baseCurrency})</Label>
+              <Label>{t("cash.totalLabel", { currency: MARKET_CONFIG.baseCurrency })}</Label>
               <div className="text-2xl font-bold font-mono">${transferBreakdown.subtotalUsd}</div>
             </div>
           )}
 
           <div className="space-y-2">
             <Label htmlFor="cf-notes">
-              Notes <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+              {t("cash.notes")} <span className="text-xs font-normal text-muted-foreground">({t("cash.optional")})</span>
             </Label>
             <NotesTextarea
               id="cf-notes"
-              placeholder="Additional details..."
+              placeholder={t("cash.notesPlaceholder")}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
@@ -252,10 +259,10 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
         </DialogScrollBody>
         <div className="flex shrink-0 flex-col-reverse gap-2 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => setOpen(false)} className="w-full sm:w-auto">
-            Cancel
+            {t("cash.cancel")}
           </Button>
           <Button type="submit" form="add-cash-flow-form" disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? "Adding..." : "Add Cash Flow"}
+            {isLoading ? t("cash.adding") : t("cash.add")}
           </Button>
         </div>
       </ResponsiveDialogContent>

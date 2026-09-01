@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/drawer"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { parseCalendarDay, toCalendarDay } from "@/lib/date/calendar-day"
+import { useLocale } from "@/components/locale-provider"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
@@ -27,12 +28,6 @@ import {
   type TradeDatePreset,
   type TradeDateRange,
 } from "@/lib/trades/trade-filters"
-
-const PRESETS: { id: TradeDatePreset; label: string }[] = [
-  { id: "last30d", label: "Last 30d" },
-  { id: "ytd", label: "YTD" },
-  { id: "12m", label: "12M" },
-]
 
 export interface DateRangePickerProps {
   id: string
@@ -66,6 +61,7 @@ function DateRangePickerContent({
   setDraft: (draft: TradeDateRange) => void
   onPreset: (preset: TradeDatePreset) => void
 }) {
+  const { t } = useLocale()
   const handleModeChange = (next: string) => {
     const nextMode = next as "day" | "range"
     setMode(nextMode)
@@ -90,10 +86,10 @@ function DateRangePickerContent({
         <Tabs value={mode} onValueChange={handleModeChange}>
           <TabsList className="grid h-8 w-full grid-cols-2">
             <TabsTrigger value="day" className="text-xs">
-              Day
+              {t("filters.day")}
             </TabsTrigger>
             <TabsTrigger value="range" className="text-xs">
-              Range
+              {t("filters.range")}
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -136,7 +132,13 @@ function DateRangePickerContent({
       )}
 
       <div className="flex flex-wrap gap-1.5 border-t border-border px-3 py-2">
-        {PRESETS.map((preset) => (
+        {(
+          [
+            { id: "last30d" as const, label: t("filters.last30d") },
+            { id: "ytd" as const, label: t("filters.ytd") },
+            { id: "12m" as const, label: t("filters.twelveM") },
+          ] satisfies { id: TradeDatePreset; label: string }[]
+        ).map((preset) => (
           <Button
             key={preset.id}
             type="button"
@@ -163,6 +165,7 @@ export function DateRangePicker({
   hideLabel = false,
   popoverAlign = "start",
 }: DateRangePickerProps) {
+  const { t } = useLocale()
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<"day" | "range">("day")
@@ -225,7 +228,7 @@ export function DateRangePicker({
   const Footer = (
     <div className="flex items-center justify-end gap-2 border-t border-border p-3">
       <Button type="button" variant="ghost" size="sm" onClick={handleClear}>
-        Clear
+        {t("filters.clear")}
       </Button>
       <Button
         type="button"
@@ -233,7 +236,7 @@ export function DateRangePicker({
         onClick={handleApply}
         disabled={mode === "day" ? !draft.from : !draft.from || !draft.to}
       >
-        Apply
+        {t("filters.apply")}
       </Button>
     </div>
   )
@@ -267,7 +270,7 @@ export function DateRangePicker({
             <DrawerHeader className="pb-2 text-left">
               <DrawerTitle>{label}</DrawerTitle>
               <p id={`${id}-description`} className="text-sm text-muted-foreground">
-                Select a day or a range of dates
+                {t("filters.selectDayOrRange")}
               </p>
             </DrawerHeader>
             <div className="px-4 py-2">

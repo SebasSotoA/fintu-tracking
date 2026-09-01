@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { getHoldings } from "@/lib/api/portfolio"
 import type { Holding } from "@/lib/types"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/components/locale-provider"
 import Decimal from "decimal.js"
 
 interface SellTickerSelectProps {
@@ -37,6 +38,7 @@ function filterOpenHoldings(rows: Holding[]): Holding[] {
 }
 
 export function SellTickerSelect({ id, value, onChange, disabled }: SellTickerSelectProps) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   const { data: holdings = [] } = useQuery({
     queryKey: ["holdings"],
@@ -46,11 +48,11 @@ export function SellTickerSelect({ id, value, onChange, disabled }: SellTickerSe
   })
 
   const selected = holdings.find((h) => h.ticker.toUpperCase() === value.toUpperCase())
-  const label = value ? value.toUpperCase() : "Select holding"
+  const label = value ? value.toUpperCase() : t("trades.selectHolding")
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>Ticker</Label>
+      <Label htmlFor={id}>{t("trades.ticker")}</Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -60,7 +62,7 @@ export function SellTickerSelect({ id, value, onChange, disabled }: SellTickerSe
             role="combobox"
             disabled={disabled}
             aria-expanded={open}
-            aria-label="Select ticker to sell"
+            aria-label={t("trades.selectTickerToSell")}
             className={cn(
               "h-9 w-full justify-between px-3 font-normal",
               !value && "text-muted-foreground",
@@ -72,9 +74,9 @@ export function SellTickerSelect({ id, value, onChange, disabled }: SellTickerSe
         </PopoverTrigger>
         <PopoverContent className="w-[14rem] p-0" align="start">
           <Command>
-            <CommandInput placeholder="Search holding..." />
+            <CommandInput placeholder={t("trades.searchHolding")} />
             <CommandList>
-              <CommandEmpty>No open positions</CommandEmpty>
+              <CommandEmpty>{t("trades.noOpenPositions")}</CommandEmpty>
               <CommandGroup>
                 {holdings.map((h) => (
                   <CommandItem
@@ -104,7 +106,7 @@ export function SellTickerSelect({ id, value, onChange, disabled }: SellTickerSe
       </Popover>
       {selected && (
         <p className="text-xs text-muted-foreground">
-          Available: {new Decimal(selected.quantity).toFixed(4)} shares
+          {t("trades.availableShares", { qty: new Decimal(selected.quantity).toFixed(4) })}
         </p>
       )}
     </div>

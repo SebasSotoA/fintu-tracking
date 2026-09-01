@@ -2,7 +2,7 @@ import type { ReactElement } from "react"
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen, fireEvent, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
+import { EnglishLocaleWrapper, renderWithLocale } from "@/lib/i18n/test-utils"
 import type { Trade } from "@/lib/types"
 import { TradesList } from "./trades-list"
 
@@ -269,5 +269,19 @@ describe("TradesList", () => {
     expect(viewIndex).toBeGreaterThanOrEqual(0)
     expect(addIndex).toBeGreaterThanOrEqual(0)
     expect(viewIndex).toBeLessThan(addIndex)
+  })
+
+  it("shows Spanish Add Trade button when locale is es", () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    renderWithLocale(
+      <QueryClientProvider client={queryClient}>
+        <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />
+      </QueryClientProvider>,
+      { locale: "es" },
+    )
+
+    expect(screen.getByRole("button", { name: /agregar operación/i })).toBeInTheDocument()
   })
 })

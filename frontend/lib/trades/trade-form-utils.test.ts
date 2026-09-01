@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { buildTradePayload, calculateTradeTotal, tradeClosingFeeForForm } from "./trade-form-utils"
-import type { Trade } from "@/lib/types"
+import {
+  buildTradePayload,
+  calculateTradeTotal,
+  tradeClosingFeeForForm,
+  validateSellQuantity,
+} from "./trade-form-utils"
+import type { Holding, Trade } from "@/lib/types"
 
 const baseFormValues = {
   date: "2026-06-01",
@@ -55,5 +60,29 @@ describe("calculateTradeTotal", () => {
     expect(
       calculateTradeTotal({ ...baseFormValues, side: "sell", quantity: "2", price: "10", closing_fee: "1.50" }),
     ).toBe("18.50")
+  })
+})
+
+describe("validateSellQuantity", () => {
+  const holding: Holding = {
+    ticker: "AAPL",
+    quantity: "2",
+    avgCost: "0",
+    totalInvested: "0",
+    marketValue: "0",
+    unrealizedPL: "0",
+    unrealizedPLPercent: "0",
+  }
+
+  it("returns qty and ticker when selling more than held", () => {
+    expect(validateSellQuantity([holding], "AAPL", "sell", "3")).toEqual({
+      qty: "2.0000",
+      ticker: "AAPL",
+    })
+  })
+
+  it("returns null for buys and valid sells", () => {
+    expect(validateSellQuantity([holding], "AAPL", "buy", "10")).toBeNull()
+    expect(validateSellQuantity([holding], "AAPL", "sell", "2")).toBeNull()
   })
 })

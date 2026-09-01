@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { deleteCashFlow } from "@/lib/api/cash-flows"
 import { showToast } from "@/lib/toast"
+import { useLocale } from "@/components/locale-provider"
+import { getCashFlowTypeLabel } from "@/lib/cash-flows/cash-flows-list-display"
 
 interface DeleteCashFlowDialogProps {
   cashFlow: CashFlow
@@ -22,6 +24,7 @@ interface DeleteCashFlowDialogProps {
 }
 
 export function DeleteCashFlowDialog({ cashFlow, open, onOpenChange, onSuccess }: DeleteCashFlowDialogProps) {
+  const { t } = useLocale()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleDelete = async () => {
@@ -29,12 +32,12 @@ export function DeleteCashFlowDialog({ cashFlow, open, onOpenChange, onSuccess }
 
     try {
       await deleteCashFlow(cashFlow.id)
-      showToast.success("Cash flow deleted")
+      showToast.success(t("cash.deleted"))
       onOpenChange(false)
       onSuccess()
     } catch (err) {
       showToast.error(
-        err instanceof Error ? err.message : "Failed to delete cash flow",
+        err instanceof Error ? err.message : t("cash.deleteFailed"),
       )
     } finally {
       setIsLoading(false)
@@ -45,17 +48,17 @@ export function DeleteCashFlowDialog({ cashFlow, open, onOpenChange, onSuccess }
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Cash Flow</AlertDialogTitle>
+          <AlertDialogTitle>{t("cash.deleteTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete this {cashFlow.type}? This action cannot be undone.
+            {t("cash.deleteDescription", { type: getCashFlowTypeLabel(cashFlow.type, t).toLowerCase() })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading} className="w-full sm:w-auto">
-            Cancel
+            {t("cash.cancel")}
           </Button>
           <Button variant="destructive" onClick={handleDelete} disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? "Deleting..." : "Delete"}
+            {isLoading ? t("cash.deleting") : t("cash.delete")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

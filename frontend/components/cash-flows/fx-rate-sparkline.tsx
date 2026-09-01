@@ -90,7 +90,7 @@ function FxRateTooltip({
 }
 
 export function FxRateSparkline({ points, isLoading = false }: FxRateSparklineProps) {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const axisLocale = intlLocale(locale)
 
   if (isLoading) {
@@ -98,7 +98,7 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
       <div
         className="flex h-[140px] items-center justify-center rounded-xl border border-border/50 bg-muted/20"
         aria-busy="true"
-        aria-label="Loading exchange rate chart"
+        aria-label={t("cash.loadingChart")}
       >
         <Spinner className="size-5 text-muted-foreground" />
       </div>
@@ -122,7 +122,7 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
   if (data.length === 0) {
     return (
       <div className="flex h-[140px] items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-        No chart data yet
+        {t("cash.noChartData")}
       </div>
     )
   }

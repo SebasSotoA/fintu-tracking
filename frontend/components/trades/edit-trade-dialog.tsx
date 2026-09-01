@@ -29,6 +29,7 @@ import { toDateInputValue } from "@/lib/date-utils"
 import { Decimal } from "@/lib/decimal"
 import { BrokerSelect } from "@/components/brokers/broker-select"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { useLocale } from "@/components/locale-provider"
 import {
   buildTradePayload,
   calculateTradeTotal,
@@ -65,6 +66,7 @@ function tradeToFormValues(trade: Trade): TradeFormValues {
 }
 
 export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTradeDialogProps) {
+  const { t } = useLocale()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState<TradeFormValues>(() => tradeToFormValues(trade))
@@ -94,18 +96,18 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
         trade,
       )
       if (sellError) {
-        setError(sellError)
+        setError(t("trades.youHold", { qty: sellError.qty, ticker: sellError.ticker }))
         return
       }
 
       await updateTrade(trade.id, buildTradePayload(formData))
 
-      showToast.success("Trade updated")
+      showToast.success(t("trades.updated"))
       onOpenChange(false)
       onSuccess()
     } catch (err) {
       showToast.error(
-        err instanceof Error ? err.message : "Failed to update trade",
+        err instanceof Error ? err.message : t("trades.updateFailed"),
       )
     } finally {
       setIsLoading(false)
@@ -116,16 +118,16 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="flex max-h-[100dvh] md:max-h-[90vh] flex-col gap-0 p-0 sm:max-w-2xl">
         <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
-          <ResponsiveDialogTitle>Edit Trade</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>Update the trade details</ResponsiveDialogDescription>
+          <ResponsiveDialogTitle>{t("trades.editTitle")}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>{t("trades.editDescription")}</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form id="edit-trade-form" onSubmit={handleSubmit} className="space-y-4">
             <ResponsiveFormGrid>
               <SingleDatePicker
                 id="edit-date"
-                label="Date"
-                ariaLabel="Trade date"
+                label={t("trades.date")}
+                ariaLabel={t("trades.tradeDate")}
                 value={formData.date}
                 onChange={(date) => setFormData({ ...formData, date })}
                 required
@@ -167,7 +169,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
 
           <ResponsiveFormGrid className="md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="edit-asset_type">Asset Type</Label>
+              <Label htmlFor="edit-asset_type">{t("trades.assetType")}</Label>
               <Select
                 value={formData.asset_type}
                 onValueChange={(value: "stock" | "etf" | "crypto") =>
@@ -179,9 +181,9 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="stock">Stock</SelectItem>
-                  <SelectItem value="etf">ETF</SelectItem>
-                  <SelectItem value="crypto">Crypto</SelectItem>
+                  <SelectItem value="stock">{t("trades.stock")}</SelectItem>
+                  <SelectItem value="etf">{t("trades.etf")}</SelectItem>
+                  <SelectItem value="crypto">{t("trades.crypto")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -191,7 +193,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               onChange={(value) => setFormData({ ...formData, broker_id: value })}
             />
             <div className="space-y-2">
-              <Label htmlFor="edit-side">Side</Label>
+              <Label htmlFor="edit-side">{t("trades.side")}</Label>
               <Select
                 value={formData.side}
                 onValueChange={(value: "buy" | "sell") => {
@@ -207,8 +209,8 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="buy">Buy</SelectItem>
-                  <SelectItem value="sell">Sell</SelectItem>
+                  <SelectItem value="buy">{t("trades.buy")}</SelectItem>
+                  <SelectItem value="sell">{t("trades.sell")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -216,7 +218,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
 
           <ResponsiveFormGrid>
             <div className="space-y-2">
-              <Label htmlFor="edit-quantity">Quantity</Label>
+              <Label htmlFor="edit-quantity">{t("trades.quantity")}</Label>
               <Input
                 id="edit-quantity"
                 type="number"
@@ -228,7 +230,7 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-price">Price</Label>
+              <Label htmlFor="edit-price">{t("trades.price")}</Label>
               <Input
                 id="edit-price"
                 type="number"
@@ -243,19 +245,19 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
 
           <div className="space-y-2">
             <div className="flex items-center gap-1">
-              <Label htmlFor="edit-closing_fee">Commission</Label>
+              <Label htmlFor="edit-closing_fee">{t("trades.commission")}</Label>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    aria-label="About Commission"
+                    aria-label={t("trades.aboutCommission")}
                     className="inline-flex rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <CircleHelp className="size-3.5 shrink-0" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs text-pretty">
-                  Broker's closing fee per trade
+                  {t("trades.commissionHelp")}
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -271,15 +273,15 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
           </div>
 
           <div className="space-y-2">
-            <Label>Total ({MARKET_CONFIG.baseCurrency})</Label>
+            <Label>{t("trades.totalLabel", { currency: MARKET_CONFIG.baseCurrency })}</Label>
             <div className="text-2xl font-bold font-mono">${calculateTradeTotal(formData)}</div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-notes">Notes (optional)</Label>
+            <Label htmlFor="edit-notes">{t("trades.notesOptional")}</Label>
             <NotesTextarea
               id="edit-notes"
-              placeholder="Additional details..."
+                placeholder={t("trades.notesPlaceholder")}
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             />
@@ -290,10 +292,10 @@ export function EditTradeDialog({ trade, open, onOpenChange, onSuccess }: EditTr
         </DialogScrollBody>
         <div className="flex shrink-0 flex-col-reverse gap-2 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-            Cancel
+            {t("trades.cancel")}
           </Button>
           <Button type="submit" form="edit-trade-form" disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? "Saving..." : "Save Changes"}
+            {isLoading ? t("trades.saving") : t("trades.save")}
           </Button>
         </div>
       </ResponsiveDialogContent>

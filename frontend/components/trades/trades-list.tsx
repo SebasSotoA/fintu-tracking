@@ -63,19 +63,6 @@ interface TradesListProps {
   tickers: string[]
 }
 
-const SIDE_OPTIONS: { value: TradeSideFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "buy", label: "Buys" },
-  { value: "sell", label: "Sells" },
-]
-
-const ASSET_OPTIONS: { value: TradeAssetTypeFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "stock", label: "Stocks" },
-  { value: "etf", label: "ETFs" },
-  { value: "crypto", label: "Crypto" },
-]
-
 const BADGE_BASE =
   "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider shrink-0"
 
@@ -105,13 +92,14 @@ function TradeTickerFilter({
   value: string | null
   onChange: (ticker: string | null) => void
 }) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
-  const label = value ?? "All tickers"
+  const label = value ?? t("trades.allTickers")
 
   return (
     <div className="space-y-1.5 md:w-auto">
       <Label htmlFor="trade-filter-ticker" className="text-xs text-muted-foreground">
-        Ticker
+        {t("trades.ticker")}
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -121,7 +109,7 @@ function TradeTickerFilter({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            aria-label="Filter trades by ticker"
+            aria-label={t("trades.filterByTicker")}
             className={cn(
               filterTriggerClassName,
               "w-full md:w-[9.5rem] justify-between",
@@ -133,9 +121,9 @@ function TradeTickerFilter({
         </PopoverTrigger>
         <PopoverContent className="w-[14rem] p-0" align="start">
           <Command>
-            <CommandInput placeholder="Search ticker..." />
+            <CommandInput placeholder={t("trades.searchTickerPlaceholder")} />
             <CommandList>
-              <CommandEmpty>No ticker found.</CommandEmpty>
+              <CommandEmpty>{t("trades.noTickerFound")}</CommandEmpty>
               <CommandGroup>
                 <CommandItem
                   value="all-tickers"
@@ -145,7 +133,7 @@ function TradeTickerFilter({
                   }}
                 >
                   <Check className={cn("mr-2 size-4", value === null ? "opacity-100" : "opacity-0")} />
-                  All tickers
+                  {t("trades.allTickers")}
                 </CommandItem>
                 {tickers.map((ticker) => (
                   <CommandItem
@@ -180,23 +168,36 @@ function TradeFiltersForm({
   tickers: string[]
   onChange: (patch: Partial<TradeFilters>) => void
 }) {
+  const { t } = useLocale()
+  const sideOptions: { value: TradeSideFilter; label: string }[] = [
+    { value: "all", label: t("trades.all") },
+    { value: "buy", label: t("trades.buys") },
+    { value: "sell", label: t("trades.sells") },
+  ]
+  const assetOptions: { value: TradeAssetTypeFilter; label: string }[] = [
+    { value: "all", label: t("trades.all") },
+    { value: "stock", label: t("trades.stocks") },
+    { value: "etf", label: t("trades.etfs") },
+    { value: "crypto", label: t("trades.crypto") },
+  ]
+
   return (
     <div className="grid grid-cols-1 gap-4 md:flex md:flex-wrap md:items-end">
       <FilterSelect
         id="trade-filter-side"
-        label="Side"
-        ariaLabel="Filter trades by side"
+        label={t("trades.side")}
+        ariaLabel={t("trades.filterBySide")}
         value={filters.side}
-        options={SIDE_OPTIONS}
+        options={sideOptions}
         onChange={(side) => onChange({ side })}
         triggerClassName="h-9 w-full md:w-[7.5rem]"
       />
       <FilterSelect
         id="trade-filter-asset"
-        label="Asset"
-        ariaLabel="Filter trades by asset"
+        label={t("trades.asset")}
+        ariaLabel={t("trades.filterByAsset")}
         value={filters.assetType}
-        options={ASSET_OPTIONS}
+        options={assetOptions}
         onChange={(assetType) => onChange({ assetType })}
         triggerClassName="h-9 w-full md:w-[7.5rem]"
       />
@@ -220,7 +221,7 @@ export function TradesList({
   pageSize,
   tickers,
 }: TradesListProps) {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const dateLocale = intlLocale(locale)
   const router = useRouter()
   const pathname = usePathname()
@@ -291,7 +292,7 @@ export function TradesList({
       const rows = await listTradesForExport(tradeFiltersToApiParams(filters))
       downloadTradesCsv(rows)
     } catch {
-      toast.error("Failed to export trades")
+      toast.error(t("trades.exportFailed"))
     } finally {
       setExporting(false)
     }
@@ -307,40 +308,40 @@ export function TradesList({
               {trade.asset_type.toUpperCase()}
             </span>
             <span className={getSideBadgeClasses(trade.side)}>
-              {trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}
+              {trade.side === "sell" ? t("trades.sell") : t("trades.buy")}
             </span>
           </div>
           <MobileActions
             actions={[
-              { label: "Edit", icon: Pencil, onClick: () => setEditingTrade(trade) },
-              { label: "Delete", icon: Trash2, destructive: true, onClick: () => setDeletingTrade(trade) },
+              { label: t("trades.edit"), icon: Pencil, onClick: () => setEditingTrade(trade) },
+              { label: t("trades.delete"), icon: Trash2, destructive: true, onClick: () => setDeletingTrade(trade) },
             ]}
           />
         </div>
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           <div className="space-y-0.5">
-            <p className="text-xs text-muted-foreground">Date</p>
+            <p className="text-xs text-muted-foreground">{t("trades.date")}</p>
             <p className="text-sm">{formatCalendarDate(trade.date, dateLocale)}</p>
           </div>
           <div className="space-y-0.5 text-right">
-            <p className="text-xs text-muted-foreground">Qty</p>
+            <p className="text-xs text-muted-foreground">{t("trades.qty")}</p>
             <p className="text-sm font-mono">{format(trade.quantity, 4)}</p>
           </div>
           <div className="space-y-0.5 text-right">
-            <p className="text-xs text-muted-foreground">Price</p>
+            <p className="text-xs text-muted-foreground">{t("trades.price")}</p>
             <p className="text-sm font-mono">{formatCurrency(trade.price, MARKET_CONFIG.baseCurrency)}</p>
           </div>
           <div className="space-y-0.5 text-right">
-            <p className="text-xs text-muted-foreground">Fees</p>
+            <p className="text-xs text-muted-foreground">{t("trades.fees")}</p>
             <p className="text-sm font-mono">{formatCurrency(trade.total_fees, MARKET_CONFIG.baseCurrency)}</p>
           </div>
           <div className="col-span-2 space-y-0.5 text-right">
-            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-xs text-muted-foreground">{t("trades.total")}</p>
             <p className="text-sm font-mono font-semibold">{formatCurrency(trade.total, MARKET_CONFIG.baseCurrency)}</p>
           </div>
           {trade.side === "sell" && trade.realized_pl != null && trade.realized_pl !== "" && (
             <div className="col-span-2 space-y-0.5 text-right">
-              <p className="text-xs text-muted-foreground">Realized P/L</p>
+              <p className="text-xs text-muted-foreground">{t("trades.realizedPL")}</p>
               <p
                 className={cn(
                   "text-sm font-mono font-semibold",
@@ -354,26 +355,26 @@ export function TradesList({
         </div>
       </Card>
     ),
-    [setEditingTrade, setDeletingTrade, dateLocale],
+    [setEditingTrade, setDeletingTrade, dateLocale, t],
   )
 
   const columns = useMemo<DataTableColumn<Trade>[]>(
     () => [
       {
         key: "date",
-        header: "Date",
+        header: t("trades.date"),
         cell: (trade) => formatCalendarDate(trade.date, dateLocale),
       },
       {
         key: "ticker",
-        header: "Ticker",
+        header: t("trades.ticker"),
         cell: (trade) => (
           <span className="font-mono font-semibold">{trade.ticker}</span>
         ),
       },
       {
         key: "assetType",
-        header: "Type",
+        header: t("trades.type"),
         cell: (trade) => (
           <span className={getAssetBadgeClasses(trade.asset_type)}>
             {trade.asset_type.toUpperCase()}
@@ -382,44 +383,44 @@ export function TradesList({
       },
       {
         key: "side",
-        header: "Side",
+        header: t("trades.side"),
         cell: (trade) => (
           <span className={getSideBadgeClasses(trade.side)}>
-            {trade.side.charAt(0).toUpperCase() + trade.side.slice(1)}
+            {trade.side === "sell" ? t("trades.sell") : t("trades.buy")}
           </span>
         ),
       },
       {
         key: "quantity",
-        header: "Quantity",
+        header: t("trades.quantity"),
         cell: (trade) => format(trade.quantity, 4),
         align: "right",
         className: "font-mono",
       },
       {
         key: "price",
-        header: "Price",
+        header: t("trades.price"),
         cell: (trade) => formatCurrency(trade.price, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
       },
       {
         key: "fees",
-        header: "Fees",
+        header: t("trades.fees"),
         cell: (trade) => formatCurrency(trade.total_fees, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
       },
       {
         key: "total",
-        header: "Total",
+        header: t("trades.total"),
         cell: (trade) => formatCurrency(trade.total, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono font-semibold",
       },
       {
         key: "realizedPL",
-        header: "Realized P/L",
+        header: t("trades.realizedPL"),
         cell: (trade) =>
           trade.side === "sell" && trade.realized_pl != null && trade.realized_pl !== "" ? (
             <span
@@ -437,7 +438,7 @@ export function TradesList({
       },
       {
         key: "actions",
-        header: "Actions",
+        header: t("trades.actions"),
         cell: (trade) => (
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setEditingTrade(trade)}>
@@ -452,7 +453,7 @@ export function TradesList({
         toggleable: false,
       },
     ],
-    [dateLocale],
+    [dateLocale, t],
   )
 
   const { visibleColumns, visibleKeys, defaultKeys, setVisibleKeys } =
@@ -460,11 +461,11 @@ export function TradesList({
 
   const emptyState = (
     <EmptyState
-      title="No trades match these filters"
+      title={t("trades.noMatch")}
       action={
         filtersActive && (
           <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_TRADE_FILTERS)}>
-            Clear filters
+            {t("trades.clearFilters")}
           </Button>
         )
       }
@@ -478,8 +479,8 @@ export function TradesList({
           <AddTradeDialog />
         </div>
         <EmptyState
-          title="No trades recorded yet"
-          description="Add your first trade to start tracking your portfolio"
+          title={t("trades.emptyTitle")}
+          description={t("trades.emptyDescription")}
         />
       </section>
     )
@@ -494,8 +495,11 @@ export function TradesList({
           </div>
           <MobileFilterDrawer
             activeCount={activeFilterCount}
-            description="Adjust the filters to narrow your trades"
-            triggerAriaLabel="Open trade filters"
+            title={t("filters.title")}
+            triggerLabel={t("filters.title")}
+            closeLabel={t("filters.close")}
+            description={t("trades.filtersDescription")}
+            triggerAriaLabel={t("trades.openFilters")}
           >
             <TradeFiltersForm filters={filters} tickers={tickers} onChange={patchFilters} />
           </MobileFilterDrawer>
@@ -509,7 +513,7 @@ export function TradesList({
               disabled={total === 0 || exporting}
             >
               <Download className="size-4" />
-              Export
+              {t("trades.export")}
             </Button>
             <DataTableColumnToggle
               columns={columns}
@@ -539,7 +543,7 @@ export function TradesList({
               total={total}
               onPageChange={setPage}
               onPageSizeChange={setPageSize}
-              showingText={`Showing ${trades.length} of ${total} trades`}
+              showingText={t("trades.showing", { shown: trades.length, total })}
             />
           </>
         )}

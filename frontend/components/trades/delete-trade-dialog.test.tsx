@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { screen, within } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import type { Trade } from "@/lib/types"
 import { DeleteTradeDialog } from "./delete-trade-dialog"
 
@@ -29,7 +30,7 @@ const trade: Trade = {
 
 describe("DeleteTradeDialog", () => {
   it("renders Cancel and Delete inside the alert dialog footer", () => {
-    render(
+    renderWithLocale(
       <DeleteTradeDialog
         trade={trade}
         open

@@ -33,6 +33,7 @@ import {
 import { BrokerSelect } from "@/components/brokers/broker-select"
 import { computeCashFlowBrokerFeeUSD } from "@/lib/brokers/broker-presets"
 import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
+import { useLocale } from "@/components/locale-provider"
 import { toDateInputValue } from "@/lib/date-utils"
 import { showToast } from "@/lib/toast"
 
@@ -56,6 +57,7 @@ export function EditCashFlowDialog({
   onOpenChange,
   onSuccess,
 }: EditCashFlowDialogProps) {
+  const { t } = useLocale()
   const linkedFee = useMemo(
     () => findLinkedDepositFee(cashFlows, cashFlow.id),
     [cashFlows, cashFlow.id],
@@ -94,9 +96,14 @@ export function EditCashFlowDialog({
     feeUsd: formData.deposit_fee_usd,
     fxRate: formData.fx_rate,
   })
-  const feeLabel = formData.type === "withdrawal" ? `Withdrawal fee ${MARKET_CONFIG.baseCurrency}` : `Deposit fee ${MARKET_CONFIG.baseCurrency}`
+  const feeLabel =
+    formData.type === "withdrawal"
+      ? t("cash.withdrawalFee", { currency: MARKET_CONFIG.baseCurrency })
+      : t("cash.depositFee", { currency: MARKET_CONFIG.baseCurrency })
   const netUsdLabel =
-    formData.type === "withdrawal" ? `${MARKET_CONFIG.baseCurrency} debited from broker` : "Deposit amount"
+    formData.type === "withdrawal"
+      ? t("cash.usdDebited", { currency: MARKET_CONFIG.baseCurrency })
+      : t("cash.depositAmount")
   const transferAmount = computeCopFromNetUsd({
     netUsd: formData.net_usd,
     feeUsd: formData.deposit_fee_usd,
@@ -114,7 +121,7 @@ export function EditCashFlowDialog({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (formData.type === "cash_adjustment" && !formData.notes.trim()) {
-      showToast.error("Cash adjustment requires notes")
+      showToast.error(t("cash.adjustmentRequiresNotes"))
       return
     }
     setIsLoading(true)
@@ -147,7 +154,7 @@ export function EditCashFlowDialog({
             related_trade_id: null,
             related_cash_flow_id: cashFlow.id,
             related_type: transferType,
-            notes: `${feeLabel} for ${formData.date}`,
+            notes: t("cash.feeNote", { label: feeLabel, date: formData.date }),
           }
 
           if (linkedFee) {
@@ -160,12 +167,12 @@ export function EditCashFlowDialog({
         }
       }
 
-      showToast.success("Cash flow updated")
+      showToast.success(t("cash.updated"))
       onOpenChange(false)
       onSuccess()
     } catch (err) {
       showToast.error(
-        err instanceof Error ? err.message : "Failed to update cash flow",
+        err instanceof Error ? err.message : t("cash.updateFailed"),
       )
     } finally {
       setIsLoading(false)
@@ -176,8 +183,8 @@ export function EditCashFlowDialog({
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="flex max-h-[100dvh] md:max-h-[90vh] max-w-[calc(100%-2rem)] flex-col gap-0 p-0 sm:max-w-3xl">
         <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
-          <ResponsiveDialogTitle>Edit Cash Flow</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>Update the cash flow details</ResponsiveDialogDescription>
+          <ResponsiveDialogTitle>{t("cash.editTitle")}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>{t("cash.editDescription")}</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <DialogScrollBody>
           <form id="edit-cash-flow-form" onSubmit={handleSubmit} className="space-y-4">
@@ -194,7 +201,7 @@ export function EditCashFlowDialog({
             {!isTransfer && formData.type !== "fee" && (
               <MoneyHeroInput
                 id="edit-cf-amount"
-                label={`Amount (${MARKET_CONFIG.baseCurrency})`}
+                label={t("cash.amountLabel", { currency: MARKET_CONFIG.baseCurrency })}
                 value={formData.amount}
                 onChange={(amount) => setFormData({ ...formData, amount })}
                 placeholder="10.00"
@@ -204,10 +211,10 @@ export function EditCashFlowDialog({
 
             <ResponsiveFormGrid className="md:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="edit-cf-type">Type</Label>
+                <Label htmlFor="edit-cf-type">{t("cash.type")}</Label>
                 {formData.type === "fee" ? (
                   <p id="edit-cf-type" className="flex h-9 items-center text-sm font-mono">
-                    Brokerage fee
+                    {t("cash.brokerageFee")}
                   </p>
                 ) : (
                   <Select
@@ -225,10 +232,10 @@ export function EditCashFlowDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="deposit">Deposit</SelectItem>
-                      <SelectItem value="withdrawal">Withdrawal</SelectItem>
+                      <SelectItem value="deposit">{t("cash.deposit")}</SelectItem>
+                      <SelectItem value="withdrawal">{t("cash.withdrawal")}</SelectItem>
                       {formData.type === "cash_adjustment" && (
-                        <SelectItem value="cash_adjustment">Cash adjustment</SelectItem>
+                        <SelectItem value="cash_adjustment">{t("cash.cashAdjustment")}</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
@@ -236,8 +243,8 @@ export function EditCashFlowDialog({
               </div>
               <SingleDatePicker
                 id="edit-cf-date"
-                label="Date"
-                ariaLabel="Cash flow date"
+                label={t("cash.date")}
+                ariaLabel={t("cash.cashFlowDate")}
                 value={formData.date}
                 onChange={(date) => setFormData({ ...formData, date })}
                 required
@@ -254,7 +261,7 @@ export function EditCashFlowDialog({
                 <div className="space-y-2">
                   <Label htmlFor="edit-cf-deposit-fee">
                     {feeLabel}{" "}
-                    <span className="text-xs font-normal text-muted-foreground">optional</span>
+                    <span className="text-xs font-normal text-muted-foreground">{t("cash.optional")}</span>
                   </Label>
                   <Input
                     id="edit-cf-deposit-fee"
@@ -267,7 +274,7 @@ export function EditCashFlowDialog({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-cf-fx-rate">FX rate {formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency)}</Label>
+                  <Label htmlFor="edit-cf-fx-rate">{t("cash.fxRate", { pair: formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency) })}</Label>
                   <Input
                     id="edit-cf-fx-rate"
                     type="number"
@@ -284,21 +291,21 @@ export function EditCashFlowDialog({
 
             {isTransfer && (
               <div className="space-y-2">
-                <Label>Total ({MARKET_CONFIG.baseCurrency})</Label>
+                <Label>{t("cash.totalLabel", { currency: MARKET_CONFIG.baseCurrency })}</Label>
                 <div className="text-2xl font-bold font-mono">${transferBreakdown.subtotalUsd}</div>
               </div>
             )}
 
             <div className="space-y-2">
               <Label htmlFor="edit-cf-notes">
-                Notes {formData.type === "cash_adjustment" ? "(required)" : "(optional)"}
+                {formData.type === "cash_adjustment" ? t("cash.notesRequired") : t("cash.notesOptional")}
               </Label>
               <NotesTextarea
                 id="edit-cf-notes"
                 placeholder={
                   formData.type === "cash_adjustment"
-                    ? "Adjust buy power without changing deposit history"
-                    : "Additional details..."
+                    ? t("cash.adjustmentPlaceholder")
+                    : t("cash.notesPlaceholder")
                 }
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -306,7 +313,7 @@ export function EditCashFlowDialog({
               />
               {formData.type === "cash_adjustment" && (
                 <p className="text-xs text-muted-foreground">
-                  Adjust buy power without changing deposit history.
+                  {t("cash.adjustmentHint")}
                 </p>
               )}
             </div>
@@ -314,10 +321,10 @@ export function EditCashFlowDialog({
         </DialogScrollBody>
         <div className="flex shrink-0 flex-col-reverse gap-2 px-6 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-            Cancel
+            {t("cash.cancel")}
           </Button>
           <Button type="submit" form="edit-cash-flow-form" disabled={isLoading} className="w-full sm:w-auto">
-            {isLoading ? "Saving..." : "Save Changes"}
+            {isLoading ? t("cash.saving") : t("cash.save")}
           </Button>
         </div>
       </ResponsiveDialogContent>

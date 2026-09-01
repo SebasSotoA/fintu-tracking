@@ -63,18 +63,6 @@ type CashFlowRow = CashFlow & {
   feeAttributionLabel?: string | null
 }
 
-const TYPE_OPTIONS: { value: CashFlowTypeFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "deposit", label: "Deposits" },
-  { value: "withdrawal", label: "Withdrawals" },
-  { value: "cash_adjustment", label: "Cash adjustments" },
-]
-
-const CURRENCY_OPTIONS: { value: CashFlowCurrencyFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  ...MARKET_CONFIG.cashFlowCurrencies.map((currency) => ({ value: currency, label: currency })),
-]
-
 function CashFlowFiltersForm({
   filters,
   onChange,
@@ -82,36 +70,48 @@ function CashFlowFiltersForm({
   filters: CashFlowFilters
   onChange: (patch: Partial<CashFlowFilters>) => void
 }) {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const dateLocale = intlLocale(locale)
+  const typeOptions: { value: CashFlowTypeFilter; label: string }[] = [
+    { value: "all", label: t("cash.all") },
+    { value: "deposit", label: t("cash.deposits") },
+    { value: "withdrawal", label: t("cash.withdrawals") },
+    { value: "cash_adjustment", label: t("cash.cashAdjustments") },
+  ]
+  const currencyOptions: { value: CashFlowCurrencyFilter; label: string }[] = [
+    { value: "all", label: t("cash.all") },
+    ...MARKET_CONFIG.cashFlowCurrencies.map((currency) => ({ value: currency, label: currency })),
+  ]
 
   return (
     <div className="grid grid-cols-1 gap-4 md:flex md:flex-wrap md:items-end">
       <FilterSelect
         id="cf-filter-type"
-        label="Type"
-        ariaLabel="Filter cash flows by type"
+        label={t("cash.type")}
+        ariaLabel={t("cash.filterByType")}
         value={filters.type}
-        options={TYPE_OPTIONS}
+        options={typeOptions}
         onChange={(type) => onChange({ type })}
         triggerClassName="h-9 w-full md:w-[7.5rem]"
       />
       <FilterSelect
         id="cf-filter-currency"
-        label="Currency"
-        ariaLabel="Filter cash flows by currency"
+        label={t("cash.currency")}
+        ariaLabel={t("cash.filterByCurrency")}
         value={filters.currency}
-        options={CURRENCY_OPTIONS}
+        options={currencyOptions}
         onChange={(currency) => onChange({ currency })}
         triggerClassName="h-9 w-full md:w-[7.5rem]"
       />
       <DateRangePicker
         id="cf-filter-date"
-        label="Date"
-        ariaLabel="Filter cash flows by date"
+        label={t("cash.date")}
+        ariaLabel={t("cash.filterByDate")}
         value={filters.dateRange}
         onChange={(dateRange) => onChange({ dateRange })}
-        formatLabel={(range) => formatTradeDateRangeLabel(range, dateLocale)}
+        formatLabel={(range) =>
+          range.from ? formatTradeDateRangeLabel(range, dateLocale) : t("filters.allDates")
+        }
       />
     </div>
   )
@@ -124,7 +124,7 @@ export function CashFlowsList({
   pageSize,
   highlightId,
 }: CashFlowsListProps) {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const dateLocale = intlLocale(locale)
   const router = useRouter()
   const pathname = usePathname()
@@ -203,13 +203,13 @@ export function CashFlowsList({
 
       let attribution: string | null = null
       if (cf.related_type === "trade" && cf.related_trade_id) {
-        attribution = "Trade"
+        attribution = t("cash.trade")
       } else if (cf.feeAttributionLabel && cf.related_cash_flow_id) {
         attribution = cf.feeAttributionLabel
       } else if (cf.related_cash_flow_id) {
-        attribution = cf.related_type ?? "Cash flow"
+        attribution = cf.related_type ?? t("cash.cashFlow")
       } else if (cf.related_type === "standalone") {
-        attribution = "Standalone"
+        attribution = t("cash.standalone")
       }
 
       return (
@@ -218,50 +218,50 @@ export function CashFlowsList({
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">{formatCalendarDate(cf.date, dateLocale)}</p>
               <span className={getTypeBadgeClasses(cf.type)}>
-                {getCashFlowTypeLabel(cf.type)}
+                {getCashFlowTypeLabel(cf.type, t)}
               </span>
             </div>
             <MobileActions
               actions={[
-                { label: "Edit", icon: Pencil, onClick: () => setEditingCashFlow(cf) },
-                { label: "Delete", icon: Trash2, destructive: true, onClick: () => setDeletingCashFlow(cf) },
+                { label: t("cash.edit"), icon: Pencil, onClick: () => setEditingCashFlow(cf) },
+                { label: t("cash.delete"), icon: Trash2, destructive: true, onClick: () => setDeletingCashFlow(cf) },
               ]}
             />
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             {copWired && (
               <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground">{MARKET_CONFIG.localCurrency} wired</p>
+                <p className="text-xs text-muted-foreground">{t("cash.copWired", { currency: MARKET_CONFIG.localCurrency })}</p>
                 <p className="text-sm font-mono">{copWired}</p>
               </div>
             )}
             {fxRate && (
               <div className="space-y-0.5 text-right">
-                <p className="text-xs text-muted-foreground">FX</p>
+                <p className="text-xs text-muted-foreground">{t("cash.fx")}</p>
                 <p className="text-sm font-mono">{fxRate}</p>
               </div>
             )}
             {fee && (
               <div className="space-y-0.5 text-right">
-                <p className="text-xs text-muted-foreground">Fee</p>
+                <p className="text-xs text-muted-foreground">{t("cash.fee")}</p>
                 <p className="text-sm font-mono">{fee}</p>
               </div>
             )}
             {usdNet && (
               <div className={cn("space-y-0.5", copWired || fxRate || fee ? "text-right" : "col-span-2 text-right")}>
-                <p className="text-xs text-muted-foreground">{MARKET_CONFIG.baseCurrency} (net)</p>
+                <p className="text-xs text-muted-foreground">{t("cash.usdNet", { currency: MARKET_CONFIG.baseCurrency })}</p>
                 <p className="text-sm font-mono font-semibold">{usdNet}</p>
               </div>
             )}
             {attribution && (
               <div className="col-span-2 space-y-0.5">
-                <p className="text-xs text-muted-foreground">Attribution</p>
+                <p className="text-xs text-muted-foreground">{t("cash.attribution")}</p>
                 <p className="text-sm capitalize">{attribution}</p>
               </div>
             )}
             {cf.notes && (
               <div className="col-span-2 space-y-0.5">
-                <p className="text-xs text-muted-foreground">Notes</p>
+                <p className="text-xs text-muted-foreground">{t("cash.notes")}</p>
                 <p className="text-sm text-muted-foreground">{cf.notes}</p>
               </div>
             )}
@@ -269,7 +269,7 @@ export function CashFlowsList({
         </Card>
       )
     },
-    [getTypeBadgeClasses, dateLocale],
+    [getTypeBadgeClasses, dateLocale, t],
   )
 
   const rows = useMemo<CashFlowRow[]>(
@@ -280,9 +280,9 @@ export function CashFlowsList({
           cf.type === "deposit" || cf.type === "withdrawal"
             ? linkedFeeByParentId.get(cf.id)
             : undefined,
-        feeAttributionLabel: cf.type === "fee" ? getFeeAttributionLabel(cashFlows, cf) : null,
+        feeAttributionLabel: cf.type === "fee" ? getFeeAttributionLabel(cashFlows, cf, t) : null,
       })),
-    [visibleCashFlows, linkedFeeByParentId, cashFlows],
+    [visibleCashFlows, linkedFeeByParentId, cashFlows, t],
   )
 
   const replaceQuery = useCallback(
@@ -344,7 +344,7 @@ export function CashFlowsList({
       const rows = await listCashFlowsForExport()
       downloadCashFlowsCsv(rows)
     } catch {
-      toast.error("Failed to export cash flows")
+      toast.error(t("cash.exportFailed"))
     } finally {
       setExporting(false)
     }
@@ -354,21 +354,21 @@ export function CashFlowsList({
     () => [
       {
         key: "date",
-        header: "Date",
+        header: t("cash.date"),
         cell: (cf) => formatCalendarDate(cf.date, dateLocale),
       },
       {
         key: "type",
-        header: "Type",
+        header: t("cash.type"),
         cell: (cf) => (
           <span className={getTypeBadgeClasses(cf.type)}>
-            {getCashFlowTypeLabel(cf.type)}
+            {getCashFlowTypeLabel(cf.type, t)}
           </span>
         ),
       },
       {
         key: "copWired",
-        header: `${MARKET_CONFIG.localCurrency} wired`,
+        header: t("cash.copWired", { currency: MARKET_CONFIG.localCurrency }),
         cell: (cf) => {
           const value =
             cf.type === "deposit" || cf.type === "withdrawal"
@@ -380,7 +380,7 @@ export function CashFlowsList({
       },
       {
         key: "fxRate",
-        header: "FX",
+        header: t("cash.fx"),
         cell: (cf) => {
           const value =
             cf.type === "deposit" || cf.type === "withdrawal" ? (cf.fx_rate ?? "-") : "-"
@@ -390,7 +390,7 @@ export function CashFlowsList({
       },
       {
         key: "feeAmount",
-        header: "Fee",
+        header: t("cash.fee"),
         cell: (cf) => {
           const value =
             cf.type === "deposit" || cf.type === "withdrawal"
@@ -406,7 +406,7 @@ export function CashFlowsList({
       },
       {
         key: "usdCredited",
-        header: `${MARKET_CONFIG.baseCurrency} (net)`,
+        header: t("cash.usdNet", { currency: MARKET_CONFIG.baseCurrency }),
         cell: (cf) => {
           const value =
             cf.type === "withdrawal"
@@ -422,7 +422,7 @@ export function CashFlowsList({
       },
       {
         key: "attribution",
-        header: "Attribution",
+        header: t("cash.attribution"),
         className: "w-[12%] min-w-[8rem] max-w-[10rem]",
         cell: (cf) => {
           if (cf.related_type === "trade" && cf.related_trade_id) {
@@ -430,7 +430,7 @@ export function CashFlowsList({
               <Link href={`/trades?highlight=${cf.related_trade_id}`} className="inline-flex max-w-full">
                 <Button variant="ghost" size="sm" className="h-auto py-1 px-2 w-full">
                   <LinkIcon className="h-3 w-3 mr-1 shrink-0" />
-                  <span className="text-xs truncate">Trade</span>
+                  <span className="text-xs truncate">{t("cash.trade")}</span>
                 </Button>
               </Link>
             )
@@ -450,21 +450,21 @@ export function CashFlowsList({
               <Link href={`/cash-flows?highlight=${cf.related_cash_flow_id}`} className="inline-flex max-w-full">
                 <Button variant="ghost" size="sm" className="h-auto py-1 px-2 w-full">
                   <LinkIcon className="h-3 w-3 mr-1 shrink-0" />
-                  <span className="text-xs truncate capitalize">{cf.related_type ?? "Cash flow"}</span>
+                  <span className="text-xs truncate capitalize">{cf.related_type ?? t("cash.cashFlow")}</span>
                 </Button>
               </Link>
             )
           }
           return (
             <span className="text-muted-foreground text-sm truncate block max-w-full">
-              {cf.related_type === "standalone" ? "Standalone" : "-"}
+              {cf.related_type === "standalone" ? t("cash.standalone") : "-"}
             </span>
           )
         },
       },
       {
         key: "notes",
-        header: "Notes",
+        header: t("cash.notes"),
         className: "w-[15%] min-w-[8rem] max-w-[12rem]",
         cell: (cf) => (
           <span className="text-muted-foreground text-sm truncate block max-w-full">{cf.notes || "-"}</span>
@@ -472,7 +472,7 @@ export function CashFlowsList({
       },
       {
         key: "actions",
-        header: "Actions",
+        header: t("cash.actions"),
         cell: (cf) => (
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setEditingCashFlow(cf)}>
@@ -487,7 +487,7 @@ export function CashFlowsList({
         toggleable: false,
       },
     ],
-    [setEditingCashFlow, setDeletingCashFlow, dateLocale],
+    [setEditingCashFlow, setDeletingCashFlow, dateLocale, t],
   )
 
   const { visibleColumns, visibleKeys, defaultKeys, setVisibleKeys } =
@@ -495,11 +495,11 @@ export function CashFlowsList({
 
   const emptyState = (
     <EmptyState
-      title="No cash flows match these filters"
+      title={t("cash.noMatch")}
       action={
         filtersActive && (
           <Button variant="outline" size="sm" onClick={() => setFilters(DEFAULT_CASH_FLOW_FILTERS)}>
-            Clear filters
+            {t("cash.clearFilters")}
           </Button>
         )
       }
@@ -513,8 +513,8 @@ export function CashFlowsList({
           <AddCashFlowDialog />
         </div>
         <EmptyState
-          title="No cash flows recorded yet"
-          description="Add your first deposit or withdrawal to start tracking"
+          title={t("cash.emptyTitle")}
+          description={t("cash.emptyDescription")}
         />
       </section>
     )
@@ -529,8 +529,11 @@ export function CashFlowsList({
           </div>
           <MobileFilterDrawer
             activeCount={activeFilterCount}
-            description="Adjust the filters to narrow your cash flows"
-            triggerAriaLabel="Open cash flow filters"
+            title={t("filters.title")}
+            triggerLabel={t("filters.title")}
+            closeLabel={t("filters.close")}
+            description={t("cash.filtersDescription")}
+            triggerAriaLabel={t("cash.openFilters")}
           >
             <CashFlowFiltersForm filters={filters} onChange={patchFilters} />
           </MobileFilterDrawer>
@@ -544,7 +547,7 @@ export function CashFlowsList({
               disabled={total === 0 || exporting}
             >
               <Download className="size-4" />
-              Export
+              {t("cash.export")}
             </Button>
             <DataTableColumnToggle
               columns={columns}
@@ -577,7 +580,7 @@ export function CashFlowsList({
               total={total}
               onPageChange={setPage}
               onPageSizeChange={setPageSize}
-              showingText={`Showing ${visibleCashFlows.length} of ${total} cash flows`}
+              showingText={t("cash.showing", { shown: visibleCashFlows.length, total })}
             />
           </>
         )}
