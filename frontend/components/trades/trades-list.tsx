@@ -20,11 +20,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { MobileFilterDrawer } from "@/components/ui/mobile-filter-drawer"
 import { Check, ChevronDown, Download, Pencil, Trash2 } from "lucide-react"
 import { Decimal, formatCurrency, format } from "@/lib/decimal"
-import { formatCalendarDate } from "@/lib/date-utils"
+import { formatCalendarDate, intlLocale } from "@/lib/date-utils"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { useCallback, useMemo, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
+import { useLocale } from "@/components/locale-provider"
 import { EditTradeDialog } from "./edit-trade-dialog"
 import { DeleteTradeDialog } from "./delete-trade-dialog"
 import { AddTradeDialog } from "./add-trade-dialog"
@@ -219,6 +220,8 @@ export function TradesList({
   pageSize,
   tickers,
 }: TradesListProps) {
+  const { locale } = useLocale()
+  const dateLocale = intlLocale(locale)
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -317,7 +320,7 @@ export function TradesList({
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
           <div className="space-y-0.5">
             <p className="text-xs text-muted-foreground">Date</p>
-            <p className="text-sm">{formatCalendarDate(trade.date)}</p>
+            <p className="text-sm">{formatCalendarDate(trade.date, dateLocale)}</p>
           </div>
           <div className="space-y-0.5 text-right">
             <p className="text-xs text-muted-foreground">Qty</p>
@@ -351,7 +354,7 @@ export function TradesList({
         </div>
       </Card>
     ),
-    [setEditingTrade, setDeletingTrade],
+    [setEditingTrade, setDeletingTrade, dateLocale],
   )
 
   const columns = useMemo<DataTableColumn<Trade>[]>(
@@ -359,7 +362,7 @@ export function TradesList({
       {
         key: "date",
         header: "Date",
-        cell: (trade) => formatCalendarDate(trade.date),
+        cell: (trade) => formatCalendarDate(trade.date, dateLocale),
       },
       {
         key: "ticker",
@@ -449,7 +452,7 @@ export function TradesList({
         toggleable: false,
       },
     ],
-    [],
+    [dateLocale],
   )
 
   const { visibleColumns, visibleKeys, defaultKeys, setVisibleKeys } =

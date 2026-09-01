@@ -30,6 +30,12 @@ describe("formatAxisDateKey", () => {
   it("formats dates in en-US short month style", () => {
     expect(formatAxisDateKey("2026-04-26")).toBe("Apr 26")
   })
+
+  it("formats dates in es-CO without English month abbreviations", () => {
+    const formatted = formatAxisDateKey("2026-04-26", "es-CO")
+    expect(formatted.toLowerCase()).toMatch(/abr/)
+    expect(formatted.toLowerCase()).not.toMatch(/apr/)
+  })
 })
 
 describe("formatTooltipDate", () => {
@@ -45,5 +51,10 @@ describe("formatTooltipDate", () => {
   it("formats older dates in en-US without Spanish month abbreviations", () => {
     expect(formatTooltipDate("2025-01-15")).toMatch(/jan/)
     expect(formatTooltipDate("2025-01-15")).not.toMatch(/ene/)
+  })
+
+  it("formats older dates in es-CO without English month abbreviations", () => {
+    expect(formatTooltipDate("2025-01-15", "es-CO")).toMatch(/ene/)
+    expect(formatTooltipDate("2025-01-15", "es-CO")).not.toMatch(/jan/)
   })
 })

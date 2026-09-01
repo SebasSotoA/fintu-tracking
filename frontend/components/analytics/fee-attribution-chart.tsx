@@ -26,6 +26,8 @@ import { DollarSignIcon, TrendingDownIcon } from "lucide-react";
 import type React from "react";
 import { MARKET_CONFIG } from "@/lib/market-config/market-config";
 import { CHART_HEIGHT_MEDIUM } from "@/lib/chart-sizes";
+import { formatShortMonthYear2Digit, intlLocale } from "@/lib/date-utils";
+import { useLocale } from "@/components/locale-provider";
 
 const FEE_TYPE_COLORS = [
   "var(--chart-1)",
@@ -61,11 +63,8 @@ function formatBaseCurrency(value: string | number): string {
   }).format(num);
 }
 
-function formatMonthLabel(monthKey: string): string {
-  const [year, month] = monthKey.split("-");
-  if (!year || !month) return monthKey;
-  const date = new Date(Number(year), Number(month) - 1, 1);
-  return date.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+function formatMonthLabel(monthKey: string, locale: string): string {
+  return formatShortMonthYear2Digit(monthKey, locale);
 }
 
 type FeeTooltipPayload = {
@@ -111,6 +110,8 @@ function ChartEmptyState({ message }: { message: string }): React.JSX.Element {
 }
 
 export function FeeAttributionChart(): React.JSX.Element {
+  const { locale } = useLocale();
+  const dateLocale = intlLocale(locale);
   const { data: feeBreakdown, isLoading, error } = useQuery<FeeBreakdown>({
     queryKey: queryKeys.feeBreakdown(),
     queryFn: async () => {
@@ -123,13 +124,13 @@ export function FeeAttributionChart(): React.JSX.Element {
     if (!feeBreakdown?.fees_by_month) return [];
     return Object.entries(feeBreakdown.fees_by_month)
       .map(([month, amount]) => ({
-        name: formatMonthLabel(month),
+        name: formatMonthLabel(month, dateLocale),
         monthKey: month,
         value: parseFloat(amount || "0"),
       }))
       .filter((item) => item.value > 0)
       .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
-  }, [feeBreakdown?.fees_by_month]);
+  }, [feeBreakdown?.fees_by_month, dateLocale]);
 
   if (isLoading) {
     return (

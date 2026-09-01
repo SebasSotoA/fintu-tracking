@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { PortfolioPerformanceChart } from "./portfolio-performance-chart"
 import type { PerformancePoint } from "@/lib/api/analytics"
 import type { TradeDateRange } from "@/lib/trades/trade-filters"
@@ -90,9 +91,11 @@ function renderChart() {
     defaultOptions: { queries: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <PortfolioPerformanceChart />
-    </QueryClientProvider>,
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>
+        <PortfolioPerformanceChart />
+      </QueryClientProvider>
+    </EnglishLocaleWrapper>,
   )
 }
 
@@ -157,6 +160,16 @@ describe("PortfolioPerformanceChart", () => {
       expect(lastDateRangePickerProps).not.toBeNull()
     })
     expect(lastDateRangePickerProps?.popoverAlign).toBe("end")
+  })
+
+  it("formats selected range labels with en-US calendar dates, not ISO keys", async () => {
+    renderChart()
+    await waitFor(() => {
+      expect(lastDateRangePickerProps).not.toBeNull()
+    })
+    expect(
+      lastDateRangePickerProps!.formatLabel({ from: "2026-06-01", to: "2026-06-15" }),
+    ).toBe("6/1/2026 – 6/15/2026")
   })
 
   it("client-filters points by selected range and derives day interval", async () => {

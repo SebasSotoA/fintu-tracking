@@ -67,12 +67,15 @@ export function applyTradeDatePreset(
   }
 }
 
-export function formatTradeDateRangeLabel(range: TradeDateRange): string {
+export function formatTradeDateRangeLabel(
+  range: TradeDateRange,
+  locale?: string | string[],
+): string {
   if (!range.from) return "All dates"
   if (!range.to || range.to === range.from) {
-    return formatCalendarDate(range.from)
+    return formatCalendarDate(range.from, locale)
   }
-  return `${formatCalendarDate(range.from)} – ${formatCalendarDate(range.to)}`
+  return `${formatCalendarDate(range.from, locale)} – ${formatCalendarDate(range.to, locale)}`
 }
 
 function matchesDateRange(day: string, range: TradeDateRange): boolean {

@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
 import { render, screen, fireEvent, within, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { AddTradeDialog } from "./add-trade-dialog"
 
 vi.mock("next/navigation", () => ({
@@ -94,9 +95,11 @@ function renderDialog(autoOpen = true) {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <AddTradeDialog autoOpen={autoOpen} />
-    </QueryClientProvider>,
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>
+        <AddTradeDialog autoOpen={autoOpen} />
+      </QueryClientProvider>
+    </EnglishLocaleWrapper>,
   )
 }
 
@@ -160,9 +163,11 @@ describe("AddTradeDialog", () => {
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     })
     render(
-      <QueryClientProvider client={queryClient}>
-        <AddTradeDialog autoOpen initialTicker="AAPL" />
-      </QueryClientProvider>,
+      <EnglishLocaleWrapper>
+        <QueryClientProvider client={queryClient}>
+          <AddTradeDialog autoOpen initialTicker="AAPL" />
+        </QueryClientProvider>
+      </EnglishLocaleWrapper>,
     )
 
     await user.type(screen.getByLabelText("Quantity"), "10")

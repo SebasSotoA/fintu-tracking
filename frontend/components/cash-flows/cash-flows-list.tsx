@@ -29,9 +29,10 @@ import {
 import { formatTradeDateRangeLabel } from "@/lib/trades/trade-filters"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { formatCalendarDate } from "@/lib/date-utils"
+import { formatCalendarDate, intlLocale } from "@/lib/date-utils"
 import { Decimal, formatAmountPlain, formatCurrency } from "@/lib/decimal"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { useLocale } from "@/components/locale-provider"
 import {
   getCashFlowTypeLabel,
   getFeeAttributionLabel,
@@ -81,6 +82,9 @@ function CashFlowFiltersForm({
   filters: CashFlowFilters
   onChange: (patch: Partial<CashFlowFilters>) => void
 }) {
+  const { locale } = useLocale()
+  const dateLocale = intlLocale(locale)
+
   return (
     <div className="grid grid-cols-1 gap-4 md:flex md:flex-wrap md:items-end">
       <FilterSelect
@@ -107,7 +111,7 @@ function CashFlowFiltersForm({
         ariaLabel="Filter cash flows by date"
         value={filters.dateRange}
         onChange={(dateRange) => onChange({ dateRange })}
-        formatLabel={formatTradeDateRangeLabel}
+        formatLabel={(range) => formatTradeDateRangeLabel(range, dateLocale)}
       />
     </div>
   )
@@ -120,6 +124,8 @@ export function CashFlowsList({
   pageSize,
   highlightId,
 }: CashFlowsListProps) {
+  const { locale } = useLocale()
+  const dateLocale = intlLocale(locale)
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -210,7 +216,7 @@ export function CashFlowsList({
         <Card className="p-4 gap-3">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">{formatCalendarDate(cf.date)}</p>
+              <p className="text-sm text-muted-foreground">{formatCalendarDate(cf.date, dateLocale)}</p>
               <span className={getTypeBadgeClasses(cf.type)}>
                 {getCashFlowTypeLabel(cf.type)}
               </span>
@@ -263,7 +269,7 @@ export function CashFlowsList({
         </Card>
       )
     },
-    [getTypeBadgeClasses],
+    [getTypeBadgeClasses, dateLocale],
   )
 
   const rows = useMemo<CashFlowRow[]>(
@@ -349,7 +355,7 @@ export function CashFlowsList({
       {
         key: "date",
         header: "Date",
-        cell: (cf) => formatCalendarDate(cf.date),
+        cell: (cf) => formatCalendarDate(cf.date, dateLocale),
       },
       {
         key: "type",
@@ -481,7 +487,7 @@ export function CashFlowsList({
         toggleable: false,
       },
     ],
-    [setEditingCashFlow, setDeletingCashFlow],
+    [setEditingCashFlow, setDeletingCashFlow, dateLocale],
   )
 
   const { visibleColumns, visibleKeys, defaultKeys, setVisibleKeys } =

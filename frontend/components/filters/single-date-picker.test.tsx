@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { SingleDatePicker } from "./single-date-picker"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 
 const useIsMobileMock = vi.fn()
 
@@ -14,7 +15,7 @@ function renderPicker({ isMobile = false, value = "" }: { isMobile?: boolean; va
   const onChange = vi.fn()
   return {
     onChange,
-    ...render(
+    ...renderWithLocale(
       <SingleDatePicker
         id="trade-date"
         label="Date"

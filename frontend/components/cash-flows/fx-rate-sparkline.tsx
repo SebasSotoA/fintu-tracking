@@ -1,9 +1,10 @@
 "use client"
 
 import type { FxRateChartPoint } from "@/lib/api/fx-rates"
-import { formatTooltipDate } from "@/lib/date-utils"
+import { formatTooltipDate, formatShortMonthDay, intlLocale } from "@/lib/date-utils"
 import { Decimal } from "@/lib/decimal"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { useLocale } from "@/components/locale-provider"
 
 export { formatTooltipDate } from "@/lib/date-utils"
 import { Spinner } from "@/components/ui/spinner"
@@ -43,10 +44,8 @@ export function computeTicks(data: ChartPoint[], maxTicks = 6): string[] {
   return ticks
 }
 
-export function formatAxisDateKey(dateKey: string): string {
-  const date = new Date(`${dateKey}T12:00:00`)
-  if (Number.isNaN(date.getTime())) return dateKey
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+export function formatAxisDateKey(dateKey: string, locale: string = "en-US"): string {
+  return formatShortMonthDay(dateKey, locale)
 }
 
 /** Recharts calls this per point; only the last (current) point is marked. */
@@ -72,10 +71,11 @@ function FxRateTooltip({
   active?: boolean
   payload?: { payload: ChartPoint }[]
 }) {
+  const { locale } = useLocale()
   if (!active || !payload?.length) return null
 
   const { rate, dateKey } = payload[0].payload
-  const datePart = formatTooltipDate(dateKey)
+  const datePart = formatTooltipDate(dateKey, intlLocale(locale))
 
   return (
     <div
@@ -90,6 +90,9 @@ function FxRateTooltip({
 }
 
 export function FxRateSparkline({ points, isLoading = false }: FxRateSparklineProps) {
+  const { locale } = useLocale()
+  const axisLocale = intlLocale(locale)
+
   if (isLoading) {
     return (
       <div
@@ -109,7 +112,7 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
       const date = new Date(`${p.date}T12:00:00`)
       return {
         dateKey: p.date,
-        label: Number.isNaN(date.getTime()) ? p.date : formatAxisDateKey(p.date),
+        label: Number.isNaN(date.getTime()) ? p.date : formatAxisDateKey(p.date, axisLocale),
         rate: rate.toNumber(),
       }
     })
@@ -146,7 +149,7 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
             dataKey="dateKey"
             ticks={xTicks}
             interval={0}
-            tickFormatter={formatAxisDateKey}
+            tickFormatter={(dateKey) => formatAxisDateKey(dateKey, axisLocale)}
             padding={{ right: 16 }}
             tick={{ fontSize: 10, fill: "var(--foreground)" }}
             tickLine={false}

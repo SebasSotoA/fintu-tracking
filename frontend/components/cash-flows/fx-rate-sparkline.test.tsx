@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { describe, expect, it, vi } from "vitest"
 import { render } from "@testing-library/react"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { FxRateSparkline } from "./fx-rate-sparkline"
 
 vi.mock("recharts", () => ({
@@ -48,7 +49,9 @@ vi.mock("recharts", () => ({
 describe("FxRateSparkline series theme", () => {
   it("renders the USD/COP series in primary indigo without a pulsing halo", () => {
     const { container } = render(
-      <FxRateSparkline points={[{ date: "2026-04-26", rate: "4100" }]} />,
+      <EnglishLocaleWrapper>
+        <FxRateSparkline points={[{ date: "2026-04-26", rate: "4100" }]} />
+      </EnglishLocaleWrapper>,
     )
 
     const series = container.querySelector("[data-testid='fx-rate-series']")
@@ -79,7 +82,9 @@ describe("FxRateSparkline series theme", () => {
 
   it("uses foreground tick fill on both axes", () => {
     const { container } = render(
-      <FxRateSparkline points={[{ date: "2026-04-26", rate: "4100" }]} />,
+      <EnglishLocaleWrapper>
+        <FxRateSparkline points={[{ date: "2026-04-26", rate: "4100" }]} />
+      </EnglishLocaleWrapper>,
     )
 
     expect(container.querySelector("[data-testid='fx-xaxis']")?.getAttribute("data-tick-fill")).toBe(

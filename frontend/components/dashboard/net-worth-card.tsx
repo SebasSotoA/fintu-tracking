@@ -20,6 +20,8 @@ import type { NetWorthData } from "@/lib/types"
 import type { PerformancePoint, PerformanceInterval } from "@/lib/api/analytics"
 import { getPerformanceTimeSeries } from "@/lib/api/analytics"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { formatShortMonthDay, formatShortMonthDayYear, intlLocale } from "@/lib/date-utils"
+import { useLocale } from "@/components/locale-provider"
 import { MetricLabel } from "@/components/analytics/metric-primitives"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TimePeriodSelector, type TimePeriod } from "@/components/dashboard/time-period-selector"
@@ -46,31 +48,18 @@ function formatBaseCurrency(value: Decimal | number): string {
   }).format(typeof value === "number" ? value : value.toNumber())
 }
 
-function formatShortDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-}
-
-function formatLongDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
-}
-
 interface ChartTooltipProps {
   active?: boolean
   payload?: Array<{ value: number; payload: { date: string } }>
 }
 
 function ChartTooltip({ active, payload }: ChartTooltipProps) {
+  const { locale } = useLocale()
   if (!active || !payload?.length) return null
   const point = payload[0]
   return (
     <div className="rounded-md border border-border bg-popover px-3 py-2 shadow-md text-popover-foreground">
-      <p className="text-xs font-medium">{formatLongDate(point.payload.date)}</p>
+      <p className="text-xs font-medium">{formatShortMonthDayYear(point.payload.date, intlLocale(locale))}</p>
       <p className="text-sm font-mono tabular-nums font-semibold">
         {formatBaseCurrency(point.value)}
       </p>
@@ -103,6 +92,8 @@ function getPeriodConfig(period: TimePeriod): { interval: PerformanceInterval; s
 }
 
 export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Element {
+  const { locale } = useLocale()
+  const dateLocale = intlLocale(locale)
   const [period, setPeriod] = useState<TimePeriod>("ALL")
 
   const { data: netWorth, isLoading, error } = useQuery<NetWorthData>({
@@ -222,7 +213,7 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
                     tick={{ fill: "var(--muted-foreground)", fontSize: 10 }}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={formatShortDate}
+                    tickFormatter={(date) => formatShortMonthDay(date, dateLocale)}
                     minTickGap={32}
                     interval="preserveStartEnd"
                   />
@@ -249,7 +240,7 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
                 className="text-[10px] uppercase tracking-widest text-muted-foreground"
                 data-testid="net-worth-timeframe"
               >
-                {formatLongDate(firstDate)} — {formatLongDate(lastDate)}
+                {formatShortMonthDayYear(firstDate, dateLocale)} — {formatShortMonthDayYear(lastDate, dateLocale)}
               </p>
             )}
           </div>

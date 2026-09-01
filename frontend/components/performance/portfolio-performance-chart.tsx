@@ -25,8 +25,11 @@ import { queryKeys } from "@/lib/api/query-keys"
 import Decimal from "decimal.js"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { CHART_HEIGHT_SHORT } from "@/lib/chart-sizes"
+import { formatShortMonthYear, intlLocale } from "@/lib/date-utils"
+import { useLocale } from "@/components/locale-provider"
 import {
   EMPTY_TRADE_DATE_RANGE,
+  formatTradeDateRangeLabel,
   type TradeDateRange,
 } from "@/lib/trades/trade-filters"
 
@@ -40,16 +43,13 @@ function intervalFromRange(range: TradeDateRange): PerformanceInterval {
   return "month"
 }
 
-function formatPerfRangeLabel(range: TradeDateRange): string {
+function formatPerfRangeLabel(range: TradeDateRange, locale: string): string {
   if (!range.from) return "All time"
-  if (!range.to || range.to === range.from) return range.from
-  return `${range.from} – ${range.to}`
+  return formatTradeDateRangeLabel(range, locale)
 }
 
-function formatChartDate(date: string): string {
-  const parsed = new Date(date)
-  if (Number.isNaN(parsed.getTime())) return date
-  return parsed.toLocaleDateString("en-US", { month: "short", year: "numeric" })
+function formatChartDate(date: string, locale: string): string {
+  return formatShortMonthYear(date, locale)
 }
 
 function formatCurrency(value: number): string {
@@ -80,6 +80,8 @@ function ChartTooltipContent({ active, payload }: ChartTooltipProps) {
 }
 
 export function PortfolioPerformanceChart() {
+  const { locale } = useLocale()
+  const dateLocale = intlLocale(locale)
   const [selectedRange, setSelectedRange] = useState<TradeDateRange>(EMPTY_TRADE_DATE_RANGE)
   const interval = intervalFromRange(selectedRange)
   const isAllTime = selectedRange.from === null && selectedRange.to === null
@@ -103,10 +105,10 @@ export function PortfolioPerformanceChart() {
   const chartData = useMemo(
     () =>
       filtered.map((point) => ({
-        label: formatChartDate(point.date),
+        label: formatChartDate(point.date, dateLocale),
         value: new Decimal(point.portfolio_value || "0").toNumber(),
       })),
-    [filtered],
+    [filtered, dateLocale],
   )
 
   const isPositiveTrend = useMemo(() => {
@@ -174,7 +176,7 @@ export function PortfolioPerformanceChart() {
             ariaLabel="Filter performance chart by date range"
             value={selectedRange}
             onChange={setSelectedRange}
-            formatLabel={formatPerfRangeLabel}
+            formatLabel={(range) => formatPerfRangeLabel(range, dateLocale)}
             hideLabel
             popoverAlign="end"
           />

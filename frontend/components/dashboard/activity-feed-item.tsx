@@ -11,11 +11,13 @@ import {
 } from "lucide-react"
 import type { ActivityItem } from "@/lib/api/activity"
 import { Decimal, formatCurrency, formatAmountPlain } from "@/lib/decimal"
+import { formatShortMonthDay, intlLocale } from "@/lib/date-utils"
 import { cn } from "@/lib/utils"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { TickerLogo } from "@/components/ui/ticker-logo"
+import { useLocale } from "@/components/locale-provider"
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale: string): string {
   const date = new Date(dateStr)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -30,7 +32,7 @@ function formatDate(dateStr: string): string {
   const diffDays = Math.floor(diffHours / 24)
   if (diffDays < 7) return `${diffDays}d ago`
 
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  return formatShortMonthDay(dateStr, locale)
 }
 
 function capitalize(s: string): string {
@@ -162,6 +164,7 @@ interface ActivityFeedItemProps {
 }
 
 export function ActivityFeedItem({ item }: ActivityFeedItemProps) {
+  const { locale } = useLocale()
   const title = getTitle(item.kind, item.sub_kind)
   const badge = getBadge(item.kind)
   const details = getDetails(item)
@@ -196,7 +199,7 @@ export function ActivityFeedItem({ item }: ActivityFeedItemProps) {
         <span className={cn("text-sm font-mono font-semibold tabular-nums", amountColor)}>
           {amountText}
         </span>
-        <span className="text-[11px] text-muted-foreground">{formatDate(item.date)}</span>
+        <span className="text-[11px] text-muted-foreground">{formatDate(item.date, intlLocale(locale))}</span>
       </div>
     </Link>
   )

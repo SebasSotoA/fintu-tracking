@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { AddCashFlowDialog } from "./add-cash-flow-dialog"
 
 vi.mock("next/navigation", () => ({
@@ -43,9 +44,11 @@ function renderDialog(autoOpen = true) {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <AddCashFlowDialog autoOpen={autoOpen} />
-    </QueryClientProvider>,
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>
+        <AddCashFlowDialog autoOpen={autoOpen} />
+      </QueryClientProvider>
+    </EnglishLocaleWrapper>,
   )
 }
 

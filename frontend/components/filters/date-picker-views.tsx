@@ -3,24 +3,11 @@
 import { useEffect, useMemo, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useLocale } from "@/components/locale-provider"
+import { intlLocale, listMonthNames } from "@/lib/date-utils"
 import { cn } from "@/lib/utils"
 
 export const YEARS_PER_PAGE = 12
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-] as const
 
 export function getDatePickerYearRange(referenceDate = new Date()) {
   const year = referenceDate.getFullYear()
@@ -44,7 +31,8 @@ export function DatePickerDayHeader({
   onYearClick,
   onMonthClick,
 }: DatePickerDayHeaderProps) {
-  const monthName = displayDate.toLocaleString("default", { month: "long" })
+  const { locale } = useLocale()
+  const monthName = displayDate.toLocaleString(intlLocale(locale), { month: "long" })
   const year = displayDate.getFullYear()
 
   return (
@@ -233,11 +221,16 @@ export interface MonthGridPickerProps {
 }
 
 export function MonthGridPicker({ year, selectedMonth, onSelectMonth }: MonthGridPickerProps) {
+  const { locale } = useLocale()
+  const intl = intlLocale(locale)
+  const longNames = listMonthNames(intl, "long")
+  const shortNames = listMonthNames(intl, "short")
+
   return (
     <div className="w-[calc(var(--cell-size)*7)] space-y-2 p-1">
       <p className="text-center text-sm font-medium tabular-nums">{year}</p>
       <div className="grid grid-cols-3 gap-1">
-        {MONTH_NAMES.map((monthName, monthIndex) => (
+        {longNames.map((monthName, monthIndex) => (
           <Button
             key={monthName}
             type="button"
@@ -250,7 +243,7 @@ export function MonthGridPicker({ year, selectedMonth, onSelectMonth }: MonthGri
             )}
             onClick={() => onSelectMonth(monthIndex)}
           >
-            {monthName.slice(0, 3)}
+            {shortNames[monthIndex]}
           </Button>
         ))}
       </div>

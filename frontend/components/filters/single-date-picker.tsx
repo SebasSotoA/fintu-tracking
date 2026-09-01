@@ -24,10 +24,11 @@ import {
   MonthGridPicker,
   YearGridPicker,
 } from "@/components/filters/date-picker-views"
-import { formatCalendarDate } from "@/lib/date-utils"
+import { formatCalendarDate, intlLocale } from "@/lib/date-utils"
 import { parseCalendarDay, toCalendarDay } from "@/lib/date/calendar-day"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useLocale } from "@/components/locale-provider"
 
 export interface SingleDatePickerProps {
   id: string
@@ -143,6 +144,7 @@ export function SingleDatePicker({
   required,
   disabled,
 }: SingleDatePickerProps) {
+  const { locale } = useLocale()
   const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [draftDay, setDraftDay] = useState<Date | undefined>()
@@ -163,7 +165,7 @@ export function SingleDatePicker({
     setDisplayMonth(parsed ?? today)
   }, [open, value, today])
 
-  const triggerLabel = value ? formatCalendarDate(value) : "Pick a date"
+  const triggerLabel = value ? formatCalendarDate(value, intlLocale(locale)) : "Pick a date"
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)

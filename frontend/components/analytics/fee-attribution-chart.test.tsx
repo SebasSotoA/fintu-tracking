@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { FeeAttributionChart } from "./fee-attribution-chart"
 
 const mockApiGet = vi.fn()
@@ -42,9 +43,11 @@ function renderFeeChart() {
     defaultOptions: { queries: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <FeeAttributionChart />
-    </QueryClientProvider>,
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>
+        <FeeAttributionChart />
+      </QueryClientProvider>
+    </EnglishLocaleWrapper>,
   )
 }
 

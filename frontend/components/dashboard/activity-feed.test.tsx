@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { ActivityFeed } from "./activity-feed"
 import type { ActivityItem } from "@/lib/api/activity"
 
@@ -31,7 +32,9 @@ function renderWithProviders(ui: React.ReactNode) {
     defaultOptions: { queries: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </EnglishLocaleWrapper>,
   )
 }
 

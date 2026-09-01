@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import type { NetWorthData } from "@/lib/types"
 import { METRIC_TOOLTIPS, NetWorthCard } from "./net-worth-card"
 
@@ -36,9 +37,11 @@ function renderCard(props: { initialData?: NetWorthData | null } = {}) {
     defaultOptions: { queries: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <NetWorthCard initialData={props.initialData ?? baseNetWorth} />
-    </QueryClientProvider>,
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>
+        <NetWorthCard initialData={props.initialData ?? baseNetWorth} />
+      </QueryClientProvider>
+    </EnglishLocaleWrapper>,
   )
 }
 
@@ -65,9 +68,11 @@ describe("NetWorthCard", () => {
       defaultOptions: { queries: { retry: false } },
     })
     const { container } = render(
-      <QueryClientProvider client={queryClient}>
-        <NetWorthCard />
-      </QueryClientProvider>,
+      <EnglishLocaleWrapper>
+        <QueryClientProvider client={queryClient}>
+          <NetWorthCard />
+        </QueryClientProvider>
+      </EnglishLocaleWrapper>,
     )
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThanOrEqual(2)
   })

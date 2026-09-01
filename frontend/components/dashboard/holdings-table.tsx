@@ -16,10 +16,12 @@ import { usePersistedVisibleColumns } from "@/hooks/use-persisted-visible-column
 import { AddTradeDialog } from "@/components/trades/add-trade-dialog"
 import { AddCashFlowDialog } from "@/components/cash-flows/add-cash-flow-dialog"
 import { formatCurrency, format } from "@/lib/decimal"
+import { formatDateTime, intlLocale } from "@/lib/date-utils"
 import { Decimal } from "@/lib/decimal"
 import { cn } from "@/lib/utils"
 import { RefreshPricesButton } from "@/components/dashboard/refresh-prices-button"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { useLocale } from "@/components/locale-provider"
 import {
   mergePageSearchParams,
   type PageSize,
@@ -35,17 +37,8 @@ interface HoldingsTableProps {
   onQuickTrade?: (ticker: string, assetType: string) => void
 }
 
-function formatPriceAsOf(value: string | null | undefined): string | null {
-  if (!value) return null
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return null
-  return parsed.toLocaleString("en-US", {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+function formatPriceAsOf(value: string | null | undefined, locale: string): string | null {
+  return formatDateTime(value, locale)
 }
 
 function getPriceAsOf(
@@ -77,6 +70,8 @@ export function HoldingsTable({
   lastPriceRefreshAt = null,
   onQuickTrade,
 }: HoldingsTableProps) {
+  const { locale } = useLocale()
+  const dateLocale = intlLocale(locale)
   const safeHoldings = holdings || []
 
   const hasStalePrices = useMemo(
@@ -86,7 +81,7 @@ export function HoldingsTable({
       ),
     [safeHoldings, priceUpdatedAtByTicker],
   )
-  const formattedRefresh = formatPriceAsOf(lastPriceRefreshAt)
+  const formattedRefresh = formatPriceAsOf(lastPriceRefreshAt, dateLocale)
 
   const [staleDismissed, setStaleDismissed] = useState(false)
   // Re-show the banner automatically when a new refresh updates lastPriceRefreshAt.

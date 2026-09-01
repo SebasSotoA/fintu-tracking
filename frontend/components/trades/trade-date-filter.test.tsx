@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { TradeDateFilter } from "./trade-date-filter"
 import { EMPTY_TRADE_DATE_RANGE } from "@/lib/trades/trade-filters"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 
 vi.mock("@/components/ui/calendar", () => ({
   Calendar: ({
@@ -32,14 +33,14 @@ vi.mock("@/components/ui/calendar", () => ({
 
 describe("TradeDateFilter", () => {
   it("shows All dates on the trigger when empty", () => {
-    render(<TradeDateFilter value={EMPTY_TRADE_DATE_RANGE} onChange={() => {}} />)
+    renderWithLocale(<TradeDateFilter value={EMPTY_TRADE_DATE_RANGE} onChange={() => {}} />)
     expect(screen.getByRole("button", { name: /filter trades by date/i })).toHaveTextContent(
       "All dates",
     )
   })
 
   it("shows formatted single-day label on the trigger", () => {
-    render(
+    renderWithLocale(
       <TradeDateFilter value={{ from: "2026-03-01", to: null }} onChange={() => {}} />,
     )
     expect(screen.getByRole("button", { name: /filter trades by date/i })).toHaveTextContent(
@@ -51,7 +52,7 @@ describe("TradeDateFilter", () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
 
-    render(<TradeDateFilter value={EMPTY_TRADE_DATE_RANGE} onChange={onChange} />)
+    renderWithLocale(<TradeDateFilter value={EMPTY_TRADE_DATE_RANGE} onChange={onChange} />)
 
     await user.click(screen.getByRole("button", { name: /filter trades by date/i }))
     await user.click(screen.getByRole("button", { name: /pick date/i }))
@@ -64,7 +65,7 @@ describe("TradeDateFilter", () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
 
-    render(
+    renderWithLocale(
       <TradeDateFilter value={{ from: "2026-03-01", to: null }} onChange={onChange} />,
     )
 
