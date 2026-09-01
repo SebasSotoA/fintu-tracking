@@ -11,6 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fintu/brand": "file:../packages/brand",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-checkbox": "1.1.3",

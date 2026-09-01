@@ -1,0 +1,9 @@
+{
+  "name": "@fintu/brand",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./tokens.css": "./tokens.css",
+    "./theme.css": "./theme.css"
+  }
+}
