@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Toaster } from "@/components/ui/sonner"
+import { LocaleProvider } from "@/components/locale-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 import { isSubscriptionRequiredError, isUnauthorizedError } from "@/lib/api/errors"
 
@@ -50,11 +51,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="fintu-theme">
-      <QueryClientProvider client={client}>
-        {children}
-        <QueryErrorHandler />
-        <Toaster />
-      </QueryClientProvider>
+      <LocaleProvider>
+        <QueryClientProvider client={client}>
+          {children}
+          <QueryErrorHandler />
+          <Toaster />
+        </QueryClientProvider>
+      </LocaleProvider>
     </ThemeProvider>
   )
 }
