@@ -2,8 +2,9 @@ import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
+import { en } from "@/lib/i18n/en"
 import type { NetWorthData } from "@/lib/types"
-import { METRIC_TOOLTIPS, NetWorthCard } from "./net-worth-card"
+import { NetWorthCard } from "./net-worth-card"
 
 const mockApiGet = vi.fn()
 
@@ -84,6 +85,6 @@ describe("NetWorthCard", () => {
   })
 
   it("keeps buy power tooltip copy aligned with hapi meaning", () => {
-    expect(METRIC_TOOLTIPS.cash).toContain("poder de compra")
+    expect(en.dashboard.tooltips.cash).toContain("poder de compra")
   })
 })

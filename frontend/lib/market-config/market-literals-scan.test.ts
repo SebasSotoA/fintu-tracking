@@ -11,6 +11,8 @@ const EXCLUDED_FILES = [
   "frontend/lib/market-config/market-config.test.ts",
   "frontend/lib/brokers/broker-presets.ts",
   "frontend/lib/brokers/broker-presets.test.ts",
+  "frontend/lib/i18n/en.ts",
+  "frontend/lib/i18n/es.ts",
 ]
 
 const LITERAL_RE = /\b(USD|COP|Hapi|hapi|Twelve Data|twelve-data|twelveData)\b/g

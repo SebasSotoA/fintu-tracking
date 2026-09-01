@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { screen, within } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import { MetricLabel, StatCell } from "./metric-primitives"
 
 describe("MetricLabel", () => {
   it("renders label text and accessible help trigger", () => {
-    render(<MetricLabel label="Net return" tooltip="Return including cash." />)
+    renderWithLocale(<MetricLabel label="Net return" tooltip="Return including cash." />)
     expect(screen.getByText("Net return")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /about net return/i })).toBeInTheDocument()
   })
@@ -12,7 +13,7 @@ describe("MetricLabel", () => {
 
 describe("StatCell", () => {
   it("renders value with primary styling when provided", () => {
-    render(
+    renderWithLocale(
       <StatCell
         label="Total gain/loss"
         tooltip="Gain tooltip"
@@ -26,7 +27,7 @@ describe("StatCell", () => {
   })
 
   it("renders sub-value with dotted underline when subTooltip is set", () => {
-    render(
+    renderWithLocale(
       <StatCell
         label="Total fees"
         tooltip="Fees tooltip"

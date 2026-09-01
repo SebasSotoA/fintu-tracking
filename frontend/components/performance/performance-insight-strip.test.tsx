@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { screen, within } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import type { NetWorthData } from "@/lib/types"
 import { PerformanceInsightStrip } from "./performance-insight-strip"
 
@@ -56,7 +57,7 @@ function renderStrip(netWorth: NetWorthData | null = baseNetWorth) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(
+  return renderWithLocale(
     <QueryClientProvider client={queryClient}>
       <PerformanceInsightStrip initialNetWorth={netWorth} />
     </QueryClientProvider>,

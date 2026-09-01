@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import { NotificationsBell } from "./notifications-bell"
 import type { HealthAlert } from "@/hooks/use-portfolio-health"
 
@@ -13,7 +14,7 @@ vi.mock("@/hooks/use-portfolio-health", () => ({
 
 describe("NotificationsBell", () => {
   it("renders the bell button with no badge when there are no alerts", () => {
-    const { container } = render(<NotificationsBell />)
+    const { container } = renderWithLocale(<NotificationsBell />)
     expect(screen.getByTestId("notifications-bell")).toBeInTheDocument()
     expect(screen.queryByTestId("notifications-bell-badge")).not.toBeInTheDocument()
     expect(container).toBeInTheDocument()
@@ -25,7 +26,7 @@ describe("NotificationsBell", () => {
       severity: "warning",
       message: "All market prices are stale (>24h). Click Refresh Prices to update.",
     })
-    render(<NotificationsBell />)
+    renderWithLocale(<NotificationsBell />)
     const badge = screen.getByTestId("notifications-bell-badge")
     expect(badge).toHaveTextContent("1")
   })

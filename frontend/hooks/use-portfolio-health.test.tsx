@@ -5,6 +5,7 @@ import type { NetWorthData, Holding } from "@/lib/types"
 import type { FxRateChartPoint } from "@/lib/api/analytics"
 import { usePortfolioHealth } from "./use-portfolio-health"
 import { queryKeys } from "@/lib/api/query-keys"
+import { LocaleProvider } from "@/components/locale-provider"
 
 function makeNetWorth(overrides?: Partial<NetWorthData>): NetWorthData {
   return {
@@ -62,7 +63,9 @@ function makeFxChart(daysAgo: number, latestRate: string, oldRate: string): FxRa
 
 function wrapper(queryClient: QueryClient) {
   return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <LocaleProvider defaultLocale="en">
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </LocaleProvider>
   )
 }
 

@@ -9,8 +9,10 @@ import {
 import { usePortfolioHealth } from "@/hooks/use-portfolio-health"
 import { NotificationsPopover } from "@/components/dashboard/notifications-popover"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/components/locale-provider"
 
 export function NotificationsBell() {
+  const { t } = useLocale()
   const { alerts } = usePortfolioHealth()
   const count = alerts.length
 
@@ -20,7 +22,7 @@ export function NotificationsBell() {
         <button
           type="button"
           aria-label={
-            count > 0 ? `Notifications, ${count} unread` : "Notifications"
+            count > 0 ? t("dashboard.notificationsUnread", { count }) : t("dashboard.notifications")
           }
           data-testid="notifications-bell"
           className={cn(
@@ -47,9 +49,9 @@ export function NotificationsBell() {
         className="w-[min(420px,calc(100vw-2rem))] p-0"
       >
         <div className="px-4 py-3 border-b border-border">
-          <p className="text-sm font-semibold text-foreground">Notifications</p>
+          <p className="text-sm font-semibold text-foreground">{t("dashboard.notifications")}</p>
           <p className="text-xs text-muted-foreground">
-            Portfolio health alerts
+            {t("dashboard.portfolioHealthAlerts")}
           </p>
         </div>
         <NotificationsPopover alerts={alerts} />

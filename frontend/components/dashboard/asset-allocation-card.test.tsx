@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import { AssetAllocationCard } from "./asset-allocation-card"
 import type { NetWorthData } from "@/lib/types"
 
@@ -34,12 +35,12 @@ const baseData: NetWorthData = {
 
 describe("AssetAllocationCard", () => {
   it("renders the asset allocation title", () => {
-    render(<AssetAllocationCard data={baseData} />)
+    renderWithLocale(<AssetAllocationCard data={baseData} />)
     expect(screen.getByText("Asset Allocation")).toBeInTheDocument()
   })
 
   it("renders a slice label for each non-zero asset type", () => {
-    render(<AssetAllocationCard data={baseData} />)
+    renderWithLocale(<AssetAllocationCard data={baseData} />)
     expect(screen.getByText("Stocks")).toBeInTheDocument()
     expect(screen.getByText("ETFs")).toBeInTheDocument()
     expect(screen.getByText("Crypto")).toBeInTheDocument()
@@ -47,7 +48,7 @@ describe("AssetAllocationCard", () => {
   })
 
   it("renders percentages next to each label", () => {
-    render(<AssetAllocationCard data={baseData} />)
+    renderWithLocale(<AssetAllocationCard data={baseData} />)
     // 65, 20, 10, 5 (rounded)
     expect(screen.getByText("65%")).toBeInTheDocument()
     expect(screen.getByText("20%")).toBeInTheDocument()
@@ -56,7 +57,7 @@ describe("AssetAllocationCard", () => {
   })
 
   it("renders an empty state when there is no allocation data", () => {
-    render(
+    renderWithLocale(
       <AssetAllocationCard
         data={{ ...baseData, breakdown: { by_asset_type: {}, by_ticker: {} } }}
       />,

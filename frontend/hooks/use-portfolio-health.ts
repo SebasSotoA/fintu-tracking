@@ -10,10 +10,10 @@ import type { NetWorthData, Holding } from "@/lib/types"
 import type { FxRateChartPoint } from "@/lib/api/analytics"
 import { getHoldings } from "@/lib/api/portfolio"
 import { getFxRateChart } from "@/lib/api/analytics"
+import { useLocale } from "@/components/locale-provider"
+import type { InterpolationVars, MessageKey } from "@/lib/i18n/types"
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+type Translate = (key: MessageKey, vars?: InterpolationVars) => string
 
 export type HealthAlertType =
   | "concentration"
@@ -38,16 +38,12 @@ export interface PortfolioHealthResult {
   dismiss: (type: HealthAlertType) => void
 }
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const CONCENTRATION_THRESHOLD = 30 // percent of net_worth
-const LARGE_MOVE_GAIN_THRESHOLD = 20 // percent unrealized gain
-const LARGE_MOVE_LOSS_THRESHOLD = 15 // percent unrealized loss (absolute)
+const CONCENTRATION_THRESHOLD = 30
+const LARGE_MOVE_GAIN_THRESHOLD = 20
+const LARGE_MOVE_LOSS_THRESHOLD = 15
 const STALE_HOURS = 24
-const LOW_BUYING_POWER_THRESHOLD = 2 // percent of net_worth
-const FX_MOVE_THRESHOLD = 4 // percent change over FX_LOOKBACK_DAYS
+const LOW_BUYING_POWER_THRESHOLD = 2
+const FX_MOVE_THRESHOLD = 4
 const FX_LOOKBACK_DAYS = 7
 
 const SEVERITY_ORDER: Record<HealthSeverity, number> = {
@@ -56,164 +52,8 @@ const SEVERITY_ORDER: Record<HealthSeverity, number> = {
   info: 2,
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function toPriceTimestamp(value: string | null | undefined): number {
-  if (!value) return 0
-  const parsed = new Date(value)
-  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime()
-}
-
-function isStale(value: string | null | undefined): boolean {
-  const ts = toPriceTimestamp(value)
-  if (!ts) return true // missing timestamp = stale
-  return Date.now() - ts > STALE_HOURS * 60 * 60 * 1000
-}
-
-function percentString(numerator: string, denominator: string): string {
-  const num = new Decimal(numerator)
-  const den = new Decimal(denominator)
-  if (den.isZero()) return "0"
-  return num.div(den).mul(100).toFixed(0)
-}
-
-// ---------------------------------------------------------------------------
-// Alert detectors — each returns a HealthAlert | null
-// ---------------------------------------------------------------------------
-
-function checkConcentration(netWorth: NetWorthData): HealthAlert | null {
-  const byTicker = netWorth.breakdown?.by_ticker
-  if (!byTicker) return null
-
-  const worth = new Decimal(netWorth.net_worth)
-  let maxPct = 0
-  let maxTicker = ""
-
-  for (const [ticker, value] of Object.entries(byTicker)) {
-    const pct = new Decimal(value).div(worth).mul(100)
-    if (pct.gt(maxPct)) {
-      maxPct = pct.toNumber()
-      maxTicker = ticker
-    }
-  }
-
-  if (maxPct >= CONCENTRATION_THRESHOLD) {
-    return {
-      type: "concentration",
-      severity: "warning",
-      message: `${maxTicker} represents ${percentString(byTicker[maxTicker], netWorth.net_worth)}% of your portfolio. Consider diversifying.`,
-      details: `A single position exceeding ${CONCENTRATION_THRESHOLD}% introduces concentration risk.`,
-    }
-  }
-
-  return null
-}
-
-function checkLargeMove(holdings: Holding[]): HealthAlert | null {
-  if (!holdings?.length) return null
-
-  for (const h of holdings) {
-    const pct = Math.abs(Number(h.unrealizedPLPercent || 0))
-    const isNegative = Number(h.unrealizedPLPercent || 0) < 0
-    const threshold = isNegative ? LARGE_MOVE_LOSS_THRESHOLD : LARGE_MOVE_GAIN_THRESHOLD
-
-    if (pct >= threshold) {
-      const sign = isNegative ? "-" : "+"
-      const formattedPL = Number(h.unrealizedPL || 0).toFixed(2)
-      return {
-        type: "large_move",
-        severity: "warning",
-        message: `${h.ticker} ${sign}${pct.toFixed(1)}% unrealized. ${isNegative ? "Consider reviewing this position." : "Consider taking profits."}`,
-        details: `Unrealized ${isNegative ? "loss" : "gain"} on ${h.ticker}: ${formattedPL} ${MARKET_CONFIG.baseCurrency}.`,
-        direction: isNegative ? "down" : "up",
-      }
-    }
-  }
-
-  return null
-}
-
-function checkStalePrices(holdings: Holding[]): HealthAlert | null {
-  if (!holdings?.length) return null
-
-  const staleCount = holdings.filter(
-    (h) => isStale(h.priceAsOf ?? h.price_as_of ?? h.market_price_updated_at),
-  ).length
-
-  if (staleCount > 0) {
-    return {
-      type: "stale_prices",
-      severity: "warning",
-      message:
-        staleCount === holdings.length
-          ? "All market prices are stale (>24h). Click Refresh Prices to update."
-          : `${staleCount} of ${holdings.length} market prices are stale (>24h). Click Refresh Prices to update.`,
-      details: "Prices older than 24 hours may not reflect current market value.",
-    }
-  }
-
-  return null
-}
-
-function checkLowBuyingPower(netWorth: NetWorthData): HealthAlert | null {
-  const cash = new Decimal(netWorth.cash_balance || "0")
-  const worth = new Decimal(netWorth.net_worth || "0")
-
-  if (worth.isZero()) return null
-
-  const pct = cash.div(worth).mul(100)
-  if (pct.lt(LOW_BUYING_POWER_THRESHOLD)) {
-    const cashFormatted = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: MARKET_CONFIG.baseCurrency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(cash.toNumber())
-
-    return {
-      type: "low_buying_power",
-      severity: "warning",
-      message: `You have ${cashFormatted} buying power (${pct.toFixed(0)}% of portfolio). Consider depositing more ${MARKET_CONFIG.localCurrency} to seize opportunities.`,
-      details: `Buying power below ${LOW_BUYING_POWER_THRESHOLD}% limits your ability to act on market moves.`,
-    }
-  }
-
-  return null
-}
-
-function checkFXMove(fxChart: FxRateChartPoint[]): HealthAlert | null {
-  if (!fxChart?.length || fxChart.length < 2) return null
-
-  const sorted = [...fxChart].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  )
-  const oldest = new Decimal(sorted[0].rate)
-  const latest = new Decimal(sorted[sorted.length - 1].rate)
-
-  if (oldest.isZero()) return null
-
-  const changePct = latest.sub(oldest).div(oldest).mul(100).abs()
-  if (changePct.gte(FX_MOVE_THRESHOLD)) {
-    const direction = latest.gte(oldest) ? "strengthened" : "weakened"
-    const pair = formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency)
-    return {
-      type: "fx_move",
-      severity: "info",
-      message: `${pair} ${direction} ${changePct.toFixed(1)}% this week. Your ${MARKET_CONFIG.localCurrency}-valued returns are affected.`,
-      details: `Rate went from ${oldest.toFixed(2)} to ${latest.toFixed(2)} in ${FX_LOOKBACK_DAYS} days.`,
-    }
-  }
-
-  return null
-}
-
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
-
 export function usePortfolioHealth(): PortfolioHealthResult {
+  const { t } = useLocale()
   const [dismissed, setDismissed] = useState<Set<HealthAlertType>>(new Set())
 
   const { data: netWorth } = useQuery<NetWorthData>({
@@ -237,25 +77,23 @@ export function usePortfolioHealth(): PortfolioHealthResult {
   const alerts = useMemo((): HealthAlert[] => {
     const candidates: HealthAlert[] = []
 
-    const conc = netWorth ? checkConcentration(netWorth) : null
+    const conc = netWorth ? checkConcentration(netWorth, t) : null
     if (conc) candidates.push(conc)
 
-    const move = holdings ? checkLargeMove(holdings) : null
+    const move = holdings ? checkLargeMove(holdings, t) : null
     if (move) candidates.push(move)
 
-    const stale = holdings ? checkStalePrices(holdings) : null
+    const stale = holdings ? checkStalePrices(holdings, t) : null
     if (stale) candidates.push(stale)
 
-    const bp = netWorth ? checkLowBuyingPower(netWorth) : null
+    const bp = netWorth ? checkLowBuyingPower(netWorth, t) : null
     if (bp) candidates.push(bp)
 
-    const fx = fxChart ? checkFXMove(fxChart) : null
+    const fx = fxChart ? checkFXMove(fxChart, t) : null
     if (fx) candidates.push(fx)
 
-    // Filter dismissed
     const active = candidates.filter((a) => !dismissed.has(a.type))
 
-    // Sort by severity (destructive first), then keep only the highest-priority level
     active.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])
 
     if (active.length > 0) {
@@ -264,11 +102,192 @@ export function usePortfolioHealth(): PortfolioHealthResult {
     }
 
     return []
-  }, [netWorth, holdings, fxChart, dismissed])
+  }, [netWorth, holdings, fxChart, dismissed, t])
 
   const dismiss = useCallback((type: HealthAlertType) => {
     setDismissed((prev) => new Set(prev).add(type))
   }, [])
 
   return { alerts, dismiss }
+}
+
+function toPriceTimestamp(value: string | null | undefined): number {
+  if (!value) return 0
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime()
+}
+
+function isStale(value: string | null | undefined): boolean {
+  const ts = toPriceTimestamp(value)
+  if (!ts) return true
+  return Date.now() - ts > STALE_HOURS * 60 * 60 * 1000
+}
+
+function percentString(numerator: string, denominator: string): string {
+  const num = new Decimal(numerator)
+  const den = new Decimal(denominator)
+  if (den.isZero()) return "0"
+  return num.div(den).mul(100).toFixed(0)
+}
+
+function checkConcentration(netWorth: NetWorthData, t: Translate): HealthAlert | null {
+  const byTicker = netWorth.breakdown?.by_ticker
+  if (!byTicker) return null
+
+  const worth = new Decimal(netWorth.net_worth)
+  let maxPct = 0
+  let maxTicker = ""
+
+  for (const [ticker, value] of Object.entries(byTicker)) {
+    const pct = new Decimal(value).div(worth).mul(100)
+    if (pct.gt(maxPct)) {
+      maxPct = pct.toNumber()
+      maxTicker = ticker
+    }
+  }
+
+  if (maxPct >= CONCENTRATION_THRESHOLD) {
+    return {
+      type: "concentration",
+      severity: "warning",
+      message: t("dashboard.health.concentration", {
+        ticker: maxTicker,
+        pct: percentString(byTicker[maxTicker], netWorth.net_worth),
+      }),
+      details: t("dashboard.health.concentrationDetails", {
+        threshold: CONCENTRATION_THRESHOLD,
+      }),
+    }
+  }
+
+  return null
+}
+
+function checkLargeMove(holdings: Holding[], t: Translate): HealthAlert | null {
+  if (!holdings?.length) return null
+
+  for (const h of holdings) {
+    const pct = Math.abs(Number(h.unrealizedPLPercent || 0))
+    const isNegative = Number(h.unrealizedPLPercent || 0) < 0
+    const threshold = isNegative ? LARGE_MOVE_LOSS_THRESHOLD : LARGE_MOVE_GAIN_THRESHOLD
+
+    if (pct >= threshold) {
+      const formattedPL = Number(h.unrealizedPL || 0).toFixed(2)
+      const vars = { ticker: h.ticker, pct: pct.toFixed(1) }
+      return {
+        type: "large_move",
+        severity: "warning",
+        message: isNegative
+          ? t("dashboard.health.largeMoveLoss", vars)
+          : t("dashboard.health.largeMoveGain", vars),
+        details: isNegative
+          ? t("dashboard.health.largeMoveDetailsLoss", {
+              ticker: h.ticker,
+              amount: formattedPL,
+              currency: MARKET_CONFIG.baseCurrency,
+            })
+          : t("dashboard.health.largeMoveDetailsGain", {
+              ticker: h.ticker,
+              amount: formattedPL,
+              currency: MARKET_CONFIG.baseCurrency,
+            }),
+        direction: isNegative ? "down" : "up",
+      }
+    }
+  }
+
+  return null
+}
+
+function checkStalePrices(holdings: Holding[], t: Translate): HealthAlert | null {
+  if (!holdings?.length) return null
+
+  const staleCount = holdings.filter(
+    (h) => isStale(h.priceAsOf ?? h.price_as_of ?? h.market_price_updated_at),
+  ).length
+
+  if (staleCount > 0) {
+    return {
+      type: "stale_prices",
+      severity: "warning",
+      message:
+        staleCount === holdings.length
+          ? t("dashboard.health.staleAll")
+          : t("dashboard.health.staleSome", {
+              stale: staleCount,
+              total: holdings.length,
+            }),
+      details: t("dashboard.health.staleDetails"),
+    }
+  }
+
+  return null
+}
+
+function checkLowBuyingPower(netWorth: NetWorthData, t: Translate): HealthAlert | null {
+  const cash = new Decimal(netWorth.cash_balance || "0")
+  const worth = new Decimal(netWorth.net_worth || "0")
+
+  if (worth.isZero()) return null
+
+  const pct = cash.div(worth).mul(100)
+  if (pct.lt(LOW_BUYING_POWER_THRESHOLD)) {
+    const cashFormatted = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: MARKET_CONFIG.baseCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(cash.toNumber())
+
+    return {
+      type: "low_buying_power",
+      severity: "warning",
+      message: t("dashboard.health.lowBuyingPower", {
+        cash: cashFormatted,
+        pct: pct.toFixed(0),
+        currency: MARKET_CONFIG.localCurrency,
+      }),
+      details: t("dashboard.health.lowBuyingPowerDetails", {
+        threshold: LOW_BUYING_POWER_THRESHOLD,
+      }),
+    }
+  }
+
+  return null
+}
+
+function checkFXMove(fxChart: FxRateChartPoint[], t: Translate): HealthAlert | null {
+  if (!fxChart?.length || fxChart.length < 2) return null
+
+  const sorted = [...fxChart].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  )
+  const oldest = new Decimal(sorted[0].rate)
+  const latest = new Decimal(sorted[sorted.length - 1].rate)
+
+  if (oldest.isZero()) return null
+
+  const changePct = latest.sub(oldest).div(oldest).mul(100).abs()
+  if (changePct.gte(FX_MOVE_THRESHOLD)) {
+    const pair = formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency)
+    const vars = {
+      pair,
+      pct: changePct.toFixed(1),
+      currency: MARKET_CONFIG.localCurrency,
+    }
+    return {
+      type: "fx_move",
+      severity: "info",
+      message: latest.gte(oldest)
+        ? t("dashboard.health.fxStrengthened", vars)
+        : t("dashboard.health.fxWeakened", vars),
+      details: t("dashboard.health.fxDetails", {
+        oldest: oldest.toFixed(2),
+        latest: latest.toFixed(2),
+        days: FX_LOOKBACK_DAYS,
+      }),
+    }
+  }
+
+  return null
 }

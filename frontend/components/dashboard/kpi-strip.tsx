@@ -7,6 +7,7 @@ import { apiClient } from "@/lib/api/client"
 import { queryKeys } from "@/lib/api/query-keys"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import type { NetWorthData } from "@/lib/types"
+import { useLocale } from "@/components/locale-provider"
 
 function formatCurrency(
   value: Decimal,
@@ -26,6 +27,7 @@ interface KpiStripProps {
 }
 
 export function KpiStrip({ initialData }: KpiStripProps) {
+  const { t } = useLocale()
   const { data, isLoading } = useQuery<NetWorthData>({
     queryKey: queryKeys.netWorth(),
     queryFn: () => apiClient.get<NetWorthData>("/api/analytics/net-worth"),
@@ -58,20 +60,20 @@ export function KpiStrip({ initialData }: KpiStripProps) {
       data-testid="kpi-strip"
     >
       <KpiTile
-        label="Total Return"
+        label={t("dashboard.totalReturn")}
         value={formatCurrency(gainLoss)}
         trendPct={gainLossPct.toNumber()}
-        caption={gainLossPct.isZero() ? "No change" : "vs invested"}
+        caption={gainLossPct.isZero() ? t("dashboard.noChange") : t("dashboard.vsInvested")}
       />
       <KpiTile
-        label="Total Invested"
+        label={t("dashboard.totalInvested")}
         value={formatCurrency(totalInvested)}
-        caption="Capital deployed"
+        caption={t("dashboard.capitalDeployed")}
       />
       <KpiTile
-        label="Buy Power"
+        label={t("dashboard.buyPower")}
         value={formatCurrency(buyPower)}
-        caption="Available to invest"
+        caption={t("dashboard.availableToInvest")}
       />
     </div>
   )

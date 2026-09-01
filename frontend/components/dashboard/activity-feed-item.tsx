@@ -16,8 +16,11 @@ import { cn } from "@/lib/utils"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { TickerLogo } from "@/components/ui/ticker-logo"
 import { useLocale } from "@/components/locale-provider"
+import type { InterpolationVars, MessageKey } from "@/lib/i18n/types"
 
-function formatDate(dateStr: string, locale: string): string {
+type Translate = (key: MessageKey, vars?: InterpolationVars) => string
+
+function formatDate(dateStr: string, locale: string, t: Translate): string {
   const date = new Date(dateStr)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
@@ -25,12 +28,12 @@ function formatDate(dateStr: string, locale: string): string {
 
   if (diffHours < 24) {
     const hours = Math.floor(diffHours)
-    if (hours < 1) return "just now"
-    return `${hours}h ago`
+    if (hours < 1) return t("dashboard.justNow")
+    return t("dashboard.hoursAgo", { hours })
   }
 
   const diffDays = Math.floor(diffHours / 24)
-  if (diffDays < 7) return `${diffDays}d ago`
+  if (diffDays < 7) return t("dashboard.daysAgo", { days: diffDays })
 
   return formatShortMonthDay(dateStr, locale)
 }
@@ -45,40 +48,40 @@ interface BadgeStyle {
   classes: string
 }
 
-function getBadge(kind: ActivityItem["kind"]): BadgeStyle {
+function getBadge(kind: ActivityItem["kind"], t: Translate): BadgeStyle {
   if (kind === "trade") {
     return {
-      label: "TRADE",
+      label: t("dashboard.badgeTrade"),
       classes: "bg-blue-500/15 text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-400/20",
     }
   }
   if (kind === "deposit" || kind === "withdrawal") {
     return {
-      label: kind === "deposit" ? "DEPOSIT" : "WITHDRAW",
+      label: kind === "deposit" ? t("dashboard.badgeDeposit") : t("dashboard.badgeWithdraw"),
       classes: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-inset ring-emerald-400/20",
     }
   }
   if (kind === "fee") {
     return {
-      label: "FEE",
+      label: t("dashboard.badgeFee"),
       classes: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-400/20",
     }
   }
   if (kind === "cash_adjustment") {
     return {
-      label: "ADJUST",
+      label: t("dashboard.badgeAdjust"),
       classes: "bg-amber-500/15 text-amber-800 dark:text-amber-300 ring-1 ring-inset ring-amber-400/20",
     }
   }
-  return { label: "ITEM", classes: "bg-muted text-muted-foreground" }
+  return { label: t("dashboard.badgeItem"), classes: "bg-muted text-muted-foreground" }
 }
 
-function getTitle(kind: ActivityItem["kind"], subKind: string): string {
-  if (kind === "trade") return subKind === "buy" ? "Buy" : "Sell"
-  if (kind === "deposit") return "Deposit"
-  if (kind === "withdrawal") return "Withdrawal"
-  if (kind === "fee") return subKind ? `${capitalize(subKind)} fee` : "Fee"
-  if (kind === "cash_adjustment") return "Cash adjustment"
+function getTitle(kind: ActivityItem["kind"], subKind: string, t: Translate): string {
+  if (kind === "trade") return subKind === "buy" ? t("trades.buy") : t("trades.sell")
+  if (kind === "deposit") return t("cash.deposit")
+  if (kind === "withdrawal") return t("cash.withdrawal")
+  if (kind === "fee") return subKind ? t("dashboard.feeWithKind", { kind: capitalize(subKind) }) : t("cash.fee")
+  if (kind === "cash_adjustment") return t("cash.cashAdjustment")
   return capitalize(kind)
 }
 
@@ -164,9 +167,9 @@ interface ActivityFeedItemProps {
 }
 
 export function ActivityFeedItem({ item }: ActivityFeedItemProps) {
-  const { locale } = useLocale()
-  const title = getTitle(item.kind, item.sub_kind)
-  const badge = getBadge(item.kind)
+  const { locale, t } = useLocale()
+  const title = getTitle(item.kind, item.sub_kind, t)
+  const badge = getBadge(item.kind, t)
   const details = getDetails(item)
   const isPositive = item.direction === "in"
   const amountColor = isPositive ? "text-success" : "text-destructive"
@@ -199,7 +202,7 @@ export function ActivityFeedItem({ item }: ActivityFeedItemProps) {
         <span className={cn("text-sm font-mono font-semibold tabular-nums", amountColor)}>
           {amountText}
         </span>
-        <span className="text-[11px] text-muted-foreground">{formatDate(item.date, intlLocale(locale))}</span>
+        <span className="text-[11px] text-muted-foreground">{formatDate(item.date, intlLocale(locale), t)}</span>
       </div>
     </Link>
   )

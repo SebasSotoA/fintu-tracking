@@ -1,7 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import type { NetWorthData } from "@/lib/types"
 import { PerformanceNowCard } from "./performance-now-card"
 
@@ -57,7 +58,7 @@ function renderCard(netWorth: NetWorthData | null = baseNetWorth) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(
+  return renderWithLocale(
     <QueryClientProvider client={queryClient}>
       <PerformanceNowCard initialNetWorth={netWorth} />
     </QueryClientProvider>,

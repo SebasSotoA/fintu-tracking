@@ -4,7 +4,7 @@ import type React from "react"
 import { useQuery } from "@tanstack/react-query"
 import Decimal from "decimal.js"
 import { MetricLabel } from "@/components/analytics/metric-primitives"
-import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips"
+import { getPerformanceTooltips } from "@/components/performance/performance-tooltips"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -15,8 +15,9 @@ import {
   type ReturnAttribution,
 } from "@/lib/api/analytics"
 import { queryKeys } from "@/lib/api/query-keys"
-import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
 import type { NetWorthData } from "@/lib/types"
+import { useLocale } from "@/components/locale-provider"
 
 export interface PerformanceNowCardProps {
   initialNetWorth?: NetWorthData | null
@@ -63,6 +64,8 @@ function hasCopDeposit(value: string | undefined): boolean {
 export function PerformanceNowCard({
   initialNetWorth = null,
 }: PerformanceNowCardProps): React.JSX.Element {
+  const { t } = useLocale()
+  const tooltips = getPerformanceTooltips(t)
   const netWorthQuery = useQuery<NetWorthData>({
     queryKey: queryKeys.netWorth(),
     queryFn: () => getNetWorth(),
@@ -107,7 +110,7 @@ export function PerformanceNowCard({
       <Card className="border-destructive/50" data-testid="performance-now-card">
         <CardContent className="py-6">
           <p className="text-sm text-muted-foreground">
-            Performance data unavailable. Try refreshing the page.
+            {t("performance.dataUnavailable")}
           </p>
         </CardContent>
       </Card>
@@ -133,7 +136,7 @@ export function PerformanceNowCard({
   return (
     <Card className="h-full" data-testid="performance-now-card">
       <CardContent className="flex flex-col gap-4 py-5">
-        <MetricLabel label="Net worth" tooltip={PERFORMANCE_TOOLTIPS.netWorth} />
+        <MetricLabel label={t("performance.netWorth")} tooltip={tooltips.netWorth} />
 
         <div className="flex flex-col gap-3">
           <h2 className="text-3xl font-bold font-mono tracking-tight tabular-nums md:text-4xl text-foreground">
@@ -148,7 +151,7 @@ export function PerformanceNowCard({
 
         {showXirr && (
           <div className="flex items-center justify-between">
-            <MetricLabel label="XIRR" tooltip={PERFORMANCE_TOOLTIPS.xirr} />
+            <MetricLabel label={t("performance.xirr")} tooltip={tooltips.xirr} />
             <span className="text-sm font-mono font-semibold tabular-nums text-foreground">
               {formatSignedPct(xirr)}
             </span>
@@ -159,8 +162,8 @@ export function PerformanceNowCard({
           <div className="rounded-md bg-muted/50 px-3 py-2.5 space-y-2 text-sm">
             <div className="flex items-center justify-between gap-2">
               <MetricLabel
-                label="COP deposited"
-                tooltip={PERFORMANCE_TOOLTIPS.copDeposited}
+                label={t("performance.copDeposited")}
+                tooltip={tooltips.copDeposited}
               />
               <span className="font-mono tabular-nums text-foreground">
                 {formatCOP(new Decimal(netWorth.total_deposited_cop || "0"))}
@@ -168,8 +171,12 @@ export function PerformanceNowCard({
             </div>
             <div className="flex items-center justify-between gap-2">
               <MetricLabel
-                label="Worth today"
-                tooltip={`${PERFORMANCE_TOOLTIPS.worthInCopToday} (${formatRate(currentRate)} ${MARKET_CONFIG.localCurrency}/USD)`}
+                label={t("performance.worthToday")}
+                tooltip={t("performance.worthTodayTooltip", {
+                  tooltip: tooltips.worthInCopToday,
+                  rate: formatRate(currentRate),
+                  pair: formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency),
+                })}
               />
               <span className="font-mono tabular-nums text-foreground">
                 {formatCOP(worthCopToday)}

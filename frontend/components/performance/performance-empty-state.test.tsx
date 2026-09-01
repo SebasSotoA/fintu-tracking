@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import { PerformanceEmptyState } from "./performance-empty-state"
 
 vi.mock("@/components/trades/add-trade-dialog", () => ({
@@ -22,7 +23,7 @@ vi.mock("@/components/ui/empty-state", () => ({
 
 describe("PerformanceEmptyState", () => {
   it("renders shared EmptyState with title and description", () => {
-    render(<PerformanceEmptyState />)
+    renderWithLocale(<PerformanceEmptyState />)
 
     expect(screen.getByTestId("empty-state")).toBeInTheDocument()
     expect(screen.getByTestId("empty-state-title")).toHaveTextContent("No performance data yet")
@@ -31,8 +32,19 @@ describe("PerformanceEmptyState", () => {
     )
   })
 
+  it("renders Spanish heading when locale is es", () => {
+    renderWithLocale(<PerformanceEmptyState />, { locale: "es" })
+
+    expect(screen.getByTestId("empty-state-title")).toHaveTextContent(
+      "Aún no hay datos de rendimiento",
+    )
+    expect(screen.getByTestId("empty-state-description")).toHaveTextContent(
+      "Agrega operaciones y flujos de caja para calcular retornos, comisiones y XIRR.",
+    )
+  })
+
   it("provides CTA to add a trade", () => {
-    render(<PerformanceEmptyState />)
+    renderWithLocale(<PerformanceEmptyState />)
 
     const action = screen.getByTestId("empty-state-action")
     expect(action).toBeInTheDocument()

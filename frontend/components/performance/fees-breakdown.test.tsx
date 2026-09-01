@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import type { CashFlow } from "@/lib/types"
 import { FeesBreakdown } from "./fees-breakdown"
 
@@ -51,7 +52,7 @@ function renderFees() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(
+  return renderWithLocale(
     <QueryClientProvider client={queryClient}>
       <FeesBreakdown />
     </QueryClientProvider>,

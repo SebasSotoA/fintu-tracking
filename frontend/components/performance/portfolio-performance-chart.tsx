@@ -43,8 +43,8 @@ function intervalFromRange(range: TradeDateRange): PerformanceInterval {
   return "month"
 }
 
-function formatPerfRangeLabel(range: TradeDateRange, locale: string): string {
-  if (!range.from) return "All time"
+function formatPerfRangeLabel(range: TradeDateRange, locale: string, allTimeLabel: string): string {
+  if (!range.from) return allTimeLabel
   return formatTradeDateRangeLabel(range, locale)
 }
 
@@ -80,7 +80,7 @@ function ChartTooltipContent({ active, payload }: ChartTooltipProps) {
 }
 
 export function PortfolioPerformanceChart() {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const dateLocale = intlLocale(locale)
   const [selectedRange, setSelectedRange] = useState<TradeDateRange>(EMPTY_TRADE_DATE_RANGE)
   const interval = intervalFromRange(selectedRange)
@@ -139,14 +139,14 @@ export function PortfolioPerformanceChart() {
       <Card>
         <CardHeader>
           <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-            Your money over time
+            {t("performance.yourMoneyOverTime")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex min-h-[260px] md:min-h-[320px] flex-col items-center justify-center text-muted-foreground">
             <AlertCircleIcon className="mb-3 h-10 w-10 opacity-40" />
-            <p className="font-medium">Unable to load performance history</p>
-            <p className="mt-1 text-sm">Try refreshing the page or check back later.</p>
+            <p className="font-medium">{t("performance.unableToLoadHistory")}</p>
+            <p className="mt-1 text-sm">{t("performance.tryRefreshing")}</p>
           </div>
         </CardContent>
       </Card>
@@ -157,7 +157,7 @@ export function PortfolioPerformanceChart() {
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
-          Your money over time
+          {t("performance.yourMoneyOverTime")}
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button
@@ -168,15 +168,15 @@ export function PortfolioPerformanceChart() {
             aria-pressed={isAllTime}
             onClick={() => setSelectedRange(EMPTY_TRADE_DATE_RANGE)}
           >
-            All time
+            {t("performance.allTime")}
           </Button>
           <DateRangePicker
             id="perf-date-range"
-            label="Date range"
-            ariaLabel="Filter performance chart by date range"
+            label={t("performance.dateRange")}
+            ariaLabel={t("performance.filterByDateRange")}
             value={selectedRange}
             onChange={setSelectedRange}
-            formatLabel={(range) => formatPerfRangeLabel(range, dateLocale)}
+            formatLabel={(range) => formatPerfRangeLabel(range, dateLocale, t("performance.allTime"))}
             hideLabel
             popoverAlign="end"
           />
@@ -186,8 +186,8 @@ export function PortfolioPerformanceChart() {
         {chartData.length < 2 ? (
           <div className="flex min-h-[260px] md:min-h-[320px] flex-col items-center justify-center text-muted-foreground">
             <AlertCircleIcon className="mb-3 h-10 w-10 opacity-40" />
-            <p className="font-medium">No performance data yet</p>
-            <p className="mt-1 text-sm">Add trades and cash flows to see your money over time.</p>
+            <p className="font-medium">{t("performance.noChartData")}</p>
+            <p className="mt-1 text-sm">{t("performance.addTradesToSeeChart")}</p>
           </div>
         ) : (
           <div className={`${CHART_HEIGHT_SHORT} w-full`}>

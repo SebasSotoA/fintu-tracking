@@ -6,6 +6,10 @@ import { Decimal, formatCurrency } from "@/lib/decimal"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TickerLogo } from "@/components/ui/ticker-logo"
+import { useLocale } from "@/components/locale-provider"
+import type { InterpolationVars, MessageKey } from "@/lib/i18n/types"
+
+type Translate = (key: MessageKey, vars?: InterpolationVars) => string
 
 interface TopHoldingsCardProps {
   holdings: Holding[]
@@ -13,10 +17,11 @@ interface TopHoldingsCardProps {
   limit?: number
 }
 
-const ASSET_LABEL: Record<string, string> = {
-  stock: "Stock",
-  etf: "ETF",
-  crypto: "Crypto",
+function assetLabel(assetType: string | undefined, t: Translate): string {
+  if (assetType === "stock") return t("trades.stock")
+  if (assetType === "etf") return t("trades.etf")
+  if (assetType === "crypto") return t("trades.crypto")
+  return t("dashboard.asset")
 }
 
 function formatMoney(value: string): string {
@@ -28,6 +33,7 @@ export function TopHoldingsCard({
   totalPortfolioValue,
   limit = 5,
 }: TopHoldingsCardProps) {
+  const { t } = useLocale()
   const top = [...holdings]
     .sort((a, b) => new Decimal(b.marketValue).comparedTo(new Decimal(a.marketValue)))
     .slice(0, limit)
@@ -36,10 +42,10 @@ export function TopHoldingsCard({
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Top Holdings</CardTitle>
+          <CardTitle className="text-base">{t("dashboard.topHoldings")}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center text-sm text-muted-foreground py-12">
-          No holdings yet.
+          {t("dashboard.noHoldingsYetPeriod")}
         </CardContent>
       </Card>
     )
@@ -51,9 +57,9 @@ export function TopHoldingsCard({
     <Card className="h-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-base">Top Holdings</CardTitle>
+          <CardTitle className="text-base">{t("dashboard.topHoldings")}</CardTitle>
           <Link href="/trades" className="text-xs text-muted-foreground hover:text-foreground">
-            View all
+            {t("dashboard.viewAll")}
           </Link>
         </div>
       </CardHeader>
@@ -64,7 +70,7 @@ export function TopHoldingsCard({
             const pct = total.isZero()
               ? 0
               : marketValue.div(total).mul(100).toNumber()
-            const assetLabel = ASSET_LABEL[holding.assetType ?? ""] ?? "Asset"
+            const assetTypeLabel = assetLabel(holding.assetType, t)
             return (
               <li key={holding.ticker} className="flex items-center gap-2.5 py-2 px-3">
                 <TickerLogo
@@ -74,7 +80,7 @@ export function TopHoldingsCard({
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{holding.ticker}</p>
-                  <p className="text-[11px] text-muted-foreground truncate">{assetLabel}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{assetTypeLabel}</p>
                 </div>
                 <div className="flex flex-col items-end gap-0.5 shrink-0">
                   <span className="text-sm font-mono font-semibold tabular-nums text-foreground">

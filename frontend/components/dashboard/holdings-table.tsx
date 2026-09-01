@@ -70,7 +70,7 @@ export function HoldingsTable({
   lastPriceRefreshAt = null,
   onQuickTrade,
 }: HoldingsTableProps) {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const dateLocale = intlLocale(locale)
   const safeHoldings = holdings || []
 
@@ -146,8 +146,8 @@ export function HoldingsTable({
                   size="icon"
                   className="min-h-11 min-w-11"
                   onClick={() => onQuickTrade(holding.ticker, holding.assetType ?? "stock")}
-                  aria-label={`Quick buy ${holding.ticker}`}
-                  title={`Add buy for ${holding.ticker}`}
+                  aria-label={t("dashboard.quickBuy", { ticker: holding.ticker })}
+                  title={t("dashboard.addBuyFor", { ticker: holding.ticker })}
                 >
                   <Plus className="size-5" />
                 </Button>
@@ -156,23 +156,23 @@ export function HoldingsTable({
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             <div className="space-y-0.5 text-right">
-              <p className="text-xs text-muted-foreground">Quantity</p>
+              <p className="text-xs text-muted-foreground">{t("trades.quantity")}</p>
               <p className="text-sm font-mono">{format(holding.quantity, 4)}</p>
             </div>
             <div className="space-y-0.5 text-right">
-              <p className="text-xs text-muted-foreground">Avg Cost</p>
+              <p className="text-xs text-muted-foreground">{t("dashboard.avgCost")}</p>
               <p className="text-sm font-mono">{formatCurrency(holding.avgCost, MARKET_CONFIG.baseCurrency)}</p>
             </div>
             <div className="space-y-0.5 text-right">
-              <p className="text-xs text-muted-foreground">Total Invested</p>
+              <p className="text-xs text-muted-foreground">{t("dashboard.totalInvested")}</p>
               <p className="text-sm font-mono">{formatCurrency(holding.totalInvested, MARKET_CONFIG.baseCurrency)}</p>
             </div>
             <div className="space-y-0.5 text-right">
-              <p className="text-xs text-muted-foreground">Market Value</p>
+              <p className="text-xs text-muted-foreground">{t("dashboard.marketValue")}</p>
               <p className="text-sm font-mono font-semibold">{formatCurrency(holding.marketValue, MARKET_CONFIG.baseCurrency)}</p>
             </div>
             <div className="col-span-2 space-y-0.5 text-right">
-              <p className="text-xs text-muted-foreground">Unrealized P/L</p>
+              <p className="text-xs text-muted-foreground">{t("dashboard.unrealizedPL")}</p>
               <p className={cn("text-sm font-mono", isPositive ? "text-success" : "text-destructive")}>
                 {formatCurrency(holding.unrealizedPL, MARKET_CONFIG.baseCurrency)}
                 {" "}
@@ -183,14 +183,14 @@ export function HoldingsTable({
         </Card>
       )
     },
-    [onQuickTrade],
+    [onQuickTrade, t],
   )
 
   const columns = useMemo<DataTableColumn<Holding>[]>(
     () => [
       {
         key: "ticker",
-        header: "Ticker",
+        header: t("trades.ticker"),
         className: "font-mono font-semibold",
         cell: (holding) => (
           <div className="flex items-center gap-1.5">
@@ -206,8 +206,8 @@ export function HoldingsTable({
                 size="icon"
                 className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => onQuickTrade(holding.ticker, holding.assetType ?? "stock")}
-                aria-label={`Quick buy ${holding.ticker}`}
-                title={`Add buy for ${holding.ticker}`}
+                aria-label={t("dashboard.quickBuy", { ticker: holding.ticker })}
+                title={t("dashboard.addBuyFor", { ticker: holding.ticker })}
               >
                 <Plus className="h-3.5 w-3.5" />
               </Button>
@@ -217,35 +217,35 @@ export function HoldingsTable({
       },
       {
         key: "quantity",
-        header: "Quantity",
+        header: t("trades.quantity"),
         cell: (holding) => format(holding.quantity, 4),
         align: "right",
         className: "font-mono",
       },
       {
         key: "avgCost",
-        header: "Avg Cost",
+        header: t("dashboard.avgCost"),
         cell: (holding) => formatCurrency(holding.avgCost, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
       },
       {
         key: "totalInvested",
-        header: "Total Invested",
+        header: t("dashboard.totalInvested"),
         cell: (holding) => formatCurrency(holding.totalInvested, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
       },
       {
         key: "marketValue",
-        header: "Market Value",
+        header: t("dashboard.marketValue"),
         cell: (holding) => formatCurrency(holding.marketValue, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono font-semibold",
       },
       {
         key: "unrealizedPL",
-        header: "Unrealized P/L",
+        header: t("dashboard.unrealizedPL"),
         cell: (holding) => {
           const pl = new Decimal(holding.unrealizedPL || 0)
           const isPositive = pl.gte(0)
@@ -260,7 +260,7 @@ export function HoldingsTable({
       },
       {
         key: "unrealizedPLPercent",
-        header: "P/L %",
+        header: t("dashboard.plPercent"),
         cell: (holding) => {
           const pl = new Decimal(holding.unrealizedPL || 0)
           const isPositive = pl.gte(0)
@@ -274,7 +274,7 @@ export function HoldingsTable({
         className: "font-mono",
       },
     ],
-    [onQuickTrade],
+    [onQuickTrade, t],
   )
 
   const { visibleColumns, visibleKeys, defaultKeys, setVisibleKeys } =
@@ -284,19 +284,19 @@ export function HoldingsTable({
     return (
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Current Holdings</h2>
+          <h2 className="text-base font-semibold">{t("dashboard.currentHoldings")}</h2>
           <RefreshPricesButton />
         </div>
         <EmptyState
-          title="No holdings yet"
-          description="Add trades to build your portfolio, then use Refresh Prices to load market values."
+          title={t("dashboard.noHoldingsYet")}
+          description={t("dashboard.noHoldingsDescription")}
           action={
             <EmptyStateActions>
               <AddTradeDialog>
-                <EmptyStateAction>Add Trade</EmptyStateAction>
+                <EmptyStateAction>{t("trades.add")}</EmptyStateAction>
               </AddTradeDialog>
               <AddCashFlowDialog>
-                <EmptyStateAction>Add Cash Flow</EmptyStateAction>
+                <EmptyStateAction>{t("cash.add")}</EmptyStateAction>
               </AddCashFlowDialog>
             </EmptyStateActions>
           }
@@ -309,10 +309,10 @@ export function HoldingsTable({
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h2 className="text-base font-semibold">Current Holdings</h2>
+          <h2 className="text-base font-semibold">{t("dashboard.currentHoldings")}</h2>
           {formattedRefresh && (
             <p className="text-xs text-muted-foreground">
-              Prices as of {formattedRefresh}
+              {t("dashboard.pricesAsOf", { datetime: formattedRefresh })}
             </p>
           )}
         </div>
@@ -335,12 +335,12 @@ export function HoldingsTable({
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
           <p className="flex-1 text-destructive leading-snug">
-            Some prices are stale (&gt;24h). Use Refresh Prices to sync market values.
+            {t("dashboard.stalePricesBanner")}
           </p>
           <button
             type="button"
             onClick={() => setStaleDismissed(true)}
-            aria-label="Dismiss stale prices warning"
+            aria-label={t("dashboard.dismissStalePrices")}
             data-testid="stale-prices-dismiss"
             className="-m-1 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-destructive/70 transition-colors hover:bg-destructive/15 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40"
           >

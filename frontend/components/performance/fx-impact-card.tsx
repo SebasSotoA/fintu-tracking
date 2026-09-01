@@ -8,10 +8,11 @@ import Decimal from "decimal.js"
 import { getFxImpact } from "@/lib/api/analytics"
 import type { FxImpactReport } from "@/lib/api/analytics"
 import { MetricLabel } from "@/components/analytics/metric-primitives"
-import { PERFORMANCE_TOOLTIPS } from "@/components/performance/performance-tooltips"
+import { getPerformanceTooltips } from "@/components/performance/performance-tooltips"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { MARKET_CONFIG } from "@/lib/market-config/market-config"
+import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
+import { useLocale } from "@/components/locale-provider"
 
 function formatUSD(value: Decimal): string {
   return new Intl.NumberFormat("en-US", {
@@ -30,6 +31,8 @@ function formatRate(value: Decimal): string {
 }
 
 export function FxImpactCard(): React.JSX.Element {
+  const { t } = useLocale()
+  const tooltips = getPerformanceTooltips(t)
   const { data, isLoading, error } = useQuery<FxImpactReport>({
     queryKey: ["fx-impact"],
     queryFn: () => getFxImpact(),
@@ -52,7 +55,7 @@ export function FxImpactCard(): React.JSX.Element {
     return (
       <Card>
         <CardContent className="py-6">
-          <p className="text-sm text-muted-foreground">FX data unavailable.</p>
+          <p className="text-sm text-muted-foreground">{t("performance.fxDataUnavailable")}</p>
         </CardContent>
       </Card>
     )
@@ -69,10 +72,10 @@ export function FxImpactCard(): React.JSX.Element {
       <Card>
         <CardContent className="py-6">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-            FX impact
+            {t("performance.fxImpact")}
           </h3>
           <p className="text-sm text-muted-foreground">
-            No FX data yet. Add a deposit with a COP→USD conversion to see your FX impact.
+            {t("performance.noFxData")}
           </p>
         </CardContent>
       </Card>
@@ -83,8 +86,8 @@ export function FxImpactCard(): React.JSX.Element {
     <Card>
       <CardContent className="py-6">
         <MetricLabel
-          label="FX impact"
-          tooltip={PERFORMANCE_TOOLTIPS.fxImpact}
+          label={t("performance.fxImpact")}
+          tooltip={tooltips.fxImpact}
           className="mb-1"
         />
         <p className="text-2xl font-bold font-mono tabular-nums text-foreground mb-4">
@@ -93,28 +96,28 @@ export function FxImpactCard(): React.JSX.Element {
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <MetricLabel
-              label="USD from COP deposits"
-              tooltip={PERFORMANCE_TOOLTIPS.usdConverted}
+              label={t("performance.usdFromCopDeposits")}
+              tooltip={tooltips.usdConverted}
             />
             <span className="font-mono tabular-nums">
               {formatUSD(usdConverted)}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Average rate</span>
+            <span className="text-muted-foreground">{t("performance.averageRate")}</span>
             <span className="font-mono tabular-nums">
-              {formatRate(avgRate)} {MARKET_CONFIG.localCurrency}/USD
+              {formatRate(avgRate)} {formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency)}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Current rate</span>
+            <span className="text-muted-foreground">{t("performance.currentRate")}</span>
             <span className="font-mono tabular-nums">
-              {formatRate(currentRate)} {MARKET_CONFIG.localCurrency}/USD
+              {formatRate(currentRate)} {formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency)}
             </span>
           </div>
           {!rateChangePct.isZero() && (
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Rate change</span>
+              <span className="text-muted-foreground">{t("performance.rateChange")}</span>
               <span className="font-mono tabular-nums text-foreground">
                 {rateChangePct.greaterThan(0) ? "+" : ""}{rateChangePct.toFixed(2)}%
               </span>
@@ -125,7 +128,7 @@ export function FxImpactCard(): React.JSX.Element {
           href="/cash-flows"
           className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
         >
-          View FX details
+          {t("performance.viewFxDetails")}
           <ArrowRight className="size-4" aria-hidden />
         </Link>
       </CardContent>

@@ -7,7 +7,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
+import { useLocale } from "@/components/locale-provider";
 
 export function MetricLabel({
   label,
@@ -18,6 +19,7 @@ export function MetricLabel({
   tooltip: string;
   className?: string;
 }): React.JSX.Element {
+  const { t } = useLocale()
   return (
     <div className={cn("flex items-center gap-1", className)}>
       <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -28,7 +30,7 @@ export function MetricLabel({
           <button
             type="button"
             className="inline-flex rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={`About ${label}`}
+            aria-label={t("dashboard.aboutMetric", { label })}
           >
             <CircleHelp className="size-3.5 shrink-0" />
           </button>

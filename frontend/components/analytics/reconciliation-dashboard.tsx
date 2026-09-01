@@ -19,6 +19,7 @@ import Decimal from "decimal.js";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { MARKET_CONFIG } from "@/lib/market-config/market-config";
+import { useLocale } from "@/components/locale-provider";
 
 interface ReconciliationIssue {
   trade_id: string;
@@ -49,6 +50,7 @@ const statValueClass =
   "mt-1 font-mono text-2xl font-semibold tabular-nums text-foreground";
 
 export function ReconciliationDashboard() {
+  const { t } = useLocale();
   const { data: report, isLoading, refetch } = useQuery<ReconciliationReport>({
     queryKey: ["cash-reconciliation"],
     queryFn: async () => {
@@ -86,13 +88,15 @@ export function ReconciliationDashboard() {
 
   const alertTitle =
     issueCount > 0
-      ? `${issueCount} Issue${issueCount !== 1 ? "s" : ""} Found`
-      : "Fee Totals Don't Match";
+      ? issueCount === 1
+        ? t("performance.issuesFoundOne", { count: issueCount })
+        : t("performance.issuesFoundMany", { count: issueCount })
+      : t("performance.feeTotalsDontMatch");
 
   const alertDescription =
     issueCount > 0
-      ? "Some discrepancies were detected between trades and cash flows. Review the details below."
-      : "Trade fee totals and cash flow fee totals differ, but no specific row-level issues were listed. Check unlinked fee entries in Cash Flow History.";
+      ? t("performance.discrepanciesDetected")
+      : t("performance.totalsDifferNoRows");
 
   return (
     <Card>
@@ -101,15 +105,15 @@ export function ReconciliationDashboard() {
           <div>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangleIcon className="h-5 w-5 text-destructive" />
-              Data Health & Reconciliation
+              {t("performance.reconciliationTitle")}
             </CardTitle>
             <CardDescription>
-              Verify integrity between trades and cash flows
+              {t("performance.reconciliationDescription")}
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
             <RefreshCwIcon className="h-4 w-4 mr-2" />
-            Refresh
+            {t("performance.refresh")}
           </Button>
         </div>
       </CardHeader>
@@ -130,19 +134,19 @@ export function ReconciliationDashboard() {
         <Separator />
 
         <div className="space-y-3">
-          <h3 className={statLabelClass}>Fee Totals Comparison</h3>
+          <h3 className={statLabelClass}>{t("performance.feeTotalsComparison")}</h3>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className={statTileClass}>
-              <p className={statLabelClass}>Trade Fees</p>
+              <p className={statLabelClass}>{t("performance.tradeFees")}</p>
               <p className={statValueClass}>{formatCurrency(totalTradeFees)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">From trades table</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("performance.fromTradesTable")}</p>
             </div>
 
             <div className={statTileClass}>
-              <p className={statLabelClass}>Cash Flow Fees</p>
+              <p className={statLabelClass}>{t("performance.cashFlowFees")}</p>
               <p className={statValueClass}>{formatCurrency(totalCashFlowFees)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">From cash_flows table</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("performance.fromCashFlowsTable")}</p>
             </div>
 
             <div
@@ -151,7 +155,7 @@ export function ReconciliationDashboard() {
                 hasTotalsMismatch && "ring-1 ring-destructive/30",
               )}
             >
-              <p className={statLabelClass}>Difference</p>
+              <p className={statLabelClass}>{t("performance.difference")}</p>
               <p
                 className={cn(
                   statValueClass,
@@ -162,7 +166,7 @@ export function ReconciliationDashboard() {
                 {formatCurrency(difference.abs())}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {hasTotalsMismatch ? "Needs attention" : "Perfect match"}
+                {hasTotalsMismatch ? t("performance.needsAttention") : t("performance.perfectMatch")}
               </p>
             </div>
           </div>
@@ -172,22 +176,20 @@ export function ReconciliationDashboard() {
           <Separator />
 
           <div className="space-y-4">
-            <h3 className={statLabelClass}>Issues Detected</h3>
+            <h3 className={statLabelClass}>{t("performance.issuesDetected")}</h3>
 
               {issueCount === 0 && hasTotalsMismatch && (
                 <div className="rounded-xl border border-border bg-surface-container-high p-4">
                   <div className="flex items-start gap-3">
                     <AlertTriangleIcon className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
                     <div>
-                      <h4 className="font-medium mb-1">Totals mismatch</h4>
+                      <h4 className="font-medium mb-1">{t("performance.totalsMismatch")}</h4>
                       <p className="text-sm text-muted-foreground">
-                        Fee rows in Cash Flow History may not match trade fee totals. Look for
-                        trade-related fees without a linked trade, or re-save trades that include
-                        deposit, trading, or closing fees.
+                        {t("performance.totalsMismatchBody")}
                       </p>
                       <Link href="/cash-flows" className="mt-3 inline-block">
                         <Button variant="outline" size="sm">
-                          Open Cash Flow History
+                          {t("performance.openCashFlowHistory")}
                           <ExternalLinkIcon className="h-3 w-3 ml-1" />
                         </Button>
                       </Link>
@@ -199,8 +201,12 @@ export function ReconciliationDashboard() {
               {report.missing_links.length > 0 && (
                 <IssueCard
                   icon={<XCircleIcon className="h-5 w-5 text-destructive" />}
-                  title="Missing Cash Flow Links"
-                  description={`${report.missing_links.length} trade${report.missing_links.length !== 1 ? "s" : ""} with fees but no corresponding cash flow entries`}
+                  title={t("performance.missingCashFlowLinks")}
+                  description={
+                    report.missing_links.length === 1
+                      ? t("performance.missingLinksDescOne", { count: report.missing_links.length })
+                      : t("performance.missingLinksDescMany", { count: report.missing_links.length })
+                  }
                 >
                   {report.missing_links.slice(0, 5).map((tradeId) => (
                     <Link key={tradeId} href={`/trades?highlight=${tradeId}`}>
@@ -211,7 +217,7 @@ export function ReconciliationDashboard() {
                     </Link>
                   ))}
                   {report.missing_links.length > 5 && (
-                    <Badge variant="secondary">+{report.missing_links.length - 5} more</Badge>
+                    <Badge variant="secondary">{t("performance.moreCount", { count: report.missing_links.length - 5 })}</Badge>
                   )}
                 </IssueCard>
               )}
@@ -219,8 +225,12 @@ export function ReconciliationDashboard() {
               {report.orphaned_cash_flows.length > 0 && (
                 <IssueCard
                   icon={<AlertTriangleIcon className="h-5 w-5 text-destructive" />}
-                  title="Orphaned Cash Flows"
-                  description={`${report.orphaned_cash_flows.length} cash flow${report.orphaned_cash_flows.length !== 1 ? "s" : ""} linked to non-existent trades`}
+                  title={t("performance.orphanedCashFlows")}
+                  description={
+                    report.orphaned_cash_flows.length === 1
+                      ? t("performance.orphanedDescOne", { count: report.orphaned_cash_flows.length })
+                      : t("performance.orphanedDescMany", { count: report.orphaned_cash_flows.length })
+                  }
                 >
                   {report.orphaned_cash_flows.slice(0, 5).map((cfId) => (
                     <Link key={cfId} href={`/cash-flows?highlight=${cfId}`}>
@@ -232,7 +242,7 @@ export function ReconciliationDashboard() {
                   ))}
                   {report.orphaned_cash_flows.length > 5 && (
                     <Badge variant="secondary">
-                      +{report.orphaned_cash_flows.length - 5} more
+                      {t("performance.moreCount", { count: report.orphaned_cash_flows.length - 5 })}
                     </Badge>
                   )}
                 </IssueCard>
@@ -241,8 +251,12 @@ export function ReconciliationDashboard() {
               {unlinked.length > 0 && (
                 <IssueCard
                   icon={<Link2OffIcon className="h-5 w-5 text-destructive" />}
-                  title="Unlinked Trade Fees"
-                  description={`${unlinked.length} trade fee cash flow${unlinked.length !== 1 ? "s" : ""} not linked to any trade`}
+                  title={t("performance.unlinkedTradeFees")}
+                  description={
+                    unlinked.length === 1
+                      ? t("performance.unlinkedDescOne", { count: unlinked.length })
+                      : t("performance.unlinkedDescMany", { count: unlinked.length })
+                  }
                 >
                   {unlinked.slice(0, 5).map((cfId) => (
                     <Link key={cfId} href={`/cash-flows?highlight=${cfId}`}>
@@ -253,14 +267,14 @@ export function ReconciliationDashboard() {
                     </Link>
                   ))}
                   {unlinked.length > 5 && (
-                    <Badge variant="secondary">+{unlinked.length - 5} more</Badge>
+                    <Badge variant="secondary">{t("performance.moreCount", { count: unlinked.length - 5 })}</Badge>
                   )}
                 </IssueCard>
               )}
 
               {report.discrepancies.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Fee Amount Discrepancies</h4>
+                  <h4 className="text-sm font-medium">{t("performance.feeAmountDiscrepancies")}</h4>
                   {report.discrepancies.map((issue) => (
                     <div
                       key={issue.trade_id}
@@ -276,7 +290,7 @@ export function ReconciliationDashboard() {
                         <p className="text-sm text-muted-foreground">{issue.description}</p>
                       </div>
                       <div className="text-right ml-4">
-                        <p className="text-xs text-muted-foreground mb-1">Difference</p>
+                        <p className="text-xs text-muted-foreground mb-1">{t("performance.difference")}</p>
                         <p className="text-sm font-bold font-mono tabular-nums text-destructive">
                           {formatCurrency(issue.difference)}
                         </p>
@@ -293,12 +307,12 @@ export function ReconciliationDashboard() {
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCwIcon className="h-4 w-4 mr-2" />
-            Re-check Data
+            {t("performance.recheckData")}
           </Button>
 
           <Link href="/trades">
             <Button variant="default">
-              Go to Trades
+              {t("performance.goToTrades")}
               <ExternalLinkIcon className="h-4 w-4 ml-2" />
             </Button>
           </Link>

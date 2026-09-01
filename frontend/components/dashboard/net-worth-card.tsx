@@ -31,14 +31,6 @@ interface NetWorthCardProps {
   initialData?: NetWorthData | null
 }
 
-export const METRIC_TOOLTIPS = {
-  portfolioTotal:
-    `Total portfolio value: current market value of holdings plus available buy power in ${MARKET_CONFIG.baseCurrency}.`,
-  cash: `Uninvested ${MARKET_CONFIG.baseCurrency} available to buy (poder de compra): deposits − withdrawals − transfer fees − money spent on buys + sell proceeds.`,
-  unrealizedProxy:
-    "Proxy badge based on total gain/loss from analytics. Detailed XIRR and attribution stay in Performance.",
-} as const
-
 function formatBaseCurrency(value: Decimal | number): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -92,7 +84,7 @@ function getPeriodConfig(period: TimePeriod): { interval: PerformanceInterval; s
 }
 
 export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Element {
-  const { locale } = useLocale()
+  const { locale, t } = useLocale()
   const dateLocale = intlLocale(locale)
   const [period, setPeriod] = useState<TimePeriod>("ALL")
 
@@ -128,9 +120,9 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
     return (
       <Card className="border-destructive">
         <CardHeader>
-          <CardTitle className="text-destructive">Error Loading Net Worth</CardTitle>
+          <CardTitle className="text-destructive">{t("dashboard.errorLoadingNetWorth")}</CardTitle>
           <CardDescription>
-            Failed to load your portfolio data. Please try refreshing the page.
+            {t("dashboard.failedToLoadPortfolio")}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -164,7 +156,10 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
     <Card className="h-full">
       <CardContent className="flex flex-col gap-4 py-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <MetricLabel label="Portfolio total" tooltip={METRIC_TOOLTIPS.portfolioTotal} />
+          <MetricLabel
+            label={t("dashboard.portfolioTotal")}
+            tooltip={t("dashboard.tooltips.portfolioTotal", { currency: MARKET_CONFIG.baseCurrency })}
+          />
           <TimePeriodSelector value={period} onChange={setPeriod} />
         </div>
         <div className="flex flex-wrap items-baseline gap-3">
@@ -246,7 +241,7 @@ export function NetWorthCard({ initialData }: NetWorthCardProps): React.JSX.Elem
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Refresh prices to see history.
+            {t("dashboard.refreshPricesToSeeHistory")}
           </p>
         )}
         {/* gainLoss/gainLossPct remain available for tests and future badges. */}

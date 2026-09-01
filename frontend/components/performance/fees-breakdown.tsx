@@ -13,6 +13,7 @@ import { getFeeBreakdown, type FeeBreakdown } from "@/lib/api/analytics"
 import { listCashFlowsForExport } from "@/lib/api/cash-flows"
 import { queryKeys } from "@/lib/api/query-keys"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/components/locale-provider"
 
 function isTransferFee(cf: CashFlow): boolean {
   return (
@@ -45,6 +46,7 @@ function formatUSD(value: Decimal): string {
 }
 
 export function FeesBreakdown() {
+  const { t } = useLocale()
   const { data: cashFlows = [], isLoading: cashFlowsLoading } = useQuery<CashFlow[]>({
     queryKey: queryKeys.cashFlowsExport(),
     queryFn: () => listCashFlowsForExport(),
@@ -81,7 +83,7 @@ export function FeesBreakdown() {
     <Card>
       <CardContent className="py-6">
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-          Fees paid
+          {t("performance.feesPaid")}
         </h3>
         <p className="text-2xl font-bold font-mono tabular-nums text-foreground mb-4">
           {formatUSD(grandTotal)}
@@ -90,9 +92,9 @@ export function FeesBreakdown() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={cn(BADGE_BASE, "bg-amber-500/15 text-amber-800 dark:text-amber-300 ring-1 ring-inset ring-amber-400/20")}>
-                Transfer
+                {t("performance.transfer")}
               </span>
-              <span className="text-sm text-muted-foreground">Deposit & withdrawal fees</span>
+              <span className="text-sm text-muted-foreground">{t("performance.depositWithdrawalFees")}</span>
             </div>
             <span className="text-sm font-mono font-semibold tabular-nums text-muted-foreground">
               {formatUSD(transferTotal)}
@@ -101,9 +103,9 @@ export function FeesBreakdown() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={cn(BADGE_BASE, "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-400/20")}>
-                Trading
+                {t("performance.trading")}
               </span>
-              <span className="text-sm text-muted-foreground">Trade commissions</span>
+              <span className="text-sm text-muted-foreground">{t("performance.tradeCommissions")}</span>
             </div>
             <span className="text-sm font-mono font-semibold tabular-nums text-muted-foreground">
               {formatUSD(tradingTotal)}
@@ -112,14 +114,16 @@ export function FeesBreakdown() {
         </div>
         {standaloneFees.length > 0 && (
           <p className="mt-4 text-xs text-muted-foreground">
-            {standaloneFees.length} unlinked fee row{standaloneFees.length > 1 ? "s" : ""} need review
+            {standaloneFees.length === 1
+              ? t("performance.unlinkedFeeRow", { count: standaloneFees.length })
+              : t("performance.unlinkedFeeRows", { count: standaloneFees.length })}
           </p>
         )}
         <Link
           href="/cash-flows"
           className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-foreground underline-offset-4 hover:underline"
         >
-          View full breakdown
+          {t("performance.viewFullBreakdown")}
           <ArrowRight className="size-4" aria-hidden />
         </Link>
       </CardContent>

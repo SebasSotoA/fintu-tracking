@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import { TopHoldingsCard } from "./top-holdings-card"
 import type { Holding } from "@/lib/types"
 
@@ -42,12 +43,12 @@ const holdings: Holding[] = [
 
 describe("TopHoldingsCard", () => {
   it("renders the title", () => {
-    render(<TopHoldingsCard holdings={holdings} totalPortfolioValue={10000} />)
+    renderWithLocale(<TopHoldingsCard holdings={holdings} totalPortfolioValue={10000} />)
     expect(screen.getByText("Top Holdings")).toBeInTheDocument()
   })
 
   it("renders tickers sorted by market value descending", () => {
-    render(<TopHoldingsCard holdings={holdings} totalPortfolioValue={10000} />)
+    renderWithLocale(<TopHoldingsCard holdings={holdings} totalPortfolioValue={10000} />)
     const tickerNodes = screen.getAllByText(/^(AAPL|VOO|BTC)$/)
     expect(tickerNodes[0]).toHaveTextContent("BTC")
     expect(tickerNodes[1]).toHaveTextContent("VOO")
@@ -56,7 +57,7 @@ describe("TopHoldingsCard", () => {
   })
 
   it("renders percentages of total portfolio", () => {
-    render(<TopHoldingsCard holdings={holdings} totalPortfolioValue={10000} />)
+    renderWithLocale(<TopHoldingsCard holdings={holdings} totalPortfolioValue={10000} />)
     // 4500/10000 = 45%, 2200/10000 = 22%, 1800/10000 = 18%
     expect(screen.getByText("45.0%")).toBeInTheDocument()
     expect(screen.getByText("22.0%")).toBeInTheDocument()
@@ -64,14 +65,14 @@ describe("TopHoldingsCard", () => {
   })
 
   it("respects the limit prop", () => {
-    render(<TopHoldingsCard holdings={holdings} totalPortfolioValue={10000} limit={2} />)
+    renderWithLocale(<TopHoldingsCard holdings={holdings} totalPortfolioValue={10000} limit={2} />)
     expect(screen.queryByText("AAPL")).not.toBeInTheDocument()
     expect(screen.getByText("BTC")).toBeInTheDocument()
     expect(screen.getByText("VOO")).toBeInTheDocument()
   })
 
   it("renders an empty state when there are no holdings", () => {
-    render(<TopHoldingsCard holdings={[]} totalPortfolioValue={0} />)
+    renderWithLocale(<TopHoldingsCard holdings={[]} totalPortfolioValue={0} />)
     expect(screen.getByText(/no holdings yet/i)).toBeInTheDocument()
   })
 })

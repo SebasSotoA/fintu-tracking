@@ -10,6 +10,7 @@ import {
   Globe,
 } from "lucide-react"
 import type { HealthAlert, HealthAlertType } from "@/hooks/use-portfolio-health"
+import { useLocale } from "@/components/locale-provider"
 
 const IconByType: Record<
   Exclude<HealthAlertType, "large_move">,
@@ -26,10 +27,11 @@ interface NotificationsPopoverProps {
 }
 
 export function NotificationsPopover({ alerts }: NotificationsPopoverProps) {
+  const { t } = useLocale()
   if (alerts.length === 0) {
     return (
       <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-        No notifications right now.
+        {t("dashboard.noNotifications")}
       </div>
     )
   }

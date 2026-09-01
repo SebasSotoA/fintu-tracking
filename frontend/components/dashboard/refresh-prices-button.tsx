@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ApiError, refreshMarketPrices } from "@/lib/api/portfolio"
 import { showToast } from "@/lib/toast"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/components/locale-provider"
 
 interface RefreshPricesButtonProps {
   className?: string
@@ -18,6 +19,7 @@ export function RefreshPricesButton({
   className,
   align = "end",
 }: RefreshPricesButtonProps) {
+  const { t } = useLocale()
   const router = useRouter()
   const [retryAfter, setRetryAfter] = useState(0)
 
@@ -39,16 +41,20 @@ export function RefreshPricesButton({
 
   const refreshMutation = useMutation({
     mutationFn: refreshMarketPrices,
-    onMutate: () => showToast.loading("Refreshing prices…"),
+    onMutate: () => showToast.loading(t("dashboard.refreshingPrices")),
     onSuccess: (result, _vars, toastId) => {
       if (toastId !== undefined) showToast.dismiss(toastId)
       if (result.errors.length > 0 && result.updated === 0) {
         showToast.error(result.errors.join("; "))
         return
       }
-      const parts = [`Updated ${result.updated} ticker${result.updated === 1 ? "" : "s"}`]
+      const updatedLabel =
+        result.updated === 1
+          ? t("dashboard.updatedTickers", { count: result.updated })
+          : t("dashboard.updatedTickersPlural", { count: result.updated })
+      const parts = [updatedLabel]
       if (result.errors.length > 0) {
-        parts.push(`${result.errors.length} failed`)
+        parts.push(t("dashboard.failedCount", { count: result.errors.length }))
       }
       showToast.success(parts.join(" · "))
       router.refresh()
@@ -58,11 +64,11 @@ export function RefreshPricesButton({
 
       if (err instanceof ApiError && err.status === 429 && err.retryAfter) {
         setRetryAfter(err.retryAfter)
-        showToast.error(`Please wait ${err.retryAfter}s before refreshing again`)
+        showToast.error(t("dashboard.waitBeforeRefresh", { seconds: err.retryAfter }))
         return
       }
 
-      showToast.error(err.message || "Failed to refresh prices")
+      showToast.error(err.message || t("dashboard.failedRefreshPrices"))
     },
   })
 
@@ -89,7 +95,7 @@ export function RefreshPricesButton({
         ) : (
           <RefreshCw className="mr-2 h-4 w-4" />
         )}
-        {isCoolingDown ? `Retry in ${retryAfter}s` : "Refresh Prices"}
+        {isCoolingDown ? t("dashboard.retryIn", { seconds: retryAfter }) : t("dashboard.refreshPrices")}
       </Button>
     </div>
   )

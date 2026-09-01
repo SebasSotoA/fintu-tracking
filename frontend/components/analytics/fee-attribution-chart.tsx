@@ -44,14 +44,6 @@ const MUTED_CURSOR = {
   fill: "color-mix(in oklch, var(--muted) 35%, transparent)",
 };
 
-const feeTypeChartConfig = {
-  value: { label: "Fees", color: "var(--chart-3)" },
-} satisfies ChartConfig;
-
-const monthlyChartConfig = {
-  value: { label: "Monthly fees", color: "var(--chart-3)" },
-} satisfies ChartConfig;
-
 
 function formatBaseCurrency(value: string | number): string {
   const num = typeof value === "string" ? parseFloat(value) : value;
@@ -80,6 +72,7 @@ function FeeTooltip({
   active?: boolean;
   payload?: { payload: FeeTooltipPayload }[];
 }) {
+  const { t } = useLocale();
   if (!active || !payload?.length) {
     return null;
   }
@@ -93,7 +86,7 @@ function FeeTooltip({
         {formatBaseCurrency(data.value)}
       </p>
       {data.percentage != null && (
-        <p className="text-muted-foreground">{data.percentage}% of total fees</p>
+        <p className="text-muted-foreground">{t("performance.percentOfTotalFees", { pct: data.percentage })}</p>
       )}
     </div>
   );
@@ -110,8 +103,14 @@ function ChartEmptyState({ message }: { message: string }): React.JSX.Element {
 }
 
 export function FeeAttributionChart(): React.JSX.Element {
-  const { locale } = useLocale();
+  const { locale, t } = useLocale();
   const dateLocale = intlLocale(locale);
+  const feeTypeChartConfig = {
+    value: { label: t("performance.fees"), color: "var(--chart-3)" },
+  } satisfies ChartConfig;
+  const monthlyChartConfig = {
+    value: { label: t("performance.monthlyFees"), color: "var(--chart-3)" },
+  } satisfies ChartConfig;
   const { data: feeBreakdown, isLoading, error } = useQuery<FeeBreakdown>({
     queryKey: queryKeys.feeBreakdown(),
     queryFn: async () => {
@@ -155,13 +154,13 @@ export function FeeAttributionChart(): React.JSX.Element {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingDownIcon className="h-5 w-5 text-muted-foreground" />
-            Fee attribution
+            {t("performance.feeAttribution")}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center h-48 text-muted-foreground">
           <DollarSignIcon className="h-10 w-10 mb-3 opacity-40" />
-          <p className="font-medium">No fee data yet</p>
-          <p className="text-sm mt-1">Record trades with fees to see your fee breakdown.</p>
+          <p className="font-medium">{t("performance.noFeeDataYet")}</p>
+          <p className="text-sm mt-1">{t("performance.recordTradesWithFees")}</p>
         </CardContent>
       </Card>
     );
@@ -172,35 +171,35 @@ export function FeeAttributionChart(): React.JSX.Element {
 
   const feeTypeData = [
     {
-      name: "Deposit Fees",
+      name: t("performance.depositFees"),
       value: parseFloat(feeBreakdown.deposit_fees || "0"),
       percentage: totalFees.greaterThan(0)
         ? new Decimal(feeBreakdown.deposit_fees || "0").div(totalFees).mul(100).toFixed(1)
         : "0",
     },
     {
-      name: "Trading Fees",
+      name: t("performance.tradingFees"),
       value: parseFloat(feeBreakdown.trading_fees || "0"),
       percentage: totalFees.greaterThan(0)
         ? new Decimal(feeBreakdown.trading_fees || "0").div(totalFees).mul(100).toFixed(1)
         : "0",
     },
     {
-      name: "Closing Fees",
+      name: t("performance.closingFees"),
       value: parseFloat(feeBreakdown.closing_fees || "0"),
       percentage: totalFees.greaterThan(0)
         ? new Decimal(feeBreakdown.closing_fees || "0").div(totalFees).mul(100).toFixed(1)
         : "0",
     },
     {
-      name: "Maintenance",
+      name: t("performance.maintenance"),
       value: parseFloat(feeBreakdown.maintenance_fees || "0"),
       percentage: totalFees.greaterThan(0)
         ? new Decimal(feeBreakdown.maintenance_fees || "0").div(totalFees).mul(100).toFixed(1)
         : "0",
     },
     {
-      name: "Other Fees",
+      name: t("performance.otherFees"),
       value: parseFloat(feeBreakdown.other_fees || "0"),
       percentage: totalFees.greaterThan(0)
         ? new Decimal(feeBreakdown.other_fees || "0").div(totalFees).mul(100).toFixed(1)
@@ -222,11 +221,11 @@ export function FeeAttributionChart(): React.JSX.Element {
           <div>
             <CardTitle className="flex items-center gap-2">
               <TrendingDownIcon className="h-5 w-5 text-muted-foreground" />
-              Fee attribution
+              {t("performance.feeAttribution")}
             </CardTitle>
           </div>
           <div className="text-right">
-            <div className="text-sm text-muted-foreground">Total Fees Paid</div>
+            <div className="text-sm text-muted-foreground">{t("performance.totalFeesPaid")}</div>
             <div className="text-2xl font-bold font-mono tabular-nums text-destructive">
               {formatBaseCurrency(totalFees.toString())}
             </div>
@@ -237,7 +236,7 @@ export function FeeAttributionChart(): React.JSX.Element {
         {hasAnyFeeData ? (
           <div className="grid min-w-0 gap-6 md:grid-cols-2 md:items-stretch">
             <div className="min-w-0 space-y-4">
-              <h3 className="text-sm font-medium">Fees by type</h3>
+              <h3 className="text-sm font-medium">{t("performance.feesByType")}</h3>
               {feeTypeData.length > 0 ? (
                 <ChartContainer
                   config={feeTypeChartConfig}
@@ -277,12 +276,12 @@ export function FeeAttributionChart(): React.JSX.Element {
                   </BarChart>
                 </ChartContainer>
               ) : (
-                <ChartEmptyState message="No fees by type yet" />
+                <ChartEmptyState message={t("performance.noFeesByType")} />
               )}
             </div>
 
             <div className="min-w-0 space-y-4">
-              <h3 className="text-sm font-medium">Fees by month</h3>
+              <h3 className="text-sm font-medium">{t("performance.feesByMonth")}</h3>
               {hasMonthlyFees ? (
                 <ChartContainer
                   config={monthlyChartConfig}
@@ -335,14 +334,14 @@ export function FeeAttributionChart(): React.JSX.Element {
                   </BarChart>
                 </ChartContainer>
               ) : (
-                <ChartEmptyState message="No monthly fee history yet" />
+                <ChartEmptyState message={t("performance.noMonthlyFeeHistory")} />
               )}
             </div>
           </div>
         ) : (
           <div className={`flex flex-col items-center justify-center ${CHART_HEIGHT_MEDIUM} text-muted-foreground`}>
             <DollarSignIcon className="h-12 w-12 mb-2 opacity-50" />
-            <p>No fee data available</p>
+            <p>{t("performance.noFeeDataAvailable")}</p>
           </div>
         )}
       </CardContent>

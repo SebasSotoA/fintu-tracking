@@ -3,12 +3,24 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
 import type { NetWorthData } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useLocale } from "@/components/locale-provider"
+import type { InterpolationVars, MessageKey } from "@/lib/i18n/types"
 
-const SLICE_LABELS: Record<string, { label: string; colorVar: string }> = {
-  stock: { label: "Stocks", colorVar: "var(--chart-1)" },
-  etf: { label: "ETFs", colorVar: "var(--chart-2)" },
-  crypto: { label: "Crypto", colorVar: "var(--chart-3)" },
-  cash: { label: "Cash", colorVar: "var(--chart-4)" },
+type Translate = (key: MessageKey, vars?: InterpolationVars) => string
+
+const SLICE_COLORS: Record<string, string> = {
+  stock: "var(--chart-1)",
+  etf: "var(--chart-2)",
+  crypto: "var(--chart-3)",
+  cash: "var(--chart-4)",
+}
+
+function sliceLabel(key: string, t: Translate): string {
+  if (key === "stock") return t("trades.stocks")
+  if (key === "etf") return t("trades.etfs")
+  if (key === "crypto") return t("trades.crypto")
+  if (key === "cash") return t("dashboard.cash")
+  return key
 }
 
 interface AssetAllocationCardProps {
@@ -20,6 +32,7 @@ function formatPct(pct: number): string {
 }
 
 export function AssetAllocationCard({ data }: AssetAllocationCardProps) {
+  const { t } = useLocale()
   const byType = data.breakdown.by_asset_type ?? {}
   const total = Object.values(byType).reduce((sum, v) => sum + Number(v || 0), 0)
 
@@ -28,13 +41,12 @@ export function AssetAllocationCard({ data }: AssetAllocationCardProps) {
     .map(([key, value]) => {
       const amount = Number(value || 0)
       const pct = total > 0 ? (amount / total) * 100 : 0
-      const meta = SLICE_LABELS[key] ?? { label: key, colorVar: "var(--muted)" }
       return {
         key,
-        label: meta.label,
+        label: sliceLabel(key, t),
         value: amount,
         pct,
-        colorVar: meta.colorVar,
+        colorVar: SLICE_COLORS[key] ?? "var(--muted)",
       }
     })
     .sort((a, b) => b.value - a.value)
@@ -43,10 +55,10 @@ export function AssetAllocationCard({ data }: AssetAllocationCardProps) {
     return (
       <Card className="h-full">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Asset Allocation</CardTitle>
+          <CardTitle className="text-base">{t("dashboard.assetAllocation")}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center text-sm text-muted-foreground py-12">
-          Add holdings to see your allocation.
+          {t("dashboard.addHoldingsToSeeAllocation")}
         </CardContent>
       </Card>
     )
@@ -55,7 +67,7 @@ export function AssetAllocationCard({ data }: AssetAllocationCardProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Asset Allocation</CardTitle>
+        <CardTitle className="text-base">{t("dashboard.assetAllocation")}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-6">

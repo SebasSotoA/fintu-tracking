@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import { DashboardEmptyState } from "./dashboard-empty-state"
 
 vi.mock("@/components/trades/add-trade-dialog", () => ({
@@ -22,7 +23,7 @@ vi.mock("@/components/ui/empty-state", () => ({
 
 describe("DashboardEmptyState", () => {
   it("renders shared EmptyState with title and description", () => {
-    render(<DashboardEmptyState />)
+    renderWithLocale(<DashboardEmptyState />)
 
     expect(screen.getByTestId("empty-state")).toBeInTheDocument()
     expect(screen.getByTestId("empty-state-title")).toHaveTextContent("No portfolio data yet")
@@ -31,8 +32,19 @@ describe("DashboardEmptyState", () => {
     )
   })
 
+  it("renders Spanish title and description when locale is es", () => {
+    renderWithLocale(<DashboardEmptyState />, { locale: "es" })
+
+    expect(screen.getByTestId("empty-state-title")).toHaveTextContent(
+      "Aún no hay datos del portafolio",
+    )
+    expect(screen.getByTestId("empty-state-description")).toHaveTextContent(
+      "Agrega tu primera operación o importa tu historial para empezar a hacer seguimiento.",
+    )
+  })
+
   it("provides CTA to add a trade", () => {
-    render(<DashboardEmptyState />)
+    renderWithLocale(<DashboardEmptyState />)
 
     const action = screen.getByTestId("empty-state-action")
     expect(action).toBeInTheDocument()

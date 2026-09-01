@@ -10,8 +10,10 @@ import { AddTradeDialog } from "@/components/trades/add-trade-dialog"
 import { AddCashFlowDialog } from "@/components/cash-flows/add-cash-flow-dialog"
 import { ActivityFeedItem } from "@/components/dashboard/activity-feed-item"
 import { ActivityFeedCardSkeleton } from "@/components/dashboard/dashboard-card-skeleton"
+import { useLocale } from "@/components/locale-provider"
 
 export function ActivityFeed() {
+  const { t } = useLocale()
   const { data: items, isLoading, error } = useQuery<ActivityItem[]>({
     queryKey: queryKeys.activityFeed(),
     queryFn: () => getActivityFeed(8),
@@ -27,10 +29,10 @@ export function ActivityFeed() {
     return (
       <Card className="flex flex-col h-full">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Recent Activity</CardTitle>
+          <CardTitle className="text-base">{t("dashboard.recentActivity")}</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto">
-          <p className="text-sm text-muted-foreground">Unable to load recent activity.</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.unableToLoadActivity")}</p>
         </CardContent>
       </Card>
     )
@@ -40,20 +42,20 @@ export function ActivityFeed() {
     return (
       <Card className="flex flex-col h-full">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Recent Activity</CardTitle>
+          <CardTitle className="text-base">{t("dashboard.recentActivity")}</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto">
           <EmptyState
-            title="No activity yet"
-            description="Add your first trade or deposit to get started."
+            title={t("dashboard.noActivityYet")}
+            description={t("dashboard.noActivityDescription")}
             className="border-0 px-2 py-6 md:px-4 md:py-8"
             action={
               <EmptyStateActions>
                 <AddTradeDialog>
-                  <EmptyStateAction>Add Trade</EmptyStateAction>
+                  <EmptyStateAction>{t("trades.add")}</EmptyStateAction>
                 </AddTradeDialog>
                 <AddCashFlowDialog>
-                  <EmptyStateAction>Add Cash Flow</EmptyStateAction>
+                  <EmptyStateAction>{t("cash.add")}</EmptyStateAction>
                 </AddCashFlowDialog>
               </EmptyStateActions>
             }
@@ -66,7 +68,7 @@ export function ActivityFeed() {
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Recent Activity</CardTitle>
+        <CardTitle className="text-base">{t("dashboard.recentActivity")}</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto px-6 scrollbar-minimal divide-y divide-white/5">
         {items.map((item) => (

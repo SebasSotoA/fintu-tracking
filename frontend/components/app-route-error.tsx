@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useLocale } from "@/components/locale-provider"
 
 interface AppRouteErrorProps {
   error: Error & { digest?: string }
@@ -14,8 +15,10 @@ interface AppRouteErrorProps {
 export function AppRouteError({
   error,
   reset,
-  title = "Something went wrong",
+  title,
 }: AppRouteErrorProps) {
+  const { t } = useLocale()
+
   useEffect(() => {
     console.error(error)
   }, [error])
@@ -23,15 +26,15 @@ export function AppRouteError({
   return (
     <Card className="mx-auto mt-8 max-w-lg">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>We could not load this page. You can try again or return home.</CardDescription>
+        <CardTitle>{title ?? t("errors.somethingWentWrong")}</CardTitle>
+        <CardDescription>{t("errors.couldNotLoad")}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-3">
         <Button type="button" onClick={() => reset()}>
-          Try again
+          {t("errors.tryAgain")}
         </Button>
         <Button type="button" variant="outline" asChild>
-          <Link href="/dashboard">Go to dashboard</Link>
+          <Link href="/dashboard">{t("errors.goToDashboard")}</Link>
         </Button>
       </CardContent>
     </Card>

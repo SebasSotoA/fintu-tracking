@@ -1,6 +1,7 @@
 "use client"
 
 import { AppRouteError } from "@/components/app-route-error"
+import { useLocale } from "@/components/locale-provider"
 
 export default function CashFlowsError({
   error,
@@ -9,5 +10,6 @@ export default function CashFlowsError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  return <AppRouteError error={error} reset={reset} title="Cash flows unavailable" />
+  const { t } = useLocale()
+  return <AppRouteError error={error} reset={reset} title={t("errors.cashFlowsUnavailable")} />
 }

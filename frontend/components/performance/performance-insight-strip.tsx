@@ -14,6 +14,7 @@ import {
 import { queryKeys } from "@/lib/api/query-keys"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import type { NetWorthData } from "@/lib/types"
+import { useLocale } from "@/components/locale-provider"
 
 export interface PerformanceInsightStripProps {
   initialNetWorth?: NetWorthData | null
@@ -48,6 +49,7 @@ function hasCopDeposit(value: string | undefined): boolean {
 export function PerformanceInsightStrip({
   initialNetWorth = null,
 }: PerformanceInsightStripProps): React.JSX.Element {
+  const { t } = useLocale()
   const netWorthQuery = useQuery<NetWorthData>({
     queryKey: queryKeys.netWorth(),
     queryFn: () => getNetWorth(),
@@ -93,25 +95,25 @@ export function PerformanceInsightStrip({
     ? formatCOP(new Decimal(netWorth?.total_deposited_cop || "0"))
     : "—"
   const depositedCaption = hasCopDeposit(netWorth?.total_deposited_cop)
-    ? "Total sent to broker"
+    ? t("performance.totalSentToBroker")
     : netWorth
-      ? "No deposits recorded"
-      : "Unavailable"
+      ? t("performance.noDepositsRecorded")
+      : t("performance.unavailable")
 
   const arrivedValue = attribution
     ? formatUSD(new Decimal(attribution.starting_capital || "0"))
     : "—"
-  const arrivedCaption = attribution ? "After wire fees" : "Unavailable"
+  const arrivedCaption = attribution ? t("performance.afterWireFees") : t("performance.unavailable")
 
   const fxValue = fxImpact
     ? formatSignedUSD(new Decimal(fxImpact.fx_impact_usd || "0"))
     : "—"
-  const fxCaption = fxImpact ? "vs today's rate" : "Unavailable"
+  const fxCaption = fxImpact ? t("performance.vsTodaysRate") : t("performance.unavailable")
 
   const feesValue = attribution
     ? formatUSD(new Decimal(attribution.total_fees_impact || "0").abs())
     : "—"
-  const feesCaption = attribution ? "Transfer + trading" : "Unavailable"
+  const feesCaption = attribution ? t("performance.transferPlusTrading") : t("performance.unavailable")
 
   return (
     <div
@@ -119,22 +121,22 @@ export function PerformanceInsightStrip({
       data-testid="performance-insight-strip"
     >
       <KpiTile
-        label="COP DEPOSITED"
+        label={t("performance.copDepositedLabel")}
         value={depositedCop}
         caption={depositedCaption}
       />
       <KpiTile
-        label="ARRIVED AT BROKER"
+        label={t("performance.arrivedAtBroker")}
         value={arrivedValue}
         caption={arrivedCaption}
       />
       <KpiTile
-        label="FX IMPACT"
+        label={t("performance.fxImpactLabel")}
         value={fxValue}
         caption={fxCaption}
       />
       <KpiTile
-        label="FEES PAID"
+        label={t("performance.feesPaidLabel")}
         value={feesValue}
         caption={feesCaption}
       />
