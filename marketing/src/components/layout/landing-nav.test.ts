@@ -28,4 +28,16 @@ describe('LandingNav', () => {
     expect(header?.className).toMatch(/bg-background\/[1-4]\d/)
     expect(header?.className).not.toMatch(/bg-background\/[6-9]\d/)
   })
+
+  it('shows the small aqua mark with visible Fintu text', async () => {
+    const { container, getByRole } = await renderAstro(LandingNav)
+
+    const logoLink = getByRole('link', { name: 'Fintu' })
+    expect(logoLink).toHaveAttribute('href', '/')
+    expect(logoLink).toHaveTextContent('Fintu')
+
+    const icon = container.querySelector('img[src*="fintu-aqua-icon"]')
+    expect(icon).not.toBeNull()
+    expect(icon).toHaveClass('mix-blend-screen')
+  })
 })

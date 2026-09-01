@@ -1,5 +1,4 @@
 ---
-import FintuLogo from "@/components/brand/fintu-logo.astro"
 import Button from "@/components/ui/button.astro"
 import { cn } from "@/lib/utils"
 import { MARKET_CONFIG } from "@/lib/market-config"
@@ -19,10 +18,16 @@ const year = new Date().getFullYear()
       <div>
         <a
           href="/"
-          class="inline-flex rounded-lg outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary/40"
+          class="flex items-center gap-2 rounded-lg outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary/40"
         >
-          <FintuLogo />
-          <span class="sr-only">Fintu</span>
+          <img
+            src="/fintu-aqua-icon.svg"
+            alt=""
+            width="28"
+            height="28"
+            class="h-7 w-7 object-contain mix-blend-screen"
+          />
+          <span class="font-sans text-sm font-bold tracking-tight text-foreground">Fintu</span>
         </a>
         <p
           class={cn(
@@ -33,7 +38,7 @@ const year = new Date().getFullYear()
         </p>
         <p class="mt-4 max-w-sm text-sm text-muted-foreground">
           Portfolio tracking for LATAM retail investors holding {MARKET_CONFIG.baseCurrency}
-          assets—with FX, fees, and real performance built in.
+          assets, with FX, fees, and real performance built in.
         </p>
       </div>
 

@@ -32,7 +32,7 @@ describe('LandingSocialProof', () => {
       ),
     ).toBeInTheDocument()
     expect(
-      getByText('Fee categories mapped—deposit, transfer, trading, and closing'),
+      getByText('Fee categories mapped: deposit, transfer, trading, and closing'),
     ).toBeInTheDocument()
   })
 })
