@@ -37,4 +37,12 @@ describe('LandingHero', () => {
     const stats = container.querySelector('dl')
     expect(stats).toHaveClass('grid-cols-1', 'sm:grid-cols-3')
   })
+
+  it('uses text-primary-text for the precision headline, not text-primary', async () => {
+    const { getByText } = await renderAstro(LandingHero)
+
+    const precision = getByText(/tracked with precision/i)
+    expect(precision.classList.contains('text-primary-text')).toBe(true)
+    expect(precision.classList.contains('text-primary')).toBe(false)
+  })
 })

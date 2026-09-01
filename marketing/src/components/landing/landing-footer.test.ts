@@ -10,7 +10,7 @@ describe('LandingFooter', () => {
 
     const logoLink = getByRole('link', { name: 'Fintu' })
     expect(logoLink).toHaveAttribute('href', '/')
-    expect(container.querySelector('svg.text-primary')).not.toBeNull()
+    expect(container.querySelector('svg.text-primary-text')).not.toBeNull()
 
     expect(getByRole('link', { name: 'Features' })).toHaveAttribute('href', '#features')
     expect(getByRole('link', { name: 'Login' })).toHaveAttribute(

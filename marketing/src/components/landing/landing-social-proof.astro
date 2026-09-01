@@ -37,7 +37,7 @@ const stats: Stat[] = [
 <section data-social-proof class="relative border-t border-border/30 bg-surface-container-lowest">
   <div class="container mx-auto px-6 py-16 md:py-20">
     <div class="mb-10 text-center landing-fade-up">
-      <p class="font-mono text-xs tracking-widest text-primary uppercase">Built for precision</p>
+      <p class="font-mono text-xs tracking-widest text-primary-text uppercase">Built for precision</p>
       <h2 class="font-sans mt-3 text-3xl tracking-tight text-balance sm:text-4xl">
         Every number accounted for
       </h2>
@@ -47,7 +47,7 @@ const stats: Stat[] = [
       {stats.map((stat, index) => (
         <div class="landing-fade-up-stagger" style={`animation-delay: ${200 + index * 80}ms`}>
           <div class="flex flex-col items-center gap-2 px-4 py-6 text-center md:py-8">
-            <p class="font-mono text-4xl font-bold tracking-tight tabular-nums text-primary md:text-5xl">
+            <p class="font-mono text-4xl font-bold tracking-tight tabular-nums text-primary-text md:text-5xl">
               <span data-count-up data-target={stat.value}>0</span><span class="text-2xl md:text-3xl">{stat.suffix}</span>
             </p>
             <p class="text-sm font-medium text-foreground">{stat.label}</p>
