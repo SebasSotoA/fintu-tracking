@@ -42,4 +42,25 @@ describe("useUpdateProfile", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(updateProfile).toHaveBeenCalledWith({ country: "mx", broker_preset_id: "hapi-colombia" })
   })
+
+  it("calls updateProfile with a locale-only body", async () => {
+    vi.mocked(updateProfile).mockResolvedValueOnce({
+      id: "p1",
+      user_id: "u1",
+      country: "co",
+      broker_preset_id: "hapi-colombia",
+      locale: "es",
+      onboarding_completed: true,
+      onboarding_step: "done",
+      created_at: "",
+      updated_at: "",
+    })
+
+    const { result } = renderHook(() => useUpdateProfile(), { wrapper: createWrapper() })
+
+    result.current.mutate({ locale: "es" })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(updateProfile).toHaveBeenCalledWith({ locale: "es" })
+  })
 })

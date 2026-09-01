@@ -1,10 +1,13 @@
 import { apiClient } from "./client"
 
+export type ProfileLocale = "en" | "es"
+
 export interface Profile {
   id: string
   user_id: string
   country: string
   broker_preset_id: string | null
+  locale?: ProfileLocale | null
   onboarding_completed: boolean
   onboarding_step: string
   plan_id?: string | null
@@ -19,8 +22,9 @@ export interface UpdateOnboardingData {
 }
 
 export interface UpdateProfileData {
-  country: string
-  broker_preset_id: string
+  country?: string
+  broker_preset_id?: string
+  locale?: ProfileLocale
 }
 
 export async function getMe(): Promise<Profile> {

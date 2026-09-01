@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
 import { XIcon } from "lucide-react"
+import { useLocale } from "@/components/locale-provider"
 import { Button } from "@/components/ui/button"
 import {
   ResponsiveDialog,
@@ -45,9 +46,15 @@ const THEME_OPTIONS = [
   { value: "dark", label: "Dark" },
 ] as const
 
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English" },
+  { value: "es", label: "Español" },
+] as const
+
 export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConfigDialogProps) {
   const updateProfile = useUpdateProfile()
   const { theme, setTheme } = useTheme()
+  const { locale, setLocale, t } = useLocale()
   const [query, setQuery] = useState("")
   const [activeId, setActiveId] = useState<SettingsCategoryId>("general")
 
@@ -95,6 +102,12 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not update profile")
     }
+  }
+
+  const handleLanguageChange = (value: string) => {
+    if (value !== "en" && value !== "es") return
+    setLocale(value)
+    updateProfile.mutate({ locale: value })
   }
 
   const resetToProfile = () => {
@@ -165,28 +178,55 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
             <div className="animate-in fade-in-0 duration-150 motion-reduce:animate-none">
               {generalCategory.sections.map((section, index) => (
                 <SettingsSection key={section.id} heading={section.heading} isFirst={index === 0}>
-                  {section.rows.map((row) =>
-                    row.id === "theme" ? (
-                      <SettingsRow key={row.id} htmlFor="theme" label={row.label}>
-                        <Select value={themeValue} onValueChange={setTheme}>
-                          <SelectTrigger
-                            id="theme"
-                            size="sm"
-                            className="w-full min-w-32 justify-between sm:w-auto"
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {THEME_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </SettingsRow>
-                    ) : null,
-                  )}
+                  {section.rows.map((row) => {
+                    if (row.id === "theme") {
+                      return (
+                        <SettingsRow key={row.id} htmlFor="theme" label={row.label}>
+                          <Select value={themeValue} onValueChange={setTheme}>
+                            <SelectTrigger
+                              id="theme"
+                              size="sm"
+                              className="w-full min-w-32 justify-between sm:w-auto"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {THEME_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </SettingsRow>
+                      )
+                    }
+
+                    if (row.id === "language") {
+                      return (
+                        <SettingsRow key={row.id} htmlFor="language" label={t("settings.language")}>
+                          <Select value={locale} onValueChange={handleLanguageChange}>
+                            <SelectTrigger
+                              id="language"
+                              size="sm"
+                              className="w-full min-w-32 justify-between sm:w-auto"
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {LANGUAGE_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </SettingsRow>
+                      )
+                    }
+
+                    return null
+                  })}
                 </SettingsSection>
               ))}
             </div>

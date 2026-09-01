@@ -1,7 +1,7 @@
 export type SettingsCategoryId = "general" | "account"
 
 export interface SettingsRowDef {
-  id: "theme" | "country" | "broker"
+  id: "theme" | "language" | "country" | "broker"
   label: string
   keywords: string[]
 }
@@ -33,6 +33,11 @@ export const SETTINGS_CATALOG: SettingsCategoryDef[] = [
             id: "theme",
             label: "Theme",
             keywords: ["theme", "dark", "light", "system", "appearance"],
+          },
+          {
+            id: "language",
+            label: "Language",
+            keywords: ["language", "idioma", "spanish", "español", "english"],
           },
         ],
       },

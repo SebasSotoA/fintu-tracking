@@ -57,4 +57,26 @@ describe("me API", () => {
     })
     expect(result.country).toBe("mx")
   })
+
+  it("updateProfile can send a locale-only body", async () => {
+    vi.mocked(apiClient.patch).mockResolvedValueOnce({ ...mockProfile, locale: "es" })
+
+    const result = await updateProfile({ locale: "es" })
+
+    expect(apiClient.patch).toHaveBeenCalledWith("/api/me/profile", { locale: "es" })
+    expect(result.locale).toBe("es")
+  })
+
+  it("getMe returns locale as en, es, or null", async () => {
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ ...mockProfile, locale: null })
+
+    const unset = await getMe()
+    expect(unset.locale).toBeNull()
+
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ ...mockProfile, locale: "en" })
+    expect((await getMe()).locale).toBe("en")
+
+    vi.mocked(apiClient.get).mockResolvedValueOnce({ ...mockProfile, locale: "es" })
+    expect((await getMe()).locale).toBe("es")
+  })
 })

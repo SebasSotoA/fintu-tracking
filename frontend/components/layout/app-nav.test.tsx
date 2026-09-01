@@ -1,8 +1,9 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { AppNav } from "./app-nav"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import type { Profile } from "@/lib/api/me"
 
 const mockSignOut = vi.fn()
@@ -95,7 +96,7 @@ function renderAppNav(collapsed = false) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return render(
+  return renderWithLocale(
     <QueryClientProvider client={queryClient}>
       <AppNav collapsed={collapsed} onToggleCollapsed={vi.fn()} profile={baseProfile} />
     </QueryClientProvider>,

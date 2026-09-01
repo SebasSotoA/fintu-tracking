@@ -49,4 +49,18 @@ describe("filterSettingsCatalog", () => {
     expect(result.find((c) => c.id === "general")).toBeUndefined()
     expect(result[0]?.id).toBe("account")
   })
+
+  it("includes a language row in Appearance", () => {
+    const appearance = SETTINGS_CATALOG.find((c) => c.id === "general")?.sections.find(
+      (s) => s.id === "appearance",
+    )
+
+    expect(appearance?.rows.map((r) => r.id)).toEqual(["theme", "language"])
+    expect(appearance?.rows.find((r) => r.id === "language")?.label).toBe("Language")
+  })
+
+  it("matches idioma to the language row", () => {
+    expect(categoryIds("idioma")).toEqual(["general"])
+    expect(rowIds("idioma")).toEqual(["language"])
+  })
 })

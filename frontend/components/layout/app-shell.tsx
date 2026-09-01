@@ -1,11 +1,13 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import { AppNav } from "@/components/layout/app-nav"
 import { AppTopbar } from "@/components/layout/app-topbar"
 import { SetupModal } from "@/components/onboarding/setup-modal"
+import { useLocale } from "@/components/locale-provider"
 import { useMe } from "@/hooks/use-me"
+import { useUpdateProfile } from "@/hooks/use-update-profile"
 import type { Profile } from "@/lib/api/me"
 import {
   SIDEBAR_COLLAPSED_STORAGE_KEY,
@@ -20,6 +22,9 @@ interface AppShellProps {
 
 export function AppShell({ children, initialProfile }: AppShellProps) {
   const { data: profile } = useMe(initialProfile)
+  const { locale, setLocale } = useLocale()
+  const { mutate: persistLocale } = useUpdateProfile()
+  const persistedLocaleRef = useRef(false)
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarHydrated, setSidebarHydrated] = useState(false)
 
@@ -41,6 +46,19 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
       /* ignore quota */
     }
   }, [collapsed, sidebarHydrated])
+
+  useEffect(() => {
+    const profileLocale = profile?.locale
+    if (profileLocale !== "en" && profileLocale !== "es") return
+    setLocale(profileLocale)
+  }, [profile?.locale, setLocale])
+
+  useEffect(() => {
+    if (!profile || profile.locale != null) return
+    if (persistedLocaleRef.current) return
+    persistedLocaleRef.current = true
+    persistLocale({ locale })
+  }, [profile, locale, persistLocale])
 
   return (
     <div className="min-h-screen">

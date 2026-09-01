@@ -1,9 +1,11 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { describe, it, expect, vi, beforeEach, beforeAll, afterEach } from "vitest"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ProfileConfigDialog } from "./profile-config-dialog"
 import { useUpdateProfile } from "@/hooks/use-update-profile"
+import { LOCALE_COOKIE_NAME } from "@/lib/i18n/cookie"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import type { Profile } from "@/lib/api/me"
 
 const { mockSetTheme } = vi.hoisted(() => ({
@@ -47,6 +49,7 @@ vi.mock("@/components/ui/select", async () => {
 
   function selectTestId(id: string | undefined): string {
     if (id === "theme") return "theme-select"
+    if (id === "language") return "language-select"
     if (id === "country") return "country-select"
     return "select"
   }
@@ -90,8 +93,10 @@ vi.mock("@/components/brokers/broker-select", () => ({
   ),
 }))
 
+const mockMutate = vi.fn()
 const mockMutateAsync = vi.fn()
 const mockUseUpdateProfile = {
+  mutate: mockMutate,
   mutateAsync: mockMutateAsync,
   isPending: false,
 } as unknown as ReturnType<typeof useUpdateProfile>
@@ -111,7 +116,7 @@ function renderDialog(open = true, onOpenChange = vi.fn()) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return render(
+  return renderWithLocale(
     <QueryClientProvider client={queryClient}>
       <ProfileConfigDialog profile={baseProfile} open={open} onOpenChange={onOpenChange} />
     </QueryClientProvider>,
@@ -130,12 +135,19 @@ describe("ProfileConfigDialog", () => {
     vi.mocked(useUpdateProfile).mockReturnValue(mockUseUpdateProfile)
   })
 
+  afterEach(() => {
+    document.cookie = `${LOCALE_COOKIE_NAME}=; path=/; max-age=0`
+    document.documentElement.lang = "en"
+  })
+
   it("renders Settings with a Theme row and no save until dirty", () => {
     renderDialog()
 
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument()
     expect(screen.getByText("Theme")).toBeInTheDocument()
     expect(screen.getByTestId("theme-select")).toBeInTheDocument()
+    expect(screen.getByText("Language")).toBeInTheDocument()
+    expect(screen.getByTestId("language-select")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Sign out" })).not.toBeInTheDocument()
 
@@ -180,6 +192,25 @@ describe("ProfileConfigDialog", () => {
     expect(mockSetTheme).toHaveBeenCalledWith("system")
 
     expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument()
+  })
+
+  it("applies language immediately and PATCHes a locale-only body", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    const languageSelect = screen.getByTestId("language-select")
+    expect(languageSelect).toHaveValue("en")
+    expect(screen.getByRole("option", { name: "English" })).toBeInTheDocument()
+    expect(screen.getByRole("option", { name: "Español" })).toBeInTheDocument()
+
+    await user.selectOptions(languageSelect, "es")
+
+    expect(document.documentElement.lang).toBe("es")
+    expect(document.cookie).toContain(`${LOCALE_COOKIE_NAME}=es`)
+    expect(mockMutate).toHaveBeenCalledWith({ locale: "es" })
+    expect(mockMutateAsync).not.toHaveBeenCalled()
+    expect(screen.queryByRole("button", { name: "Save changes" })).not.toBeInTheDocument()
+    expect(screen.getByText("Idioma")).toBeInTheDocument()
   })
 
   it("switches to Account and shows Broker when searching broker", async () => {
