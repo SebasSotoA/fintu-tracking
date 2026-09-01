@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { EmptyState } from "@/components/ui/empty-state"
 import { EmptyStateActions, EmptyStateAction } from "@/components/ui/empty-state-actions"
 import { Button } from "@/components/ui/button"
+import { useLocale } from "@/components/locale-provider"
 import { SubscriptionStatusCard } from "./subscription-status-card"
 import { PlanPicker } from "./plan-picker"
 import { createSubscription, cancelSubscription, billingProvider, type Plan, type Subscription } from "@/lib/api/subscription"
@@ -22,6 +23,7 @@ interface SubscriptionPageProps {
 export function SubscriptionPage({ plans, subscription }: SubscriptionPageProps) {
   const queryClient = useQueryClient()
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
+  const { t } = useLocale()
 
   const createMutation = useMutation({
     mutationFn: (plan: Plan) =>
@@ -29,15 +31,15 @@ export function SubscriptionPage({ plans, subscription }: SubscriptionPageProps)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.subscription() })
       queryClient.invalidateQueries({ queryKey: queryKeys.me() })
-      showToast.success("Subscription updated")
+      showToast.success(t("subscription.updated"))
       setSelectedPlan(null)
     },
     onError: (err: unknown) => {
       if (isApiError(err) && err.status === 400) {
-        showToast.error("Paid plans are not available during the closed beta.")
+        showToast.error(t("subscription.closedBetaPaid"))
         return
       }
-      showToast.error(err instanceof Error ? err.message : "Failed to update subscription")
+      showToast.error(err instanceof Error ? err.message : t("subscription.updateFailed"))
     },
   })
 
@@ -46,23 +48,23 @@ export function SubscriptionPage({ plans, subscription }: SubscriptionPageProps)
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.subscription() })
       queryClient.invalidateQueries({ queryKey: queryKeys.me() })
-      showToast.success("Subscription canceled")
+      showToast.success(t("subscription.canceledToast"))
     },
     onError: (err: unknown) => {
-      showToast.error(err instanceof Error ? err.message : "Failed to cancel subscription")
+      showToast.error(err instanceof Error ? err.message : t("subscription.cancelFailed"))
     },
   })
 
   if (!subscription) {
     return (
       <EmptyState
-        title="No subscription found"
-        description="We could not find a subscription for your account. Please contact support."
+        title={t("subscription.noSubscriptionTitle")}
+        description={t("subscription.noSubscriptionDescription")}
         action={
           <EmptyStateActions>
             <EmptyStateAction>
               <Button variant="outline" onClick={() => window.location.reload()}>
-                Retry
+                {t("subscription.retry")}
               </Button>
             </EmptyStateAction>
           </EmptyStateActions>
@@ -78,13 +80,13 @@ export function SubscriptionPage({ plans, subscription }: SubscriptionPageProps)
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Subscription</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t("subscription.title")}</h1>
 
       {createMutation.error ? (
         <p className="text-sm text-destructive" data-testid="subscription-error">
           {isApiError(createMutation.error)
             ? createMutation.error.message
-            : "Failed to update subscription"}
+            : t("subscription.updateFailed")}
         </p>
       ) : null}
 
@@ -96,18 +98,18 @@ export function SubscriptionPage({ plans, subscription }: SubscriptionPageProps)
 
       <Card>
         <CardHeader>
-          <CardTitle>Available plans</CardTitle>
+          <CardTitle>{t("subscription.availablePlans")}</CardTitle>
           <CardDescription>
             {plans.length === 0
-              ? "No plans are available right now."
-              : "Fintu is currently in closed beta. Paid plans will be available soon."}
+              ? t("subscription.noPlansNow")
+              : t("subscription.closedBetaSoon")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {createMutation.isPending && selectedPlan ? (
             <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
               <Loader2 className="mr-2 size-4 animate-spin" />
-              Updating to {selectedPlan.name}…
+              {t("subscription.updatingTo", { name: selectedPlan.name })}
             </div>
           ) : (
             <PlanPicker

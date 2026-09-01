@@ -63,4 +63,14 @@ describe("filterSettingsCatalog", () => {
     expect(categoryIds("idioma")).toEqual(["general"])
     expect(rowIds("idioma")).toEqual(["language"])
   })
+
+  it("matches tema to the Theme row", () => {
+    expect(categoryIds("tema")).toEqual(["general"])
+    expect(rowIds("tema")).toEqual(["theme"])
+  })
+
+  it("matches país to the Country row", () => {
+    expect(categoryIds("país")).toEqual(["account"])
+    expect(rowIds("país")).toEqual(["country"])
+  })
 })

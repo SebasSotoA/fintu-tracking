@@ -10,10 +10,12 @@ import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
 import { Spinner } from "@/components/ui/spinner"
+import { useLocale } from "@/components/locale-provider"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 
 function ResetPasswordContent() {
+  const { t } = useLocale()
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -42,7 +44,7 @@ function ResetPasswordContent() {
 
   if (isCheckingSession) {
     return (
-      <AuthCard title="Loading" description="Please wait...">
+      <AuthCard title={t("auth.resetPassword.loadingTitle")} description={t("auth.resetPassword.loadingDescription")}>
         <div className="flex h-40 items-center justify-center">
           <Spinner className="size-6 text-primary" />
         </div>
@@ -53,11 +55,11 @@ function ResetPasswordContent() {
   if (!hasSession && linkError === "invalid_link") {
     return (
       <AuthCard
-        title="Invalid or expired link"
-        description="Please request a new password reset link."
+        title={t("auth.resetPassword.invalidTitle")}
+        description={t("auth.resetPassword.invalidDescription")}
       >
         <Button asChild className="w-full">
-          <Link href="/auth/forgot-password">Request new reset link</Link>
+          <Link href="/auth/forgot-password">{t("auth.resetPassword.requestNewLink")}</Link>
         </Button>
       </AuthCard>
     )
@@ -70,11 +72,11 @@ function ResetPasswordContent() {
   if (isSuccess) {
     return (
       <AuthCard
-        title="Password updated"
-        description="You'll be redirected to the dashboard in a moment."
+        title={t("auth.resetPassword.successTitle")}
+        description={t("auth.resetPassword.successDescription")}
       >
         <Button asChild className="w-full">
-          <Link href="/dashboard">Go to dashboard</Link>
+          <Link href="/dashboard">{t("auth.resetPassword.goToDashboard")}</Link>
         </Button>
       </AuthCard>
     )
@@ -84,12 +86,12 @@ function ResetPasswordContent() {
     e.preventDefault()
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match")
+      setError(t("auth.passwordsMismatch"))
       return
     }
 
     if (password.length < 6) {
-      setError("Password must be at least 6 characters")
+      setError(t("auth.resetPassword.passwordTooShort"))
       return
     }
 
@@ -105,7 +107,7 @@ function ResetPasswordContent() {
         router.push("/dashboard")
       }, 2000)
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : t("auth.error"))
     } finally {
       setIsLoading(false)
     }
@@ -113,20 +115,20 @@ function ResetPasswordContent() {
 
   return (
     <AuthCard
-      title="Set new password"
-      description="Enter your new password below"
+      title={t("auth.resetPassword.title")}
+      description={t("auth.resetPassword.description")}
       footer={
         <>
-          {"Remember your password? "}
+          {`${t("auth.rememberPassword")} `}
           <Link href="/auth/login" className="font-medium text-primary hover:underline">
-            Back to login
+            {t("auth.backToLogin")}
           </Link>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="password">New password</Label>
+          <Label htmlFor="password">{t("auth.resetPassword.newPassword")}</Label>
           <Input
             id="password"
             type="password"
@@ -138,7 +140,7 @@ function ResetPasswordContent() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="confirm-password">Confirm password</Label>
+          <Label htmlFor="confirm-password">{t("auth.resetPassword.confirmPassword")}</Label>
           <Input
             id="confirm-password"
             type="password"
@@ -150,7 +152,7 @@ function ResetPasswordContent() {
         </div>
         <AuthAlert error={error} />
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Updating..." : "Reset password"}
+          {isLoading ? t("auth.resetPassword.submitting") : t("auth.resetPassword.submit")}
         </Button>
       </form>
     </AuthCard>
@@ -158,8 +160,9 @@ function ResetPasswordContent() {
 }
 
 function ResetPasswordFallback() {
+  const { t } = useLocale()
   return (
-    <AuthCard title="Loading" description="Please wait...">
+    <AuthCard title={t("auth.resetPassword.loadingTitle")} description={t("auth.resetPassword.loadingDescription")}>
       <div className="flex h-40 items-center justify-center">
         <Spinner className="size-6 text-primary" />
       </div>

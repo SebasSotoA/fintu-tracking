@@ -5,6 +5,7 @@ import { z } from "zod"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BrokerSelect } from "@/components/brokers/broker-select"
+import { useLocale } from "@/components/locale-provider"
 import {
   SUPPORTED_COUNTRIES,
   countryLabel,
@@ -34,12 +35,13 @@ export function ProfileSetupFields({
 }: ProfileSetupFieldsProps) {
   const showCountry = step === "country" || step === "all"
   const showBroker = step === "broker" || step === "all"
+  const { t } = useLocale()
 
   return (
     <div className="space-y-4">
       {showCountry && (
         <div className="space-y-2">
-          <Label htmlFor="country">Country</Label>
+          <Label htmlFor="country">{t("onboarding.country")}</Label>
           <Select
             value={country}
             onValueChange={(value) => {
@@ -48,7 +50,7 @@ export function ProfileSetupFields({
             }}
           >
             <SelectTrigger id="country">
-              <SelectValue placeholder="Choose your country" />
+              <SelectValue placeholder={t("onboarding.countryPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {SUPPORTED_COUNTRIES.map((c) => (
@@ -71,7 +73,7 @@ export function ProfileSetupFields({
             value={brokerPresetId}
             onChange={(value) => setValue("brokerPresetId", value)}
             country={country}
-            label="Broker"
+            label={t("onboarding.broker")}
           />
           {errors.brokerPresetId && (
             <p className="text-destructive text-sm">{errors.brokerPresetId.message}</p>

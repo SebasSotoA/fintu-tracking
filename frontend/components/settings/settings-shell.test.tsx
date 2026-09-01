@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { SettingsShell } from "./settings-shell"
 import type { SettingsCategoryDef, SettingsCategoryId } from "./settings-catalog"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 
 const useIsMobileMock = vi.fn()
 
@@ -56,7 +57,7 @@ function renderShell({
   return {
     onCategoryChange,
     onQueryChange,
-    ...render(
+    ...renderWithLocale(
       <ShellHarness
         activeId={activeId}
         onCategoryChange={onCategoryChange}

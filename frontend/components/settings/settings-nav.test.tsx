@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { SettingsNav } from "./settings-nav"
 import type { SettingsCategoryDef, SettingsCategoryId } from "./settings-catalog"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 
 const useIsMobileMock = vi.fn()
 
@@ -53,7 +54,7 @@ function renderNav({
   return {
     onCategoryChange,
     onQueryChange,
-    ...render(
+    ...renderWithLocale(
       <NavHarness
         activeId={activeId}
         onCategoryChange={onCategoryChange}

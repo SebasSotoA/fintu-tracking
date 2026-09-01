@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -7,6 +7,7 @@ import {
   profileSetupSchema,
   type ProfileSetupForm,
 } from "./profile-setup-fields"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 
 vi.mock("@/lib/market-config/market-config", () => ({
   MARKET_CONFIG: {
@@ -70,21 +71,21 @@ function TestHarness({ step }: { step: "country" | "broker" | "all" }) {
 
 describe("ProfileSetupFields", () => {
   it("renders country field on country step", () => {
-    render(<TestHarness step="country" />)
+    renderWithLocale(<TestHarness step="country" />)
 
     expect(screen.getByText("Country")).toBeInTheDocument()
     expect(screen.queryByTestId("broker-select")).not.toBeInTheDocument()
   })
 
   it("renders broker field on broker step", () => {
-    render(<TestHarness step="broker" />)
+    renderWithLocale(<TestHarness step="broker" />)
 
     expect(screen.getByTestId("broker-select")).toBeInTheDocument()
     expect(screen.queryByText("Country")).not.toBeInTheDocument()
   })
 
   it("renders both fields on all step", () => {
-    render(<TestHarness step="all" />)
+    renderWithLocale(<TestHarness step="all" />)
 
     expect(screen.getByText("Country")).toBeInTheDocument()
     expect(screen.getByTestId("broker-select")).toBeInTheDocument()

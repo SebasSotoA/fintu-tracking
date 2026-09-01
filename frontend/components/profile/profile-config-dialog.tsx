@@ -25,6 +25,7 @@ import {
   SETTINGS_CATALOG,
   filterSettingsCatalog,
   type SettingsCategoryId,
+  type SettingsRowDef,
 } from "@/components/settings/settings-catalog"
 import {
   profileSetupSchema,
@@ -33,6 +34,7 @@ import {
 import { useUpdateProfile } from "@/hooks/use-update-profile"
 import { MARKET_CONFIG, SUPPORTED_COUNTRIES, countryLabel } from "@/lib/market-config/market-config"
 import type { Profile } from "@/lib/api/me"
+import type { MessageKey } from "@/lib/i18n/types"
 
 interface ProfileConfigDialogProps {
   profile: Profile
@@ -41,10 +43,27 @@ interface ProfileConfigDialogProps {
 }
 
 const THEME_OPTIONS = [
-  { value: "system", label: "System" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-] as const
+  { value: "system", labelKey: "settings.themeSystem" },
+  { value: "light", labelKey: "settings.themeLight" },
+  { value: "dark", labelKey: "settings.themeDark" },
+] as const satisfies readonly { value: string; labelKey: MessageKey }[]
+
+const CATEGORY_LABEL_KEYS: Record<SettingsCategoryId, MessageKey> = {
+  general: "settings.general",
+  account: "settings.account",
+}
+
+const SECTION_HEADING_KEYS: Record<string, MessageKey> = {
+  appearance: "settings.appearance",
+  profile: "settings.profile",
+}
+
+const ROW_LABEL_KEYS: Record<SettingsRowDef["id"], MessageKey> = {
+  theme: "settings.theme",
+  language: "settings.language",
+  country: "settings.country",
+  broker: "settings.broker",
+}
 
 const LANGUAGE_OPTIONS = [
   { value: "en", label: "English" },
@@ -97,10 +116,10 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
         country: values.country,
         broker_preset_id: values.brokerPresetId,
       })
-      toast.success("Profile updated")
+      toast.success(t("settings.profileUpdated"))
       onOpenChange(false)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not update profile")
+      toast.error(err instanceof Error ? err.message : t("settings.profileError"))
     }
   }
 
@@ -132,23 +151,23 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
             <>
               <ResponsiveDialogHeader className="flex-1 space-y-0 p-0 text-left">
                 <ResponsiveDialogTitle className="text-lg font-semibold leading-none text-foreground">
-                  Settings
+                  {t("settings.title")}
                 </ResponsiveDialogTitle>
                 <ResponsiveDialogDescription className="sr-only">
-                  Change appearance and profile preferences.
+                  {t("settings.description")}
                 </ResponsiveDialogDescription>
               </ResponsiveDialogHeader>
               <ResponsiveDialogClose
                 className="absolute top-4 right-4 flex min-h-10 min-w-10 items-center justify-center rounded-xs text-muted-foreground opacity-70 transition-opacity hover:opacity-100 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background md:hidden"
               >
                 <XIcon className="size-4" />
-                <span className="sr-only">Close</span>
+                <span className="sr-only">{t("settings.close")}</span>
               </ResponsiveDialogClose>
             </>
           }
           categories={filtered.map((category) => ({
             id: category.id,
-            label: category.label,
+            label: t(CATEGORY_LABEL_KEYS[category.id]),
             icon: category.icon,
           }))}
           activeId={effectiveId}
@@ -159,10 +178,10 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
             showFooter ? (
               <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-background/40 px-6 py-4 pb-safe md:pb-4">
                 <Button type="button" variant="outline" onClick={resetToProfile}>
-                  Cancel
+                  {t("settings.cancel")}
                 </Button>
                 <Button type="submit" form="profile-config-form" disabled={updateProfile.isPending}>
-                  {updateProfile.isPending ? "Saving..." : "Save changes"}
+                  {updateProfile.isPending ? t("settings.saving") : t("settings.save")}
                 </Button>
               </div>
             ) : undefined
@@ -170,18 +189,18 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
         >
           {filtered.length === 0 ? (
             <p className="flex flex-1 items-center justify-center px-6 py-16 text-sm text-muted-foreground">
-              No matching settings
+              {t("settings.noMatching")}
             </p>
           ) : null}
 
           {effectiveId === "general" && generalCategory ? (
             <div className="animate-in fade-in-0 duration-150 motion-reduce:animate-none">
               {generalCategory.sections.map((section, index) => (
-                <SettingsSection key={section.id} heading={section.heading} isFirst={index === 0}>
+                <SettingsSection key={section.id} heading={t(SECTION_HEADING_KEYS[section.id] ?? "settings.appearance")} isFirst={index === 0}>
                   {section.rows.map((row) => {
                     if (row.id === "theme") {
                       return (
-                        <SettingsRow key={row.id} htmlFor="theme" label={row.label}>
+                        <SettingsRow key={row.id} htmlFor="theme" label={t(ROW_LABEL_KEYS[row.id])}>
                           <Select value={themeValue} onValueChange={setTheme}>
                             <SelectTrigger
                               id="theme"
@@ -193,7 +212,7 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
                             <SelectContent>
                               {THEME_OPTIONS.map((option) => (
                                 <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
+                                  {t(option.labelKey)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -245,7 +264,7 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
             }
           >
             {SETTINGS_CATALOG.find((category) => category.id === "account")?.sections.map((section, index) => (
-              <SettingsSection key={section.id} heading={section.heading} isFirst={index === 0}>
+              <SettingsSection key={section.id} heading={t(SECTION_HEADING_KEYS[section.id] ?? "settings.profile")} isFirst={index === 0}>
                 {section.rows.map((row) => {
                   const rowVisible = effectiveId === "account" && visibleAccountRowIds.has(row.id)
                   const rowInert = !rowVisible || undefined
@@ -253,7 +272,7 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
                   if (row.id === "country") {
                     return (
                       <div key={row.id} hidden={!rowVisible} inert={rowInert} aria-hidden={rowInert}>
-                        <SettingsRow htmlFor="country" label={row.label}>
+                        <SettingsRow htmlFor="country" label={t(ROW_LABEL_KEYS[row.id])}>
                           <Select
                             value={country}
                             onValueChange={(value) => {
@@ -262,7 +281,7 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
                             }}
                           >
                             <SelectTrigger id="country" size="sm" className="w-full min-w-32 justify-between sm:w-auto">
-                              <SelectValue placeholder="Choose your country" />
+                              <SelectValue placeholder={t("settings.countryPlaceholder")} />
                             </SelectTrigger>
                             <SelectContent>
                               {SUPPORTED_COUNTRIES.map((code) => (
@@ -282,7 +301,7 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
 
                   return (
                     <div key={row.id} hidden={!rowVisible} inert={rowInert} aria-hidden={rowInert}>
-                      <SettingsRow htmlFor="brokerPresetId" label={row.label}>
+                      <SettingsRow htmlFor="brokerPresetId" label={t(ROW_LABEL_KEYS[row.id])}>
                         <BrokerSelect
                           id="brokerPresetId"
                           value={brokerPresetId}

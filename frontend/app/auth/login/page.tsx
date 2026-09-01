@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
+import { useLocale } from "@/components/locale-provider"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { t } = useLocale()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,7 +36,7 @@ export default function LoginPage() {
       router.push("/dashboard")
       router.refresh()
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : t("auth.error"))
     } finally {
       setIsLoading(false)
     }
@@ -42,20 +44,20 @@ export default function LoginPage() {
 
   return (
     <AuthCard
-      title="Welcome back"
-      description="Enter your email to access your portfolio"
+      title={t("auth.login.title")}
+      description={t("auth.login.description")}
       footer={
         <>
-          {"Don't have an account? "}
+          {`${t("auth.login.noAccount")} `}
           <Link href="/auth/sign-up" className="font-medium text-primary hover:underline">
-            Sign up
+            {t("auth.login.signUp")}
           </Link>
         </>
       }
     >
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">{t("auth.email")}</Label>
           <Input
             id="email"
             type="email"
@@ -67,12 +69,12 @@ export default function LoginPage() {
         </div>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <Link
               href="/auth/forgot-password"
               className="text-xs text-primary hover:underline"
             >
-              Forgot password?
+              {t("auth.login.forgotPassword")}
             </Link>
           </div>
           <Input
@@ -85,7 +87,7 @@ export default function LoginPage() {
         </div>
         <AuthAlert error={error} />
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? "Logging in..." : "Login"}
+          {isLoading ? t("auth.login.submitting") : t("auth.login.submit")}
         </Button>
       </form>
     </AuthCard>

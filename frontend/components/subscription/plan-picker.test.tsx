@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { PlanPicker } from "./plan-picker"
 import type { Plan } from "@/lib/api/subscription"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 
 function makePlan(overrides: Partial<Plan> = {}): Plan {
   return {
@@ -20,7 +21,7 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
 
 describe("PlanPicker", () => {
   it("renders empty state when no plans are provided", () => {
-    render(<PlanPicker plans={[]} currentPlanId="free" />)
+    renderWithLocale(<PlanPicker plans={[]} currentPlanId="free" />)
     expect(screen.getByText("No plans available.")).toBeInTheDocument()
   })
 
@@ -29,7 +30,7 @@ describe("PlanPicker", () => {
       makePlan({ id: "free", name: "Free", tier: "free" }),
       makePlan({ id: "pro", name: "Pro Monthly", tier: "pro", price_monthly_usd: "9" }),
     ]
-    render(<PlanPicker plans={plans} currentPlanId="free" />)
+    renderWithLocale(<PlanPicker plans={plans} currentPlanId="free" />)
 
     expect(screen.getAllByText("Free").length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText("Pro Monthly")).toBeInTheDocument()
@@ -38,7 +39,7 @@ describe("PlanPicker", () => {
 
   it("shows annual price when monthly is missing", () => {
     const plans = [makePlan({ id: "pro_annual", name: "Pro Annual", tier: "pro", price_annual_usd: "90" })]
-    render(<PlanPicker plans={plans} currentPlanId="pro_annual" />)
+    renderWithLocale(<PlanPicker plans={plans} currentPlanId="pro_annual" />)
 
     expect(screen.getByText("$90/yr")).toBeInTheDocument()
   })
@@ -48,7 +49,7 @@ describe("PlanPicker", () => {
       makePlan({ id: "free", name: "Free", tier: "free" }),
       makePlan({ id: "pro", name: "Pro", tier: "pro", price_monthly_usd: "9" }),
     ]
-    render(<PlanPicker plans={plans} currentPlanId="free" />)
+    renderWithLocale(<PlanPicker plans={plans} currentPlanId="free" />)
 
     expect(screen.getByText("Current")).toBeInTheDocument()
   })
@@ -63,7 +64,7 @@ describe("PlanPicker", () => {
         features: { max_trades: 100, supports_exports: true },
       }),
     ]
-    render(<PlanPicker plans={plans} currentPlanId="pro" />)
+    renderWithLocale(<PlanPicker plans={plans} currentPlanId="pro" />)
 
     expect(screen.getByText("Up to 100 trades")).toBeInTheDocument()
     expect(screen.getByText("CSV/PDF exports")).toBeInTheDocument()
@@ -71,7 +72,7 @@ describe("PlanPicker", () => {
 
   it("renders the plan description", () => {
     const plans = [makePlan({ id: "free", name: "Free", tier: "free", description: "Basic plan for getting started" })]
-    render(<PlanPicker plans={plans} currentPlanId="free" />)
+    renderWithLocale(<PlanPicker plans={plans} currentPlanId="free" />)
 
     expect(screen.getByText("Basic plan for getting started")).toBeInTheDocument()
   })
@@ -81,7 +82,7 @@ describe("PlanPicker", () => {
     const onSelect = vi.fn()
     const plans = [makePlan({ id: "pro", name: "Pro", tier: "pro", price_monthly_usd: "9" })]
 
-    render(
+    renderWithLocale(
       <PlanPicker
         plans={plans}
         currentPlanId="pro"
@@ -100,7 +101,7 @@ describe("PlanPicker", () => {
   it("shows disabled Current plan for active current plan", () => {
     const plans = [makePlan({ id: "pro", name: "Pro", tier: "pro", price_monthly_usd: "9" })]
 
-    render(
+    renderWithLocale(
       <PlanPicker
         plans={plans}
         currentPlanId="pro"

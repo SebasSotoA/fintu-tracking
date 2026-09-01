@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner"
 import { ProfileConfigDialog } from "@/components/profile/profile-config-dialog"
 import { useSignOut } from "@/hooks/use-sign-out"
+import { useLocale } from "@/components/locale-provider"
 import {
   navIconCellClass,
   sidebarLabelClass,
@@ -28,6 +29,7 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
   const [profileOpen, setProfileOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const signOut = useSignOut()
+  const { t } = useLocale()
   const label = sidebarLabelClass(variant === "sidebar" ? collapsed : false)
 
   const handleConfiguration = () => {
@@ -40,7 +42,7 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
     try {
       await signOut()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not sign out")
+      toast.error(err instanceof Error ? err.message : t("account.signOutError"))
     }
   }
 
@@ -54,7 +56,7 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
     <DropdownMenuTrigger asChild>
       <button
         type="button"
-        aria-label={collapsed ? "My account" : undefined}
+        aria-label={collapsed ? t("account.myAccount") : undefined}
         data-testid="my-account-button"
         className={cn(
           "flex w-full items-center gap-3 rounded-lg text-left transition-colors duration-200",
@@ -68,9 +70,9 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
           className={cn("min-w-0 flex-1 overflow-hidden leading-none", label)}
           aria-hidden={collapsed}
         >
-          <p className="truncate font-sans text-sm font-bold text-foreground dark:text-white">My account</p>
+          <p className="truncate font-sans text-sm font-bold text-foreground dark:text-white">{t("account.myAccount")}</p>
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            Portfolio
+            {t("account.portfolio")}
           </p>
         </div>
         {!collapsed ? (
@@ -90,7 +92,7 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
     <DropdownMenuTrigger asChild>
       <button
         type="button"
-        aria-label="My account"
+        aria-label={t("account.myAccount")}
         data-testid="my-account-button-mobile"
           className={cn(
             "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 transition-colors duration-75",
@@ -101,7 +103,7 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
         >
           <User className="size-5" />
           <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">
-            Account
+            {t("account.account")}
           </span>
         </button>
       </DropdownMenuTrigger>
@@ -111,7 +113,7 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
     <DropdownMenuTrigger asChild>
       <button
         type="button"
-        aria-label="My account"
+        aria-label={t("account.myAccount")}
         data-testid="my-account-button-topbar"
         className={cn(
           "flex items-center gap-2 rounded-full p-1 pr-3 transition-colors",
@@ -151,11 +153,11 @@ export function AccountMenu({ profile, collapsed, variant }: AccountMenuProps) {
         >
           <DropdownMenuItem onSelect={handleConfiguration}>
             <Settings aria-hidden />
-            Configuration
+            {t("account.configuration")}
           </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onSelect={handleLogOut}>
             <LogOut aria-hidden />
-            Log out
+            {t("account.logOut")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { SubscriptionStatusCard } from "./subscription-status-card"
 import type { Subscription } from "@/lib/api/subscription"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 
 function makeSubscription(overrides: Partial<Subscription> = {}): Subscription {
   return {
@@ -23,32 +24,32 @@ describe("SubscriptionStatusCard", () => {
     const subscription = makeSubscription({
       plan: { id: "closed_beta", name: "Closed Beta", tier: "closed_beta", currency: "USD", features: {}, is_public: true, created_at: "", updated_at: "" },
     })
-    render(<SubscriptionStatusCard subscription={subscription} />)
+    renderWithLocale(<SubscriptionStatusCard subscription={subscription} />)
 
     expect(screen.getByText("Closed Beta")).toBeInTheDocument()
   })
 
   it("falls back to plan_id when no nested plan", () => {
     const subscription = makeSubscription()
-    render(<SubscriptionStatusCard subscription={subscription} />)
+    renderWithLocale(<SubscriptionStatusCard subscription={subscription} />)
 
     expect(screen.getByText("closed_beta")).toBeInTheDocument()
   })
 
   it("renders an active label", () => {
-    render(<SubscriptionStatusCard subscription={makeSubscription({ status: "active" })} />)
+    renderWithLocale(<SubscriptionStatusCard subscription={makeSubscription({ status: "active" })} />)
 
     expect(screen.getByText("Active")).toBeInTheDocument()
   })
 
   it("renders a trialing label", () => {
-    render(<SubscriptionStatusCard subscription={makeSubscription({ status: "trialing" })} />)
+    renderWithLocale(<SubscriptionStatusCard subscription={makeSubscription({ status: "trialing" })} />)
 
     expect(screen.getByText("Trialing")).toBeInTheDocument()
   })
 
   it("renders a canceled label and renewal message", () => {
-    render(<SubscriptionStatusCard subscription={makeSubscription({ status: "canceled" })} />)
+    renderWithLocale(<SubscriptionStatusCard subscription={makeSubscription({ status: "canceled" })} />)
 
     expect(screen.getByText("Canceled")).toBeInTheDocument()
     expect(
@@ -57,7 +58,7 @@ describe("SubscriptionStatusCard", () => {
   })
 
   it("renders a past due label and payment message", () => {
-    render(<SubscriptionStatusCard subscription={makeSubscription({ status: "past_due" })} />)
+    renderWithLocale(<SubscriptionStatusCard subscription={makeSubscription({ status: "past_due" })} />)
 
     expect(screen.getByText("Past due")).toBeInTheDocument()
     expect(
@@ -66,7 +67,7 @@ describe("SubscriptionStatusCard", () => {
   })
 
   it("renders the closed beta message for active closed beta subscriptions", () => {
-    render(
+    renderWithLocale(
       <SubscriptionStatusCard
         subscription={makeSubscription({
           status: "active",
@@ -81,7 +82,7 @@ describe("SubscriptionStatusCard", () => {
   })
 
   it("renders the paid message for active paid subscriptions", () => {
-    render(
+    renderWithLocale(
       <SubscriptionStatusCard
         subscription={makeSubscription({
           status: "active",
@@ -94,7 +95,7 @@ describe("SubscriptionStatusCard", () => {
   })
 
   it("renders the free plan message for active free subscriptions", () => {
-    render(
+    renderWithLocale(
       <SubscriptionStatusCard
         subscription={makeSubscription({
           status: "active",
@@ -108,7 +109,7 @@ describe("SubscriptionStatusCard", () => {
 
   it("calls onCancel when the cancel button is clicked", async () => {
     const onCancel = vi.fn()
-    render(<SubscriptionStatusCard subscription={makeSubscription({ status: "active" })} onCancel={onCancel} />)
+    renderWithLocale(<SubscriptionStatusCard subscription={makeSubscription({ status: "active" })} onCancel={onCancel} />)
 
     await userEvent.click(screen.getByRole("button", { name: "Cancel subscription" }))
 
@@ -116,13 +117,13 @@ describe("SubscriptionStatusCard", () => {
   })
 
   it("does not show the cancel button for canceled subscriptions", () => {
-    render(<SubscriptionStatusCard subscription={makeSubscription({ status: "canceled" })} onCancel={() => {}} />)
+    renderWithLocale(<SubscriptionStatusCard subscription={makeSubscription({ status: "canceled" })} onCancel={() => {}} />)
 
     expect(screen.queryByRole("button", { name: "Cancel subscription" })).not.toBeInTheDocument()
   })
 
   it("does not show the cancel button for closed beta subscriptions", () => {
-    render(
+    renderWithLocale(
       <SubscriptionStatusCard
         subscription={makeSubscription({
           status: "active",
@@ -145,7 +146,7 @@ describe("SubscriptionStatusCard", () => {
   })
 
   it("does not show the cancel button for past due subscriptions", () => {
-    render(
+    renderWithLocale(
       <SubscriptionStatusCard
         subscription={makeSubscription({ status: "past_due" })}
         onCancel={() => {}}

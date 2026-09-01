@@ -2,25 +2,28 @@
 
 import { usePathname } from "next/navigation"
 import { NotificationsBell } from "@/components/dashboard/notifications-bell"
+import { useLocale } from "@/components/locale-provider"
+import type { MessageKey } from "@/lib/i18n/types"
 
-const TITLES: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/trades": "Trades",
-  "/cash-flows": "Cash Flows",
-  "/performance": "Performance",
-  "/subscription": "Subscription",
+const TITLE_KEYS: Record<string, MessageKey> = {
+  "/dashboard": "nav.dashboard",
+  "/trades": "nav.trades",
+  "/cash-flows": "nav.cashFlows",
+  "/performance": "nav.performance",
+  "/subscription": "nav.subscription",
 }
 
-function deriveTitle(pathname: string | null): string {
-  if (!pathname) return "Dashboard"
-  if (TITLES[pathname]) return TITLES[pathname]
-  const match = Object.entries(TITLES).find(([prefix]) => pathname.startsWith(prefix))
-  return match ? match[1] : "Dashboard"
+function deriveTitleKey(pathname: string | null): MessageKey {
+  if (!pathname) return "nav.dashboard"
+  if (TITLE_KEYS[pathname]) return TITLE_KEYS[pathname]
+  const match = Object.entries(TITLE_KEYS).find(([prefix]) => pathname.startsWith(prefix))
+  return match ? match[1] : "nav.dashboard"
 }
 
 export function AppTopbar() {
   const pathname = usePathname()
-  const title = deriveTitle(pathname)
+  const { t } = useLocale()
+  const title = t(deriveTitleKey(pathname))
 
   return (
     <header className="sticky top-0 z-30 hidden md:flex h-16 items-center justify-between gap-4 border-b border-border bg-background px-6">

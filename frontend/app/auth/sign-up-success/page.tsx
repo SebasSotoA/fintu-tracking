@@ -4,6 +4,7 @@ import { Suspense, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AuthCard } from "@/components/auth/auth-card"
 import { Spinner } from "@/components/ui/spinner"
+import { useLocale } from "@/components/locale-provider"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 
@@ -22,6 +23,7 @@ export default function SignUpSuccessPage() {
 }
 
 function SignUpSuccessContent() {
+  const { t } = useLocale()
   const router = useRouter()
   const searchParams = useSearchParams()
   const email = searchParams.get("email")
@@ -36,14 +38,14 @@ function SignUpSuccessContent() {
 
   return (
     <AuthCard
-      title="Check your email"
-      description={`We sent a confirmation link to ${email}`}
+      title={t("auth.signUpSuccess.title")}
+      description={t("auth.signUpSuccess.description", { email })}
     >
       <p className="text-sm text-muted-foreground">
-        Please check your email and click the confirmation link to activate your account.
+        {t("auth.signUpSuccess.body")}
       </p>
       <Button asChild className="w-full">
-        <Link href="/auth/login">Back to login</Link>
+        <Link href="/auth/login">{t("auth.backToLogin")}</Link>
       </Button>
     </AuthCard>
   )

@@ -21,6 +21,7 @@ import {
   type ProfileSetupForm,
 } from "@/components/onboarding/profile-setup-fields"
 import { useCompleteOnboarding } from "@/hooks/use-onboarding"
+import { useLocale } from "@/components/locale-provider"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import type { Profile } from "@/lib/api/me"
 
@@ -33,6 +34,7 @@ interface SetupModalProps {
 export function SetupModal({ initialProfile }: SetupModalProps) {
   const router = useRouter()
   const complete = useCompleteOnboarding()
+  const { t } = useLocale()
   const [step, setStep] = useState<SetupStep>(1)
   const [open, setOpen] = useState(!initialProfile.onboarding_completed)
 
@@ -58,7 +60,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
         country: values.country,
         broker_preset_id: values.brokerPresetId,
       })
-      toast.success("Setup complete!")
+      toast.success(t("onboarding.setupComplete"))
       setOpen(false)
 
       const needsSubscription =
@@ -71,7 +73,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
         router.refresh()
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not complete setup")
+      toast.error(err instanceof Error ? err.message : t("onboarding.setupError"))
     }
   }
 
@@ -96,11 +98,11 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <ResponsiveDialogHeader className="shrink-0 px-6 pt-6">
-          <ResponsiveDialogTitle>Set up your account</ResponsiveDialogTitle>
+          <ResponsiveDialogTitle>{t("onboarding.title")}</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
             {step === 1
-              ? "Select your country to set your local currency and available brokers."
-              : `Choose the local broker you use to invest in ${MARKET_CONFIG.baseCurrency} assets.`}
+              ? t("onboarding.countryDescription")
+              : t("onboarding.brokerDescription", { currency: MARKET_CONFIG.baseCurrency })}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -137,18 +139,18 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
               onClick={() => setStep(1)}
               disabled={complete.isPending}
             >
-              Back
+              {t("onboarding.back")}
             </Button>
           ) : (
             <div className="hidden sm:block" aria-hidden />
           )}
           {step === 1 ? (
             <Button type="button" onClick={handleContinue} disabled={!country}>
-              Continue
+              {t("onboarding.continue")}
             </Button>
           ) : (
             <Button type="submit" form="setup-form" disabled={complete.isPending}>
-              {complete.isPending ? "Saving..." : "Finish setup"}
+              {complete.isPending ? t("onboarding.saving") : t("onboarding.finish")}
             </Button>
           )}
         </div>

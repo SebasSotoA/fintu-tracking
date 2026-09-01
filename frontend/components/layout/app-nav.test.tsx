@@ -92,7 +92,7 @@ const baseProfile: Profile = {
   updated_at: "",
 }
 
-function renderAppNav(collapsed = false) {
+function renderAppNav(collapsed = false, locale: "en" | "es" = "en") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
@@ -100,6 +100,7 @@ function renderAppNav(collapsed = false) {
     <QueryClientProvider client={queryClient}>
       <AppNav collapsed={collapsed} onToggleCollapsed={vi.fn()} profile={baseProfile} />
     </QueryClientProvider>,
+    { locale },
   )
 }
 
@@ -158,6 +159,15 @@ describe("AppNav", () => {
     const sidebar = screen.getByTestId("app-sidebar")
     expect(sidebar.className).toContain("duration-150")
     expect(sidebar.className).toContain("ease-in-out")
+  })
+
+  it("shows Spanish nav labels when locale is es", () => {
+    renderAppNav(false, "es")
+
+    const sidebar = screen.getByTestId("app-sidebar")
+    expect(within(sidebar).getByRole("link", { name: "Panel" })).toBeInTheDocument()
+    expect(within(sidebar).getByRole("link", { name: "Operaciones" })).toBeInTheDocument()
+    expect(within(sidebar).queryByRole("link", { name: "Dashboard" })).not.toBeInTheDocument()
   })
 
   it("uses text-foreground on the active Dashboard link", () => {

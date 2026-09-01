@@ -1,9 +1,13 @@
+"use client"
+
 import { CheckIcon } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/components/locale-provider"
 import type { Plan, Subscription } from "@/lib/api/subscription"
+import type { MessageKey } from "@/lib/i18n/types"
 
 interface PlanPickerProps {
   plans: Plan[]
@@ -12,22 +16,11 @@ interface PlanPickerProps {
   onSelect?: (plan: Plan) => void
 }
 
-function formatPrice(plan: Plan): string | null {
-  if (plan.tier === "closed_beta" || plan.tier === "free") {
-    return "Free"
-  }
-  if (plan.price_monthly_usd) {
-    return `$${plan.price_monthly_usd}/mo`
-  }
-  if (plan.price_annual_usd) {
-    return `$${plan.price_annual_usd}/yr`
-  }
-  return null
-}
-
 export function PlanPicker({ plans, currentPlanId, subscriptionStatus, onSelect }: PlanPickerProps) {
+  const { t } = useLocale()
+
   if (plans.length === 0) {
-    return <p className="text-sm text-muted-foreground">No plans available.</p>
+    return <p className="text-sm text-muted-foreground">{t("subscription.noPlans")}</p>
   }
 
   return (
@@ -35,7 +28,7 @@ export function PlanPicker({ plans, currentPlanId, subscriptionStatus, onSelect 
       {plans.map((plan) => {
         const isCurrent = plan.id === currentPlanId
         const canReactivate = isCurrent && subscriptionStatus === "canceled"
-        const price = formatPrice(plan)
+        const price = formatPrice(plan, t)
 
         return (
           <Card
@@ -47,7 +40,7 @@ export function PlanPicker({ plans, currentPlanId, subscriptionStatus, onSelect 
           >
             {isCurrent && (
               <Badge className="absolute top-3 right-3" variant="default">
-                <CheckIcon className="mr-1 size-3" /> Current
+                <CheckIcon className="mr-1 size-3" /> {t("subscription.current")}
               </Badge>
             )}
             <CardHeader className="pb-2">
@@ -57,12 +50,12 @@ export function PlanPicker({ plans, currentPlanId, subscriptionStatus, onSelect 
             <CardContent className="text-sm text-muted-foreground">
               {plan.description && <p className="mb-3">{plan.description}</p>}
               <ul className="space-y-1">
-                <li>Tier: {plan.tier}</li>
+                <li>{t("subscription.tier", { tier: plan.tier })}</li>
                 {typeof plan.features.max_trades === "number" && (
-                  <li>Up to {plan.features.max_trades} trades</li>
+                  <li>{t("subscription.upToTrades", { count: plan.features.max_trades })}</li>
                 )}
                 {typeof plan.features.supports_exports === "boolean" && plan.features.supports_exports && (
-                  <li>CSV/PDF exports</li>
+                  <li>{t("subscription.csvPdfExports")}</li>
                 )}
               </ul>
               <div className="mt-4">
@@ -73,11 +66,11 @@ export function PlanPicker({ plans, currentPlanId, subscriptionStatus, onSelect 
                     onClick={() => onSelect?.(plan)}
                     disabled={!onSelect}
                   >
-                    Reactivate
+                    {t("subscription.reactivate")}
                   </Button>
                 ) : isCurrent ? (
                   <Button variant="outline" className="w-full" disabled>
-                    Current plan
+                    {t("subscription.currentPlanButton")}
                   </Button>
                 ) : (
                   <Button
@@ -86,7 +79,7 @@ export function PlanPicker({ plans, currentPlanId, subscriptionStatus, onSelect 
                     onClick={() => onSelect?.(plan)}
                     disabled={!onSelect}
                   >
-                    Choose plan
+                    {t("subscription.choosePlan")}
                   </Button>
                 )}
               </div>
@@ -96,4 +89,20 @@ export function PlanPicker({ plans, currentPlanId, subscriptionStatus, onSelect 
       })}
     </div>
   )
+}
+
+function formatPrice(
+  plan: Plan,
+  t: (key: MessageKey, vars?: Record<string, string | number>) => string,
+): string | null {
+  if (plan.tier === "closed_beta" || plan.tier === "free") {
+    return t("subscription.free")
+  }
+  if (plan.price_monthly_usd) {
+    return t("subscription.perMonth", { amount: plan.price_monthly_usd })
+  }
+  if (plan.price_annual_usd) {
+    return t("subscription.perYear", { amount: plan.price_annual_usd })
+  }
+  return null
 }

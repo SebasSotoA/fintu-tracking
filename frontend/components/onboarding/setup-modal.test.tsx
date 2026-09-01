@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { SetupModal } from "./setup-modal"
 import { useCompleteOnboarding } from "@/hooks/use-onboarding"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import type { Profile } from "@/lib/api/me"
 
 vi.mock("@/hooks/use-onboarding")
@@ -84,7 +85,7 @@ function renderModal(profile: Profile = baseProfile) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return render(
+  return renderWithLocale(
     <QueryClientProvider client={queryClient}>
       <SetupModal initialProfile={profile} />
     </QueryClientProvider>,

@@ -6,6 +6,7 @@ import { navActive, navIdle } from "@/components/layout/app-sidebar-constants"
 import { Input } from "@/components/ui/input"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
+import { useLocale } from "@/components/locale-provider"
 import type { SettingsCategoryDef, SettingsCategoryId } from "./settings-catalog"
 
 const CATEGORY_ICONS = {
@@ -29,6 +30,8 @@ export function SettingsNav({
   onQueryChange,
 }: SettingsNavProps): ReactElement {
   const isMobile = useIsMobile()
+  const { t } = useLocale()
+  const searchLabel = t("settings.search")
 
   return (
     <div className={cn("flex flex-col gap-3", isMobile && "px-4 pt-2")}>
@@ -41,12 +44,12 @@ export function SettingsNav({
           type="search"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Search settings"
-          aria-label="Search settings"
+          placeholder={searchLabel}
+          aria-label={searchLabel}
           className="h-9 rounded-lg border-transparent bg-muted/70 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50"
         />
       </div>
-      <nav aria-label="Settings categories">
+      <nav aria-label={t("settings.categoriesAria")}>
         {isMobile ? (
           <div
             data-testid="settings-nav-chips"

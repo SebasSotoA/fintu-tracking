@@ -26,14 +26,16 @@ import {
   SIDEBAR_WIDTH_EXPANDED,
 } from "@/components/layout/app-sidebar-constants"
 import { AccountMenu } from "@/components/profile/account-menu"
+import { useLocale } from "@/components/locale-provider"
 import type { Profile } from "@/lib/api/me"
+import type { MessageKey } from "@/lib/i18n/types"
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/trades", label: "Trades", icon: TrendingUp },
-  { href: "/cash-flows", label: "Cash Flows", icon: DollarSign },
-  { href: "/performance", label: "Performance", icon: BarChart3 },
-  { href: "/subscription", label: "Subscription", icon: CreditCard },
+const navItems: { href: string; labelKey: MessageKey; icon: typeof LayoutDashboard }[] = [
+  { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/trades", labelKey: "nav.trades", icon: TrendingUp },
+  { href: "/cash-flows", labelKey: "nav.cashFlows", icon: DollarSign },
+  { href: "/performance", labelKey: "nav.performance", icon: BarChart3 },
+  { href: "/subscription", labelKey: "nav.subscription", icon: CreditCard },
 ]
 
 interface AppNavProps {
@@ -44,6 +46,7 @@ interface AppNavProps {
 
 export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
   const pathname = usePathname()
+  const { t } = useLocale()
   const label = sidebarLabelClass(collapsed)
 
   return (
@@ -56,7 +59,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
           "transition-[width] duration-150 ease-in-out",
           collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED,
         )}
-        aria-label="App navigation"
+        aria-label={t("nav.appNavigation")}
         data-testid="app-sidebar"
         data-collapsed={collapsed ? "true" : "false"}
       >
@@ -78,7 +81,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                 navIdle,
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
               )}
-              aria-label="Expand sidebar"
+              aria-label={t("nav.expandSidebar")}
               data-testid="app-sidebar-collapse"
             >
               <span className={navLogoBlendClass}>
@@ -128,7 +131,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                   navIdle,
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 )}
-                aria-label="Collapse sidebar"
+                aria-label={t("nav.collapseSidebar")}
                 data-testid="app-sidebar-collapse"
               >
                 <PanelLeftClose className="size-4" aria-hidden />
@@ -143,17 +146,18 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
             RAIL_PL,
             RAIL_PR,
           )}
-          aria-label="Main"
+          aria-label={t("nav.main")}
         >
           {navItems.map((item) => {
             const Icon = item.icon
+            const itemLabel = t(item.labelKey)
             const isActive =
               pathname === item.href || pathname?.startsWith(`${item.href}/`)
             return (
               <div key={item.href} className="group relative h-9 min-h-9 w-full">
                 <Link
                   href={item.href}
-                  aria-label={collapsed ? item.label : undefined}
+                  aria-label={collapsed ? itemLabel : undefined}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "flex h-9 w-full items-center rounded-md text-sm",
@@ -181,7 +185,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                     <Icon className="size-4 shrink-0" />
                   </span>
                   <span className={cn("overflow-hidden", label)} aria-hidden={collapsed}>
-                    {item.label}
+                    {itemLabel}
                   </span>
                 </Link>
               </div>
@@ -205,6 +209,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
         <AccountMenu profile={profile} collapsed={false} variant="mobile" />
         {navItems.map((item) => {
           const Icon = item.icon
+          const itemLabel = t(item.labelKey)
           const isActive =
             pathname === item.href || pathname?.startsWith(`${item.href}/`)
           return (
@@ -221,7 +226,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
             >
               <Icon className="size-5" aria-hidden />
               <span className="font-sans text-[10px] font-semibold uppercase tracking-widest">
-                {item.label}
+                {itemLabel}
               </span>
             </Link>
           )

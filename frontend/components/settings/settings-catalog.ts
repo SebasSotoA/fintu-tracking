@@ -32,7 +32,18 @@ export const SETTINGS_CATALOG: SettingsCategoryDef[] = [
           {
             id: "theme",
             label: "Theme",
-            keywords: ["theme", "dark", "light", "system", "appearance"],
+            keywords: [
+              "theme",
+              "dark",
+              "light",
+              "system",
+              "appearance",
+              "tema",
+              "oscuro",
+              "claro",
+              "sistema",
+              "apariencia",
+            ],
           },
           {
             id: "language",
@@ -55,12 +66,12 @@ export const SETTINGS_CATALOG: SettingsCategoryDef[] = [
           {
             id: "country",
             label: "Country",
-            keywords: ["country", "profile"],
+            keywords: ["country", "profile", "país", "perfil", "cuenta"],
           },
           {
             id: "broker",
             label: "Broker",
-            keywords: ["broker", "profile"],
+            keywords: ["broker", "profile", "perfil", "cuenta"],
           },
         ],
       },
