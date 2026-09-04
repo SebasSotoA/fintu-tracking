@@ -374,7 +374,7 @@ export function TradesList({
       },
       {
         key: "assetType",
-        header: t("trades.type"),
+        header: t("trades.asset"),
         cell: (trade) => (
           <span className={getAssetBadgeClasses(trade.asset_type)}>
             {trade.asset_type.toUpperCase()}

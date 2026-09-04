@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ApiError } from "@/lib/api/client"
 import type { Profile } from "@/lib/api/me"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { ProtectedLayout } from "./protected-layout"
 
 const mockReplace = vi.fn()
@@ -51,11 +52,13 @@ function renderProtectedLayout(requireActiveSubscription = true) {
     defaultOptions: { queries: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <ProtectedLayout requireActiveSubscription={requireActiveSubscription}>
-        <div data-testid="child">child</div>
-      </ProtectedLayout>
-    </QueryClientProvider>,
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>
+        <ProtectedLayout requireActiveSubscription={requireActiveSubscription}>
+          <div data-testid="child">child</div>
+        </ProtectedLayout>
+      </QueryClientProvider>
+    </EnglishLocaleWrapper>,
   )
 }
 

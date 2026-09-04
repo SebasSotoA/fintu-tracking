@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ApiError } from "@/lib/api/client"
 import type { Profile } from "@/lib/api/me"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import SubscriptionPageClient from "./page"
 
 const mockReplace = vi.fn()
@@ -53,9 +54,11 @@ function renderPage() {
     defaultOptions: { queries: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={queryClient}>
-      <SubscriptionPageClient />
-    </QueryClientProvider>,
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>
+        <SubscriptionPageClient />
+      </QueryClientProvider>
+    </EnglishLocaleWrapper>,
   )
 }
 

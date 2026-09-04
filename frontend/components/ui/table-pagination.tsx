@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useLocale } from "@/components/locale-provider"
 import {
   PAGE_SIZE_OPTIONS,
   type PageSize,
@@ -38,9 +39,11 @@ export function TablePagination({
   onPageSizeChange,
   showingText,
 }: TablePaginationProps) {
+  const { t } = useLocale()
   const pages = totalPages(total, pageSize)
   const atFirst = page <= 1
   const atLast = page >= pages
+  const rowsPerPageLabel = t("table.rowsPerPage")
 
   return (
     <div className="flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -49,13 +52,13 @@ export function TablePagination({
           htmlFor="table-page-size"
           className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
         >
-          Rows per page
+          {rowsPerPageLabel}
         </Label>
         <Select
           value={String(pageSize)}
           onValueChange={(value) => onPageSizeChange(Number(value) as PageSize)}
         >
-          <SelectTrigger id="table-page-size" className="h-8 w-[4.5rem]" aria-label="Rows per page">
+          <SelectTrigger id="table-page-size" className="h-8 w-[4.5rem]" aria-label={rowsPerPageLabel}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -69,7 +72,7 @@ export function TablePagination({
       </div>
 
       <p className="text-center text-xs font-medium uppercase tracking-wide text-muted-foreground sm:flex-1">
-        {showingText ?? `Page ${page} of ${pages}`}
+        {showingText ?? t("table.pageOf", { page, pages })}
       </p>
 
       <div className="flex items-center justify-center gap-1 sm:justify-end">
@@ -78,7 +81,7 @@ export function TablePagination({
           variant="outline"
           size="icon"
           className="min-h-11 min-w-11 text-foreground md:size-8"
-          aria-label="First page"
+          aria-label={t("table.firstPage")}
           disabled={atFirst}
           onClick={() => onPageChange(1)}
         >
@@ -89,7 +92,7 @@ export function TablePagination({
           variant="outline"
           size="icon"
           className="min-h-11 min-w-11 text-foreground md:size-8"
-          aria-label="Previous page"
+          aria-label={t("table.previousPage")}
           disabled={atFirst}
           onClick={() => onPageChange(page - 1)}
         >
@@ -100,7 +103,7 @@ export function TablePagination({
           variant="outline"
           size="icon"
           className="min-h-11 min-w-11 text-foreground md:size-8"
-          aria-label="Next page"
+          aria-label={t("table.nextPage")}
           disabled={atLast}
           onClick={() => onPageChange(page + 1)}
         >
@@ -111,7 +114,7 @@ export function TablePagination({
           variant="outline"
           size="icon"
           className="min-h-11 min-w-11 text-foreground md:size-8"
-          aria-label="Last page"
+          aria-label={t("table.lastPage")}
           disabled={atLast}
           onClick={() => onPageChange(pages)}
         >

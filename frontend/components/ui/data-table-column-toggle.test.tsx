@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { screen, fireEvent } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import { DataTableColumnToggle } from "./data-table-column-toggle"
 import type { DataTableColumn } from "./data-table"
 
@@ -13,7 +14,7 @@ const defaultVisibleKeys = ["a"]
 
 describe("DataTableColumnToggle", () => {
   it("renders only toggleable columns", () => {
-    render(
+    renderWithLocale(
       <DataTableColumnToggle
         columns={columns}
         visibleKeys={["a"]}
@@ -32,9 +33,22 @@ describe("DataTableColumnToggle", () => {
     expect(screen.queryByText("Gamma")).not.toBeInTheDocument()
   })
 
+  it("renders Spanish View label when locale is es", () => {
+    renderWithLocale(
+      <DataTableColumnToggle
+        columns={columns}
+        visibleKeys={["a"]}
+        defaultVisibleKeys={defaultVisibleKeys}
+        onChange={vi.fn()}
+      />,
+      { locale: "es" },
+    )
+    expect(screen.getByRole("button", { name: /Ver/i })).toBeInTheDocument()
+  })
+
   it("toggles a visible column off", () => {
     const onChange = vi.fn()
-    render(
+    renderWithLocale(
       <DataTableColumnToggle
         columns={columns}
         visibleKeys={["a", "b"]}
@@ -49,7 +63,7 @@ describe("DataTableColumnToggle", () => {
 
   it("toggles a hidden column on", () => {
     const onChange = vi.fn()
-    render(
+    renderWithLocale(
       <DataTableColumnToggle
         columns={columns}
         visibleKeys={["a"]}
@@ -64,7 +78,7 @@ describe("DataTableColumnToggle", () => {
 
   it("resets to default visible keys", () => {
     const onChange = vi.fn()
-    render(
+    renderWithLocale(
       <DataTableColumnToggle
         columns={columns}
         visibleKeys={["a", "b"]}

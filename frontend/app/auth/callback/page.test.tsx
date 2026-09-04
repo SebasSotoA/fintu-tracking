@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
 import { render, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import AuthCallbackPage from "./page"
 
 const mockReplace = vi.fn()
@@ -22,9 +23,11 @@ vi.mock("@/lib/supabase/client", () => ({
 function renderPage() {
   const queryClient = new QueryClient()
   return render(
-    <QueryClientProvider client={queryClient}>
-      <AuthCallbackPage />
-    </QueryClientProvider>,
+    <EnglishLocaleWrapper>
+      <QueryClientProvider client={queryClient}>
+        <AuthCallbackPage />
+      </QueryClientProvider>
+    </EnglishLocaleWrapper>,
   )
 }
 

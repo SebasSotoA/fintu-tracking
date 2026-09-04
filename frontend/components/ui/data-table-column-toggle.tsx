@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { surfaceControlClassName } from "@/components/ui/surface-control"
+import { useLocale } from "@/components/locale-provider"
 import { cn } from "@/lib/utils"
 import type { DataTableColumn } from "@/components/ui/data-table"
 
@@ -37,6 +38,7 @@ export function DataTableColumnToggle<T>({
   onChange,
   className,
 }: DataTableColumnToggleProps<T>) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
 
   const options = useMemo(
@@ -82,14 +84,14 @@ export function DataTableColumnToggle<T>({
           className={cn(surfaceControlClassName, "gap-2", className)}
         >
           <Columns3 className="size-4 shrink-0" />
-          <span className="whitespace-nowrap">View</span>
+          <span className="whitespace-nowrap">{t("table.view")}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-0" align="end">
         <Command>
-          <CommandInput placeholder="Search columns..." />
+          <CommandInput placeholder={t("table.searchColumns")} />
           <CommandList className="max-h-60 overflow-y-auto scrollbar-minimal">
-            <CommandEmpty>No columns found.</CommandEmpty>
+            <CommandEmpty>{t("table.noColumns")}</CommandEmpty>
             <CommandGroup>
               {options.map((column) => {
                 const label = getColumnLabel(column)
@@ -110,7 +112,7 @@ export function DataTableColumnToggle<T>({
             </CommandGroup>
             <CommandGroup>
               <CommandItem value="reset" onSelect={handleReset}>
-                <span className="text-muted-foreground">Reset to default</span>
+                <span className="text-muted-foreground">{t("table.resetColumns")}</span>
               </CommandItem>
             </CommandGroup>
           </CommandList>

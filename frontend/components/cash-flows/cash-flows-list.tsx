@@ -110,7 +110,7 @@ function CashFlowFiltersForm({
         value={filters.dateRange}
         onChange={(dateRange) => onChange({ dateRange })}
         formatLabel={(range) =>
-          range.from ? formatTradeDateRangeLabel(range, dateLocale) : t("filters.allDates")
+          formatTradeDateRangeLabel(range, dateLocale, t("filters.allDates"))
         }
       />
     </div>

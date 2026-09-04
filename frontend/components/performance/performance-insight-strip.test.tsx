@@ -83,11 +83,11 @@ describe("PerformanceInsightStrip", () => {
     mockGetFxImpact.mockResolvedValue(baseFxImpact)
   })
 
-  it("renders four labels COP sent / USD received / FX IMPACT / Fees", async () => {
+  it("renders four labels COP sent / USD received / FX impact / Fees", async () => {
     renderStrip()
     expect(await screen.findByText(/cop sent/i)).toBeInTheDocument()
     expect(screen.getByText(/usd received/i)).toBeInTheDocument()
-    expect(screen.getByText("FX IMPACT")).toBeInTheDocument()
+    expect(screen.getByText("FX impact")).toBeInTheDocument()
     expect(screen.getByText(/^fees$/i)).toBeInTheDocument()
     expect(screen.queryByText(/cop deposited/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/arrived at broker/i)).not.toBeInTheDocument()
@@ -103,6 +103,11 @@ describe("PerformanceInsightStrip", () => {
     renderStrip(baseNetWorth, "es")
     expect(await screen.findByText(/usd en cuenta/i)).toBeInTheDocument()
     expect(screen.queryByText(/llegó/i)).not.toBeInTheDocument()
+  })
+
+  it("shows Impacto FX in Spanish, not IMPACTO FX all-caps catalog copy", async () => {
+    renderStrip(baseNetWorth, "es")
+    expect(await screen.findByText("Impacto FX")).toBeInTheDocument()
   })
 
   it("formats COP sent with a COP prefix, not a dollar sign", async () => {
@@ -123,8 +128,8 @@ describe("PerformanceInsightStrip", () => {
 
   it("renders FX value without success or destructive colour classes", async () => {
     renderStrip()
-    await screen.findByText("FX IMPACT")
-    const fxTile = tileByLabel("FX IMPACT")
+    await screen.findByText("FX impact")
+    const fxTile = tileByLabel("FX impact")
     const value = within(fxTile).getByText("−$12.40")
     expect(value).toHaveClass("text-foreground")
     expect(value).not.toHaveClass("text-success")

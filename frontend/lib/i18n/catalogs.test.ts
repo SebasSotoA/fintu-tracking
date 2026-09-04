@@ -27,5 +27,15 @@ describe("i18n catalogs", () => {
     expect(keys).toContain("nav.dashboard")
     expect(keys).toContain("settings.language")
     expect(keys).toContain("hello")
+    expect(keys).toContain("table.view")
+    expect(keys).toContain("table.pageOf")
+  })
+
+  it("uses Tipo for trade side in Spanish, not Lado", () => {
+    expect(en.trades.side).toBe("Side")
+    expect(es.trades.side).toBe("Tipo")
+    expect(es.trades.filterBySide).toBe("Filtrar operaciones por tipo")
+    expect(es.trades.all).toBe("Todos")
+    expect(es.filters.allDates).toBe("Todas las fechas")
   })
 })

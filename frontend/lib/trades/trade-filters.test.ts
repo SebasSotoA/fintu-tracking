@@ -71,7 +71,15 @@ describe("applyTradeDatePreset", () => {
 
 describe("formatTradeDateRangeLabel", () => {
   it("shows All dates when empty", () => {
-    expect(formatTradeDateRangeLabel({ from: null, to: null })).toBe("All dates")
+    expect(formatTradeDateRangeLabel({ from: null, to: null }, undefined, "All dates")).toBe(
+      "All dates",
+    )
+  })
+
+  it("uses the provided all-dates label when empty", () => {
+    expect(
+      formatTradeDateRangeLabel({ from: null, to: null }, undefined, "Todas las fechas"),
+    ).toBe("Todas las fechas")
   })
 
   it("shows a single formatted day", () => {

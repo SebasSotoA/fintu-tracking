@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -11,7 +12,7 @@ import {
 
 describe("ResponsiveDialog", () => {
   it("forwards title, description, header, footer, and children", () => {
-    render(
+    renderWithLocale(
       <ResponsiveDialog open>
         <ResponsiveDialogContent data-testid="responsive-content">
           <ResponsiveDialogHeader>

@@ -43,9 +43,14 @@ function intervalFromRange(range: TradeDateRange): PerformanceInterval {
   return "month"
 }
 
-function formatPerfRangeLabel(range: TradeDateRange, locale: string, allTimeLabel: string): string {
+function formatPerfRangeLabel(
+  range: TradeDateRange,
+  locale: string,
+  allTimeLabel: string,
+  allDatesLabel: string,
+): string {
   if (!range.from) return allTimeLabel
-  return formatTradeDateRangeLabel(range, locale)
+  return formatTradeDateRangeLabel(range, locale, allDatesLabel)
 }
 
 function formatChartDate(date: string, locale: string): string {
@@ -176,7 +181,14 @@ export function PortfolioPerformanceChart() {
             ariaLabel={t("performance.filterByDateRange")}
             value={selectedRange}
             onChange={setSelectedRange}
-            formatLabel={(range) => formatPerfRangeLabel(range, dateLocale, t("performance.allTime"))}
+            formatLabel={(range) =>
+              formatPerfRangeLabel(
+                range,
+                dateLocale,
+                t("performance.allTime"),
+                t("filters.allDates"),
+              )
+            }
             hideLabel
             popoverAlign="end"
           />

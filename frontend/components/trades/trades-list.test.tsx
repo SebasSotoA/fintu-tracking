@@ -284,4 +284,20 @@ describe("TradesList", () => {
 
     expect(screen.getByRole("button", { name: /agregar operación/i })).toBeInTheDocument()
   })
+
+  it("labels buy/sell as Tipo in Spanish, not Lado", () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    renderWithLocale(
+      <QueryClientProvider client={queryClient}>
+        <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />
+      </QueryClientProvider>,
+      { locale: "es" },
+    )
+
+    expect(screen.getAllByText("Tipo").length).toBeGreaterThan(0)
+    expect(screen.queryByText("Lado")).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/filtrar operaciones por tipo/i)).toBeInTheDocument()
+  })
 })

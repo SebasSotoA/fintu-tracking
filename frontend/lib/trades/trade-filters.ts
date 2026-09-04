@@ -70,8 +70,9 @@ export function applyTradeDatePreset(
 export function formatTradeDateRangeLabel(
   range: TradeDateRange,
   locale?: string | string[],
+  allDatesLabel = "All dates",
 ): string {
-  if (!range.from) return "All dates"
+  if (!range.from) return allDatesLabel
   if (!range.to || range.to === range.from) {
     return formatCalendarDate(range.from, locale)
   }

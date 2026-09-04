@@ -22,7 +22,7 @@ export function TradeDateFilter({ value, onChange }: TradeDateFilterProps) {
       value={value}
       onChange={onChange}
       formatLabel={(range) =>
-        range.from ? formatTradeDateRangeLabel(range, dateLocale) : t("filters.allDates")
+        formatTradeDateRangeLabel(range, dateLocale, t("filters.allDates"))
       }
     />
   )
