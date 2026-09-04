@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it } from "vitest"
 import { LOCALE_COOKIE_NAME } from "@/lib/i18n/cookie"
@@ -60,7 +60,7 @@ describe("LocaleProvider", () => {
     expect(document.cookie).toContain(`${LOCALE_COOKIE_NAME}=es`)
   })
 
-  it("detects locale from the cookie when defaultLocale is omitted", () => {
+  it("detects locale from the cookie when defaultLocale is omitted", async () => {
     document.cookie = `${LOCALE_COOKIE_NAME}=es; path=/`
 
     render(
@@ -69,7 +69,56 @@ describe("LocaleProvider", () => {
       </LocaleProvider>,
     )
 
-    expect(screen.getByTestId("locale")).toHaveTextContent("es")
+    await waitFor(() => {
+      expect(screen.getByTestId("locale")).toHaveTextContent("es")
+    })
     expect(document.documentElement.lang).toBe("es")
+  })
+
+  it("paints DEFAULT_LOCALE before detecting the cookie when defaultLocale is omitted", async () => {
+    document.cookie = `${LOCALE_COOKIE_NAME}=es; path=/`
+    const paints: string[] = []
+
+    function PaintProbe() {
+      const { locale } = useLocale()
+      paints.push(locale)
+      return <span data-testid="locale">{locale}</span>
+    }
+
+    render(
+      <LocaleProvider>
+        <PaintProbe />
+      </LocaleProvider>,
+    )
+
+    expect(paints[0]).toBe("en")
+    await waitFor(() => {
+      expect(screen.getByTestId("locale")).toHaveTextContent("es")
+    })
+    expect(paints[paints.length - 1]).toBe("es")
+  })
+
+  it("uses defaultLocale en on first paint even when the cookie is Spanish", () => {
+    document.cookie = `${LOCALE_COOKIE_NAME}=es; path=/`
+
+    render(
+      <LocaleProvider defaultLocale="en">
+        <LocaleProbe />
+      </LocaleProvider>,
+    )
+
+    expect(screen.getByTestId("locale")).toHaveTextContent("en")
+    expect(screen.getByTestId("dashboard")).toHaveTextContent("Dashboard")
+  })
+
+  it("uses defaultLocale es on first paint with no cookie", () => {
+    render(
+      <LocaleProvider defaultLocale="es">
+        <LocaleProbe />
+      </LocaleProvider>,
+    )
+
+    expect(screen.getByTestId("locale")).toHaveTextContent("es")
+    expect(screen.getByTestId("dashboard")).toHaveTextContent("Panel")
   })
 })

@@ -79,11 +79,5 @@ export function useLocale(): LocaleContextValue {
 }
 
 function getInitialLocale(forced?: Locale): Locale {
-  if (forced !== undefined) {
-    return forced
-  }
-  if (typeof document === "undefined") {
-    return DEFAULT_LOCALE
-  }
-  return detectLocale()
+  return forced ?? DEFAULT_LOCALE
 }
