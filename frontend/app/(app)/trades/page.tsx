@@ -3,7 +3,9 @@
 import { Suspense, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
+import { useLocale } from "@/components/locale-provider"
 import { TradesList } from "@/components/trades/trades-list"
+import { TablePageSkeleton } from "@/components/ui/table-page-skeleton"
 import { listTradeTickers, listTradesPaginated } from "@/lib/api/trades"
 import {
   parseTradeFiltersFromSearchParams,
@@ -11,23 +13,18 @@ import {
 } from "@/lib/trades/trade-filters"
 import { parsePageParams } from "@/lib/pagination/table-pagination"
 import type { PageSize } from "@/lib/pagination/table-pagination"
-import { Spinner } from "@/components/ui/spinner"
 
 export default function TradesPage() {
+  const { t } = useLocale()
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-96 items-center justify-center">
-          <Spinner className="size-8" />
-        </div>
-      }
-    >
+    <Suspense fallback={<TablePageSkeleton label={t("table.loading")} />}>
       <TradesPageContent />
     </Suspense>
   )
 }
 
 function TradesPageContent() {
+  const { t } = useLocale()
   const searchParams = useSearchParams()
   const paramsRecord = useMemo(
     () => Object.fromEntries(searchParams.entries()),
@@ -52,11 +49,7 @@ function TradesPageContent() {
   })
 
   if (tradesQuery.isLoading) {
-    return (
-      <div className="flex min-h-96 items-center justify-center">
-        <Spinner className="size-8" />
-      </div>
-    )
+    return <TablePageSkeleton label={t("table.loading")} />
   }
 
   const trades = tradesQuery.data?.items ?? []

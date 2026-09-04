@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import PerformancePage from "./page"
 
 const { mockPerformanceContent, mockPerformanceEmptyState, mockGetNetWorth, mockUseHoldingsData } =
@@ -37,7 +38,7 @@ function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(
+  return renderWithLocale(
     <QueryClientProvider client={queryClient}>
       <PerformancePage />
     </QueryClientProvider>,
@@ -59,6 +60,22 @@ describe("PerformancePage", () => {
         lastPriceRefreshAt: null,
       },
     })
+  })
+
+  it("shows PerformancePageSkeleton while holdings load, not a Spinner", () => {
+    mockUseHoldingsData.mockReturnValue({
+      isLoading: true,
+      data: undefined,
+    })
+
+    const { container } = renderPage()
+
+    expect(screen.getByTestId("kpi-strip-skeleton")).toBeInTheDocument()
+    expect(screen.getByTestId("chart-panel-skeleton-plot")).toBeInTheDocument()
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument()
+    expect(container.querySelector("svg.animate-spin")).toBeNull()
+    expect(screen.queryByTestId("performance-content")).not.toBeInTheDocument()
+    expect(mockPerformanceContent).not.toHaveBeenCalled()
   })
 
   it("renders PerformanceContent when holdings exist", async () => {

@@ -5,9 +5,7 @@ import { formatTooltipDate, formatShortMonthDay, intlLocale } from "@/lib/date-u
 import { Decimal } from "@/lib/decimal"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 import { useLocale } from "@/components/locale-provider"
-
-export { formatTooltipDate } from "@/lib/date-utils"
-import { Spinner } from "@/components/ui/spinner"
+import { ChartPanelSkeleton } from "@/components/ui/chart-panel-skeleton"
 import {
   Area,
   AreaChart,
@@ -17,6 +15,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+
+export { formatTooltipDate } from "@/lib/date-utils"
 
 interface FxRateSparklineProps {
   points: FxRateChartPoint[]
@@ -96,11 +96,12 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
   if (isLoading) {
     return (
       <div
-        className="flex h-[140px] items-center justify-center rounded-xl border border-border/50 bg-muted/20"
+        className="rounded-xl border border-border/50 bg-muted/20"
+        role="status"
         aria-busy="true"
         aria-label={t("cash.loadingChart")}
       >
-        <Spinner className="size-5 text-muted-foreground" />
+        <ChartPanelSkeleton height="sparkline" withCard={false} nested />
       </div>
     )
   }

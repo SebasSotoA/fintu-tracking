@@ -53,4 +53,12 @@ describe("KpiStrip", () => {
     renderWithProviders(<KpiStrip initialData={baseData} />)
     expect(screen.getAllByText("+30.00%").length).toBeGreaterThan(0)
   })
+
+  it("renders KpiStripSkeleton while loading instead of em-dash tiles or a Spinner", () => {
+    const { container } = renderWithProviders(<KpiStrip />)
+    expect(screen.getByTestId("kpi-strip-skeleton")).toBeInTheDocument()
+    expect(screen.queryByText("—")).not.toBeInTheDocument()
+    expect(container.querySelector(".animate-spin")).not.toBeInTheDocument()
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument()
+  })
 })

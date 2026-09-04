@@ -1,6 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import { ChartPanelSkeleton } from "@/components/ui/chart-panel-skeleton"
 
 const ReconciliationDashboard = dynamic(
   () =>
@@ -9,7 +10,7 @@ const ReconciliationDashboard = dynamic(
     })),
   {
     ssr: false,
-    loading: () => <div className="h-32 animate-pulse rounded-lg bg-muted" />,
+    loading: () => <ChartPanelSkeleton />,
   },
 )
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { describe, expect, it, vi } from "vitest"
-import { render } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import { FxRateSparkline } from "./fx-rate-sparkline"
 
@@ -47,6 +47,19 @@ vi.mock("recharts", () => ({
 }))
 
 describe("FxRateSparkline series theme", () => {
+  it("shows a sparkline chart skeleton while loading", () => {
+    render(
+      <EnglishLocaleWrapper>
+        <FxRateSparkline points={[]} isLoading />
+      </EnglishLocaleWrapper>,
+    )
+
+    const status = screen.getByRole("status", { name: "Loading exchange rate chart" })
+    expect(status.querySelector("[data-slot='skeleton']")).not.toBeNull()
+    expect(screen.getByTestId("chart-panel-skeleton-plot")).toBeInTheDocument()
+    expect(document.querySelector(".animate-spin")).toBeNull()
+  })
+
   it("renders the USD/COP series in primary indigo without a pulsing halo", () => {
     const { container } = render(
       <EnglishLocaleWrapper>

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
-import { Spinner } from "@/components/ui/spinner"
+import { AuthCardSkeleton } from "@/components/auth/auth-card-skeleton"
 import { useLocale } from "@/components/locale-provider"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -43,13 +43,7 @@ function ResetPasswordContent() {
   }, [linkError, router])
 
   if (isCheckingSession) {
-    return (
-      <AuthCard title={t("auth.resetPassword.loadingTitle")} description={t("auth.resetPassword.loadingDescription")}>
-        <div className="flex h-40 items-center justify-center">
-          <Spinner className="size-6 text-primary" />
-        </div>
-      </AuthCard>
-    )
+    return <AuthCardSkeleton label={t("table.loading")} />
   }
 
   if (!hasSession && linkError === "invalid_link") {
@@ -161,13 +155,7 @@ function ResetPasswordContent() {
 
 function ResetPasswordFallback() {
   const { t } = useLocale()
-  return (
-    <AuthCard title={t("auth.resetPassword.loadingTitle")} description={t("auth.resetPassword.loadingDescription")}>
-      <div className="flex h-40 items-center justify-center">
-        <Spinner className="size-6 text-primary" />
-      </div>
-    </AuthCard>
-  )
+  return <AuthCardSkeleton label={t("table.loading")} />
 }
 
 export default function ResetPasswordPage() {

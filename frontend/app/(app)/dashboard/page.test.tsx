@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import DashboardPage from "./page"
 
 const {
@@ -13,6 +14,7 @@ const {
   mockKpiStrip,
   mockAssetAllocation,
   mockTopHoldings,
+  mockUseSearchParams,
 } = vi.hoisted(() => ({
   mockNetWorthCard: vi.fn(),
   mockActivityFeed: vi.fn(),
@@ -23,10 +25,11 @@ const {
   mockKpiStrip: vi.fn(),
   mockAssetAllocation: vi.fn(),
   mockTopHoldings: vi.fn(),
+  mockUseSearchParams: vi.fn(),
 }))
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockUseSearchParams(),
 }))
 
 vi.mock("@/components/dashboard/net-worth-card", () => ({
@@ -90,6 +93,40 @@ vi.mock("@/components/dashboard/dashboard-card-skeleton", () => ({
   },
 }))
 
+vi.mock("@/components/dashboard/dashboard-page-skeleton", () => ({
+  DashboardPageSkeleton: () => {
+    mockSkeleton("DashboardPageSkeleton")
+    return <div data-testid="dashboard-page-skeleton">DashboardPageSkeleton</div>
+  },
+  NetWorthCardSkeleton: () => {
+    mockSkeleton("NetWorthCardSkeleton")
+    return <div data-testid="net-worth-skeleton">NetWorthSkeleton</div>
+  },
+  TopHoldingsCardSkeleton: () => {
+    mockSkeleton("TopHoldingsCardSkeleton")
+    return <div data-testid="top-holdings-skeleton">TopHoldingsSkeleton</div>
+  },
+  AssetAllocationCardSkeleton: () => {
+    mockSkeleton("AssetAllocationCardSkeleton")
+    return <div data-testid="asset-allocation-skeleton">AssetAllocationSkeleton</div>
+  },
+  ActivityFeedCardSkeleton: () => {
+    mockSkeleton("ActivityFeedCardSkeleton")
+    return <div data-testid="activity-feed-skeleton">ActivityFeedSkeleton</div>
+  },
+  HoldingsSectionSkeleton: () => {
+    mockSkeleton("HoldingsSectionSkeleton")
+    return <div data-testid="holdings-section-skeleton">HoldingsSectionSkeleton</div>
+  },
+}))
+
+vi.mock("@/components/dashboard/kpi-strip-skeleton", () => ({
+  KpiStripSkeleton: () => {
+    mockSkeleton("KpiStripSkeleton")
+    return <div data-testid="kpi-strip-skeleton">KpiStripSkeleton</div>
+  },
+}))
+
 vi.mock("@/lib/api/analytics", () => ({
   getNetWorth: () => mockGetNetWorth(),
 }))
@@ -117,7 +154,7 @@ function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(
+  return renderWithLocale(
     <QueryClientProvider client={queryClient}>
       <DashboardPage />
     </QueryClientProvider>,
@@ -127,6 +164,7 @@ function renderPage() {
 describe("DashboardPage", () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    mockUseSearchParams.mockReturnValue(new URLSearchParams())
     mockGetNetWorth.mockResolvedValue(mockNetWorth)
     mockUseHoldingsData.mockReturnValue({
       isLoading: false,
@@ -169,6 +207,33 @@ describe("DashboardPage", () => {
     await waitFor(() => {
       expect(screen.getByTestId("dashboard-quick-trade")).toBeInTheDocument()
     })
+  })
+
+  it("renders DashboardPageSkeleton as the Suspense fallback without a Spinner", () => {
+    mockUseSearchParams.mockImplementation(() => {
+      throw new Promise(() => {})
+    })
+
+    const { container } = renderPage()
+    expect(screen.getByTestId("dashboard-page-skeleton")).toBeInTheDocument()
+    expect(screen.queryByTestId("holdings-table-skeleton")).not.toBeInTheDocument()
+    expect(container.querySelector(".animate-spin")).not.toBeInTheDocument()
+  })
+
+  it("shows card skeletons while net worth is loading instead of omitting cards or a Spinner", () => {
+    mockGetNetWorth.mockImplementation(() => new Promise(() => {}))
+    mockUseHoldingsData.mockReturnValue({ isLoading: true, data: undefined })
+
+    const { container } = renderPage()
+    expect(screen.getByTestId("net-worth-skeleton")).toBeInTheDocument()
+    expect(screen.getByTestId("top-holdings-skeleton")).toBeInTheDocument()
+    expect(screen.getByTestId("asset-allocation-skeleton")).toBeInTheDocument()
+    expect(screen.getByTestId("kpi-strip-skeleton")).toBeInTheDocument()
+    expect(screen.getByTestId("holdings-table-skeleton")).toBeInTheDocument()
+    expect(screen.queryByTestId("kpi-strip")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("top-holdings-card")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("asset-allocation-card")).not.toBeInTheDocument()
+    expect(container.querySelector(".animate-spin")).not.toBeInTheDocument()
   })
 
   it("renders DashboardEmptyState when there are no holdings", async () => {

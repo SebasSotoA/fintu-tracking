@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query"
 import Decimal from "decimal.js"
 import { KpiTile } from "@/components/dashboard/kpi-tile"
+import { KpiStripSkeleton } from "@/components/dashboard/kpi-strip-skeleton"
 import { apiClient } from "@/lib/api/client"
 import { queryKeys } from "@/lib/api/query-keys"
 import { MARKET_CONFIG } from "@/lib/market-config/market-config"
@@ -37,16 +38,7 @@ export function KpiStrip({ initialData }: KpiStripProps) {
   })
 
   if (isLoading || !data) {
-    return (
-      <div
-        className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4"
-        data-testid="kpi-strip"
-      >
-        {Array.from({ length: 3 }).map((_, i) => (
-          <KpiTile key={i} label="" value="—" />
-        ))}
-      </div>
-    )
+    return <KpiStripSkeleton columns={3} label={t("table.loading")} />
   }
 
   const buyPower = new Decimal(data.cash_balance || "0")

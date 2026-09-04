@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import { CommandDialog, CommandInput, CommandList, CommandItem } from "./command"
 
 const useIsMobileMock = vi.fn()
@@ -10,7 +11,7 @@ vi.mock("@/hooks/use-mobile", () => ({
 
 function renderCommandDialog({ isMobile = false }: { isMobile?: boolean } = {}) {
   useIsMobileMock.mockReturnValue(isMobile)
-  return render(
+  return renderWithLocale(
     <CommandDialog open>
       <CommandInput placeholder="Search..." aria-label="Search commands" />
       <CommandList>

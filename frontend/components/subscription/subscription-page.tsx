@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { EmptyState } from "@/components/ui/empty-state"
 import { EmptyStateActions, EmptyStateAction } from "@/components/ui/empty-state-actions"
@@ -10,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { useLocale } from "@/components/locale-provider"
 import { SubscriptionStatusCard } from "./subscription-status-card"
 import { PlanPicker } from "./plan-picker"
+import { PlanPickerSkeleton } from "./plan-picker-skeleton"
 import { createSubscription, cancelSubscription, billingProvider, type Plan, type Subscription } from "@/lib/api/subscription"
 import { queryKeys } from "@/lib/api/query-keys"
 import { showToast } from "@/lib/toast"
@@ -107,10 +107,9 @@ export function SubscriptionPage({ plans, subscription }: SubscriptionPageProps)
         </CardHeader>
         <CardContent>
           {createMutation.isPending && selectedPlan ? (
-            <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              {t("subscription.updatingTo", { name: selectedPlan.name })}
-            </div>
+            <PlanPickerSkeleton
+              label={t("subscription.updatingTo", { name: selectedPlan.name })}
+            />
           ) : (
             <PlanPicker
               plans={plans}

@@ -71,6 +71,18 @@ describe("SubscriptionPageClient", () => {
     mockGetCurrentSubscription.mockResolvedValue(null)
   })
 
+  it("shows a plan card skeleton while profile and plans load", () => {
+    mockGetMe.mockReturnValue(new Promise(() => {}))
+
+    renderPage()
+
+    const status = screen.getByRole("status", { name: "Loading" })
+    expect(status.querySelector("[data-slot='skeleton']")).not.toBeNull()
+    expect(screen.getByTestId("plan-picker-skeleton")).toBeInTheDocument()
+    expect(document.querySelector(".animate-spin")).toBeNull()
+    expect(screen.queryByText("SubscriptionPage")).not.toBeInTheDocument()
+  })
+
   it("renders SubscriptionPage when profile and plans load", async () => {
     renderPage()
     expect(await screen.findByText("SubscriptionPage")).toBeInTheDocument()

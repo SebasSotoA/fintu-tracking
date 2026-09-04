@@ -3,20 +3,15 @@
 import { Suspense, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AuthCard } from "@/components/auth/auth-card"
-import { Spinner } from "@/components/ui/spinner"
+import { AuthCardSkeleton } from "@/components/auth/auth-card-skeleton"
 import { useLocale } from "@/components/locale-provider"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 
 export default function SignUpSuccessPage() {
+  const { t } = useLocale()
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-48 items-center justify-center">
-          <Spinner className="size-8" />
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthCardSkeleton label={t("table.loading")} />}>
       <SignUpSuccessContent />
     </Suspense>
   )

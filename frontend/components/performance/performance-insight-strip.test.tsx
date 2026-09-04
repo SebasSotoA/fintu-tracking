@@ -83,6 +83,18 @@ describe("PerformanceInsightStrip", () => {
     mockGetFxImpact.mockResolvedValue(baseFxImpact)
   })
 
+  it("shows KpiStripSkeleton instead of em-dash tiles while loading", () => {
+    mockGetNetWorth.mockReturnValue(new Promise(() => {}))
+    mockGetReturnAttribution.mockReturnValue(new Promise(() => {}))
+    mockGetFxImpact.mockReturnValue(new Promise(() => {}))
+
+    renderStrip(null)
+
+    expect(screen.getByTestId("kpi-strip-skeleton")).toBeInTheDocument()
+    expect(screen.queryByText("—")).not.toBeInTheDocument()
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument()
+  })
+
   it("renders four labels COP sent / USD received / FX impact / Fees", async () => {
     renderStrip()
     expect(await screen.findByText(/cop sent/i)).toBeInTheDocument()

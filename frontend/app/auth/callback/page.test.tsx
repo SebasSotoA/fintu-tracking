@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, waitFor } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import AuthCallbackPage from "./page"
@@ -35,6 +35,16 @@ describe("AuthCallbackPage", () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockExchangeCodeForSession.mockResolvedValue({ error: null })
+  })
+
+  it("shows an auth card skeleton while exchanging the code", () => {
+    mockExchangeCodeForSession.mockReturnValue(new Promise(() => {}))
+
+    renderPage()
+
+    const status = screen.getByRole("status", { name: "Loading" })
+    expect(status.querySelector("[data-slot='skeleton']")).not.toBeNull()
+    expect(document.querySelector(".animate-spin")).toBeNull()
   })
 
   it("exchanges code for session and redirects to next", async () => {

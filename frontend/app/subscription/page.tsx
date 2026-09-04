@@ -10,10 +10,12 @@ import { queryKeys } from "@/lib/api/query-keys"
 import { ApiError } from "@/lib/api/client"
 import { isApiError } from "@/lib/api/errors"
 import { SubscriptionPage } from "@/components/subscription/subscription-page"
-import { Spinner } from "@/components/ui/spinner"
+import { PlanPickerSkeleton } from "@/components/subscription/plan-picker-skeleton"
+import { useLocale } from "@/components/locale-provider"
 
 export default function SubscriptionPageClient() {
   const router = useRouter()
+  const { t } = useLocale()
 
   useEffect(() => {
     const supabase = createClient()
@@ -58,8 +60,8 @@ export default function SubscriptionPageClient() {
 
   if (profileQuery.isLoading || plansQuery.isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner className="size-8" />
+      <div className="mx-auto max-w-3xl space-y-6">
+        <PlanPickerSkeleton label={t("table.loading")} />
       </div>
     )
   }

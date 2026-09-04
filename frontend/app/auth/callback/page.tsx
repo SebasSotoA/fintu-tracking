@@ -3,11 +3,13 @@
 import { Suspense, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Spinner } from "@/components/ui/spinner"
+import { AuthCardSkeleton } from "@/components/auth/auth-card-skeleton"
+import { useLocale } from "@/components/locale-provider"
 
 function AuthCallbackContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t } = useLocale()
 
   useEffect(() => {
     const code = searchParams.get("code")
@@ -28,22 +30,13 @@ function AuthCallbackContent() {
     })
   }, [router, searchParams])
 
-  return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Spinner className="size-8" />
-    </div>
-  )
+  return <AuthCardSkeleton label={t("table.loading")} />
 }
 
 export default function AuthCallbackPage() {
+  const { t } = useLocale()
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <Spinner className="size-8" />
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthCardSkeleton label={t("table.loading")} />}>
       <AuthCallbackContent />
     </Suspense>
   )

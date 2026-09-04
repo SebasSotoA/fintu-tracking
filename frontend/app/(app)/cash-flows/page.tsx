@@ -4,8 +4,10 @@ import { Suspense, useMemo } from "react"
 import { useSearchParams } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { CashFlowsList } from "@/components/cash-flows/cash-flows-list"
+import { CashFlowsPageSkeleton } from "@/components/cash-flows/cash-flows-page-skeleton"
 import { FxRateManager } from "@/components/cash-flows/fx-rate-manager"
 import { LazyReconciliationDashboard } from "@/components/cash-flows/lazy-reconciliation-dashboard"
+import { useLocale } from "@/components/locale-provider"
 import { listCashFlowsPaginated } from "@/lib/api/cash-flows"
 import {
   cashFlowFiltersToApiParams,
@@ -13,23 +15,18 @@ import {
 } from "@/lib/cash-flows/cash-flow-filters"
 import { parsePageParams } from "@/lib/pagination/table-pagination"
 import type { PageSize } from "@/lib/pagination/table-pagination"
-import { Spinner } from "@/components/ui/spinner"
 
 export default function CashFlowsPage() {
+  const { t } = useLocale()
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-96 items-center justify-center">
-          <Spinner className="size-8" />
-        </div>
-      }
-    >
+    <Suspense fallback={<CashFlowsPageSkeleton label={t("table.loading")} />}>
       <CashFlowsPageContent />
     </Suspense>
   )
 }
 
 function CashFlowsPageContent() {
+  const { t } = useLocale()
   const searchParams = useSearchParams()
   const paramsRecord = useMemo(
     () => Object.fromEntries(searchParams.entries()),
@@ -53,11 +50,7 @@ function CashFlowsPageContent() {
   })
 
   if (cashFlowsQuery.isLoading) {
-    return (
-      <div className="flex min-h-96 items-center justify-center">
-        <Spinner className="size-8" />
-      </div>
-    )
+    return <CashFlowsPageSkeleton label={t("table.loading")} />
   }
 
   const cashFlows = cashFlowsQuery.data?.items ?? []

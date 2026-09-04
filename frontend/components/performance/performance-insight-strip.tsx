@@ -3,6 +3,7 @@
 import type React from "react"
 import { useQuery } from "@tanstack/react-query"
 import Decimal from "decimal.js"
+import { KpiStripSkeleton } from "@/components/dashboard/kpi-strip-skeleton"
 import { KpiTile } from "@/components/dashboard/kpi-tile"
 import {
   getFxImpact,
@@ -75,16 +76,7 @@ export function PerformanceInsightStrip({
     (fxQuery.isLoading && !fxQuery.data)
 
   if (isLoading) {
-    return (
-      <div
-        className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 md:gap-6"
-        data-testid="performance-insight-strip"
-      >
-        {Array.from({ length: 4 }).map((_, i) => (
-          <KpiTile key={i} label="" value="—" />
-        ))}
-      </div>
-    )
+    return <KpiStripSkeleton columns={4} label={t("table.loading")} />
   }
 
   const netWorth = netWorthQuery.data

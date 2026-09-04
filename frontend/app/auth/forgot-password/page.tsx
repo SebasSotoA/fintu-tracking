@@ -8,20 +8,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
-import { Spinner } from "@/components/ui/spinner"
+import { AuthCardSkeleton } from "@/components/auth/auth-card-skeleton"
 import { useLocale } from "@/components/locale-provider"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 
 export default function ForgotPasswordPage() {
+  const { t } = useLocale()
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-48 items-center justify-center">
-          <Spinner className="size-8" />
-        </div>
-      }
-    >
+    <Suspense fallback={<AuthCardSkeleton label={t("table.loading")} />}>
       <ForgotPasswordContent />
     </Suspense>
   )

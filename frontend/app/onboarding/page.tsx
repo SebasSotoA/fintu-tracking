@@ -3,10 +3,13 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Spinner } from "@/components/ui/spinner"
+import { AppShellSkeleton } from "@/components/layout/app-shell-skeleton"
+import { TablePageSkeleton } from "@/components/ui/table-page-skeleton"
+import { useLocale } from "@/components/locale-provider"
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { t } = useLocale()
 
   useEffect(() => {
     const supabase = createClient()
@@ -20,8 +23,8 @@ export default function OnboardingPage() {
   }, [router])
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <Spinner className="size-8" />
-    </div>
+    <AppShellSkeleton label={t("table.loading")}>
+      <TablePageSkeleton nested />
+    </AppShellSkeleton>
   )
 }

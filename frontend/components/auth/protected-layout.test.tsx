@@ -69,6 +69,18 @@ describe("ProtectedLayout", () => {
     mockGetMe.mockResolvedValue(baseProfile)
   })
 
+  it("shows app shell and table skeletons while session is loading", () => {
+    mockGetUser.mockReturnValue(new Promise(() => {}))
+
+    renderProtectedLayout()
+
+    const status = screen.getByRole("status", { name: "Loading" })
+    expect(status.querySelector("[data-slot='skeleton']")).not.toBeNull()
+    expect(screen.getByTestId("table-page-skeleton")).toBeInTheDocument()
+    expect(document.querySelector(".animate-spin")).toBeNull()
+    expect(screen.queryByTestId("child")).not.toBeInTheDocument()
+  })
+
   it("redirects to login when there is no session", async () => {
     mockGetUser.mockResolvedValue({ data: { user: null }, error: null })
 

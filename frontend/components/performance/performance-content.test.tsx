@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest"
-import { render } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
+import { renderWithLocale } from "@/lib/i18n/test-utils"
 import type { NetWorthData } from "@/lib/types"
-import { PerformanceContent } from "./performance-content"
+import { ChartSkeleton, PerformanceContent } from "./performance-content"
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({ data: undefined }),
@@ -54,6 +55,15 @@ function sectionTestIds(container: HTMLElement): string[] {
 }
 
 describe("PerformanceContent", () => {
+  it("ChartSkeleton uses ChartPanelSkeleton, not a muted pulse slab", () => {
+    const { container } = renderWithLocale(<ChartSkeleton />)
+    expect(screen.getByRole("status", { name: "Loading" })).toBeInTheDocument()
+    expect(screen.getByTestId("chart-panel-skeleton-plot")).toBeInTheDocument()
+    expect(container.querySelector("[data-slot='skeleton']")).toBeInTheDocument()
+    expect(container.querySelector(".h-64.bg-muted")).toBeNull()
+    expect(container.querySelector(".animate-pulse.bg-muted")).toBeNull()
+  })
+
   it("renders insight strip, now card + chart, then fees + fx", () => {
     const { container } = render(<PerformanceContent netWorth={netWorth} />)
     expect(sectionTestIds(container)).toEqual([

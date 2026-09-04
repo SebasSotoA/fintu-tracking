@@ -6,10 +6,13 @@ import { PerformanceInsightStrip } from "@/components/performance/performance-in
 import { PerformanceNowCard } from "@/components/performance/performance-now-card"
 import { FeesBreakdown } from "@/components/performance/fees-breakdown"
 import { FxImpactCard } from "@/components/performance/fx-impact-card"
+import { useLocale } from "@/components/locale-provider"
+import { ChartPanelSkeleton } from "@/components/ui/chart-panel-skeleton"
 
-const ChartSkeleton = () => (
-  <div className="h-64 bg-muted rounded-lg animate-pulse" />
-)
+export function ChartSkeleton() {
+  const { t } = useLocale()
+  return <ChartPanelSkeleton height="short" withCard label={t("table.loading")} />
+}
 
 const PortfolioPerformanceChart = dynamic(
   () =>

@@ -4,9 +4,11 @@ import { useEffect, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { AppShell } from "@/components/layout/app-shell"
+import { AppShellSkeleton } from "@/components/layout/app-shell-skeleton"
+import { TablePageSkeleton } from "@/components/ui/table-page-skeleton"
+import { useLocale } from "@/components/locale-provider"
 import { useMe } from "@/hooks/use-me"
 import { isApiError, isSubscriptionRequiredError, isUnauthorizedError } from "@/lib/api/errors"
-import { Spinner } from "@/components/ui/spinner"
 
 interface ProtectedLayoutProps {
   children: ReactNode
@@ -18,6 +20,7 @@ export function ProtectedLayout({
   requireActiveSubscription = true,
 }: ProtectedLayoutProps) {
   const router = useRouter()
+  const { t } = useLocale()
   const { data: profile, error, isLoading, isError, isFetched } = useMe()
   const [authChecked, setAuthChecked] = useState(false)
   const [hasSession, setHasSession] = useState(false)
@@ -76,9 +79,9 @@ export function ProtectedLayout({
 
   if (!authChecked || !hasSession || isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner className="size-8" />
-      </div>
+      <AppShellSkeleton label={t("table.loading")}>
+        <TablePageSkeleton nested />
+      </AppShellSkeleton>
     )
   }
 
