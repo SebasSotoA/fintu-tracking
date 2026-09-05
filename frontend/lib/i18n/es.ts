@@ -71,14 +71,12 @@ export const es = {
       body: "Revisa tu correo y haz clic en el enlace de confirmación para activar tu cuenta.",
     },
     google: {
-      or: "o",
+      or: "O continúa con",
       error: "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
     },
     valuePanel: {
       ariaLabel: "Por qué Fintu",
       question: "¿Después de comisiones y tipo de cambio, estás ganando o perdiendo?",
-      body: "Depositas pesos. El bróker convierte a su propia tasa y cobra comisiones. Los trackers genéricos no ven ese camino, así que “¿estoy ganando o perdiendo?” es una conjetura.",
-      closer: "Fintu es el libro que dice la verdad.",
     },
     showPassword: "Mostrar contraseña",
     hidePassword: "Ocultar contraseña",

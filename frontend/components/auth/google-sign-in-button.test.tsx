@@ -150,6 +150,17 @@ describe("GoogleSignInButton", () => {
     expect(mockPush).not.toHaveBeenCalled()
   })
 
+  it("places the continue-with divider above the Google button", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "test-google-client-id")
+    const { GoogleSignInSection } = await import("./google-sign-in-button")
+
+    renderWithLocale(<GoogleSignInSection />)
+
+    const divider = screen.getByText("Or continue with")
+    const gis = screen.getByTestId("gis-script")
+    expect(divider.compareDocumentPosition(gis) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it("does not throw on unmount when GIS cancel fails", async () => {
     vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "test-google-client-id")
     mockCancel.mockImplementation(() => {

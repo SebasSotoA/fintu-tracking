@@ -54,7 +54,7 @@ describe("SignUpPage", () => {
   it("renders the email sign-up form", () => {
     renderWithLocale(<SignUpPage />)
 
-    expect(screen.getByText("Create account")).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: "Create account" })).toBeInTheDocument()
     expect(screen.getByLabelText("Email")).toHaveAttribute("autocomplete", "email")
     expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "new-password")
     expect(screen.getByLabelText("Confirm Password")).toHaveAttribute(
@@ -62,6 +62,7 @@ describe("SignUpPage", () => {
       "new-password",
     )
     expect(screen.getByRole("button", { name: "Sign up" })).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Fintu" })).not.toBeInTheDocument()
   })
 
   it("keeps email sign-up only when the Google client id is unset", () => {
@@ -69,7 +70,7 @@ describe("SignUpPage", () => {
     renderWithLocale(<SignUpPage />)
 
     expect(screen.getByLabelText("Email")).toBeInTheDocument()
-    expect(screen.queryByText("or")).not.toBeInTheDocument()
+    expect(screen.queryByText("Or continue with")).not.toBeInTheDocument()
     expect(screen.queryByTestId("gis-script")).not.toBeInTheDocument()
   })
 
@@ -81,16 +82,23 @@ describe("SignUpPage", () => {
       screen.getByRole("complementary", { hidden: true, name: "Why Fintu" }),
     ).toBeInTheDocument()
     expect(screen.getAllByRole("button", { name: "Show password" })).toHaveLength(2)
+    expect(screen.queryByRole("link", { name: "Fintu" })).not.toBeInTheDocument()
   })
 
-  it("shows Google sign-in and an or divider when the client id is set", () => {
+  it("shows Google sign-in below the sign-up button when the client id is set", () => {
     vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "test-google-client-id")
     installGis()
     renderWithLocale(<SignUpPage />)
 
+    const heading = screen.getByRole("heading", { level: 1, name: "Create account" })
+    const email = screen.getByLabelText("Email")
+    const signUp = screen.getByRole("button", { name: "Sign up" })
+    const orContinue = screen.getByText("Or continue with")
+
     expect(screen.getByTestId("gis-script")).toBeInTheDocument()
-    expect(screen.getByText("or")).toBeInTheDocument()
-    expect(screen.getByLabelText("Email")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Sign up" })).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Fintu" })).not.toBeInTheDocument()
+    expect(heading.compareDocumentPosition(email) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(email.compareDocumentPosition(signUp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(signUp.compareDocumentPosition(orContinue) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

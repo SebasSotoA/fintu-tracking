@@ -54,7 +54,6 @@ export default function LoginPage() {
         description={t("auth.login.description")}
         size="split"
       />
-      <GoogleSignInSection />
       <form onSubmit={handleLogin} className="flex flex-col gap-6" aria-busy={isLoading}>
         <div className="grid gap-4">
           <div className="grid gap-2">
@@ -95,6 +94,7 @@ export default function LoginPage() {
           )}
         </Button>
       </form>
+      <GoogleSignInSection />
       <div className="pt-2 text-center text-sm text-muted-foreground">
         {`${t("auth.login.noAccount")} `}
         <Link

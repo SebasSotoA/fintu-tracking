@@ -69,14 +69,12 @@ export const en = {
       body: "Please check your email and click the confirmation link to activate your account.",
     },
     google: {
-      or: "or",
+      or: "Or continue with",
       error: "Google sign-in failed. Please try again.",
     },
     valuePanel: {
       ariaLabel: "Why Fintu",
-      question: "After fees and FX, making or losing?",
-      body: "You deposit pesos. The broker converts at its own rate and charges fees along the way. Generic trackers never see that path, so “am I up or down?” is guesswork.",
-      closer: "Fintu is the ledger that tells the truth.",
+      question: "After fees and FX, are you making or losing?",
     },
     showPassword: "Show password",
     hidePassword: "Hide password",

@@ -25,8 +25,10 @@ export function AuthFloatingCard({
         )}
         {...props}
       >
-        <div className="flex min-h-0 flex-col gap-6 overflow-y-auto bg-background p-6 sm:p-7 md:border-r md:border-border">
-          {children}
+        <div className="flex min-h-0 flex-col overflow-y-auto bg-background md:border-r md:border-border">
+          <div className="flex min-h-full flex-col justify-center gap-6 p-6 sm:p-7">
+            {children}
+          </div>
         </div>
         {panel}
       </div>

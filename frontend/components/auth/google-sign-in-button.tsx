@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation"
 
 import { AuthAlert } from "@/components/auth/auth-alert"
 import { useLocale } from "@/components/locale-provider"
-import { Separator } from "@/components/ui/separator"
 import { getGoogleClientId } from "@/lib/auth/google-client-id"
 import { createClient } from "@/lib/supabase/client"
 
@@ -134,12 +133,12 @@ export function GoogleSignInSection(): React.ReactElement | null {
 
   return (
     <div className="space-y-4">
-      <GoogleSignInButton />
-      <div className="flex items-center gap-2">
-        <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground">{t("auth.google.or")}</span>
-        <Separator className="flex-1" />
+      <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-foreground/35">
+        <span className="relative z-10 bg-background px-2 text-xs text-muted-foreground">
+          {t("auth.google.or")}
+        </span>
       </div>
+      <GoogleSignInButton />
     </div>
   )
 }

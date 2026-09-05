@@ -65,7 +65,6 @@ export default function SignUpPage() {
         description={t("auth.signUp.description")}
         size="split"
       />
-      <GoogleSignInSection />
       <form onSubmit={handleSignUp} className="flex flex-col gap-6" aria-busy={isLoading}>
         <div className="grid gap-4">
           <div className="grid gap-2">
@@ -115,6 +114,7 @@ export default function SignUpPage() {
           )}
         </Button>
       </form>
+      <GoogleSignInSection />
       <div className="pt-2 text-center text-sm text-muted-foreground">
         {`${t("auth.signUp.hasAccount")} `}
         <Link
