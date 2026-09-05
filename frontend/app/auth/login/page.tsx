@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
@@ -51,11 +52,21 @@ export default function LoginPage() {
   return (
     <div className="flex w-full max-w-4xl flex-col items-center gap-5 sm:gap-6">
       <AuthFloatingCard variant="split" panel={<AuthValuePanel />}>
-        <AuthFormHeader
-          title={t("auth.login.title")}
-          description={t("auth.login.description")}
-          size="split"
-        />
+        <div className="flex flex-col items-center">
+          <Image
+            src="/fintu-login-mark.svg"
+            alt="Fintu"
+            width={48}
+            height={48}
+            className="mb-2 size-12 object-contain"
+            priority
+          />
+          <AuthFormHeader
+            title={t("auth.login.title")}
+            description={t("auth.login.description")}
+            size="split"
+          />
+        </div>
         <form onSubmit={handleLogin} className="flex flex-col gap-6" aria-busy={isLoading}>
           <div className="grid gap-4">
             <div className="grid gap-2">

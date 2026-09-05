@@ -8,6 +8,11 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }))
 
+vi.mock("next/image", () => ({
+  default: ({ alt, src }: { alt: string; src: string }) =>
+    createElement("img", { alt, src }),
+}))
+
 vi.mock("next/script", () => ({
   default: function Script({
     src,
@@ -57,6 +62,16 @@ describe("LoginPage", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Welcome back" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Fintu" })).not.toBeInTheDocument()
+  })
+
+  it("shows the login mark above the welcome heading", () => {
+    renderWithLocale(<LoginPage />)
+
+    const mark = screen.getByRole("img", { name: "Fintu" })
+    const heading = screen.getByRole("heading", { level: 1, name: "Welcome back" })
+
+    expect(mark).toHaveAttribute("src", "/fintu-login-mark.svg")
+    expect(mark.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it("renders the Spanish welcome title when locale is es", () => {
