@@ -9,7 +9,10 @@ describe("AuthFormHeader", () => {
     )
 
     expect(screen.getByRole("link", { name: "Fintu" })).toHaveAttribute("href", "/")
-    expect(screen.getByRole("heading", { level: 1, name: "Welcome back" })).toHaveClass("!text-4xl")
+    expect(screen.getByRole("heading", { level: 1, name: "Welcome back" })).toHaveClass(
+      "!text-4xl",
+      "text-foreground",
+    )
     expect(screen.getByText("Enter your email")).toBeInTheDocument()
   })
 
@@ -18,6 +21,9 @@ describe("AuthFormHeader", () => {
       <AuthFormHeader title="Reset password" description="Enter your email address" size="compact" />,
     )
 
-    expect(screen.getByRole("heading", { level: 1, name: "Reset password" })).toHaveClass("!text-2xl")
+    expect(screen.getByRole("heading", { level: 1, name: "Reset password" })).toHaveClass(
+      "!text-2xl",
+      "text-foreground",
+    )
   })
 })

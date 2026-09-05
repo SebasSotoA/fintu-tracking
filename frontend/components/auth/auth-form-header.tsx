@@ -26,7 +26,7 @@ export function AuthFormHeader({
       <div className="space-y-1">
         <h1
           className={cn(
-            "font-semibold leading-snug tracking-tight",
+            "font-semibold leading-snug tracking-tight text-foreground",
             size === "split" ? "!text-4xl" : "!text-2xl",
           )}
         >

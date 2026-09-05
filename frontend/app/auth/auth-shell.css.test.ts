@@ -45,6 +45,7 @@ describe("auth-shell.css", () => {
     const authLight = extractBlock(css, ".auth-light")
 
     expect(authLight).toContain("color-scheme: light")
+    expect(authLight).toContain("color: var(--foreground)")
     for (const name of declaredCustomProperties(root)) {
       expect(authLight, `missing ${name}`).toContain(`${name}:`)
     }
