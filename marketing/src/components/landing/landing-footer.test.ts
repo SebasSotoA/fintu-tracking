@@ -12,9 +12,9 @@ describe('LandingFooter', () => {
     expect(logoLink).toHaveAttribute('href', '/')
     expect(logoLink).toHaveTextContent('Fintu')
 
-    const icon = container.querySelector('img[src*="fintu-aqua-icon"]')
+    const icon = container.querySelector('img[src*="fintu-logo"]')
     expect(icon).not.toBeNull()
-    expect(icon).toHaveClass('mix-blend-screen')
+    expect(icon).not.toHaveClass('mix-blend-screen')
 
     expect(getByRole('link', { name: 'Features' })).toHaveAttribute('href', '#features')
     expect(getByRole('link', { name: 'Login' })).toHaveAttribute(

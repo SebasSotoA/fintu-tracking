@@ -21,7 +21,7 @@ vi.mock("next/navigation", () => ({
 }))
 
 vi.mock("next/image", () => ({
-  default: ({ alt }: { alt: string }) => <img alt={alt} />,
+  default: ({ alt, src }: { alt: string; src: string }) => <img alt={alt} src={src} />,
 }))
 
 vi.mock("@/hooks/use-sign-out", () => ({
@@ -198,8 +198,13 @@ describe("AppNav", () => {
 
     expect(dashboardLink.querySelector("svg")).toBeTruthy()
     expect(dashboardLink.className).not.toContain("gap-2")
+    expect(dashboardLink.className).toContain("dark:text-primary")
+    expect(dashboardLink.className).not.toContain("dark:text-white")
     expect(iconCell?.className).toContain("rounded-md")
     expect(iconCell?.className).toContain("bg-primary/10")
+    expect(iconCell?.className).toContain("dark:bg-primary/")
+    expect(iconCell?.className).toContain("dark:text-primary")
+    expect(iconCell?.className).not.toContain("dark:bg-white/[0.08]")
   })
 
   it("uses muted-foreground idle classes on mobile bottom nav", () => {
@@ -240,26 +245,28 @@ describe("AppNav", () => {
     expect(mockSignOut).toHaveBeenCalledTimes(1)
   })
 
-  it("wraps the expanded brand logo with light multiply and dark screen blend", () => {
+  it("shows the Fintu logo without invert/screen blend on the expanded brand link", () => {
     renderAppNav(false)
 
     const sidebar = screen.getByTestId("app-sidebar")
     const brandLink = within(sidebar).getByRole("link", { name: "Fintu" })
-    const iconWrapper = brandLink.querySelector("img")?.parentElement
+    const icon = brandLink.querySelector("img")
+    const iconWrapper = icon?.parentElement
 
-    expect(iconWrapper?.className).toContain("mix-blend-multiply")
-    expect(iconWrapper?.className).toContain("dark:mix-blend-screen")
+    expect(icon?.getAttribute("src")).toContain("fintu-logo.svg")
+    expect(iconWrapper?.className).not.toContain("mix-blend-multiply")
+    expect(iconWrapper?.className).not.toContain("mix-blend-screen")
   })
 
-  it("wraps the collapsed expand-button logo with blend classes and does not invert the overlay icon", () => {
+  it("shows the Fintu logo on the collapsed expand-button without invert/screen blend", () => {
     renderAppNav(true)
 
     const expandButton = screen.getByTestId("app-sidebar-collapse")
-    const iconWrapper = expandButton.querySelector("img")?.parentElement
+    const icon = expandButton.querySelector("img")
     const overlayIcon = expandButton.querySelector("svg")
 
-    expect(iconWrapper?.className).toContain("mix-blend-multiply")
-    expect(iconWrapper?.className).toContain("dark:mix-blend-screen")
+    expect(icon?.getAttribute("src")).toContain("fintu-logo.svg")
+    expect(icon?.parentElement?.className).not.toContain("mix-blend-multiply")
     expect(overlayIcon?.getAttribute("class") ?? overlayIcon?.className).not.toContain("invert")
   })
 })

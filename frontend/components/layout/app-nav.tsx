@@ -18,7 +18,6 @@ import {
   navIdle,
   navActive,
   navItemTransition,
-  navLogoBlendClass,
   RAIL_PL,
   RAIL_PR,
   sidebarLabelClass,
@@ -84,9 +83,9 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
               aria-label={t("nav.expandSidebar")}
               data-testid="app-sidebar-collapse"
             >
-              <span className={navLogoBlendClass}>
+              <span>
                 <Image
-                  src="/fintu-aqua-icon.svg"
+                  src="/fintu-logo.svg"
                   alt=""
                   width={28}
                   height={28}
@@ -108,9 +107,9 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                   "focus-visible:ring-2 focus-visible:ring-primary/40",
                 )}
               >
-                <span className={cn(navIconCellClass, "shrink-0", navLogoBlendClass)} aria-hidden>
+                <span className={cn(navIconCellClass, "shrink-0")} aria-hidden>
                   <Image
-                    src="/fintu-aqua-icon.svg"
+                    src="/fintu-logo.svg"
                     alt=""
                     width={28}
                     height={28}
@@ -166,7 +165,7 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
                     isActive ? "font-semibold" : "font-medium",
                     collapsed
                       ? isActive
-                        ? cn(navItemTransition, "text-foreground dark:text-white")
+                        ? cn(navItemTransition, "text-foreground dark:text-primary")
                         : navIdle
                       : isActive
                         ? navActive
