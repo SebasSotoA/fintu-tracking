@@ -21,6 +21,8 @@ describe("AuthFloatingCard", () => {
     const formColumn = screen.getByText("form-column")
     expect(formColumn).toHaveClass("justify-center")
     expect(formColumn.parentElement?.className).toContain("overflow-y-auto")
+    expect(formColumn.parentElement?.className).toContain("bg-white")
+    expect(formColumn.parentElement?.className).not.toContain("bg-background")
     expect(screen.getByText("value-panel")).toBeInTheDocument()
   })
 
@@ -33,6 +35,7 @@ describe("AuthFloatingCard", () => {
     expect(card).toBeInTheDocument()
     expect(card?.className).toContain("max-w-md")
     expect(card?.className).toContain("rounded-2xl")
+    expect(card?.className).toContain("bg-white")
     expect(card?.className).toContain("text-foreground")
     expect(card?.className).not.toContain("max-w-4xl")
     expect(container.querySelector('[data-slot="card"]')).not.toBeInTheDocument()

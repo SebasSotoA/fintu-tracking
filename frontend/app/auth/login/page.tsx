@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { AuthAlert } from "@/components/auth/auth-alert"
 import { AuthFloatingCard } from "@/components/auth/auth-floating-card"
 import { AuthFormHeader } from "@/components/auth/auth-form-header"
+import { AuthLegalFooter } from "@/components/auth/auth-legal-footer"
 import { AuthPasswordField } from "@/components/auth/auth-password-field"
 import { AuthValuePanel } from "@/components/auth/auth-value-panel"
 import { GoogleSignInSection } from "@/components/auth/google-sign-in-button"
@@ -48,62 +49,65 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthFloatingCard variant="split" panel={<AuthValuePanel />}>
-      <AuthFormHeader
-        title={t("auth.login.title")}
-        description={t("auth.login.description")}
-        size="split"
-      />
-      <form onSubmit={handleLogin} className="flex flex-col gap-6" aria-busy={isLoading}>
-        <div className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="email">{t("auth.email")}</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              autoComplete="email"
+    <div className="flex w-full max-w-4xl flex-col items-center gap-5 sm:gap-6">
+      <AuthFloatingCard variant="split" panel={<AuthValuePanel />}>
+        <AuthFormHeader
+          title={t("auth.login.title")}
+          description={t("auth.login.description")}
+          size="split"
+        />
+        <form onSubmit={handleLogin} className="flex flex-col gap-6" aria-busy={isLoading}>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">{t("auth.email")}</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+                className="h-10 rounded-lg bg-background dark:bg-background"
+              />
+            </div>
+            <AuthPasswordField
+              id="password"
+              label={t("auth.password")}
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
-              className="h-10 rounded-lg bg-background dark:bg-background"
+              forgotHref="/auth/forgot-password"
+              forgotLabel={t("auth.login.forgotPassword")}
             />
           </div>
-          <AuthPasswordField
-            id="password"
-            label={t("auth.password")}
-            value={password}
-            onChange={setPassword}
-            autoComplete="current-password"
-            required
-            disabled={isLoading}
-            forgotHref="/auth/forgot-password"
-            forgotLabel={t("auth.login.forgotPassword")}
-          />
+          <AuthAlert error={error} />
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? (
+              <>
+                <Loader2 className="animate-spin" />
+                {t("auth.login.submitting")}
+              </>
+            ) : (
+              t("auth.login.submit")
+            )}
+          </Button>
+        </form>
+        <GoogleSignInSection />
+        <div className="pt-2 text-center text-sm text-muted-foreground">
+          {`${t("auth.login.noAccount")} `}
+          <Link
+            href="/auth/sign-up"
+            className="font-medium text-primary hover:underline focus-visible:underline"
+          >
+            {t("auth.login.signUp")}
+          </Link>
         </div>
-        <AuthAlert error={error} />
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="animate-spin" />
-              {t("auth.login.submitting")}
-            </>
-          ) : (
-            t("auth.login.submit")
-          )}
-        </Button>
-      </form>
-      <GoogleSignInSection />
-      <div className="pt-2 text-center text-sm text-muted-foreground">
-        {`${t("auth.login.noAccount")} `}
-        <Link
-          href="/auth/sign-up"
-          className="font-medium text-primary hover:underline focus-visible:underline"
-        >
-          {t("auth.login.signUp")}
-        </Link>
-      </div>
-    </AuthFloatingCard>
+      </AuthFloatingCard>
+      <AuthLegalFooter />
+    </div>
   )
 }

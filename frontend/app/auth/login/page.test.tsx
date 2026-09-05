@@ -102,6 +102,8 @@ describe("LoginPage", () => {
     expect(panel).not.toHaveTextContent("ledger that tells the truth")
     expect(screen.getByRole("button", { name: "Show password" })).toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Fintu" })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Terms of Service" })).toHaveAttribute("href", "#")
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "#")
   })
 
   it("renders the Spanish value panel when locale is es", () => {

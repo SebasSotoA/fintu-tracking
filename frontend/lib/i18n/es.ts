@@ -78,6 +78,11 @@ export const es = {
       ariaLabel: "Por qué Fintu",
       question: "¿Después de comisiones y tipo de cambio, estás ganando o perdiendo?",
     },
+    legal: {
+      agreement: "Al continuar, aceptas nuestros {terms} y {privacy}.",
+      terms: "Términos de servicio",
+      privacy: "Política de privacidad",
+    },
     showPassword: "Mostrar contraseña",
     hidePassword: "Ocultar contraseña",
   },

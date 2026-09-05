@@ -76,6 +76,11 @@ export const en = {
       ariaLabel: "Why Fintu",
       question: "After fees and FX, are you making or losing?",
     },
+    legal: {
+      agreement: "By clicking continue, you agree to our {terms} and {privacy}.",
+      terms: "Terms of Service",
+      privacy: "Privacy Policy",
+    },
     showPassword: "Show password",
     hidePassword: "Hide password",
   },

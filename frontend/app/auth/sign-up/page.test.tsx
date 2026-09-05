@@ -83,6 +83,8 @@ describe("SignUpPage", () => {
     ).toBeInTheDocument()
     expect(screen.getAllByRole("button", { name: "Show password" })).toHaveLength(2)
     expect(screen.queryByRole("link", { name: "Fintu" })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Terms of Service" })).toHaveAttribute("href", "#")
+    expect(screen.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "#")
   })
 
   it("shows Google sign-in below the sign-up button when the client id is set", () => {

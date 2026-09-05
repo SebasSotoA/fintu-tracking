@@ -7,18 +7,22 @@ export function AuthValuePanel(): React.ReactElement {
 
   return (
     <aside
+      className="relative hidden h-full min-h-0 flex-col justify-center bg-slate-200 p-8 text-left md:flex md:p-11"
       aria-label={t("auth.valuePanel.ariaLabel")}
-      className="hidden md:flex flex-col items-center justify-center bg-muted p-8 text-center md:p-11"
     >
-      <span
-        aria-hidden
-        className="select-none text-[clamp(3.5rem,8vw,6rem)] leading-none text-muted-foreground/40"
-      >
-        &ldquo;
-      </span>
-      <p className="text-pretty text-base font-medium leading-relaxed text-foreground md:text-lg">
-        {t("auth.valuePanel.question")}
-      </p>
+      <div className="w-full min-w-0">
+        <div className="relative">
+          <span
+            className="pointer-events-none absolute -left-1 -top-4 select-none font-serif text-[clamp(3.5rem,8vw,6rem)] leading-none tracking-tight text-slate-500/90"
+            aria-hidden
+          >
+            &ldquo;
+          </span>
+          <blockquote className="relative z-10 mb-0 pt-6 text-pretty text-base font-normal leading-relaxed text-slate-950 md:text-lg md:leading-relaxed">
+            {t("auth.valuePanel.question")}
+          </blockquote>
+        </div>
+      </div>
     </aside>
   )
 }
