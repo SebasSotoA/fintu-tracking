@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Script from "next/script"
 import { useRouter } from "next/navigation"
-import { useTheme } from "next-themes"
 
 import { AuthAlert } from "@/components/auth/auth-alert"
 import { useLocale } from "@/components/locale-provider"
@@ -37,13 +36,9 @@ export function GoogleSignInButton(): React.ReactElement | null {
   const clientId = getGoogleClientId()
   const router = useRouter()
   const { locale, t } = useLocale()
-  const { resolvedTheme, theme } = useTheme()
   const [error, setError] = useState<string | null>(null)
   const [gisReady, setGisReady] = useState(false)
   const buttonRef = useRef<HTMLDivElement>(null)
-
-  const gisTheme =
-    (resolvedTheme ?? theme) === "dark" ? "filled_black" : "outline"
 
   const handleGisLoaded = useCallback(() => {
     setGisReady(true)
@@ -93,7 +88,7 @@ export function GoogleSignInButton(): React.ReactElement | null {
       })
 
       gis.renderButton(buttonContainer, {
-        theme: gisTheme,
+        theme: "outline",
         size: "large",
         text: "continue_with",
         locale,
@@ -111,7 +106,7 @@ export function GoogleSignInButton(): React.ReactElement | null {
       }
       buttonContainer.innerHTML = ""
     }
-  }, [clientId, gisReady, gisTheme, locale, router, t])
+  }, [clientId, gisReady, locale, router, t])
 
   if (!clientId) {
     return null

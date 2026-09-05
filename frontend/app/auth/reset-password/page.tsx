@@ -2,17 +2,17 @@
 
 import type React from "react"
 import { Suspense, useEffect, useState } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Loader2 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
 import { AuthCardSkeleton } from "@/components/auth/auth-card-skeleton"
+import { AuthPasswordField } from "@/components/auth/auth-password-field"
 import { useLocale } from "@/components/locale-provider"
-import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
 
 function ResetPasswordContent() {
   const { t } = useLocale()
@@ -107,6 +107,9 @@ function ResetPasswordContent() {
     }
   }
 
+  const mismatch = error === t("auth.passwordsMismatch")
+  const tooShort = error === t("auth.resetPassword.passwordTooShort")
+
   return (
     <AuthCard
       title={t("auth.resetPassword.title")}
@@ -114,39 +117,51 @@ function ResetPasswordContent() {
       footer={
         <>
           {`${t("auth.rememberPassword")} `}
-          <Link href="/auth/login" className="font-medium text-primary hover:underline">
+          <Link
+            href="/auth/login"
+            className="font-medium text-primary hover:underline focus-visible:underline"
+          >
             {t("auth.backToLogin")}
           </Link>
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="password">{t("auth.resetPassword.newPassword")}</Label>
-          <Input
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6" aria-busy={isLoading}>
+        <div className="grid gap-4">
+          <AuthPasswordField
             id="password"
-            type="password"
+            label={t("auth.resetPassword.newPassword")}
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
             placeholder="••••••••"
             required
             minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoading}
+            aria-invalid={tooShort}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirm-password">{t("auth.resetPassword.confirmPassword")}</Label>
-          <Input
+          <AuthPasswordField
             id="confirm-password"
-            type="password"
+            label={t("auth.resetPassword.confirmPassword")}
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            autoComplete="new-password"
             placeholder="••••••••"
             required
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            disabled={isLoading}
+            aria-invalid={mismatch}
           />
         </div>
         <AuthAlert error={error} />
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? t("auth.resetPassword.submitting") : t("auth.resetPassword.submit")}
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin" />
+              {t("auth.resetPassword.submitting")}
+            </>
+          ) : (
+            t("auth.resetPassword.submit")
+          )}
         </Button>
       </form>
     </AuthCard>

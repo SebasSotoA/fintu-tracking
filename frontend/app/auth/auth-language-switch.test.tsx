@@ -40,4 +40,21 @@ describe("AuthLanguageSwitch", () => {
     expect(apiClient.get).not.toHaveBeenCalled()
     expect(apiClient.post).not.toHaveBeenCalled()
   })
+
+  it("uses light text on navy instead of theme foreground tokens", () => {
+    renderWithLocale(<AuthLanguageSwitch />)
+
+    const english = screen.getByRole("button", { name: "English" })
+    const spanish = screen.getByRole("button", { name: "Español" })
+    const divider = screen.getByText("|")
+
+    expect(english).toHaveClass("text-white")
+    expect(english).toHaveClass("font-medium")
+    expect(spanish).toHaveClass("text-white/60")
+    expect(english.className).toContain("hover:bg-white/10")
+    expect(english.className).toContain("focus-visible:ring-white/70")
+    expect(divider).toHaveClass("text-white/40")
+    expect(english.className).not.toContain("text-foreground")
+    expect(spanish.className).not.toContain("text-muted-foreground")
+  })
 })

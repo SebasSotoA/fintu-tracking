@@ -1,0 +1,57 @@
+.auth-shell {
+  background-color: #0B0F17;
+}
+
+.auth-light {
+  color-scheme: light;
+  --background: oklch(0.926 0.012 259.8);
+  --foreground: oklch(0.161 0.021 251.3);
+  --card: oklch(0.98 0.005 260);
+  --card-foreground: oklch(0.161 0.021 251.3);
+  --card-kpi: oklch(0.965 0.008 260);
+  --popover: oklch(0.97 0.006 260);
+  --popover-foreground: oklch(0.161 0.021 251.3);
+  --primary: oklch(0.585 0.204 277.1);
+  --primary-hover: oklch(0.636 0.178 281.6);
+  --primary-active: oklch(0.537 0.158 276.8);
+  --primary-text: oklch(0.40 0.14 277);
+  --primary-foreground: oklch(0.98 0.005 277);
+  --primary-container: oklch(0.92 0.03 277);
+  --on-primary-container: oklch(0.40 0.12 277);
+  --secondary: oklch(0.95 0.01 260);
+  --secondary-foreground: oklch(0.161 0.021 251.3);
+  --muted: oklch(0.95 0.01 260);
+  --muted-foreground: oklch(0.40 0.025 255);
+  --accent: oklch(0.95 0.01 260);
+  --accent-foreground: oklch(0.161 0.021 251.3);
+  --destructive: oklch(0.58 0.20 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --success: oklch(0.55 0.18 145);
+  --success-foreground: oklch(0.98 0 0);
+  --border: oklch(0.88 0.01 260);
+  --input: oklch(0.95 0.01 260);
+  --ring: oklch(0.585 0.204 277.1);
+  --chart-1: oklch(0.585 0.204 277.1);
+  --chart-2: oklch(0.537 0.158 276.8);
+  --chart-3: oklch(0.680 0.158 276.9);
+  --chart-4: oklch(0.670 0.177 276.9);
+  --chart-5: oklch(0.751 0.023 256.8);
+  --radius: 0.4375rem;
+  --sidebar: var(--background);
+  --sidebar-foreground: oklch(0.161 0.021 251.3);
+  --sidebar-primary: oklch(0.585 0.204 277.1);
+  --sidebar-primary-foreground: oklch(0.98 0.005 277);
+  --sidebar-accent: oklch(0.95 0.01 260);
+  --sidebar-accent-foreground: oklch(0.161 0.021 251.3);
+  --sidebar-border: oklch(0.88 0.01 260);
+  --sidebar-ring: oklch(0.585 0.204 277.1);
+  --surface-container-lowest: oklch(0.99 0.004 260);
+  --surface-container-low: oklch(0.975 0.005 260);
+  --surface-container: oklch(0.96 0.006 260);
+  --surface-container-high: oklch(0.93 0.008 260);
+  --surface-container-highest: oklch(0.90 0.01 260);
+}
+
+.auth-light [data-slot="input"] {
+  background-color: var(--background);
+}

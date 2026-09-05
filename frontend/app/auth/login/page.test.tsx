@@ -23,10 +23,6 @@ vi.mock("next/script", () => ({
   },
 }))
 
-vi.mock("next-themes", () => ({
-  useTheme: () => ({ resolvedTheme: "light", theme: "light" }),
-}))
-
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
     auth: { signInWithPassword: vi.fn(), signInWithIdToken: vi.fn() },
@@ -73,8 +69,8 @@ describe("LoginPage", () => {
     vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "")
     renderWithLocale(<LoginPage />)
 
-    expect(screen.getByLabelText("Email")).toBeInTheDocument()
-    expect(screen.getByLabelText("Password")).toBeInTheDocument()
+    expect(screen.getByLabelText("Email")).toHaveAttribute("autocomplete", "email")
+    expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "current-password")
     expect(screen.queryByText("or")).not.toBeInTheDocument()
     expect(screen.queryByTestId("gis-script")).not.toBeInTheDocument()
   })
@@ -88,5 +84,23 @@ describe("LoginPage", () => {
     expect(screen.getByText("or")).toBeInTheDocument()
     expect(screen.getByLabelText("Email")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument()
+  })
+
+  it("renders the split card and English value panel", () => {
+    const { container } = renderWithLocale(<LoginPage />)
+
+    expect(container.querySelector(".auth-light")?.className).toContain("max-w-4xl")
+    const panel = screen.getByRole("complementary", { hidden: true, name: "Why Fintu" })
+    expect(panel).toHaveTextContent("After fees and FX, making or losing?")
+    expect(screen.getByRole("button", { name: "Show password" })).toBeInTheDocument()
+  })
+
+  it("renders the Spanish value panel when locale is es", () => {
+    renderWithLocale(<LoginPage />, { locale: "es" })
+
+    const panel = screen.getByRole("complementary", { hidden: true, name: "Por qué Fintu" })
+    expect(panel).toHaveTextContent(
+      "¿Después de comisiones y tipo de cambio, estás ganando o perdiendo?",
+    )
   })
 })

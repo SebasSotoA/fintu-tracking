@@ -1,12 +1,13 @@
 "use client"
 
 import { Suspense, useEffect } from "react"
+import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
+
 import { Button } from "@/components/ui/button"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthCardSkeleton } from "@/components/auth/auth-card-skeleton"
 import { useLocale } from "@/components/locale-provider"
-import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
 
 export default function SignUpSuccessPage() {
   const { t } = useLocale()

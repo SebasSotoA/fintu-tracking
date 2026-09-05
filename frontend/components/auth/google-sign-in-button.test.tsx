@@ -29,10 +29,6 @@ vi.mock("next/script", () => ({
   },
 }))
 
-vi.mock("next-themes", () => ({
-  useTheme: () => ({ resolvedTheme: "light", theme: "light" }),
-}))
-
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
     auth: { signInWithIdToken: mockSignInWithIdToken },
@@ -107,7 +103,10 @@ describe("GoogleSignInButton", () => {
     }
     expect(gisConfig.client_id).toBe("test-google-client-id")
     expect(gisConfig.nonce).toMatch(/^[a-f0-9]{64}$/)
-    expect(mockRenderButton).toHaveBeenCalled()
+    expect(mockRenderButton).toHaveBeenCalledWith(
+      expect.any(HTMLElement),
+      expect.objectContaining({ theme: "outline" }),
+    )
 
     await gisConfig.callback({ credential: "google-id-token" })
 

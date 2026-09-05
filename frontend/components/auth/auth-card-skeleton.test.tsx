@@ -13,10 +13,13 @@ describe("AuthCardSkeleton", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument()
   })
 
-  it("renders logo, two input bars, and a button bar", () => {
+  it("renders paper chrome without the dashboard glass card", () => {
     const { container } = render(<AuthCardSkeleton />)
-    expect(container.querySelector('[data-slot="card"]')).toBeInTheDocument()
+    const paper = container.querySelector(".auth-light")
+    expect(paper).toBeInTheDocument()
+    expect(paper?.className).toContain("rounded-2xl")
+    expect(paper?.className).toContain("max-w-md")
+    expect(container.querySelector('[data-slot="card"]')).not.toBeInTheDocument()
     expect(container.querySelector(".h-8.w-24")).toBeTruthy()
-    expect(container.querySelectorAll(".h-11").length).toBeGreaterThanOrEqual(3)
   })
 })

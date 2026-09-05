@@ -23,10 +23,6 @@ vi.mock("next/script", () => ({
   },
 }))
 
-vi.mock("next-themes", () => ({
-  useTheme: () => ({ resolvedTheme: "light", theme: "light" }),
-}))
-
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
     auth: { signUp: vi.fn(), signInWithIdToken: vi.fn() },
@@ -59,9 +55,12 @@ describe("SignUpPage", () => {
     renderWithLocale(<SignUpPage />)
 
     expect(screen.getByText("Create account")).toBeInTheDocument()
-    expect(screen.getByLabelText("Email")).toBeInTheDocument()
-    expect(screen.getByLabelText("Password")).toBeInTheDocument()
-    expect(screen.getByLabelText("Confirm Password")).toBeInTheDocument()
+    expect(screen.getByLabelText("Email")).toHaveAttribute("autocomplete", "email")
+    expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "new-password")
+    expect(screen.getByLabelText("Confirm Password")).toHaveAttribute(
+      "autocomplete",
+      "new-password",
+    )
     expect(screen.getByRole("button", { name: "Sign up" })).toBeInTheDocument()
   })
 
@@ -72,6 +71,16 @@ describe("SignUpPage", () => {
     expect(screen.getByLabelText("Email")).toBeInTheDocument()
     expect(screen.queryByText("or")).not.toBeInTheDocument()
     expect(screen.queryByTestId("gis-script")).not.toBeInTheDocument()
+  })
+
+  it("renders the split card and value panel", () => {
+    const { container } = renderWithLocale(<SignUpPage />)
+
+    expect(container.querySelector(".auth-light")?.className).toContain("max-w-4xl")
+    expect(
+      screen.getByRole("complementary", { hidden: true, name: "Why Fintu" }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole("button", { name: "Show password" })).toHaveLength(2)
   })
 
   it("shows Google sign-in and an or divider when the client id is set", () => {

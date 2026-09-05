@@ -1,18 +1,22 @@
 "use client"
 
 import type React from "react"
+import { useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
+import { AuthFloatingCard } from "@/components/auth/auth-floating-card"
+import { AuthFormHeader } from "@/components/auth/auth-form-header"
+import { AuthPasswordField } from "@/components/auth/auth-password-field"
+import { AuthValuePanel } from "@/components/auth/auth-value-panel"
 import { GoogleSignInSection } from "@/components/auth/google-sign-in-button"
 import { useLocale } from "@/components/locale-provider"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -44,54 +48,62 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthCard
-      title={t("auth.login.title")}
-      description={t("auth.login.description")}
-      footer={
-        <>
-          {`${t("auth.login.noAccount")} `}
-          <Link href="/auth/sign-up" className="font-medium text-primary hover:underline">
-            {t("auth.login.signUp")}
-          </Link>
-        </>
-      }
-    >
+    <AuthFloatingCard variant="split" panel={<AuthValuePanel />}>
+      <AuthFormHeader
+        title={t("auth.login.title")}
+        description={t("auth.login.description")}
+        size="split"
+      />
       <GoogleSignInSection />
-      <form onSubmit={handleLogin} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">{t("auth.email")}</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">{t("auth.password")}</Label>
-            <Link
-              href="/auth/forgot-password"
-              className="text-xs text-primary hover:underline"
-            >
-              {t("auth.login.forgotPassword")}
-            </Link>
+      <form onSubmit={handleLogin} className="flex flex-col gap-6" aria-busy={isLoading}>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">{t("auth.email")}</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+              className="h-10 rounded-lg bg-background dark:bg-background"
+            />
           </div>
-          <Input
+          <AuthPasswordField
             id="password"
-            type="password"
-            required
+            label={t("auth.password")}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
+            autoComplete="current-password"
+            required
+            disabled={isLoading}
+            forgotHref="/auth/forgot-password"
+            forgotLabel={t("auth.login.forgotPassword")}
           />
         </div>
         <AuthAlert error={error} />
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? t("auth.login.submitting") : t("auth.login.submit")}
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin" />
+              {t("auth.login.submitting")}
+            </>
+          ) : (
+            t("auth.login.submit")
+          )}
         </Button>
       </form>
-    </AuthCard>
+      <div className="pt-2 text-center text-sm text-muted-foreground">
+        {`${t("auth.login.noAccount")} `}
+        <Link
+          href="/auth/sign-up"
+          className="font-medium text-primary hover:underline focus-visible:underline"
+        >
+          {t("auth.login.signUp")}
+        </Link>
+      </div>
+    </AuthFloatingCard>
   )
 }

@@ -1,18 +1,22 @@
 "use client"
 
 import type React from "react"
+import { useState } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
+import { AuthFloatingCard } from "@/components/auth/auth-floating-card"
+import { AuthFormHeader } from "@/components/auth/auth-form-header"
+import { AuthPasswordField } from "@/components/auth/auth-password-field"
+import { AuthValuePanel } from "@/components/auth/auth-value-panel"
 import { GoogleSignInSection } from "@/components/auth/google-sign-in-button"
 import { useLocale } from "@/components/locale-provider"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
@@ -55,56 +59,71 @@ export default function SignUpPage() {
   }
 
   return (
-    <AuthCard
-      title={t("auth.signUp.title")}
-      description={t("auth.signUp.description")}
-      footer={
-        <>
-          {`${t("auth.signUp.hasAccount")} `}
-          <Link href="/auth/login" className="font-medium text-primary hover:underline">
-            {t("auth.signUp.login")}
-          </Link>
-        </>
-      }
-    >
+    <AuthFloatingCard variant="split" panel={<AuthValuePanel />}>
+      <AuthFormHeader
+        title={t("auth.signUp.title")}
+        description={t("auth.signUp.description")}
+        size="split"
+      />
       <GoogleSignInSection />
-      <form onSubmit={handleSignUp} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">{t("auth.email")}</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="password">{t("auth.password")}</Label>
-          <Input
+      <form onSubmit={handleSignUp} className="flex flex-col gap-6" aria-busy={isLoading}>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">{t("auth.email")}</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
+              className="h-10 rounded-lg bg-background dark:bg-background"
+            />
+          </div>
+          <AuthPasswordField
             id="password"
-            type="password"
-            required
+            label={t("auth.password")}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirm-password">{t("auth.signUp.confirmPassword")}</Label>
-          <Input
-            id="confirm-password"
-            type="password"
+            onChange={setPassword}
+            autoComplete="new-password"
             required
+            disabled={isLoading}
+            aria-invalid={error === t("auth.passwordsMismatch")}
+          />
+          <AuthPasswordField
+            id="confirm-password"
+            label={t("auth.signUp.confirmPassword")}
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={setConfirmPassword}
+            autoComplete="new-password"
+            required
+            disabled={isLoading}
+            aria-invalid={error === t("auth.passwordsMismatch")}
           />
         </div>
         <AuthAlert error={error} />
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? t("auth.signUp.submitting") : t("auth.signUp.submit")}
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin" />
+              {t("auth.signUp.submitting")}
+            </>
+          ) : (
+            t("auth.signUp.submit")
+          )}
         </Button>
       </form>
-    </AuthCard>
+      <div className="pt-2 text-center text-sm text-muted-foreground">
+        {`${t("auth.signUp.hasAccount")} `}
+        <Link
+          href="/auth/login"
+          className="font-medium text-primary hover:underline focus-visible:underline"
+        >
+          {t("auth.signUp.login")}
+        </Link>
+      </div>
+    </AuthFloatingCard>
   )
 }

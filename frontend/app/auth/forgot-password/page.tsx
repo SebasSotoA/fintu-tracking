@@ -2,6 +2,10 @@
 
 import type React from "react"
 import { Suspense, useState } from "react"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
+import { Loader2 } from "lucide-react"
+
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,8 +14,6 @@ import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
 import { AuthCardSkeleton } from "@/components/auth/auth-card-skeleton"
 import { useLocale } from "@/components/locale-provider"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 
 export default function ForgotPasswordPage() {
   const { t } = useLocale()
@@ -77,27 +79,40 @@ function ForgotPasswordContent() {
       footer={
         <>
           {`${t("auth.rememberPassword")} `}
-          <Link href="/auth/login" className="font-medium text-primary hover:underline">
+          <Link
+            href="/auth/login"
+            className="font-medium text-primary hover:underline focus-visible:underline"
+          >
             {t("auth.backToLogin")}
           </Link>
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6" aria-busy={isLoading}>
+        <div className="grid gap-2">
           <Label htmlFor="email">{t("auth.email")}</Label>
           <Input
             id="email"
             type="email"
             placeholder="you@example.com"
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={isLoading}
+            className="h-10 rounded-lg bg-background dark:bg-background"
           />
         </div>
         <AuthAlert error={displayError} />
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? t("auth.forgotPassword.submitting") : t("auth.forgotPassword.submit")}
+          {isLoading ? (
+            <>
+              <Loader2 className="animate-spin" />
+              {t("auth.forgotPassword.submitting")}
+            </>
+          ) : (
+            t("auth.forgotPassword.submit")
+          )}
         </Button>
       </form>
     </AuthCard>
