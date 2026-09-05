@@ -2,7 +2,7 @@ import { describe, expect, it, vi, afterEach } from "vitest"
 import { createElement, useEffect } from "react"
 import { screen } from "@testing-library/react"
 import { renderWithLocale } from "@/lib/i18n/test-utils"
-import LoginPage from "./page"
+import SignUpPage from "./page"
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -29,7 +29,7 @@ vi.mock("next-themes", () => ({
 
 vi.mock("@/lib/supabase/client", () => ({
   createClient: () => ({
-    auth: { signInWithPassword: vi.fn(), signInWithIdToken: vi.fn() },
+    auth: { signUp: vi.fn(), signInWithIdToken: vi.fn() },
   }),
 }))
 
@@ -49,44 +49,39 @@ function installGis(): void {
   })
 }
 
-describe("LoginPage", () => {
+describe("SignUpPage", () => {
   afterEach(() => {
     vi.unstubAllEnvs()
     delete (window as { google?: unknown }).google
   })
 
-  it("renders the English welcome title by default", () => {
-    renderWithLocale(<LoginPage />)
+  it("renders the email sign-up form", () => {
+    renderWithLocale(<SignUpPage />)
 
-    expect(screen.getByText("Welcome back")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument()
-  })
-
-  it("renders the Spanish welcome title when locale is es", () => {
-    renderWithLocale(<LoginPage />, { locale: "es" })
-
-    expect(screen.getByText("Bienvenido de nuevo")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Iniciar sesión" })).toBeInTheDocument()
-  })
-
-  it("keeps email login only when the Google client id is unset", () => {
-    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "")
-    renderWithLocale(<LoginPage />)
-
+    expect(screen.getByText("Create account")).toBeInTheDocument()
     expect(screen.getByLabelText("Email")).toBeInTheDocument()
     expect(screen.getByLabelText("Password")).toBeInTheDocument()
+    expect(screen.getByLabelText("Confirm Password")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Sign up" })).toBeInTheDocument()
+  })
+
+  it("keeps email sign-up only when the Google client id is unset", () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "")
+    renderWithLocale(<SignUpPage />)
+
+    expect(screen.getByLabelText("Email")).toBeInTheDocument()
     expect(screen.queryByText("or")).not.toBeInTheDocument()
     expect(screen.queryByTestId("gis-script")).not.toBeInTheDocument()
   })
 
-  it("shows Google sign-in above the email form when the client id is set", () => {
+  it("shows Google sign-in and an or divider when the client id is set", () => {
     vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "test-google-client-id")
     installGis()
-    renderWithLocale(<LoginPage />)
+    renderWithLocale(<SignUpPage />)
 
     expect(screen.getByTestId("gis-script")).toBeInTheDocument()
     expect(screen.getByText("or")).toBeInTheDocument()
     expect(screen.getByLabelText("Email")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Login" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Sign up" })).toBeInTheDocument()
   })
 })

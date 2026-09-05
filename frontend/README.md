@@ -28,6 +28,7 @@ See [`.env.local.example`](./.env.local.example) for a template.
 - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anonymous key
 - `NEXT_PUBLIC_API_URL`: Backend API URL (default: http://localhost:8080)
+- `NEXT_PUBLIC_GOOGLE_CLIENT_ID`: Google Cloud OAuth 2.0 Web client ID for Google Identity Services. Leave unset to hide Login with Google (email/password still works).
 
 ## Scripts
 

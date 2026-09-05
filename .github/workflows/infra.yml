@@ -41,6 +41,9 @@ on:
       next_public_supabase_anon_key:
         required: true
         description: "NEXT_PUBLIC_SUPABASE_ANON_KEY for frontend static export build"
+      next_public_google_client_id:
+        required: false
+        description: "NEXT_PUBLIC_GOOGLE_CLIENT_ID for Google Identity Services (optional)"
 
 jobs:
   deploy:
@@ -143,6 +146,7 @@ jobs:
           NEXT_PUBLIC_API_URL: https://${{ inputs.api_domain }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.next_public_supabase_url }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.next_public_supabase_anon_key }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ secrets.next_public_google_client_id }}
         run: pnpm run build
 
       - name: Deploy frontend

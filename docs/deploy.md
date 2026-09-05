@@ -15,7 +15,7 @@ Both environments call the reusable workflow `.github/workflows/infra.yml`, whic
 
 ---
 
-## GitHub repository secrets (8)
+## GitHub repository secrets (9)
 
 Configure these under **Settings > Secrets and variables > Actions** for the repository.
 
@@ -29,6 +29,7 @@ Configure these under **Settings > Secrets and variables > Actions** for the rep
 | `TWELVE_DATA_API_KEY` | Twelve Data API key for market price data in the backend. |
 | `NEXT_PUBLIC_SUPABASE_URL` | Baked into the frontend static build - must match the Supabase project users sign in against. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon (public) key - baked into the frontend static build. |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Optional. Google Cloud OAuth 2.0 **Web** client ID baked into the frontend for Google Identity Services. If unset, Login with Google is hidden and email/password still works. |
 
 **Not stored as secrets (set in workflow):**
 
@@ -92,6 +93,28 @@ In the [Supabase Dashboard](https://supabase.com/dashboard) -> **Authentication*
   - `https://app.fintu.com/auth/callback`
 
 If sandbox and production share one Supabase project, **include every redirect URL from both environments** in the same allow list. For stricter isolation, use separate Supabase projects (Phase 4.3) and matching `NEXT_PUBLIC_*` / `SUPABASE_*` secrets per environment.
+
+`/auth/callback` is used for **magic-link / code exchange** (password reset, email confirmation). Google Sign-In does **not** use this route.
+
+---
+
+## Google Identity Services (Login with Google)
+
+Google Sign-In runs **on the app origin** via Google Identity Services (GIS). The browser receives a Google ID token and the app calls Supabase `signInWithIdToken`. Google never redirects through `*.supabase.co`.
+
+Do **not** add `https://<project>.supabase.co/auth/v1/callback` (or any `*.supabase.co` callback) as an Authorized redirect URI for this GIS flow.
+
+### Google Cloud (OAuth 2.0 Web client)
+
+Authorized JavaScript origins:
+
+- `http://localhost:3000`
+- `https://app.sandbox.fintu.com`
+- `https://app.fintu.com`
+
+In [Supabase Dashboard](https://supabase.com/dashboard) -> **Authentication** -> **Providers** -> **Google**, enable Google and set the same Web client ID (and client secret) so Supabase can verify the ID token. That is not a browser redirect to supabase.co.
+
+Set GitHub secret `NEXT_PUBLIC_GOOGLE_CLIENT_ID` to that Web client ID so `infra.yml` can bake it into the static export.
 
 ---
 

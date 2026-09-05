@@ -70,6 +70,10 @@ export const es = {
       description: "Enviamos un enlace de confirmación a {email}",
       body: "Revisa tu correo y haz clic en el enlace de confirmación para activar tu cuenta.",
     },
+    google: {
+      or: "o",
+      error: "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+    },
   },
   onboarding: {
     title: "Configura tu cuenta",

@@ -68,6 +68,10 @@ export const en = {
       description: "We sent a confirmation link to {email}",
       body: "Please check your email and click the confirmation link to activate your account.",
     },
+    google: {
+      or: "or",
+      error: "Google sign-in failed. Please try again.",
+    },
   },
   onboarding: {
     title: "Set up your account",

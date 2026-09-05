@@ -26,3 +26,4 @@ jobs:
       twelve_data_api_key: ${{ secrets.TWELVE_DATA_API_KEY }}
       next_public_supabase_url: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       next_public_supabase_anon_key: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      next_public_google_client_id: ${{ secrets.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}

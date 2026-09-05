@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthCard } from "@/components/auth/auth-card"
 import { AuthAlert } from "@/components/auth/auth-alert"
+import { GoogleSignInSection } from "@/components/auth/google-sign-in-button"
 import { useLocale } from "@/components/locale-provider"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -66,6 +67,7 @@ export default function SignUpPage() {
         </>
       }
     >
+      <GoogleSignInSection />
       <form onSubmit={handleSignUp} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">{t("auth.email")}</Label>
