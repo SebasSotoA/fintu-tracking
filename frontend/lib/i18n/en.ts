@@ -70,6 +70,7 @@ export const en = {
     },
     google: {
       or: "Or continue with",
+      continue: "Continue with Google",
       error: "Google sign-in failed. Please try again.",
     },
     valuePanel: {

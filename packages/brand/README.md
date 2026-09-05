@@ -9,11 +9,13 @@ Shared CSS tokens for Fintu’s dashboard and marketing site.
 ## Usage
 
 ```css
+@import "@fintu/brand/fonts.css";
 @import "@fintu/brand/tokens.css";
 @import "@fintu/brand/theme.css";
 ```
 
+- `fonts.css` — self-hosted DM Sans (variable) and JetBrains Mono. Apps must not load these from Google Fonts or `next/font/google`.
 - `tokens.css` — `:root` / `.dark` CSS variables, including `--primary-text` for readable indigo copy on navy
-- `theme.css` — Tailwind `@theme inline` mappings (font **family names** only; apps load font files themselves)
+- `theme.css` — Tailwind `@theme inline` mappings (font **family names** only; files come from `fonts.css`)
 
 Landing-only atmosphere (`--landing-glow-*`) stays in the marketing stylesheet, not in this package.

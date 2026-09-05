@@ -104,9 +104,10 @@ describe("GoogleSignInButton", () => {
     expect(gisConfig.client_id).toBe("test-google-client-id")
     expect(gisConfig.nonce).toMatch(/^[a-f0-9]{64}$/)
     expect(mockRenderButton).toHaveBeenCalledWith(
-      expect.any(HTMLElement),
-      expect.objectContaining({ theme: "outline" }),
+      screen.getByTestId("gis-overlay"),
+      expect.objectContaining({ theme: "outline", text: "continue_with", locale: "en" }),
     )
+    expect(screen.getByText("Continue with Google")).toBeInTheDocument()
 
     await gisConfig.callback({ credential: "google-id-token" })
 
@@ -148,6 +149,59 @@ describe("GoogleSignInButton", () => {
       "Google sign-in failed. Please try again.",
     )
     expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it("shows Continue with Google in English", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "test-google-client-id")
+    const { GoogleSignInButton } = await import("./google-sign-in-button")
+
+    renderWithLocale(<GoogleSignInButton />)
+
+    expect(screen.getByText("Continue with Google")).toBeInTheDocument()
+    await waitFor(() => {
+      expect(mockRenderButton).toHaveBeenCalledWith(
+        screen.getByTestId("gis-overlay"),
+        expect.objectContaining({ theme: "outline", text: "continue_with", locale: "en" }),
+      )
+    })
+  })
+
+  it("shows Continuar con Google in Spanish", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "test-google-client-id")
+    const { GoogleSignInButton } = await import("./google-sign-in-button")
+
+    renderWithLocale(<GoogleSignInButton />, { locale: "es" })
+
+    expect(screen.getByText("Continuar con Google")).toBeInTheDocument()
+    await waitFor(() => {
+      expect(mockRenderButton).toHaveBeenCalledWith(
+        screen.getByTestId("gis-overlay"),
+        expect.objectContaining({ theme: "outline", text: "continue_with", locale: "es" }),
+      )
+    })
+  })
+
+  it("hides the visible label from assistive tech so the GIS overlay is the control", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_CLIENT_ID", "test-google-client-id")
+    const { GoogleSignInButton } = await import("./google-sign-in-button")
+
+    renderWithLocale(<GoogleSignInButton />)
+
+    const label = screen.getByText("Continue with Google")
+    expect(label.closest("[aria-hidden='true']")).toBeTruthy()
+    expect(screen.queryByRole("button")).not.toBeInTheDocument()
+
+    const overlay = screen.getByTestId("gis-overlay")
+    expect(overlay.className).toContain("opacity-0")
+    expect(overlay.className).toContain("pointer-events-auto")
+    expect(overlay.className).not.toContain("pointer-events-none")
+
+    await waitFor(() => {
+      expect(mockRenderButton).toHaveBeenCalledWith(
+        overlay,
+        expect.objectContaining({ theme: "outline" }),
+      )
+    })
   })
 
   it("places the continue-with divider above the Google button", async () => {

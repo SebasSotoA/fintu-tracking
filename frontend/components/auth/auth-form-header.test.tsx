@@ -15,15 +15,15 @@ describe("AuthFormHeader", () => {
     expect(screen.getByText("Enter your email")).toBeInTheDocument()
   })
 
-  it("renders a compact headline size with a Fintu logo", () => {
+  it("renders a compact headline without a Fintu logo, centered like split", () => {
     render(
       <AuthFormHeader title="Reset password" description="Enter your email address" size="compact" />,
     )
 
-    expect(screen.getByRole("link", { name: "Fintu" })).toHaveAttribute("href", "/")
-    expect(screen.getByRole("heading", { level: 1, name: "Reset password" })).toHaveClass(
-      "!text-2xl",
-      "text-foreground",
-    )
+    expect(screen.queryByRole("link", { name: "Fintu" })).not.toBeInTheDocument()
+    const heading = screen.getByRole("heading", { level: 1, name: "Reset password" })
+    expect(heading).toHaveClass("!text-2xl", "text-foreground")
+    expect(heading.parentElement).toHaveClass("items-center", "text-center")
+    expect(screen.getByText("Enter your email address")).toBeInTheDocument()
   })
 })

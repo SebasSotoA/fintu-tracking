@@ -11,6 +11,7 @@ describe("AuthCard", () => {
     )
 
     expect(screen.getByRole("heading", { name: "Reset password" })).toHaveClass("!text-2xl")
+    expect(screen.queryByRole("link", { name: "Fintu" })).not.toBeInTheDocument()
     expect(container.querySelector('[data-slot="card"]')).not.toBeInTheDocument()
     expect(container.querySelector(".auth-light")?.className).toContain("max-w-md")
   })

@@ -4,7 +4,9 @@ import path from "path"
 
 const TOKENS_PATH = path.join(__dirname, "../../packages/brand/tokens.css")
 const THEME_PATH = path.join(__dirname, "../../packages/brand/theme.css")
+const FONTS_PATH = path.join(__dirname, "../../packages/brand/fonts.css")
 const FRONTEND_GLOBALS_PATH = path.join(__dirname, "../app/globals.css")
+const FRONTEND_LAYOUT_PATH = path.join(__dirname, "../app/layout.tsx")
 
 function extractBlock(css: string, selector: string): string {
   const marker = `${selector} {`
@@ -54,10 +56,22 @@ describe("shared brand theme.css fonts", () => {
   })
 })
 
+describe("shared brand fonts.css", () => {
+  it("self-hosts DM Sans and JetBrains Mono and is not loaded via next/font/google", () => {
+    const css = readFileSync(FONTS_PATH, "utf-8")
+    const layout = readFileSync(FRONTEND_LAYOUT_PATH, "utf-8")
+
+    expect(css).toContain('@import "@fontsource-variable/dm-sans"')
+    expect(css).toContain("@fontsource/jetbrains-mono")
+    expect(layout).not.toContain("next/font/google")
+  })
+})
+
 describe("frontend globals.css brand wiring", () => {
   it("imports shared brand tokens and does not assign --primary locally", () => {
     const css = readFileSync(FRONTEND_GLOBALS_PATH, "utf-8")
 
+    expect(css).toContain('@import "@fintu/brand/fonts.css"')
     expect(css).toContain('@import "@fintu/brand/tokens.css"')
     expect(css).toContain('@import "@fintu/brand/theme.css"')
     expect(css).not.toMatch(/(?:^|[^-])--primary:/m)

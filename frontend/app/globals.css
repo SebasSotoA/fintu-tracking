@@ -3,6 +3,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@import "@fintu/brand/fonts.css";
 @import "@fintu/brand/tokens.css";
 @import "@fintu/brand/theme.css";
 

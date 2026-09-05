@@ -19,12 +19,9 @@ export function AuthCardSkeleton({
       className={className}
       {...skeletonRootProps(nested, label)}
     >
-      <div className="flex flex-col items-start gap-1">
-        <Skeleton className="h-8 w-24" />
-        <div className="space-y-1">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-64" />
-        </div>
+      <div className="flex flex-col items-center gap-1">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-64" />
       </div>
       <div className="mt-6 grid gap-4">
         {Array.from({ length: 2 }).map((_, index) => (

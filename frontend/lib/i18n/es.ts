@@ -72,6 +72,7 @@ export const es = {
     },
     google: {
       or: "O continúa con",
+      continue: "Continuar con Google",
       error: "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
     },
     valuePanel: {

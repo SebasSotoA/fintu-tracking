@@ -20,6 +20,6 @@ describe("AuthCardSkeleton", () => {
     expect(paper?.className).toContain("rounded-2xl")
     expect(paper?.className).toContain("max-w-md")
     expect(container.querySelector('[data-slot="card"]')).not.toBeInTheDocument()
-    expect(container.querySelector(".h-8.w-24")).toBeTruthy()
+    expect(container.querySelector(".h-8.w-24")).toBeNull()
   })
 })
