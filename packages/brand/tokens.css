@@ -76,7 +76,7 @@
   --popover-foreground: var(--white);
 
   --primary: var(--spring-green);
-  --primary-hover: color-mix(in oklch, var(--spring-green) 85%, var(--white));
+  --primary-hover: color-mix(in oklch, var(--spring-green) 85%, var(--green));
   --primary-active: color-mix(in oklch, var(--spring-green) 80%, var(--green));
   --primary-text: var(--spring-green);
   --primary-foreground: var(--black);

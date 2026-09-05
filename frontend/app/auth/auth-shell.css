@@ -24,6 +24,11 @@
   --primary-active: color-mix(in oklch, var(--green) 76%, var(--black));
   --primary-text: var(--green);
   --primary-foreground: var(--white);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
   --primary-container: color-mix(in oklch, var(--green) 16%, var(--white));
   --on-primary-container: var(--green);
   --secondary: color-mix(in oklch, var(--white) 88%, var(--dark-green));

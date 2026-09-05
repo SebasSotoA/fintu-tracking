@@ -23,6 +23,14 @@ describe("navIdle and navActive", () => {
     expect(navActive).toContain("text-foreground")
     expect(lightClasses(navActive)).not.toContain("bg-muted")
   })
+
+  it("uses a primary-tinted pressed state in dark mode instead of gray-on-black", () => {
+    expect(navActive).toContain("dark:bg-primary/")
+    expect(navActive).toContain("dark:text-primary")
+    expect(navActive).not.toContain("dark:bg-white/[0.08]")
+    expect(navActive).not.toContain("dark:ring-white/10")
+    expect(navActive).not.toContain("dark:bg-white/")
+  })
 })
 
 describe("navLogoBlendClass", () => {

@@ -9,15 +9,20 @@ describe("AuthValuePanel", () => {
 
     const panel = screen.getByRole("complementary", { hidden: true, name: "Why Fintu" })
     expect(panel).toBeInTheDocument()
-    expect(panel).toHaveClass("bg-slate-200", "text-left", "justify-center")
+    expect(panel).toHaveClass("bg-primary-container", "text-foreground", "text-left", "justify-center")
+    expect(panel).not.toHaveClass("bg-slate-200")
     expect(panel).not.toHaveClass("text-center")
     const decorativeQuote = panel.querySelector("[aria-hidden]")
     expect(decorativeQuote).toHaveTextContent("\u201C")
     expect(decorativeQuote).toHaveClass("absolute", "-left-1", "-top-4", "font-serif")
+    expect(decorativeQuote?.className).toContain("text-primary/40")
+    expect(decorativeQuote?.className).not.toContain("slate")
     expect(decorativeQuote).not.toHaveTextContent("?")
-    expect(panel.querySelector("blockquote")).toHaveTextContent(
-      "After fees and FX, are you making or losing?",
-    )
+    const quote = panel.querySelector("blockquote")
+    expect(quote).toHaveTextContent("After fees and FX, are you making or losing?")
+    expect(quote?.className).not.toContain("slate")
+    expect(quote?.className).not.toContain("text-slate-950")
+    expect(quote?.className).not.toContain("text-slate-500")
     expect(panel).not.toHaveTextContent("ledger that tells the truth")
     expect(panel).not.toHaveTextContent("You deposit pesos")
   })
@@ -27,7 +32,8 @@ describe("AuthValuePanel", () => {
 
     const panel = screen.getByRole("complementary", { hidden: true, name: "Por qué Fintu" })
     expect(panel).toBeInTheDocument()
-    expect(panel).toHaveClass("bg-slate-200")
+    expect(panel).toHaveClass("bg-primary-container")
+    expect(panel).not.toHaveClass("bg-slate-200")
     expect(panel).not.toHaveClass("text-center")
     expect(panel.querySelector("blockquote")).toHaveTextContent(
       "¿Después de comisiones y tipo de cambio, estás ganando o perdiendo?",

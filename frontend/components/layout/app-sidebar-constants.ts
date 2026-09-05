@@ -32,7 +32,7 @@ export const navIdle = cn(
 export const navActive = cn(
   navItemTransition,
   "bg-primary/10 text-foreground ring-1 ring-inset ring-primary/25",
-  "dark:bg-white/[0.08] dark:text-white dark:ring-white/10 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.10)]",
+  "dark:bg-primary/20 dark:text-primary dark:ring-primary/45",
 )
 
 export function sidebarLabelClass(collapsed: boolean) {

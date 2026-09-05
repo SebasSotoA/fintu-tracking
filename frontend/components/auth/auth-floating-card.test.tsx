@@ -22,8 +22,8 @@ describe("AuthFloatingCard", () => {
     const formColumn = screen.getByText("form-column")
     expect(formColumn).toHaveClass("justify-center")
     expect(formColumn.parentElement?.className).toContain("overflow-y-auto")
-    expect(formColumn.parentElement?.className).toContain("bg-background")
-    expect(formColumn.parentElement?.className).not.toContain("bg-white")
+    expect(formColumn.parentElement?.className).toContain("bg-white")
+    expect(formColumn.parentElement?.className).not.toContain("bg-primary-container")
     expect(screen.getByText("value-panel")).toBeInTheDocument()
   })
 

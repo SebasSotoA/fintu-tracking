@@ -62,4 +62,18 @@ describe("auth-shell.css", () => {
     expect(css).toContain('.auth-light [data-slot="input"]')
     expect(css).toContain("background-color: var(--background)")
   })
+
+  it("aliases Tailwind --color-primary* tokens on .auth-light so html.dark cannot leak", () => {
+    const css = readFileSync(AUTH_SHELL_PATH, "utf-8")
+    const authLight = extractBlock(css, ".auth-light")
+    const assignments = new Map(
+      customPropertyAssignments(authLight).map((assignment) => [assignment.name, assignment.value]),
+    )
+
+    expect(assignments.get("--color-primary")).toBe("var(--primary)")
+    expect(assignments.get("--color-primary-hover")).toBe("var(--primary-hover)")
+    expect(assignments.get("--color-primary-active")).toBe("var(--primary-active)")
+    expect(assignments.get("--color-primary-foreground")).toBe("var(--primary-foreground)")
+    expect(assignments.get("--color-primary-text")).toBe("var(--primary-text)")
+  })
 })

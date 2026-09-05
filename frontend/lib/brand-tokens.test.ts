@@ -58,6 +58,12 @@ describe("shared brand tokens.css", () => {
       /(?:^|\n)\s*--chart-4:\s*color-mix\(in oklch, var\(--gray\) 45%, var\(--white\)\)/,
     )
 
+    const darkPrimaryHover = dark.match(
+      /(?:^|\n)\s*--primary-hover:\s*([^;]+);/,
+    )?.[1]
+    expect(darkPrimaryHover).toBeDefined()
+    expect(darkPrimaryHover).not.toContain("var(--white)")
+
     expect(css).not.toContain("--landing-glow")
     expect(css).not.toContain("#0B0F17")
     expect(css).not.toContain("#4F46E5")
