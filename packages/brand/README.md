@@ -2,7 +2,7 @@
 
 Shared CSS tokens for Fintu’s dashboard and marketing site.
 
-**Source of truth:** the current dashboard/app tokens (navy, indigo-600 primary, radius, Inter + JetBrains Mono). Copy values from the app, do not invent a third palette.
+**Source of truth:** the current dashboard/app tokens (navy, indigo-600 primary, radius, DM Sans + JetBrains Mono). Copy values from the app, do not invent a third palette.
 
 **Not runtime:** `docs/inspo-toolkit.json` is a styleboard dump for inspiration only. Do not import it here or treat its hex values as canonical.
 

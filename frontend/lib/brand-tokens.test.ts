@@ -3,6 +3,7 @@ import { readFileSync } from "fs"
 import path from "path"
 
 const TOKENS_PATH = path.join(__dirname, "../../packages/brand/tokens.css")
+const THEME_PATH = path.join(__dirname, "../../packages/brand/theme.css")
 const FRONTEND_GLOBALS_PATH = path.join(__dirname, "../app/globals.css")
 
 function extractBlock(css: string, selector: string): string {
@@ -36,6 +37,20 @@ describe("shared brand tokens.css", () => {
     expect(dark).toContain("--primary-text: oklch(0.82 0.12 277)")
     expect(root).toContain("--radius: 0.4375rem")
     expect(css).not.toContain("--landing-glow")
+  })
+})
+
+describe("shared brand theme.css fonts", () => {
+  it("names DM Sans as the sans family and does not name Inter", () => {
+    const css = readFileSync(THEME_PATH, "utf-8")
+    const sansMatch = css.match(/--font-sans:\s*([^;]+);/)
+    const sansStack = sansMatch?.[1] ?? ""
+
+    expect(sansStack).toContain('"DM Sans"')
+    expect(sansStack).toContain('"DM Sans Variable"')
+    expect(css).toContain('"JetBrains Mono"')
+    expect(css).not.toContain('"Inter"')
+    expect(css).not.toContain("@font-face")
   })
 })
 

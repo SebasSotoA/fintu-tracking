@@ -14,7 +14,7 @@ importers:
       '@fintu/brand':
         specifier: file:../packages/brand
         version: file:../packages/brand
-      '@fontsource/inter':
+      '@fontsource-variable/dm-sans':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/jetbrains-mono':
@@ -503,8 +503,8 @@ packages:
   '@fintu/brand@file:../packages/brand':
     resolution: {directory: ../packages/brand, type: directory}
 
-  '@fontsource/inter@5.3.0':
-    resolution: {integrity: sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g==}
+  '@fontsource-variable/dm-sans@5.3.0':
+    resolution: {integrity: sha512-BpUG5bqePiDFMBM4ZtLSlPdAIOM990uB1dlXzIf4aw21yQR7BmykedLXXXMqGWsR18aMLOsbWccwJNh3ztTQaA==}
 
   '@fontsource/jetbrains-mono@5.3.0':
     resolution: {integrity: sha512-fqDfB5I9f1p1TV486aUgB9t8zP84P0O1FtQR5Ol9vjwPy+S+EIGlVYm1cvj2W5shcZMTg2nZFdVMoH5wFu8a1A==}
@@ -2694,7 +2694,7 @@ snapshots:
 
   '@fintu/brand@file:../packages/brand': {}
 
-  '@fontsource/inter@5.3.0': {}
+  '@fontsource-variable/dm-sans@5.3.0': {}
 
   '@fontsource/jetbrains-mono@5.3.0': {}
 
