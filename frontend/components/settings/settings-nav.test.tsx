@@ -116,7 +116,7 @@ describe("SettingsNav", () => {
     expect(screen.queryByTestId("settings-nav-rail")).not.toBeInTheDocument()
   })
 
-  it("renders an indigo pip on the active item", () => {
+  it("renders a primary pip on the active item", () => {
     renderNav({ activeId: "account" })
 
     const pip = screen.getByTestId("settings-nav-pip")

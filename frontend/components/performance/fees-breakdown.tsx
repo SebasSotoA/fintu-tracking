@@ -102,7 +102,7 @@ export function FeesBreakdown() {
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className={cn(BADGE_BASE, "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-400/20")}>
+              <span className={cn(BADGE_BASE, "bg-primary/15 text-primary ring-1 ring-inset ring-primary/20")}>
                 {t("performance.trading")}
               </span>
               <span className="text-sm text-muted-foreground">{t("performance.tradeCommissions")}</span>

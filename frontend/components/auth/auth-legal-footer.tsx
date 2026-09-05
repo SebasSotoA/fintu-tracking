@@ -5,7 +5,7 @@ import type { ReactElement, ReactNode } from "react"
 import { useLocale } from "@/components/locale-provider"
 
 const LEGAL_LINK_CLASS =
-  "inline text-inherit underline underline-offset-2 hover:text-white focus-visible:rounded-sm focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F17]"
+  "inline text-inherit underline underline-offset-2 hover:text-white focus-visible:rounded-sm focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#000000]"
 
 export function AuthLegalFooter(): ReactElement {
   const { t } = useLocale()

@@ -29,16 +29,40 @@ function extractBlock(css: string, selector: string): string {
 }
 
 describe("shared brand tokens.css", () => {
-  it("ships dashboard dark primary, primary-text, and radius without landing glows", () => {
+  it("ships the six-color board, semantic light/dark mapping, and no leftover board hues", () => {
     const css = readFileSync(TOKENS_PATH, "utf-8")
     const root = extractBlock(css, ":root")
     const dark = extractBlock(css, ".dark")
 
-    expect(dark).toContain("--primary: oklch(0.51 0.21 277)")
-    expect(root).toContain("--primary-text: oklch(0.40 0.14 277)")
-    expect(dark).toContain("--primary-text: oklch(0.82 0.12 277)")
+    expect(root).toContain("--spring-green: #05dc80")
+    expect(root).toContain("--green: #02674f")
+    expect(root).toContain("--dark-green: #16302b")
+    expect(root).toContain("--white: #dce4e7")
+    expect(root).toContain("--gray: #202020")
+    expect(root).toContain("--black: #000000")
+
+    expect(root).toMatch(/(?:^|\n)\s*--background:\s*var\(--white\)/)
+    expect(root).toMatch(/(?:^|\n)\s*--primary:\s*var\(--green\)/)
+    expect(root).toMatch(/(?:^|\n)\s*--primary-text:\s*var\(--green\)/)
     expect(root).toContain("--radius: 0.4375rem")
+
+    expect(dark).toMatch(/(?:^|\n)\s*--background:\s*var\(--black\)/)
+    expect(dark).toMatch(/(?:^|\n)\s*--primary:\s*var\(--spring-green\)/)
+    expect(dark).toMatch(/(?:^|\n)\s*--primary-text:\s*var\(--spring-green\)/)
+    expect(dark).toMatch(/(?:^|\n)\s*--success:\s*var\(--spring-green\)/)
+    expect(dark).toMatch(/(?:^|\n)\s*--success-foreground:\s*var\(--black\)/)
+    expect(dark).toMatch(
+      /(?:^|\n)\s*--chart-3:\s*color-mix\(in oklch, var\(--dark-green\) 50%, var\(--white\)\)/,
+    )
+    expect(dark).toMatch(
+      /(?:^|\n)\s*--chart-4:\s*color-mix\(in oklch, var\(--gray\) 45%, var\(--white\)\)/,
+    )
+
     expect(css).not.toContain("--landing-glow")
+    expect(css).not.toContain("#0B0F17")
+    expect(css).not.toContain("#4F46E5")
+    expect(css).not.toContain("#6366F1")
+    expect(css).not.toContain("277")
   })
 })
 

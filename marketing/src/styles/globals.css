@@ -8,7 +8,7 @@
 @import "@fintu/brand/theme.css";
 
 .dark {
-  /* Landing atmosphere — airy indigo glow (auto-derived from --primary) */
+  /* Landing atmosphere — airy spring-green glow (auto-derived from --primary) */
   --landing-glow-mint: oklch(
     from var(--primary) min(calc(l + 0.06), 0.88) calc(c * 0.55) calc(h - 3) / 0.4
   );
@@ -16,7 +16,7 @@
     from var(--primary) min(calc(l + 0.08), 0.9) calc(c * 0.4) calc(h - 3) / 0.25
   );
 
-  /* Landing card gradients — desaturated indigo wash */
+  /* Landing card gradients — desaturated spring-green wash */
   --landing-gradient-mint-start: oklch(
     from var(--primary) min(calc(l + 0.1), 0.92) calc(c * 0.5) calc(h - 3) / 0.2
   );

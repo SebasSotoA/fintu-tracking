@@ -25,16 +25,19 @@ function extractBlock(css: string, selector: string): string {
   return ""
 }
 
-function declaredCustomProperties(block: string): string[] {
-  return [...block.matchAll(/--[a-z0-9-]+(?=:)/g)].map((match) => match[0])
+function customPropertyAssignments(block: string): Array<{ name: string; value: string }> {
+  return [...block.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((match) => ({
+    name: match[1],
+    value: match[2].replace(/\s+/g, " ").trim(),
+  }))
 }
 
 describe("auth-shell.css", () => {
-  it("paints .auth-shell navy without using bg-primary", () => {
+  it("paints .auth-shell black without using bg-primary", () => {
     const css = readFileSync(AUTH_SHELL_PATH, "utf-8")
     const shell = extractBlock(css, ".auth-shell")
 
-    expect(shell).toContain("#0B0F17")
+    expect(shell).toMatch(/#000000|var\(--black\)/)
     expect(css).not.toContain("bg-primary")
   })
 
@@ -43,11 +46,14 @@ describe("auth-shell.css", () => {
     const css = readFileSync(AUTH_SHELL_PATH, "utf-8")
     const root = extractBlock(tokens, ":root")
     const authLight = extractBlock(css, ".auth-light")
+    const authAssignments = new Map(
+      customPropertyAssignments(authLight).map((assignment) => [assignment.name, assignment.value]),
+    )
 
     expect(authLight).toContain("color-scheme: light")
     expect(authLight).toContain("color: var(--foreground)")
-    for (const name of declaredCustomProperties(root)) {
-      expect(authLight, `missing ${name}`).toContain(`${name}:`)
+    for (const { name, value } of customPropertyAssignments(root)) {
+      expect(authAssignments.get(name), `missing or mismatched ${name}`).toBe(value)
     }
   })
 

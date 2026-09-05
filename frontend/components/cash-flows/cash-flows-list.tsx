@@ -171,7 +171,7 @@ export function CashFlowsList({
       return cn(base, "bg-amber-500/15 text-amber-800 dark:text-amber-300 ring-1 ring-inset ring-amber-400/20")
     }
     if (type === "fee") {
-      return cn(base, "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-400/20")
+      return cn(base, "bg-primary/15 text-primary ring-1 ring-inset ring-primary/20")
     }
     return cn(base, "bg-muted text-muted-foreground")
   }, [])

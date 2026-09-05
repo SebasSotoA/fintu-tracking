@@ -60,7 +60,7 @@ describe("FxRateSparkline series theme", () => {
     expect(document.querySelector(".animate-spin")).toBeNull()
   })
 
-  it("renders the USD/COP series in primary indigo without a pulsing halo", () => {
+  it("renders the USD/COP series in primary without a pulsing halo", () => {
     const { container } = render(
       <EnglishLocaleWrapper>
         <FxRateSparkline points={[{ date: "2026-04-26", rate: "4100" }]} />

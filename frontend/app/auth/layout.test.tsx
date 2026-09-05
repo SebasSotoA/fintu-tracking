@@ -29,7 +29,7 @@ describe("AuthLayout", () => {
     expect(screen.getByText("login-child")).toBeInTheDocument()
   })
 
-  it("uses a navy h-svh shell with aurora, without a blur orb or primary fill", () => {
+  it("uses a black h-svh shell with aurora, without a blur orb or primary fill", () => {
     const { container } = renderWithLocale(
       <AuthLayout>
         <div>login-child</div>
@@ -46,7 +46,7 @@ describe("AuthLayout", () => {
     expect(screen.getByTestId("aurora-mock")).toBeInTheDocument()
   })
 
-  it("keeps the language switch on the navy shell, not inside auth-light", () => {
+  it("keeps the language switch on the black shell, not inside auth-light", () => {
     const { container } = renderWithLocale(
       <AuthLayout>
         <div>login-child</div>

@@ -73,6 +73,30 @@ describe("CashFlowsList", () => {
     expect(within(cards).getByText("Initial deposit")).toBeInTheDocument()
   })
 
+  it("styles the fee type badge with primary tokens", () => {
+    const feeFlow: CashFlow = {
+      ...sampleCashFlow,
+      id: "cf-fee",
+      type: "fee",
+      currency: "USD",
+      amount: "1.99",
+      fx_rate: null,
+      usd_amount: "1.99",
+      notes: null,
+      fee_type: "other",
+    }
+    renderWithProviders(
+      <CashFlowsList cashFlows={[feeFlow]} total={1} page={1} pageSize={10} />,
+    )
+
+    const badge = within(screen.getByTestId("data-table-cards")).getByText((_, element) => {
+      return element?.tagName === "SPAN" && element.textContent === "Fee"
+    })
+    expect(badge).toHaveClass("bg-primary/15", "text-primary")
+    expect(badge.className).toContain("ring-inset")
+    expect(badge.className).toContain("ring-primary")
+  })
+
   it("renders edit and delete actions with mobile tap targets in the card", () => {
     renderWithProviders(
       <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={1} pageSize={10} />,

@@ -10,7 +10,7 @@ This is **not** the auth surface. Do not use `auth-light`, `auth-shell`, `bg-whi
 
 ## Visual direction
 
-**Ledger glass over a living book.** The dashboard (net worth, KPI strip, holdings) stays visible through a frosted, dimmed overlay — you can still read that a portfolio lives behind the panel. The modal itself is a **statement plate**: a 3px indigo ledger rail on the leading edge, a JetBrains Mono kicker (`01 / 03`), and an **asymmetric vignette** — a mini dashboard KPI card that changes with each slide.
+**Ledger glass over a living book.** The dashboard (net worth, KPI strip, holdings) stays visible through a frosted, dimmed overlay — you can still read that a portfolio lives behind the panel. The modal itself is a **statement plate**: a 3px spring-green ledger rail on the leading edge, a JetBrains Mono kicker (`01 / 03`), and an **asymmetric vignette** — a mini dashboard KPI card that changes with each slide.
 
 That vignette is the one memorable choice. It is not a centered empty card, not a mascot, not a spotlight tour of the sidebar or bottom nav.
 
@@ -27,7 +27,7 @@ Main:       DM Sans (font-sans)
 Mono:       JetBrains Mono (font-mono) — kickers, FX sample, “?”
 Tailwind:   v4 CSS-first
 Tokens:     OKLCH via packages/brand/tokens.css
-Accent:     indigo primary (--primary / navy canvas)
+Accent:     spring-green primary (--primary / black canvas)
 Dark wired: yes (.dark + glass tokens)
 ```
 
@@ -347,7 +347,7 @@ Hit area: dots are not buttons, so 8px is fine. Do not make 8px tap targets.
 
 ### Next (slides 1–2)
 
-- `Button variant="default"` (indigo, existing primary shadow)
+- `Button variant="default"` (spring-green, existing primary shadow)
 - Increments slide. `autoFocus` so Radix does not land on Skip first
 - `type="button"`
 

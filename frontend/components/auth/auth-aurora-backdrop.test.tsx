@@ -76,7 +76,7 @@ describe("AuthAuroraBackdrop", () => {
     mockPrefersReducedMotion(false)
   })
 
-  it("fills the viewport with navy #0B0F17 and never uses bg-primary", () => {
+  it("fills the viewport with black #000000 and never uses bg-primary", () => {
     mockPrefersReducedMotion(false)
     const { container } = render(<AuthAuroraBackdrop />)
     const backdrop = container.firstElementChild as HTMLElement
@@ -86,16 +86,16 @@ describe("AuthAuroraBackdrop", () => {
     expect(backdrop.className).toContain("inset-0")
     expect(backdrop.className).toContain("z-0")
     expect(backdrop.className).not.toContain("bg-primary")
-    expect(backdrop).toHaveStyle({ backgroundColor: "#0B0F17" })
+    expect(backdrop).toHaveStyle({ backgroundColor: "#000000" })
   })
 
-  it("mounts aurora with Fintu indigo color stops when motion is allowed", () => {
+  it("mounts aurora with Fintu green color stops when motion is allowed", () => {
     mockPrefersReducedMotion(false)
     render(<AuthAuroraBackdrop />)
 
     const aurora = screen.getByTestId("aurora-mock")
     expect(aurora).toBeInTheDocument()
-    expect(aurora).toHaveAttribute("data-color-stops", "#4338CA,#6366F1,#4F46E5")
+    expect(aurora).toHaveAttribute("data-color-stops", "#05dc80,#02674f,#16302b")
     expect(screen.queryByRole("img")).not.toBeInTheDocument()
   })
 
@@ -105,7 +105,7 @@ describe("AuthAuroraBackdrop", () => {
 
     expect(screen.queryByTestId("aurora-mock")).not.toBeInTheDocument()
     expect(container.querySelector("canvas")).not.toBeInTheDocument()
-    expect(container.firstElementChild).toHaveStyle({ backgroundColor: "#0B0F17" })
+    expect(container.firstElementChild).toHaveStyle({ backgroundColor: "#000000" })
   })
 
   it("unmounts aurora when reduced motion becomes preferred", () => {

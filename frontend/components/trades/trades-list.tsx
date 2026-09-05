@@ -73,7 +73,7 @@ function getAssetBadgeClasses(assetType: Trade["asset_type"]): string {
   if (assetType === "etf") {
     return cn(BADGE_BASE, "bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-1 ring-inset ring-violet-400/20")
   }
-  return cn(BADGE_BASE, "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 ring-1 ring-inset ring-indigo-400/20")
+  return cn(BADGE_BASE, "bg-primary/15 text-primary ring-1 ring-inset ring-primary/20")
 }
 
 function getSideBadgeClasses(side: Trade["side"]): string {

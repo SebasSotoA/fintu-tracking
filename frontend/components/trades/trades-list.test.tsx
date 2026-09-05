@@ -74,6 +74,17 @@ describe("TradesList", () => {
     expect(within(cards).getByText("STOCK")).toBeInTheDocument()
   })
 
+  it("styles the stock asset badge with primary tokens", () => {
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,
+    )
+
+    const badge = within(screen.getByTestId("data-table-cards")).getByText("STOCK")
+    expect(badge).toHaveClass("bg-primary/15", "text-primary")
+    expect(badge.className).toContain("ring-inset")
+    expect(badge.className).toContain("ring-primary")
+  })
+
   it("renders edit and delete actions with mobile tap targets in the card", () => {
     renderWithProviders(
       <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,

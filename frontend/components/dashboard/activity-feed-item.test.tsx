@@ -91,6 +91,15 @@ describe("ActivityFeedItem", () => {
     expect(screen.queryByText(/comisión de closing/i)).not.toBeInTheDocument()
   })
 
+  it("styles the fee badge with primary tokens", () => {
+    renderWithLocale(<ActivityFeedItem item={makeFee()} />)
+
+    const badge = screen.getByText("FEE")
+    expect(badge).toHaveClass("bg-primary/15", "text-primary")
+    expect(badge.className).toContain("ring-inset")
+    expect(badge.className).toContain("ring-primary")
+  })
+
   it("titles a deposit fee in English without interpolating raw subKind", () => {
     renderWithLocale(<ActivityFeedItem item={makeFee({ sub_kind: "deposit" })} />)
     expect(screen.getByText("Deposit fee")).toBeInTheDocument()

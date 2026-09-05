@@ -1,126 +1,125 @@
-/* Fintu brand toolkit — navy + indigo/violet (light theme, inverted from dark) */
+/* Fintu brand toolkit — six-color board (light theme, inverted from dark) */
 :root {
-  --background: oklch(0.926 0.012 259.8);
-  --foreground: oklch(0.161 0.021 251.3);
-  --card: oklch(0.98 0.005 260);
-  --card-foreground: oklch(0.161 0.021 251.3);
-  --card-kpi: oklch(0.965 0.008 260);
-  --popover: oklch(0.97 0.006 260);
-  --popover-foreground: oklch(0.161 0.021 251.3);
-  --primary: oklch(0.585 0.204 277.1);
-  --primary-hover: oklch(0.636 0.178 281.6);
-  --primary-active: oklch(0.537 0.158 276.8);
-  --primary-text: oklch(0.40 0.14 277);
-  --primary-foreground: oklch(0.98 0.005 277);
-  --primary-container: oklch(0.92 0.03 277);
-  --on-primary-container: oklch(0.40 0.12 277);
-  --secondary: oklch(0.95 0.01 260);
-  --secondary-foreground: oklch(0.161 0.021 251.3);
-  --muted: oklch(0.95 0.01 260);
-  --muted-foreground: oklch(0.40 0.025 255);
-  --accent: oklch(0.95 0.01 260);
-  --accent-foreground: oklch(0.161 0.021 251.3);
+  --spring-green: #05dc80;
+  --green: #02674f;
+  --dark-green: #16302b;
+  --white: #dce4e7;
+  --gray: #202020;
+  --black: #000000;
+
+  --background: var(--white);
+  --foreground: var(--dark-green);
+  --card: var(--white);
+  --card-foreground: var(--dark-green);
+  --card-kpi: color-mix(in oklch, var(--white) 92%, var(--dark-green));
+  --popover: var(--white);
+  --popover-foreground: var(--dark-green);
+  --primary: var(--green);
+  --primary-hover: color-mix(in oklch, var(--green) 88%, var(--black));
+  --primary-active: color-mix(in oklch, var(--green) 76%, var(--black));
+  --primary-text: var(--green);
+  --primary-foreground: var(--white);
+  --primary-container: color-mix(in oklch, var(--green) 16%, var(--white));
+  --on-primary-container: var(--green);
+  --secondary: color-mix(in oklch, var(--white) 88%, var(--dark-green));
+  --secondary-foreground: var(--dark-green);
+  --muted: color-mix(in oklch, var(--white) 88%, var(--dark-green));
+  --muted-foreground: color-mix(in oklch, var(--dark-green) 72%, var(--gray));
+  --accent: color-mix(in oklch, var(--white) 88%, var(--dark-green));
+  --accent-foreground: var(--dark-green);
   --destructive: oklch(0.58 0.20 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --success: oklch(0.55 0.18 145);
-  --success-foreground: oklch(0.98 0 0);
-  --border: oklch(0.88 0.01 260);
-  --input: oklch(0.95 0.01 260);
-  --ring: oklch(0.585 0.204 277.1);
-  --chart-1: oklch(0.585 0.204 277.1);
-  --chart-2: oklch(0.537 0.158 276.8);
-  --chart-3: oklch(0.680 0.158 276.9);
-  --chart-4: oklch(0.670 0.177 276.9);
-  --chart-5: oklch(0.751 0.023 256.8);
+  --destructive-foreground: var(--white);
+  --success: var(--green);
+  --success-foreground: var(--white);
+  --border: color-mix(in oklch, var(--white) 72%, var(--dark-green));
+  --input: color-mix(in oklch, var(--white) 88%, var(--dark-green));
+  --ring: var(--green);
+  --chart-1: var(--spring-green);
+  --chart-2: var(--green);
+  --chart-3: var(--dark-green);
+  --chart-4: var(--gray);
+  --chart-5: color-mix(in oklch, var(--white) 55%, var(--dark-green));
   --radius: 0.4375rem;
   --sidebar: var(--background);
-  --sidebar-foreground: oklch(0.161 0.021 251.3);
-  --sidebar-primary: oklch(0.585 0.204 277.1);
-  --sidebar-primary-foreground: oklch(0.98 0.005 277);
-  --sidebar-accent: oklch(0.95 0.01 260);
-  --sidebar-accent-foreground: oklch(0.161 0.021 251.3);
-  --sidebar-border: oklch(0.88 0.01 260);
-  --sidebar-ring: oklch(0.585 0.204 277.1);
+  --sidebar-foreground: var(--dark-green);
+  --sidebar-primary: var(--green);
+  --sidebar-primary-foreground: var(--white);
+  --sidebar-accent: color-mix(in oklch, var(--white) 88%, var(--dark-green));
+  --sidebar-accent-foreground: var(--dark-green);
+  --sidebar-border: color-mix(in oklch, var(--white) 72%, var(--dark-green));
+  --sidebar-ring: var(--green);
   /* Surface hierarchy */
-  --surface-container-lowest: oklch(0.99 0.004 260);
-  --surface-container-low: oklch(0.975 0.005 260);
-  --surface-container: oklch(0.96 0.006 260);
-  --surface-container-high: oklch(0.93 0.008 260);
-  --surface-container-highest: oklch(0.90 0.01 260);
+  --surface-container-lowest: var(--white);
+  --surface-container-low: color-mix(in oklch, var(--white) 96%, var(--dark-green));
+  --surface-container: color-mix(in oklch, var(--white) 92%, var(--dark-green));
+  --surface-container-high: color-mix(in oklch, var(--white) 86%, var(--dark-green));
+  --surface-container-highest: color-mix(in oklch, var(--white) 80%, var(--dark-green));
 }
 
-/* Fintu brand toolkit — inspo tokens (dark) */
+/* Fintu brand toolkit — six-color board (dark) */
 .dark {
-  /* main bg #0B0F17 — deep navy */
-  --background: oklch(0.18 0.02 252);
-  --foreground: oklch(1 0 0);
+  --background: var(--black);
+  --foreground: var(--white);
 
-  /* glass: subtle elevated surface for cards */
-  --glass: oklch(0.20 0.02 256);
-  --glass-border: oklch(0.27 0.03 257);
-  --glass-highlight: oklch(1 0 0 / 0.05);
-  --glass-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  /* glass: elevated surface for cards */
+  --glass: var(--gray);
+  --glass-border: color-mix(in oklch, var(--gray) 70%, var(--white));
+  --glass-highlight: color-mix(in oklch, var(--white) 8%, transparent);
+  --glass-shadow: 0 4px 6px -1px color-mix(in oklch, var(--black) 80%, transparent),
+    0 2px 4px -2px color-mix(in oklch, var(--black) 80%, transparent);
 
-  /* card #111827 with subtle top glow */
-  --card: oklch(0.20 0.02 256);
-  --card-foreground: oklch(1 0 0);
-  --card-kpi: oklch(0.20 0.02 256);
+  --card: var(--gray);
+  --card-foreground: var(--white);
+  --card-kpi: var(--dark-green);
 
-  --popover: oklch(0.21 0.025 256);
-  --popover-foreground: oklch(1 0 0);
+  --popover: var(--gray);
+  --popover-foreground: var(--white);
 
-  /* Brand: primary #4F46E5 (indigo-600), accent #6366F1 (indigo-500) */
-  --primary: oklch(0.51 0.21 277);
-  --primary-hover: oklch(0.46 0.20 277);
-  --primary-active: oklch(0.45 0.20 277);
-  --primary-text: oklch(0.82 0.12 277);
-  --primary-foreground: oklch(1 0 0);
-  --primary-container: oklch(0.58 0.21 277 / 0.12);
+  --primary: var(--spring-green);
+  --primary-hover: color-mix(in oklch, var(--spring-green) 85%, var(--white));
+  --primary-active: color-mix(in oklch, var(--spring-green) 80%, var(--green));
+  --primary-text: var(--spring-green);
+  --primary-foreground: var(--black);
+  --primary-container: color-mix(in oklch, var(--spring-green) 18%, var(--black));
+  --on-primary-container: var(--spring-green);
 
-  /* secondary text #94A3B8 */
-  --secondary: oklch(0.27 0.03 257);
-  --secondary-foreground: oklch(0.70 0.02 248);
+  --secondary: var(--dark-green);
+  --secondary-foreground: var(--white);
 
-  /* muted text #64748B */
-  --muted: oklch(0.27 0.03 257);
-  --muted-foreground: oklch(0.55 0.02 252);
+  --muted: color-mix(in oklch, var(--gray) 80%, var(--white));
+  --muted-foreground: color-mix(in oklch, var(--white) 65%, var(--gray));
 
-  --accent: oklch(0.27 0.03 257);
-  --accent-foreground: oklch(1 0 0);
+  --accent: var(--dark-green);
+  --accent-foreground: var(--white);
 
   --destructive: oklch(0.70 0.22 25);
-  --destructive-foreground: oklch(0.98 0 0);
+  --destructive-foreground: var(--white);
 
-  /* positive_green #22C55E for gains */
-  --success: oklch(0.72 0.20 145);
-  --success-foreground: oklch(0.18 0.02 252);
+  --success: var(--spring-green);
+  --success-foreground: var(--black);
 
-  /* border #1E293B */
-  --border: oklch(0.27 0.03 257);
-  --input: oklch(0.27 0.03 257);
-  --ring: oklch(0.58 0.21 277);
+  --border: color-mix(in oklch, var(--gray) 72%, var(--white));
+  --input: color-mix(in oklch, var(--gray) 80%, var(--dark-green));
+  --ring: var(--spring-green);
 
-  /* chart palette from JSON */
-  --chart-1: oklch(0.58 0.21 277); /* stocks #6366F1 */
-  --chart-2: oklch(0.45 0.20 277); /* ETFs  #4338CA */
-  --chart-3: oklch(0.78 0.13 230); /* crypto #38BDF8 */
-  --chart-4: oklch(0.45 0.02 252); /* cash   #475569 */
-  --chart-5: oklch(0.51 0.21 277);
+  --chart-1: var(--spring-green);
+  --chart-2: var(--green);
+  --chart-3: color-mix(in oklch, var(--dark-green) 50%, var(--white));
+  --chart-4: color-mix(in oklch, var(--gray) 45%, var(--white));
+  --chart-5: color-mix(in oklch, var(--gray) 60%, var(--white));
 
-  /* sidebar matches main bg */
-  --sidebar: oklch(0.18 0.02 252);
-  --sidebar-foreground: oklch(0.70 0.02 248);
-  --sidebar-primary: oklch(1 0 0);
-  --sidebar-primary-foreground: oklch(0.18 0.02 252);
-  --sidebar-accent: oklch(1 0 0 / 0.05);
-  --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.18 0.02 252 / 0);
-  --sidebar-ring: oklch(0.58 0.21 277);
+  --sidebar: var(--black);
+  --sidebar-foreground: var(--white);
+  --sidebar-primary: var(--spring-green);
+  --sidebar-primary-foreground: var(--black);
+  --sidebar-accent: var(--dark-green);
+  --sidebar-accent-foreground: var(--white);
+  --sidebar-border: color-mix(in oklch, var(--gray) 80%, var(--black));
+  --sidebar-ring: var(--spring-green);
 
-  --surface-container-lowest: oklch(0.13 0.015 252);
-  --surface-container-low: oklch(0.16 0.02 252);
-  --surface-container: oklch(0.18 0.02 252);
-  --surface-container-high: oklch(0.20 0.02 256);
-  --surface-container-highest: oklch(0.22 0.025 256);
-  --on-primary-container: oklch(0.78 0.10 278);
+  --surface-container-lowest: var(--black);
+  --surface-container-low: color-mix(in oklch, var(--black) 70%, var(--gray));
+  --surface-container: var(--gray);
+  --surface-container-high: var(--dark-green);
+  --surface-container-highest: color-mix(in oklch, var(--dark-green) 80%, var(--gray));
 }

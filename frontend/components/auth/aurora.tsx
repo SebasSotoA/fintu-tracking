@@ -119,7 +119,7 @@ export interface AuroraProps {
   time?: number
 }
 
-const defaultStops = ["#4338CA", "#6366F1", "#4F46E5"]
+const defaultStops = ["#05dc80", "#02674f", "#16302b"]
 
 export default function Aurora({
   colorStops = defaultStops,

@@ -41,7 +41,7 @@ describe("AuthLanguageSwitch", () => {
     expect(apiClient.post).not.toHaveBeenCalled()
   })
 
-  it("uses light text on navy instead of theme foreground tokens", () => {
+  it("uses light text on the black shell instead of theme foreground tokens", () => {
     renderWithLocale(<AuthLanguageSwitch />)
 
     const english = screen.getByRole("button", { name: "English" })

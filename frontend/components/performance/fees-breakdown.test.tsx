@@ -84,6 +84,15 @@ describe("FeesBreakdown", () => {
     expect(screen.getByText("$19.96")).toBeInTheDocument()
   })
 
+  it("styles the trading badge with primary tokens", async () => {
+    renderFees()
+
+    const badge = await screen.findByText("Trading")
+    expect(badge).toHaveClass("bg-primary/15", "text-primary")
+    expect(badge.className).toContain("ring-inset")
+    expect(badge.className).toContain("ring-primary")
+  })
+
   it("shows warning when standalone fees exist", async () => {
     mockListCashFlows.mockResolvedValue([cashFlow({ related_type: "standalone" })])
     renderFees()

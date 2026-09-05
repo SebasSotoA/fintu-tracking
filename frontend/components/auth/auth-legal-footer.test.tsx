@@ -28,14 +28,14 @@ describe("AuthLegalFooter", () => {
     expect(screen.getByRole("link", { name: "Política de privacidad" })).toHaveAttribute("href", "#")
   })
 
-  it("uses navy ring-offset instead of primary on legal links", () => {
+  it("uses black ring-offset instead of primary on legal links", () => {
     renderWithLocale(<AuthLegalFooter />)
 
     const terms = screen.getByRole("link", { name: "Terms of Service" })
     expect(terms.className).toContain("underline")
     expect(terms.className).toContain("focus-visible:ring-2")
     expect(terms.className).toContain("focus-visible:ring-white/70")
-    expect(terms.className).toContain("ring-offset-[#0B0F17]")
+    expect(terms.className).toContain("ring-offset-[#000000]")
     expect(terms.className).not.toContain("ring-offset-primary")
   })
 

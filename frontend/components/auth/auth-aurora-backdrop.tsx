@@ -8,7 +8,7 @@ import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
 const Aurora = dynamic(() => import("@/components/auth/aurora"), { ssr: false })
 
 export const AUTH_AURORA_PROPS: AuroraProps = {
-  colorStops: ["#4338CA", "#6366F1", "#4F46E5"],
+  colorStops: ["#05dc80", "#02674f", "#16302b"],
   amplitude: 1.2,
   blend: 0.6,
   speed: 0.8,
@@ -20,7 +20,7 @@ export function AuthAuroraBackdrop(): ReactElement {
   return (
     <div
       className="fixed inset-0 z-0"
-      style={{ backgroundColor: "#0B0F17" }}
+      style={{ backgroundColor: "#000000" }}
       aria-hidden
     >
       {!reducedMotion && (
