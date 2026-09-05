@@ -74,7 +74,7 @@ After the happy path, ask "what could go wrong?" and add tests for edge cases.
 ## What NOT to Test
 
 - Implementation details (private state)
-- Third-party libraries (shadcn/ui, Fiber, pgx)
+- Third-party libraries (shadcn/ui, Chi, pgx)
 - Trivial wrappers with no logic
 
 ## Running Tests

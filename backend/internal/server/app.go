@@ -20,7 +20,7 @@ import (
 	"github.com/rs/cors"
 )
 
-// Deps holds wired services required to build the Fiber application.
+// Deps holds wired services required to build the Chi application.
 type Deps struct {
 	BillingSvc    *services.BillingService
 	TwelveDataSvc *services.TwelveDataService

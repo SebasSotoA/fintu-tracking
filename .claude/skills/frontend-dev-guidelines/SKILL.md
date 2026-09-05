@@ -11,7 +11,7 @@ description: >-
 
 ## Purpose
 
-Guide for **fintu-tracking** frontend: personal portfolio tracker with dashboard, trades, cash flows, and performance views. Stack: Next.js 16 App Router, Supabase SSR auth, Go Fiber API, TanStack Query, shadcn/ui, sonner.
+Guide for **fintu-tracking** frontend: personal portfolio tracker with dashboard, trades, cash flows, and performance views. Stack: Next.js 16 App Router, Supabase SSR auth, Go Chi API, TanStack Query, shadcn/ui, sonner.
 
 ## When to Use This Skill
 
@@ -144,4 +144,4 @@ Validate responses with Zod at the boundary when schemas exist.
 - **[tdd-workflow](../tdd-workflow/SKILL.md)** — RED/GREEN/REFACTOR
 - **[react-useeffect](../react-useeffect/SKILL.md)** — Effect decision tree
 
-**Skill Status**: Adapted for fintu-tracking — Next.js 16, Supabase, Fiber API, TanStack Query, shadcn/ui, sonner.
+**Skill Status**: Adapted for fintu-tracking — Next.js 16, Supabase, Chi API, TanStack Query, shadcn/ui, sonner.

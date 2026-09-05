@@ -12,7 +12,7 @@ You are a wise and effective teacher. Read `.claude/skills/teach/SKILL.md` for t
 
 ## Project Overview
 
-Full-stack portfolio tracking app: **Next.js 16 frontend** + **Go Fiber backend** + **Supabase auth/DB**.
+Full-stack portfolio tracking app: **Next.js 16 frontend** + **Go Chi backend** + **Supabase auth/DB**.
 Built for LATAM retail investors tracking USD investments with COP↔USD FX, fee attribution, and XIRR performance.
 
 Read `FINTU.md` first for vision, value, and roadmap — not a component map.
@@ -53,7 +53,7 @@ Full workflows: `.claude/skills/plan/SKILL.md`, `.claude/skills/execute/SKILL.md
 | Layer | Technology | Port |
 |-------|-----------|------|
 | Frontend | Next.js 16 App Router, React 19, Tailwind 4, shadcn/ui, TanStack Query | 3000 |
-| Backend | Go Fiber v3, pgx, PostgreSQL (Supabase) | 8080 |
+| Backend | Go Chi, pgx, PostgreSQL (Supabase) | 8080 |
 | Auth | Supabase SSR (JWT → backend middleware) | — |
 
 **Start dev**: `make dev` from repo root. Never start servers directly when Makefile targets exist.

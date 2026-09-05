@@ -1,6 +1,6 @@
 ---
 name: go-implementer
-description: PROACTIVELY implement Go backend features with strict TDD. Fiber v3, Supabase JWT middleware, pgx. Use for backend tasks dispatched by /execute.
+description: PROACTIVELY implement Go backend features with strict TDD. Chi, Supabase JWT middleware, pgx. Use for backend tasks dispatched by /execute.
 model: sonnet
 skills:
   - golang-patterns
@@ -20,7 +20,7 @@ You are the **backend implementer** for fintu-tracking. You write code and run s
 
 ## Stack
 
-Go Fiber v3, pgx, PostgreSQL (Supabase), module `fintu-tracking-backend`.
+Go Chi, pgx, PostgreSQL (Supabase), module `fintu-tracking-backend`.
 
 ## Layout
 

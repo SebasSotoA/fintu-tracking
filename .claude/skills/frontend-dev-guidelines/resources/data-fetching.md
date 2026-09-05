@@ -1,6 +1,6 @@
 # Data Fetching Patterns
 
-Data fetching in **fintu-tracking**: Next.js App Router, Supabase auth, TanStack Query on the client, `ApiClient` for the Go Fiber backend.
+Data fetching in **fintu-tracking**: Next.js App Router, Supabase auth, TanStack Query on the client, `ApiClient` for the Go Chi backend.
 
 ---
 
