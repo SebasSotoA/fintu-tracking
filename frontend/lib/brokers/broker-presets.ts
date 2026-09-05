@@ -1,4 +1,5 @@
 import { Decimal } from "@/lib/decimal"
+import { MARKET_CONFIG } from "@/lib/market-config/market-config"
 
 export interface BrokerFee {
   type: "percentage" | "flat" | "none"
@@ -78,6 +79,15 @@ export function getBrokerPreset(id: string): BrokerPreset | undefined {
 
 export function listBrokerPresetsForCountry(country: string): BrokerPreset[] {
   return BROKER_PRESETS.filter((preset) => preset.country === country)
+}
+
+export function defaultBrokerPresetIdForCountry(country: string): string {
+  const forCountry = listBrokerPresetsForCountry(country)
+  if (country === MARKET_CONFIG.defaultCountry) {
+    const preferred = forCountry.find((preset) => preset.id === MARKET_CONFIG.defaultBrokerId)
+    if (preferred) return preferred.id
+  }
+  return forCountry[0]?.id ?? MARKET_CONFIG.defaultBrokerId
 }
 
 export function listAllBrokerPresets(): BrokerPreset[] {

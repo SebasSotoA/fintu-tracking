@@ -11,6 +11,7 @@ import {
   SUPPORTED_COUNTRIES,
   countryLabel,
 } from "@/lib/market-config/market-config"
+import { defaultBrokerPresetIdForCountry } from "@/lib/brokers/broker-presets"
 
 export function createProfileSetupSchema(t: (key: MessageKey) => string) {
   return z.object({
@@ -54,7 +55,7 @@ export function ProfileSetupFields({
             value={country}
             onValueChange={(value) => {
               setValue("country", value)
-              setValue("brokerPresetId", "")
+              setValue("brokerPresetId", defaultBrokerPresetIdForCountry(value))
             }}
           >
             <SelectTrigger id="country">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -31,14 +31,15 @@ type SetupStep = 1 | 2
 interface SetupModalProps {
   initialProfile: Profile
   onSetupComplete?: (profile: Profile) => void
+  forceOpen?: boolean
 }
 
-export function SetupModal({ initialProfile, onSetupComplete }: SetupModalProps) {
+export function SetupModal({ initialProfile, onSetupComplete, forceOpen = false }: SetupModalProps) {
   const router = useRouter()
   const complete = useCompleteOnboarding()
   const { t } = useLocale()
   const [step, setStep] = useState<SetupStep>(1)
-  const [open, setOpen] = useState(!initialProfile.onboarding_completed)
+  const [open, setOpen] = useState(!initialProfile.onboarding_completed || forceOpen)
 
   const {
     handleSubmit,
@@ -49,7 +50,7 @@ export function SetupModal({ initialProfile, onSetupComplete }: SetupModalProps)
     resolver: zodResolver(profileSetupSchema),
     defaultValues: {
       country: initialProfile.country || MARKET_CONFIG.defaultCountry,
-      brokerPresetId: initialProfile.broker_preset_id || "",
+      brokerPresetId: initialProfile.broker_preset_id || MARKET_CONFIG.defaultBrokerId,
     },
   })
 
@@ -85,6 +86,15 @@ export function SetupModal({ initialProfile, onSetupComplete }: SetupModalProps)
     setStep(2)
   }
 
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (step === 1) {
+      handleContinue()
+      return
+    }
+    void handleSubmit(onSubmit)()
+  }
+
   const handleOpenChange = (next: boolean) => {
     if (!next) return
     setOpen(next)
@@ -109,54 +119,42 @@ export function SetupModal({ initialProfile, onSetupComplete }: SetupModalProps)
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
-        <DialogScrollBody className="min-h-0 flex-1">
-          <div className="space-y-6 py-2">
-            <OnboardingProgress step={step} />
-            {step === 1 ? (
+        <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleFormSubmit}>
+          <DialogScrollBody className="min-h-0 flex-1">
+            <div className="space-y-6 py-2">
+              <OnboardingProgress step={step} />
               <ProfileSetupFields
-                step="country"
+                step={step === 1 ? "country" : "broker"}
                 setValue={setValue}
                 errors={errors}
                 country={country}
                 brokerPresetId={brokerPresetId}
               />
-            ) : (
-              <form id="setup-form" onSubmit={handleSubmit(onSubmit)}>
-                <ProfileSetupFields
-                  step="broker"
-                  setValue={setValue}
-                  errors={errors}
-                  country={country}
-                  brokerPresetId={brokerPresetId}
-                />
-              </form>
-            )}
-          </div>
-        </DialogScrollBody>
+            </div>
+          </DialogScrollBody>
 
-        <ResponsiveDialogFooter className="shrink-0 px-6 pb-6 pb-safe sm:justify-between">
-          {step === 2 ? (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setStep(1)}
-              disabled={complete.isPending}
-            >
-              {t("onboarding.back")}
+          <ResponsiveDialogFooter className="shrink-0 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] sm:justify-between">
+            {step === 2 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setStep(1)}
+                disabled={complete.isPending}
+              >
+                {t("onboarding.back")}
+              </Button>
+            ) : (
+              <div className="hidden sm:block" aria-hidden />
+            )}
+            <Button type="submit" disabled={step === 1 ? !country : complete.isPending}>
+              {step === 1
+                ? t("onboarding.continue")
+                : complete.isPending
+                  ? t("onboarding.saving")
+                  : t("onboarding.finish")}
             </Button>
-          ) : (
-            <div className="hidden sm:block" aria-hidden />
-          )}
-          {step === 1 ? (
-            <Button type="button" onClick={handleContinue} disabled={!country}>
-              {t("onboarding.continue")}
-            </Button>
-          ) : (
-            <Button type="submit" form="setup-form" disabled={complete.isPending}>
-              {complete.isPending ? t("onboarding.saving") : t("onboarding.finish")}
-            </Button>
-          )}
-        </ResponsiveDialogFooter>
+          </ResponsiveDialogFooter>
+        </form>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )

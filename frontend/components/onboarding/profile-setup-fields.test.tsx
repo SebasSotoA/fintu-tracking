@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 import { screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -89,5 +90,15 @@ describe("ProfileSetupFields", () => {
 
     expect(screen.getByText("Country")).toBeInTheDocument()
     expect(screen.getByTestId("broker-select")).toBeInTheDocument()
+  })
+
+  it("defaults the broker to Hapi when the country changes to Colombia", async () => {
+    const user = userEvent.setup()
+    renderWithLocale(<TestHarness step="all" />)
+
+    await user.selectOptions(screen.getByTestId("select"), "mx")
+    await user.selectOptions(screen.getByTestId("select"), "co")
+
+    expect((screen.getByTestId("broker-select") as HTMLSelectElement).value).toBe("hapi-colombia")
   })
 })

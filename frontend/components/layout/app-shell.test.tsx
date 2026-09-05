@@ -39,21 +39,34 @@ vi.mock("@/components/profile/account-menu", () => ({
 
 const setupModalApi = vi.hoisted(() => ({
   complete: undefined as ((profile: Profile) => void) | undefined,
+  forceOpen: false,
 }))
 
 const navigationState = vi.hoisted(() => ({
   pathname: "/dashboard",
 }))
 
+const previewState = vi.hoisted(() => ({
+  setup: false,
+  intro: false,
+}))
+
 vi.mock("@/components/onboarding/setup-modal", () => ({
   SetupModal: ({
     onSetupComplete,
+    forceOpen,
   }: {
     onSetupComplete?: (profile: Profile) => void
+    forceOpen?: boolean
   }) => {
     setupModalApi.complete = onSetupComplete
-    return null
+    setupModalApi.forceOpen = Boolean(forceOpen)
+    return forceOpen ? <div data-testid="setup-modal-preview" /> : null
   },
+}))
+
+vi.mock("@/lib/dev/onboarding-preview", () => ({
+  parseDevOnboardingPreview: () => ({ setup: previewState.setup, intro: previewState.intro }),
 }))
 
 vi.mock("next/navigation", () => ({
@@ -96,7 +109,10 @@ describe("AppShell", () => {
     localStorage.clear()
     sessionStorage.clear()
     setupModalApi.complete = undefined
+    setupModalApi.forceOpen = false
     navigationState.pathname = "/dashboard"
+    previewState.setup = false
+    previewState.intro = false
     mockMutate.mockReset()
     vi.mocked(useUpdateProfile).mockReturnValue(mockUseUpdateProfile)
   })
@@ -343,5 +359,52 @@ describe("AppShell", () => {
     })
     expect(localStorage.getItem(productIntroSeenKey("user-1"))).toBe("1")
     expect(sessionStorage.getItem(productIntroPendingKey("user-1"))).toBeNull()
+  })
+
+  it("shows the setup modal for an onboarded user when the dev setup preview is on", async () => {
+    previewState.setup = true
+
+    renderWithProviders(
+      <AppShell initialProfile={baseProfile}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    expect(await screen.findByTestId("setup-modal-preview")).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "The question" })).not.toBeInTheDocument()
+  })
+
+  it("opens the intro for an onboarded user when the dev intro preview is on even if already seen", async () => {
+    previewState.intro = true
+    localStorage.setItem(productIntroSeenKey("user-1"), "1")
+
+    renderWithProviders(
+      <AppShell initialProfile={baseProfile}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    expect(await screen.findByRole("heading", { name: "The question" })).toBeInTheDocument()
+  })
+
+  it("plays setup then intro when both preview flags are on even if already seen", async () => {
+    previewState.setup = true
+    previewState.intro = true
+    localStorage.setItem(productIntroSeenKey("user-1"), "1")
+
+    renderWithProviders(
+      <AppShell initialProfile={baseProfile}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    expect(await screen.findByTestId("setup-modal-preview")).toBeInTheDocument()
+    expect(screen.queryByRole("heading", { name: "The question" })).not.toBeInTheDocument()
+
+    act(() => {
+      setupModalApi.complete?.({ ...baseProfile, onboarding_completed: true })
+    })
+
+    expect(await screen.findByRole("heading", { name: "The question" })).toBeInTheDocument()
   })
 })

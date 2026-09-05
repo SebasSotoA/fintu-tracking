@@ -84,13 +84,18 @@ const baseProfile: Profile = {
 function renderModal(
   profile: Profile = baseProfile,
   onSetupComplete?: (profile: Profile) => void,
+  forceOpen?: boolean,
 ) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return renderWithLocale(
     <QueryClientProvider client={queryClient}>
-      <SetupModal initialProfile={profile} onSetupComplete={onSetupComplete} />
+      <SetupModal
+        initialProfile={profile}
+        onSetupComplete={onSetupComplete}
+        forceOpen={forceOpen}
+      />
     </QueryClientProvider>,
   )
 }
@@ -122,6 +127,18 @@ describe("SetupModal", () => {
     expect(screen.getByText("Step 1 of 2")).toBeInTheDocument()
     expect(screen.getByText("Set up your account")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument()
+  })
+
+  it("opens for an already onboarded profile when forceOpen is set", () => {
+    renderModal({ ...baseProfile, onboarding_completed: true }, undefined, true)
+
+    expect(screen.getByRole("heading", { name: "Set up your account" })).toBeInTheDocument()
+  })
+
+  it("does not open for an already onboarded profile without forceOpen", () => {
+    renderModal({ ...baseProfile, onboarding_completed: true })
+
+    expect(screen.queryByRole("heading", { name: "Set up your account" })).not.toBeInTheDocument()
   })
 
   it("keeps the default overlay without intro blur", () => {
@@ -166,6 +183,42 @@ describe("SetupModal", () => {
     expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument()
   })
 
+  it("does not skip the broker step when Continue is clicked", async () => {
+    const user = userEvent.setup()
+    renderModal()
+
+    await user.click(screen.getByRole("button", { name: "Continue" }))
+
+    expect(screen.getByText("Step 2 of 2")).toBeInTheDocument()
+    expect(screen.getByTestId("broker-select")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Finish setup" })).toBeInTheDocument()
+    expect(mockComplete).not.toHaveBeenCalled()
+  })
+
+  it("preselects Hapi on the broker step and does not show a broker error", async () => {
+    const user = userEvent.setup()
+    mockComplete.mockResolvedValueOnce({
+      ...baseProfile,
+      onboarding_completed: true,
+      subscription_status: "active",
+    })
+
+    renderModal()
+
+    await user.click(screen.getByRole("button", { name: "Continue" }))
+
+    const brokerSelect = screen.getByTestId("broker-select") as HTMLSelectElement
+    expect(brokerSelect.value).toBe("hapi-colombia")
+    expect(screen.queryByText("Select a broker")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Finish setup" }))
+
+    expect(mockComplete).toHaveBeenCalledWith({
+      country: "co",
+      broker_preset_id: "hapi-colombia",
+    })
+  })
+
   it("keeps Continue, Back, and Finish outside the scroll body", async () => {
     const user = userEvent.setup()
     renderModal()
@@ -185,6 +238,14 @@ describe("SetupModal", () => {
     expect(finishButton).toBeInTheDocument()
     expect(scrollBody).not.toContainElement(backButton)
     expect(scrollBody).not.toContainElement(finishButton)
+  })
+
+  it("keeps 1.5rem footer padding and does not use pb-safe", () => {
+    renderModal()
+
+    const footer = document.querySelector("[data-slot=dialog-footer]")
+    expect(footer).toHaveClass("pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]")
+    expect(footer).not.toHaveClass("pb-safe")
   })
 
   it("redirects to subscription when onboarding completes without active subscription", async () => {

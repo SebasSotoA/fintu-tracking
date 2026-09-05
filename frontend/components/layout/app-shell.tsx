@@ -13,6 +13,7 @@ import {
   markProductIntroPending,
   markProductIntroSeen,
 } from "@/components/onboarding/product-intro-storage"
+import { parseDevOnboardingPreview } from "@/lib/dev/onboarding-preview"
 import { useLocale } from "@/components/locale-provider"
 import { useMe } from "@/hooks/use-me"
 import { useUpdateProfile } from "@/hooks/use-update-profile"
@@ -36,6 +37,7 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarHydrated, setSidebarHydrated] = useState(false)
   const [introOpen, setIntroOpen] = useState(false)
+  const [preview, setPreview] = useState({ setup: false, intro: false })
   const pathname = usePathname()
 
   useEffect(() => {
@@ -71,12 +73,22 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
   }, [profile, locale, persistLocale])
 
   useEffect(() => {
+    setPreview(parseDevOnboardingPreview(window.location.search))
+  }, [])
+
+  useEffect(() => {
+    if (!preview.intro || preview.setup) return
+    setIntroOpen(true)
+  }, [preview])
+
+  useEffect(() => {
     if (!profile?.onboarding_completed || !profile.user_id) return
     if (pathname === "/subscription") return
+    if (preview.setup || preview.intro) return
     if (hasSeenProductIntro(profile.user_id)) return
     if (!isProductIntroPending(profile.user_id)) return
     setIntroOpen(true)
-  }, [profile?.onboarding_completed, profile?.user_id, pathname])
+  }, [profile?.onboarding_completed, profile?.user_id, pathname, preview.setup, preview.intro])
 
   const dismissIntro = () => {
     if (profile?.user_id) {
@@ -86,8 +98,10 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
   }
 
   const handleSetupComplete = (completedProfile: Profile) => {
-    if (hasSeenProductIntro(completedProfile.user_id)) return
-    markProductIntroPending(completedProfile.user_id)
+    if (!preview.intro && hasSeenProductIntro(completedProfile.user_id)) return
+    if (!preview.intro) {
+      markProductIntroPending(completedProfile.user_id)
+    }
     setIntroOpen(true)
   }
 
@@ -111,8 +125,12 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
           <div className="container mx-auto px-4 md:px-8 py-8">{children}</div>
         </main>
       </div>
-      {profile && !profile.onboarding_completed && (
-        <SetupModal initialProfile={profile} onSetupComplete={handleSetupComplete} />
+      {profile && (!profile.onboarding_completed || preview.setup) && (
+        <SetupModal
+          initialProfile={profile}
+          onSetupComplete={handleSetupComplete}
+          forceOpen={preview.setup}
+        />
       )}
       {profile && introOpen && (
         <ProductIntroModal

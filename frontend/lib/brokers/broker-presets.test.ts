@@ -3,6 +3,7 @@ import {
   BROKER_PRESETS,
   computeBrokerFeeUSD,
   computeCashFlowBrokerFeeUSD,
+  defaultBrokerPresetIdForCountry,
   getBrokerPreset,
   listBrokerPresetsForCountry,
 } from "./broker-presets"
@@ -24,6 +25,11 @@ describe("broker presets", () => {
     expect(colombian.map((p) => p.id)).toContain("hapi-colombia")
     expect(colombian.map((p) => p.id)).toContain("trii-colombia")
     expect(colombian.map((p) => p.id)).not.toContain("gbm-mexico")
+  })
+
+  it("defaults Colombia to Hapi and Mexico to the first Mexican preset", () => {
+    expect(defaultBrokerPresetIdForCountry("co")).toBe("hapi-colombia")
+    expect(defaultBrokerPresetIdForCountry("mx")).toBe("gbm-mexico")
   })
 
   it("computes percentage deposit fee", () => {
