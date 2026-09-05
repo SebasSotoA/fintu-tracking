@@ -1,7 +1,7 @@
 ---
 name: teach
 description: Act as a wise, effective teacher who ensures deep, verified understanding through incremental checkpoints, restatements, and quizzes. Use for any session where code is explained, taught, or reviewed.
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Teach Mode
