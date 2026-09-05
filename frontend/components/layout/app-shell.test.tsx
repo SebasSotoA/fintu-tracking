@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
-import { screen, waitFor } from "@testing-library/react"
+import { act, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { ReactElement, ReactNode } from "react"
@@ -10,6 +10,10 @@ import { LOCALE_COOKIE_NAME } from "@/lib/i18n/cookie"
 import { renderWithLocale } from "@/lib/i18n/test-utils"
 import type { Profile } from "@/lib/api/me"
 import { useUpdateProfile } from "@/hooks/use-update-profile"
+import {
+  productIntroPendingKey,
+  productIntroSeenKey,
+} from "@/components/onboarding/product-intro-storage"
 
 vi.mock("@/hooks/use-me", () => ({
   useMe: (initial?: Profile) => ({ data: initial }),
@@ -33,8 +37,27 @@ vi.mock("@/components/profile/account-menu", () => ({
   AccountMenu: () => null,
 }))
 
+const setupModalApi = vi.hoisted(() => ({
+  complete: undefined as ((profile: Profile) => void) | undefined,
+}))
+
+const navigationState = vi.hoisted(() => ({
+  pathname: "/dashboard",
+}))
+
 vi.mock("@/components/onboarding/setup-modal", () => ({
-  SetupModal: () => null,
+  SetupModal: ({
+    onSetupComplete,
+  }: {
+    onSetupComplete?: (profile: Profile) => void
+  }) => {
+    setupModalApi.complete = onSetupComplete
+    return null
+  },
+}))
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => navigationState.pathname,
 }))
 
 vi.mock("@/hooks/use-update-profile")
@@ -71,12 +94,16 @@ function renderWithProviders(ui: ReactElement, locale: "en" | "es" = "en") {
 describe("AppShell", () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
+    setupModalApi.complete = undefined
+    navigationState.pathname = "/dashboard"
     mockMutate.mockReset()
     vi.mocked(useUpdateProfile).mockReturnValue(mockUseUpdateProfile)
   })
 
   afterEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
     document.cookie = `${LOCALE_COOKIE_NAME}=; path=/; max-age=0`
     document.documentElement.lang = "en"
   })
@@ -195,5 +222,126 @@ describe("AppShell", () => {
       expect(document.documentElement.lang).toBe("es")
     })
     expect(mockMutate).not.toHaveBeenCalled()
+  })
+
+  it("does not show the product intro for an already onboarded profile on mount", async () => {
+    renderWithProviders(
+      <AppShell initialProfile={baseProfile}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("app-nav")).toBeInTheDocument()
+    })
+    expect(screen.queryByRole("heading", { name: "The question" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Skip intro" })).not.toBeInTheDocument()
+  })
+
+  it("opens the product intro after setup completes when the seen key is absent", async () => {
+    renderWithProviders(
+      <AppShell initialProfile={{ ...baseProfile, onboarding_completed: false }}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    expect(setupModalApi.complete).toBeTypeOf("function")
+
+    act(() => {
+      setupModalApi.complete?.({ ...baseProfile, onboarding_completed: true })
+    })
+
+    expect(await screen.findByRole("heading", { name: "The question" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Skip intro" })).toBeInTheDocument()
+  })
+
+  it("writes the seen key and hides the intro when Skip is clicked", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(
+      <AppShell initialProfile={{ ...baseProfile, onboarding_completed: false }}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    act(() => {
+      setupModalApi.complete?.({ ...baseProfile, onboarding_completed: true })
+    })
+
+    await screen.findByRole("heading", { name: "The question" })
+    await user.click(screen.getByRole("button", { name: "Skip intro" }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "The question" })).not.toBeInTheDocument()
+    })
+    expect(localStorage.getItem(productIntroSeenKey("user-1"))).toBe("1")
+    expect(sessionStorage.getItem(productIntroPendingKey("user-1"))).toBeNull()
+  })
+
+  it("opens the intro on mount when pending is set, onboarded, and not on subscription", async () => {
+    sessionStorage.setItem(productIntroPendingKey("user-1"), "1")
+
+    renderWithProviders(
+      <AppShell initialProfile={baseProfile}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    expect(await screen.findByRole("heading", { name: "The question" })).toBeInTheDocument()
+  })
+
+  it("does not open the pending intro on the subscription route", async () => {
+    navigationState.pathname = "/subscription"
+    sessionStorage.setItem(productIntroPendingKey("user-1"), "1")
+
+    renderWithProviders(
+      <AppShell initialProfile={baseProfile}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("app-nav")).toBeInTheDocument()
+    })
+    expect(screen.queryByRole("heading", { name: "The question" })).not.toBeInTheDocument()
+  })
+
+  it("does not show the intro on mount when the seen key is set even if pending", async () => {
+    localStorage.setItem(productIntroSeenKey("user-1"), "1")
+    sessionStorage.setItem(productIntroPendingKey("user-1"), "1")
+
+    renderWithProviders(
+      <AppShell initialProfile={baseProfile}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId("app-nav")).toBeInTheDocument()
+    })
+    expect(screen.queryByRole("heading", { name: "The question" })).not.toBeInTheDocument()
+  })
+
+  it("writes the seen key when Get started is clicked", async () => {
+    const user = userEvent.setup()
+    renderWithProviders(
+      <AppShell initialProfile={{ ...baseProfile, onboarding_completed: false }}>
+        <div>child</div>
+      </AppShell>,
+    )
+
+    act(() => {
+      setupModalApi.complete?.({ ...baseProfile, onboarding_completed: true })
+    })
+
+    await screen.findByRole("heading", { name: "The question" })
+    await user.click(screen.getByRole("button", { name: "Next" }))
+    await user.click(screen.getByRole("button", { name: "Next" }))
+    await user.click(screen.getByRole("button", { name: "Get started" }))
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "The question" })).not.toBeInTheDocument()
+    })
+    expect(localStorage.getItem(productIntroSeenKey("user-1"))).toBe("1")
+    expect(sessionStorage.getItem(productIntroPendingKey("user-1"))).toBeNull()
   })
 })

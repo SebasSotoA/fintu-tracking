@@ -101,6 +101,42 @@ export const en = {
     country: "Country",
     countryPlaceholder: "Choose your country",
     broker: "Broker",
+    intro: {
+      skip: "Skip",
+      skipAria: "Skip intro",
+      next: "Next",
+      getStarted: "Get started",
+      kicker: "{step} / 03",
+      stepOf: "Step {step} of 3",
+      progressAria: "Intro progress",
+      slides: {
+        question: {
+          title: "The question",
+          body: "After fees and FX, are you making or losing?",
+        },
+        cash: {
+          title: "Record cash",
+          body: "Deposits, withdrawals, and the broker's actual FX when money moved.",
+        },
+        trades: {
+          title: "Record trades, then read",
+          body: "Buys/sells on Trades; Dashboard and Performance answer the question.",
+        },
+      },
+      vignette: {
+        afterCosts: "After costs",
+        making: "making",
+        losing: "losing",
+        cashMoved: "Cash moved",
+        copToUsd: "COP → USD",
+        fxSample: "4,012.50",
+        brokerFx: "broker FX",
+        dailyLoop: "Daily loop",
+        trades: "Trades",
+        dashboard: "Dashboard",
+        performance: "Performance",
+      },
+    },
   },
   settings: {
     language: "Language",

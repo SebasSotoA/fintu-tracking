@@ -10,6 +10,7 @@ export function DialogScrollBody({
 }) {
   return (
     <div
+      data-testid="dialog-scroll-body"
       className={cn(
         "scrollbar-minimal min-h-0 flex-1 overflow-y-auto px-6 py-4",
         className,

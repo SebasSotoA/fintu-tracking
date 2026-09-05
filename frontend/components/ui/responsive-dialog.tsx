@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
 import {
   Dialog,
   DialogClose,
@@ -83,17 +84,19 @@ function ResponsiveDialogContent({
   showCloseButton,
   onInteractOutside,
   onEscapeKeyDown,
+  overlayClassName,
   ...props
 }: React.ComponentProps<typeof DialogContent>) {
   const { isMobile } = useResponsiveDialogContext()
   return isMobile ? (
-    <DrawerContent className={className} {...props} />
+    <DrawerContent className={className} overlayClassName={overlayClassName} {...props} />
   ) : (
     <DialogContent
       className={className}
       showCloseButton={showCloseButton}
       onInteractOutside={onInteractOutside}
       onEscapeKeyDown={onEscapeKeyDown}
+      overlayClassName={overlayClassName}
       {...props}
     />
   )
@@ -117,9 +120,9 @@ function ResponsiveDialogFooter({
 }: React.ComponentProps<"div">) {
   const { isMobile } = useResponsiveDialogContext()
   return isMobile ? (
-    <DrawerFooter className={className} {...props} />
+    <DrawerFooter className={cn("shrink-0", className)} {...props} />
   ) : (
-    <DialogFooter className={className} {...props} />
+    <DialogFooter className={cn("shrink-0", className)} {...props} />
   )
 }
 

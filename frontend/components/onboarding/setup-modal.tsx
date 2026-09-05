@@ -10,6 +10,7 @@ import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
@@ -29,9 +30,10 @@ type SetupStep = 1 | 2
 
 interface SetupModalProps {
   initialProfile: Profile
+  onSetupComplete?: (profile: Profile) => void
 }
 
-export function SetupModal({ initialProfile }: SetupModalProps) {
+export function SetupModal({ initialProfile, onSetupComplete }: SetupModalProps) {
   const router = useRouter()
   const complete = useCompleteOnboarding()
   const { t } = useLocale()
@@ -60,6 +62,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
         country: values.country,
         broker_preset_id: values.brokerPresetId,
       })
+      onSetupComplete?.(updatedProfile)
       toast.success(t("onboarding.setupComplete"))
       setOpen(false)
 
@@ -93,7 +96,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange} dismissible={false}>
       <ResponsiveDialogContent
         showCloseButton={false}
-        className="flex max-h-[100dvh] md:max-h-[90vh] flex-col gap-0 p-0 sm:max-w-md"
+        className="!flex flex max-h-[100dvh] md:max-h-[90vh] flex-col gap-0 p-0 sm:max-w-md"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -106,7 +109,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
-        <DialogScrollBody>
+        <DialogScrollBody className="min-h-0 flex-1">
           <div className="space-y-6 py-2">
             <OnboardingProgress step={step} />
             {step === 1 ? (
@@ -131,7 +134,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
           </div>
         </DialogScrollBody>
 
-        <div className="flex flex-col-reverse gap-2 px-6 pb-6 pb-safe sm:flex-row sm:justify-between">
+        <ResponsiveDialogFooter className="shrink-0 px-6 pb-6 pb-safe sm:justify-between">
           {step === 2 ? (
             <Button
               type="button"
@@ -153,7 +156,7 @@ export function SetupModal({ initialProfile }: SetupModalProps) {
               {complete.isPending ? t("onboarding.saving") : t("onboarding.finish")}
             </Button>
           )}
-        </div>
+        </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )

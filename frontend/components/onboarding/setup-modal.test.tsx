@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest"
-import { screen } from "@testing-library/react"
+import { screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { SetupModal } from "./setup-modal"
@@ -81,15 +81,25 @@ const baseProfile: Profile = {
   updated_at: "",
 }
 
-function renderModal(profile: Profile = baseProfile) {
+function renderModal(
+  profile: Profile = baseProfile,
+  onSetupComplete?: (profile: Profile) => void,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return renderWithLocale(
     <QueryClientProvider client={queryClient}>
-      <SetupModal initialProfile={profile} />
+      <SetupModal initialProfile={profile} onSetupComplete={onSetupComplete} />
     </QueryClientProvider>,
   )
+}
+
+async function completeSetup(user: ReturnType<typeof userEvent.setup>) {
+  await user.selectOptions(screen.getByTestId("country-select"), "co")
+  await user.click(screen.getByRole("button", { name: "Continue" }))
+  await user.selectOptions(screen.getByTestId("broker-select"), "hapi-colombia")
+  await user.click(screen.getByRole("button", { name: "Finish setup" }))
 }
 
 beforeAll(() => {
@@ -112,6 +122,14 @@ describe("SetupModal", () => {
     expect(screen.getByText("Step 1 of 2")).toBeInTheDocument()
     expect(screen.getByText("Set up your account")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Continue" })).toBeInTheDocument()
+  })
+
+  it("keeps the default overlay without intro blur", () => {
+    renderModal()
+
+    const overlay = document.querySelector("[data-slot=dialog-overlay]")
+    expect(overlay).toHaveClass("bg-black/50")
+    expect(overlay).not.toHaveClass("backdrop-blur-md")
   })
 
   it("navigates to step 2 and submits onboarding", async () => {
@@ -148,6 +166,27 @@ describe("SetupModal", () => {
     expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument()
   })
 
+  it("keeps Continue, Back, and Finish outside the scroll body", async () => {
+    const user = userEvent.setup()
+    renderModal()
+
+    const continueButton = screen.getByRole("button", { name: "Continue" })
+    expect(continueButton).toBeInTheDocument()
+    expect(screen.getByTestId("dialog-scroll-body")).not.toContainElement(continueButton)
+
+    await user.selectOptions(screen.getByTestId("country-select"), "co")
+    await user.click(continueButton)
+
+    const scrollBody = screen.getByTestId("dialog-scroll-body")
+    const backButton = screen.getByRole("button", { name: "Back" })
+    const finishButton = screen.getByRole("button", { name: "Finish setup" })
+
+    expect(backButton).toBeInTheDocument()
+    expect(finishButton).toBeInTheDocument()
+    expect(scrollBody).not.toContainElement(backButton)
+    expect(scrollBody).not.toContainElement(finishButton)
+  })
+
   it("redirects to subscription when onboarding completes without active subscription", async () => {
     const user = userEvent.setup()
     mockComplete.mockResolvedValueOnce({
@@ -157,12 +196,27 @@ describe("SetupModal", () => {
     })
 
     renderModal()
-
-    await user.selectOptions(screen.getByTestId("country-select"), "co")
-    await user.click(screen.getByRole("button", { name: "Continue" }))
-    await user.selectOptions(screen.getByTestId("broker-select"), "hapi-colombia")
-    await user.click(screen.getByRole("button", { name: "Finish setup" }))
+    await completeSetup(user)
 
     expect(mockPush).toHaveBeenCalledWith("/subscription")
+  })
+
+  it("calls onSetupComplete with the updated profile after a successful submit", async () => {
+    const user = userEvent.setup()
+    const onSetupComplete = vi.fn()
+    const updatedProfile: Profile = {
+      ...baseProfile,
+      onboarding_completed: true,
+      subscription_status: "active",
+    }
+    mockComplete.mockResolvedValueOnce(updatedProfile)
+
+    renderModal(baseProfile, onSetupComplete)
+    await completeSetup(user)
+
+    await waitFor(() => {
+      expect(onSetupComplete).toHaveBeenCalledWith(updatedProfile)
+    })
+    expect(mockRefresh).toHaveBeenCalled()
   })
 })

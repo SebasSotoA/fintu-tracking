@@ -32,4 +32,39 @@ describe("ResponsiveDialog", () => {
     expect(screen.getByTestId("responsive-content")).toHaveTextContent("Body")
     expect(screen.getByRole("button", { name: "Action" })).toBeInTheDocument()
   })
+
+  it("keeps the default overlay dim without blur when overlayClassName is omitted", () => {
+    renderWithLocale(
+      <ResponsiveDialog open>
+        <ResponsiveDialogContent>
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Title</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>Description</ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>,
+    )
+
+    const overlay = document.querySelector("[data-slot=dialog-overlay]")
+    expect(overlay).toHaveClass("bg-black/50")
+    expect(overlay).not.toHaveClass("backdrop-blur-md")
+  })
+
+  it("applies overlayClassName to the overlay while keeping the default dim", () => {
+    renderWithLocale(
+      <ResponsiveDialog open>
+        <ResponsiveDialogContent overlayClassName="backdrop-blur-md custom-intro-overlay">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Title</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>Description</ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>,
+    )
+
+    const overlay = document.querySelector("[data-slot=dialog-overlay]")
+    expect(overlay).toHaveClass("bg-black/50")
+    expect(overlay).toHaveClass("backdrop-blur-md")
+    expect(overlay).toHaveClass("custom-intro-overlay")
+  })
 })

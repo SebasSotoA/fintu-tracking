@@ -1,10 +1,18 @@
 "use client"
 
 import { useEffect, useRef, useState, type ReactNode } from "react"
+import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { AppNav } from "@/components/layout/app-nav"
 import { AppTopbar } from "@/components/layout/app-topbar"
 import { SetupModal } from "@/components/onboarding/setup-modal"
+import { ProductIntroModal } from "@/components/onboarding/product-intro-modal"
+import {
+  hasSeenProductIntro,
+  isProductIntroPending,
+  markProductIntroPending,
+  markProductIntroSeen,
+} from "@/components/onboarding/product-intro-storage"
 import { useLocale } from "@/components/locale-provider"
 import { useMe } from "@/hooks/use-me"
 import { useUpdateProfile } from "@/hooks/use-update-profile"
@@ -27,6 +35,8 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
   const persistedLocaleRef = useRef(false)
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarHydrated, setSidebarHydrated] = useState(false)
+  const [introOpen, setIntroOpen] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     try {
@@ -60,6 +70,27 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
     persistLocale({ locale })
   }, [profile, locale, persistLocale])
 
+  useEffect(() => {
+    if (!profile?.onboarding_completed || !profile.user_id) return
+    if (pathname === "/subscription") return
+    if (hasSeenProductIntro(profile.user_id)) return
+    if (!isProductIntroPending(profile.user_id)) return
+    setIntroOpen(true)
+  }, [profile?.onboarding_completed, profile?.user_id, pathname])
+
+  const dismissIntro = () => {
+    if (profile?.user_id) {
+      markProductIntroSeen(profile.user_id)
+    }
+    setIntroOpen(false)
+  }
+
+  const handleSetupComplete = (completedProfile: Profile) => {
+    if (hasSeenProductIntro(completedProfile.user_id)) return
+    markProductIntroPending(completedProfile.user_id)
+    setIntroOpen(true)
+  }
+
   return (
     <div className="min-h-screen">
       {profile && (
@@ -80,7 +111,18 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
           <div className="container mx-auto px-4 md:px-8 py-8">{children}</div>
         </main>
       </div>
-      {profile && !profile.onboarding_completed && <SetupModal initialProfile={profile} />}
+      {profile && !profile.onboarding_completed && (
+        <SetupModal initialProfile={profile} onSetupComplete={handleSetupComplete} />
+      )}
+      {profile && introOpen && (
+        <ProductIntroModal
+          open={introOpen}
+          onOpenChange={(open) => {
+            if (!open) dismissIntro()
+          }}
+          onComplete={dismissIntro}
+        />
+      )}
     </div>
   )
 }

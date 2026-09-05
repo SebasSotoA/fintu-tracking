@@ -103,6 +103,42 @@ export const es = {
     country: "País",
     countryPlaceholder: "Elige tu país",
     broker: "Broker",
+    intro: {
+      skip: "Saltar",
+      skipAria: "Saltar introducción",
+      next: "Siguiente",
+      getStarted: "Empezar",
+      kicker: "{step} / 03",
+      stepOf: "Paso {step} de 3",
+      progressAria: "Progreso de la introducción",
+      slides: {
+        question: {
+          title: "La pregunta",
+          body: "Después de comisiones y tipo de cambio, ¿estás ganando o perdiendo?",
+        },
+        cash: {
+          title: "Registra el efectivo",
+          body: "Depósitos, retiros y el tipo de cambio real del broker cuando el dinero se movió.",
+        },
+        trades: {
+          title: "Registra operaciones, luego lee",
+          body: "Compras y ventas en Operaciones; Panel y Rendimiento responden la pregunta.",
+        },
+      },
+      vignette: {
+        afterCosts: "Después de costos",
+        making: "ganando",
+        losing: "perdiendo",
+        cashMoved: "Dinero movido",
+        copToUsd: "COP → USD",
+        fxSample: "4,012.50",
+        brokerFx: "FX del broker",
+        dailyLoop: "Rutina diaria",
+        trades: "Operaciones",
+        dashboard: "Panel",
+        performance: "Rendimiento",
+      },
+    },
   },
   settings: {
     language: "Idioma",
