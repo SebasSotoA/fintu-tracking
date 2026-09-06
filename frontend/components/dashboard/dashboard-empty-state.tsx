@@ -12,7 +12,7 @@ export function DashboardEmptyState() {
       description={t("dashboard.emptyDescription")}
       action={
         <div className="flex flex-col gap-3 w-full md:w-auto">
-          <AddTradeDialog>
+          <AddTradeDialog data-tour="add-trade">
             <span className="w-full md:w-auto">{t("dashboard.addTrade")}</span>
           </AddTradeDialog>
         </div>

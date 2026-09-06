@@ -194,6 +194,14 @@ describe("DashboardPage", () => {
     expect(screen.getByTestId("activity-feed")).toBeInTheDocument()
   })
 
+  it("stamps data-tour=net-worth on the primary grid cell", async () => {
+    renderPage()
+    await waitFor(() => {
+      expect(screen.getByTestId("net-worth-card")).toBeInTheDocument()
+    })
+    expect(screen.getByTestId("net-worth-card").closest("[data-tour='net-worth']")).toBeTruthy()
+  })
+
   it("renders the secondary grid with AssetAllocation and TopHoldings", async () => {
     renderPage()
     await waitFor(() => {

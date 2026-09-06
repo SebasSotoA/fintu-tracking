@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
+import { describe, expect, it, vi, beforeEach, afterEach, beforeAll } from "vitest"
 import { act, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -13,6 +13,7 @@ import { useUpdateProfile } from "@/hooks/use-update-profile"
 import {
   productIntroPendingKey,
   productIntroSeenKey,
+  productTourStepKey,
 } from "@/components/onboarding/product-intro-storage"
 
 vi.mock("@/hooks/use-me", () => ({
@@ -75,6 +76,12 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/hooks/use-update-profile")
 
+beforeAll(() => {
+  HTMLElement.prototype.hasPointerCapture = vi.fn()
+  HTMLElement.prototype.setPointerCapture = vi.fn()
+  HTMLElement.prototype.releasePointerCapture = vi.fn()
+})
+
 const mockMutate = vi.fn()
 const mockUseUpdateProfile = {
   mutate: mockMutate,
@@ -92,6 +99,44 @@ const baseProfile: Profile = {
   onboarding_step: "done",
   created_at: "",
   updated_at: "",
+}
+
+function stubTourLayoutApis(): void {
+  Element.prototype.getBoundingClientRect = function () {
+    return {
+      width: 80,
+      height: 40,
+      top: 20,
+      left: 20,
+      bottom: 60,
+      right: 100,
+      x: 20,
+      y: 20,
+      toJSON() {},
+    } as DOMRect
+  }
+  Element.prototype.getClientRects = function () {
+    return [{ width: 80, height: 40 }] as unknown as DOMRectList
+  }
+  HTMLElement.prototype.scrollIntoView = vi.fn()
+}
+
+function tourAnchors(): ReactElement {
+  return (
+    <>
+      <div data-tour="net-worth">nw</div>
+      <button type="button" data-tour="add-cash">
+        cash
+      </button>
+      <button type="button" data-tour="add-trade">
+        trade
+      </button>
+      <a href="/performance" data-tour="nav-performance">
+        Performance
+      </a>
+      <div>child</div>
+    </>
+  )
 }
 
 function renderWithProviders(ui: ReactElement, locale: "en" | "es" = "en") {
@@ -115,6 +160,7 @@ describe("AppShell", () => {
     previewState.intro = false
     mockMutate.mockReset()
     vi.mocked(useUpdateProfile).mockReturnValue(mockUseUpdateProfile)
+    stubTourLayoutApis()
   })
 
   afterEach(() => {
@@ -257,7 +303,7 @@ describe("AppShell", () => {
   it("opens the product intro after setup completes when the seen key is absent", async () => {
     renderWithProviders(
       <AppShell initialProfile={{ ...baseProfile, onboarding_completed: false }}>
-        <div>child</div>
+        {tourAnchors()}
       </AppShell>,
     )
 
@@ -275,7 +321,7 @@ describe("AppShell", () => {
     const user = userEvent.setup()
     renderWithProviders(
       <AppShell initialProfile={{ ...baseProfile, onboarding_completed: false }}>
-        <div>child</div>
+        {tourAnchors()}
       </AppShell>,
     )
 
@@ -298,7 +344,7 @@ describe("AppShell", () => {
 
     renderWithProviders(
       <AppShell initialProfile={baseProfile}>
-        <div>child</div>
+        {tourAnchors()}
       </AppShell>,
     )
 
@@ -341,7 +387,7 @@ describe("AppShell", () => {
     const user = userEvent.setup()
     renderWithProviders(
       <AppShell initialProfile={{ ...baseProfile, onboarding_completed: false }}>
-        <div>child</div>
+        {tourAnchors()}
       </AppShell>,
     )
 
@@ -350,6 +396,7 @@ describe("AppShell", () => {
     })
 
     await screen.findByRole("heading", { name: "The question" })
+    await user.click(screen.getByRole("button", { name: "Next" }))
     await user.click(screen.getByRole("button", { name: "Next" }))
     await user.click(screen.getByRole("button", { name: "Next" }))
     await user.click(screen.getByRole("button", { name: "Get started" }))
@@ -380,7 +427,7 @@ describe("AppShell", () => {
 
     renderWithProviders(
       <AppShell initialProfile={baseProfile}>
-        <div>child</div>
+        {tourAnchors()}
       </AppShell>,
     )
 
@@ -394,7 +441,7 @@ describe("AppShell", () => {
 
     renderWithProviders(
       <AppShell initialProfile={baseProfile}>
-        <div>child</div>
+        {tourAnchors()}
       </AppShell>,
     )
 
@@ -406,5 +453,36 @@ describe("AppShell", () => {
     })
 
     expect(await screen.findByRole("heading", { name: "The question" })).toBeInTheDocument()
+  })
+
+  it("does not mount the tour off /dashboard and keeps pending plus step", async () => {
+    const user = userEvent.setup()
+    sessionStorage.setItem(productIntroPendingKey("user-1"), "1")
+
+    const { rerender } = renderWithProviders(
+      <AppShell initialProfile={baseProfile}>{tourAnchors()}</AppShell>,
+    )
+
+    await screen.findByRole("heading", { name: "The question" })
+    await user.click(screen.getByRole("button", { name: "Next" }))
+    await screen.findByRole("heading", { name: "Record cash" })
+
+    navigationState.pathname = "/trades"
+    rerender(<AppShell initialProfile={baseProfile}>{tourAnchors()}</AppShell>)
+
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "The question" })).not.toBeInTheDocument()
+    })
+    expect(screen.queryByRole("heading", { name: "Record cash" })).not.toBeInTheDocument()
+    expect(sessionStorage.getItem(productIntroPendingKey("user-1"))).toBe("1")
+    expect(localStorage.getItem(productIntroSeenKey("user-1"))).toBeNull()
+    expect(sessionStorage.getItem(productTourStepKey("user-1"))).toBe("2")
+
+    navigationState.pathname = "/dashboard"
+    rerender(<AppShell initialProfile={baseProfile}>{tourAnchors()}</AppShell>)
+
+    expect(await screen.findByRole("heading", { name: "Record cash" })).toBeInTheDocument()
+    expect(sessionStorage.getItem(productIntroPendingKey("user-1"))).toBe("1")
+    expect(localStorage.getItem(productIntroSeenKey("user-1"))).toBeNull()
   })
 })

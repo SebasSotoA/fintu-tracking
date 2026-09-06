@@ -25,7 +25,10 @@ export function DashboardPageSkeleton({
         className="grid grid-cols-1 lg:grid-cols-2 lg:grid-rows-[1fr_auto_1fr] gap-4 md:gap-6"
         data-testid="dashboard-primary-grid"
       >
-        <div className="lg:row-start-1 lg:row-end-2 lg:col-start-1 lg:col-end-2">
+        <div
+          className="lg:row-start-1 lg:row-end-2 lg:col-start-1 lg:col-end-2"
+          data-tour="net-worth"
+        >
           <NetWorthCardSkeleton nested />
         </div>
         <div className="lg:row-start-1 lg:row-end-2 lg:col-start-2 lg:col-end-3">

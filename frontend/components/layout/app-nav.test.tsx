@@ -170,6 +170,18 @@ describe("AppNav", () => {
     expect(within(sidebar).queryByRole("link", { name: "Dashboard" })).not.toBeInTheDocument()
   })
 
+  it("stamps data-tour=nav-performance on sidebar and mobile Performance links", () => {
+    renderAppNav(false)
+
+    const links = screen.getAllByRole("link", { name: "Performance" })
+    expect(links).toHaveLength(2)
+    for (const link of links) {
+      expect(link).toHaveAttribute("data-tour", "nav-performance")
+      expect(link.className).toContain("data-[tour-current]:ring-2")
+      expect(link.className).toContain("data-[tour-current]:ring-primary/40")
+    }
+  })
+
   it("uses text-foreground on the active Dashboard link", () => {
     renderAppNav(false)
 

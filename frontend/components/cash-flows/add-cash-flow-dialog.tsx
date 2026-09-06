@@ -50,7 +50,15 @@ const emptyForm = () => ({
   notes: "",
 })
 
-export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: boolean; children?: React.ReactNode }) {
+export function AddCashFlowDialog({
+  autoOpen = false,
+  children,
+  "data-tour": dataTour,
+}: {
+  autoOpen?: boolean
+  children?: React.ReactNode
+  "data-tour"?: string
+}) {
   const { t } = useLocale()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -144,7 +152,7 @@ export function AddCashFlowDialog({ autoOpen = false, children }: { autoOpen?: b
   return (
     <ResponsiveDialog open={open} onOpenChange={setOpen}>
       <ResponsiveDialogTrigger asChild>
-        <Button className="gap-2 w-full md:w-auto">
+        <Button className="gap-2 w-full md:w-auto" data-tour={dataTour}>
           <Plus className="h-4 w-4" />
           {children ?? t("cash.add")}
         </Button>

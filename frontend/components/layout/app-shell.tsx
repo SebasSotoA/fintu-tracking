@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { AppNav } from "@/components/layout/app-nav"
 import { AppTopbar } from "@/components/layout/app-topbar"
 import { SetupModal } from "@/components/onboarding/setup-modal"
-import { ProductIntroModal } from "@/components/onboarding/product-intro-modal"
+import { ProductTour } from "@/components/onboarding/product-tour"
 import {
   hasSeenProductIntro,
   isProductIntroPending,
@@ -132,12 +132,11 @@ export function AppShell({ children, initialProfile }: AppShellProps) {
           forceOpen={preview.setup}
         />
       )}
-      {profile && introOpen && (
-        <ProductIntroModal
+      {profile && introOpen && pathname === "/dashboard" && (
+        <ProductTour
           open={introOpen}
-          onOpenChange={(open) => {
-            if (!open) dismissIntro()
-          }}
+          userId={profile.user_id}
+          onSkip={dismissIntro}
           onComplete={dismissIntro}
         />
       )}

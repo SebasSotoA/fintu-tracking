@@ -176,4 +176,22 @@ describe("AddCashFlowDialog", () => {
     const optionValues = Array.from(hiddenSelect.options).map((o) => o.value)
     expect(optionValues).not.toContain("cash_adjustment")
   })
+
+  it("forwards data-tour onto the trigger button", () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    render(
+      <EnglishLocaleWrapper>
+        <QueryClientProvider client={queryClient}>
+          <AddCashFlowDialog data-tour="add-cash" />
+        </QueryClientProvider>
+      </EnglishLocaleWrapper>,
+    )
+
+    expect(screen.getByRole("button", { name: /Add Cash Flow/i })).toHaveAttribute(
+      "data-tour",
+      "add-cash",
+    )
+  })
 })

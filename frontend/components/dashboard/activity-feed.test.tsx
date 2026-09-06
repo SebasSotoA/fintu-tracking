@@ -12,16 +12,32 @@ vi.mock("@/lib/api/activity", () => ({
 }))
 
 vi.mock("@/components/trades/add-trade-dialog", () => ({
-  AddTradeDialog: ({ children }: { children?: React.ReactNode }) => (
-    <button type="button" data-testid="add-trade-dialog-trigger">
+  AddTradeDialog: ({
+    children,
+    ...props
+  }: {
+    children?: React.ReactNode
+    "data-tour"?: string
+  }) => (
+    <button type="button" data-testid="add-trade-dialog-trigger" data-tour={props["data-tour"]}>
       {children ?? "Add Trade"}
     </button>
   ),
 }))
 
 vi.mock("@/components/cash-flows/add-cash-flow-dialog", () => ({
-  AddCashFlowDialog: ({ children }: { children?: React.ReactNode }) => (
-    <button type="button" data-testid="add-cash-flow-dialog-trigger">
+  AddCashFlowDialog: ({
+    children,
+    ...props
+  }: {
+    children?: React.ReactNode
+    "data-tour"?: string
+  }) => (
+    <button
+      type="button"
+      data-testid="add-cash-flow-dialog-trigger"
+      data-tour={props["data-tour"]}
+    >
       {children ?? "Add Cash Flow"}
     </button>
   ),
@@ -51,6 +67,11 @@ describe("ActivityFeed", () => {
     })
     expect(screen.getByTestId("add-trade-dialog-trigger")).toBeInTheDocument()
     expect(screen.getByTestId("add-cash-flow-dialog-trigger")).toBeInTheDocument()
+    expect(screen.getByTestId("add-cash-flow-dialog-trigger")).toHaveAttribute(
+      "data-tour",
+      "add-cash",
+    )
+    expect(screen.getByTestId("add-trade-dialog-trigger")).not.toHaveAttribute("data-tour")
   })
 
   it("renders activity items when data exists", async () => {

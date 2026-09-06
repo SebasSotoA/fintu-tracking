@@ -61,7 +61,10 @@ function DashboardPageContent() {
         data-testid="dashboard-primary-grid"
       >
         {/* Row 1: Portfolio Total (left) + Top Holdings (right) */}
-        <div className="lg:row-start-1 lg:row-end-2 lg:col-start-1 lg:col-end-2">
+        <div
+          className="lg:row-start-1 lg:row-end-2 lg:col-start-1 lg:col-end-2"
+          data-tour="net-worth"
+        >
           {netWorthQuery.isLoading ? (
             <NetWorthCardSkeleton label={t("table.loading")} />
           ) : (

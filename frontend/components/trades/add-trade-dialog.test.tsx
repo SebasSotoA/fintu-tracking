@@ -278,4 +278,22 @@ describe("AddTradeDialog", () => {
 
     expect(screen.getByRole("heading", { name: "Agregar operación" })).toBeInTheDocument()
   })
+
+  it("forwards data-tour onto the trigger button", () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+    render(
+      <EnglishLocaleWrapper>
+        <QueryClientProvider client={queryClient}>
+          <AddTradeDialog data-tour="add-trade" />
+        </QueryClientProvider>
+      </EnglishLocaleWrapper>,
+    )
+
+    expect(screen.getByRole("button", { name: /Add Trade/i })).toHaveAttribute(
+      "data-tour",
+      "add-trade",
+    )
+  })
 })

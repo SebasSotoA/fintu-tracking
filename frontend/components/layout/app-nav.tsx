@@ -156,11 +156,14 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
               <div key={item.href} className="group relative h-9 min-h-9 w-full">
                 <Link
                   href={item.href}
+                  data-tour={item.href === "/performance" ? "nav-performance" : undefined}
                   aria-label={collapsed ? itemLabel : undefined}
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "flex h-9 w-full items-center rounded-md text-sm",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                    item.href === "/performance" &&
+                      "data-[tour-current]:ring-2 data-[tour-current]:ring-primary/40",
                     !collapsed && "gap-2",
                     isActive ? "font-semibold" : "font-medium",
                     collapsed
@@ -215,9 +218,12 @@ export function AppNav({ collapsed, onToggleCollapsed, profile }: AppNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              data-tour={item.href === "/performance" ? "nav-performance" : undefined}
               className={cn(
                 "flex min-h-11 flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors duration-75",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                item.href === "/performance" &&
+                  "data-[tour-current]:ring-2 data-[tour-current]:ring-primary/40",
                 isActive
                   ? "bg-primary-container/20 text-primary"
                   : "text-muted-foreground hover:text-primary",

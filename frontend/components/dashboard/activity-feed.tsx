@@ -54,7 +54,7 @@ export function ActivityFeed() {
                 <AddTradeDialog>
                   <EmptyStateAction>{t("trades.add")}</EmptyStateAction>
                 </AddTradeDialog>
-                <AddCashFlowDialog>
+                <AddCashFlowDialog data-tour="add-cash">
                   <EmptyStateAction>{t("cash.add")}</EmptyStateAction>
                 </AddCashFlowDialog>
               </EmptyStateActions>

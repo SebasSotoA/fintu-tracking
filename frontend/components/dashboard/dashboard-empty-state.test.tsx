@@ -4,8 +4,14 @@ import { renderWithLocale } from "@/lib/i18n/test-utils"
 import { DashboardEmptyState } from "./dashboard-empty-state"
 
 vi.mock("@/components/trades/add-trade-dialog", () => ({
-  AddTradeDialog: ({ children }: { children?: React.ReactNode }) => (
-    <button type="button" data-testid="add-trade-dialog-trigger">
+  AddTradeDialog: ({
+    children,
+    ...props
+  }: {
+    children?: React.ReactNode
+    "data-tour"?: string
+  }) => (
+    <button type="button" data-testid="add-trade-dialog-trigger" data-tour={props["data-tour"]}>
       {children ?? "Add trade"}
     </button>
   ),
@@ -49,5 +55,9 @@ describe("DashboardEmptyState", () => {
     const action = screen.getByTestId("empty-state-action")
     expect(action).toBeInTheDocument()
     expect(screen.getByTestId("add-trade-dialog-trigger")).toBeInTheDocument()
+    expect(screen.getByTestId("add-trade-dialog-trigger")).toHaveAttribute(
+      "data-tour",
+      "add-trade",
+    )
   })
 })

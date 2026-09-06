@@ -28,6 +28,13 @@ describe("DashboardPageSkeleton", () => {
     expect(screen.getByTestId("dashboard-page-skeleton")).toBeInTheDocument()
   })
 
+  it("stamps data-tour=net-worth on the matching grid cell", () => {
+    render(<DashboardPageSkeleton />)
+    const cell = document.querySelector('[data-tour="net-worth"]')
+    expect(cell).toHaveClass("lg:row-start-1")
+    expect(cell).toHaveClass("lg:col-start-1")
+  })
+
   it("includes a NetWorth chart placeholder with min-h-[128px] and period bars", () => {
     const { container } = render(<NetWorthCardSkeleton nested />)
     const chart = container.querySelector('[data-testid="net-worth-chart-skeleton"]')

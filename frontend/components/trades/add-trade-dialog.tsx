@@ -60,9 +60,17 @@ interface AddTradeDialogProps {
   /** When true, auto-opens the dialog and hides the trigger button. Use for programmatic quick-trade. */
   autoOpen?: boolean
   children?: React.ReactNode
+  "data-tour"?: string
 }
 
-export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, autoOpen, children }: AddTradeDialogProps = {}) {
+export function AddTradeDialog({
+  initialTicker,
+  initialAssetType,
+  initialSide,
+  autoOpen,
+  children,
+  "data-tour": dataTour,
+}: AddTradeDialogProps = {}) {
   const { t } = useLocale()
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -122,7 +130,7 @@ export function AddTradeDialog({ initialTicker, initialAssetType, initialSide, a
     >
       {!autoOpen && (
         <ResponsiveDialogTrigger asChild>
-          <Button className="gap-2 w-full md:w-auto">
+          <Button className="gap-2 w-full md:w-auto" data-tour={dataTour}>
             <Plus className="h-4 w-4" />
             {children ?? t("trades.add")}
           </Button>
