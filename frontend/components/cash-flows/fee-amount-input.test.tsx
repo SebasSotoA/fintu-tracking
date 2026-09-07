@@ -35,8 +35,32 @@ describe("FeeAmountInput", () => {
     expect(wrapper!.contains(percentToggle)).toBe(true)
     expect(wrapper).toHaveClass("h-11")
     expect(wrapper).toHaveClass("md:h-9")
-    expect(wrapper).toHaveClass("pr-1")
+    expect(wrapper).not.toHaveClass("pr-1")
+    expect(wrapper).toHaveClass("overflow-hidden")
     expect(wrapper).not.toHaveClass("gap-2")
+  })
+
+  it("stretches the unit radios flush to the wrapper right edge", () => {
+    renderFeeAmountInput()
+
+    const group = screen.getByRole("radiogroup", { name: /fee unit/i })
+    const usdToggle = screen.getByRole("radio", { name: /fee in dollars/i })
+    const percentToggle = screen.getByRole("radio", { name: /fee as percent/i })
+
+    expect(group).toHaveClass("h-full")
+    expect(group).toHaveClass("self-stretch")
+    expect(group).toHaveClass("rounded-none")
+    expect(usdToggle).toHaveClass("h-full")
+    expect(usdToggle).toHaveClass("border-y-0")
+    expect(usdToggle).toHaveClass("first:rounded-none")
+    expect(usdToggle).toHaveClass("focus-visible:ring-0")
+    expect(percentToggle).toHaveClass("h-full")
+    expect(percentToggle).toHaveClass("border-y-0")
+    expect(percentToggle).toHaveClass("last:rounded-none")
+    expect(percentToggle).not.toHaveClass("last:rounded-r-md")
+    expect(percentToggle).not.toHaveClass("rounded-r-md")
+    expect(percentToggle).toHaveClass("border-r-0")
+    expect(percentToggle).toHaveClass("focus-visible:ring-0")
   })
 
   it("renders a borderless mono number input with hidden spin buttons", () => {
@@ -44,6 +68,7 @@ describe("FeeAmountInput", () => {
 
     const input = screen.getByRole("spinbutton", { name: /deposit fee usd/i })
     expect(input).toHaveClass("border-0")
+    expect(input).toHaveClass("rounded-none")
     expect(input).toHaveClass("flex-1")
     expect(input).toHaveClass("font-mono")
     expect(input).toHaveClass("[appearance:textfield]")

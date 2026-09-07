@@ -42,7 +42,7 @@ export function FeeAmountInput({
         {label}{" "}
         <span className="text-xs font-normal text-muted-foreground">{t("cash.optional")}</span>
       </Label>
-      <div className="flex h-11 items-center rounded-md border border-input bg-transparent pr-1 shadow-xs focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] md:h-9">
+      <div className="flex h-11 items-center overflow-hidden rounded-md border border-input bg-transparent shadow-xs focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] md:h-9">
         <Input
           id={id}
           type="number"
@@ -53,7 +53,7 @@ export function FeeAmountInput({
           onChange={(e) => onChange(e.target.value)}
           aria-describedby={equivalentHint ? hintId : undefined}
           className={cn(
-            "h-full md:h-full w-auto min-w-0 flex-1 border-0 pl-3 pr-2 text-base md:text-sm py-0 leading-none font-mono shadow-none focus-visible:ring-0",
+            "h-full md:h-full w-auto min-w-0 flex-1 rounded-none border-0 pl-3 pr-2 text-base md:text-sm py-0 leading-none font-mono shadow-none focus-visible:ring-0",
             "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
           )}
         />
@@ -66,13 +66,22 @@ export function FeeAmountInput({
             if (next === "usd" || next === "percent") onFeeUnitChange(next)
           }}
           variant="outline"
-          size="sm"
-          className="shrink-0 shadow-none"
+          className="h-full shrink-0 items-stretch self-stretch rounded-none shadow-none data-[variant=outline]:shadow-none"
         >
-          <ToggleGroupItem type="button" value="usd" aria-label={t("cash.feeInUsd")}>
+          <ToggleGroupItem
+            type="button"
+            value="usd"
+            aria-label={t("cash.feeInUsd")}
+            className="h-full border-y-0 px-2.5 text-sm first:rounded-none focus-visible:ring-0"
+          >
             $
           </ToggleGroupItem>
-          <ToggleGroupItem type="button" value="percent" aria-label={t("cash.feeAsPercent")}>
+          <ToggleGroupItem
+            type="button"
+            value="percent"
+            aria-label={t("cash.feeAsPercent")}
+            className="h-full border-y-0 border-r-0 px-2.5 text-sm last:rounded-none focus-visible:ring-0"
+          >
             %
           </ToggleGroupItem>
         </ToggleGroup>
