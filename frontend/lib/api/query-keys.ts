@@ -9,6 +9,9 @@ export const queryKeys = {
   performanceTimeSeries: (interval: string) => ["performance-time-series", interval] as const,
   feeEfficiency: (groupBy: string) => ["fee-efficiency", groupBy] as const,
   cashReconciliation: () => ["cash-reconciliation"] as const,
+  cashFlows: () => ["cash-flows"] as const,
+  trades: () => ["trades"] as const,
+  holdings: () => ["holdings"] as const,
   cashFlowsExport: () => ["cash-flows-export"] as const,
   fxCurrentRate: () => ["fx-current-rate"] as const,
   activityFeed: (limit = 8) => ["activity-feed", limit] as const,
@@ -33,6 +36,9 @@ async function invalidateAfterMutation(queryClient: QueryClient) {
     invalidatePortfolioCaches(queryClient),
     queryClient.invalidateQueries({ queryKey: queryKeys.cashFlowsExport() }),
     queryClient.invalidateQueries({ queryKey: ["activity-feed"] }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.cashFlows() }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.trades() }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.holdings() }),
   ])
 }
 

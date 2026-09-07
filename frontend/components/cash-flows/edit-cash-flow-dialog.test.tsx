@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
 import { render, screen, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import type { CashFlow } from "@/lib/types"
@@ -52,7 +53,7 @@ const depositCashFlow: CashFlow = {
   updated_at: "2024-06-01T00:00:00Z",
 }
 
-function renderEditDialog(cashFlow: CashFlow = depositCashFlow) {
+function renderEditDialog(cashFlow: CashFlow = depositCashFlow, cashFlows: CashFlow[] = [cashFlow]) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
@@ -61,7 +62,7 @@ function renderEditDialog(cashFlow: CashFlow = depositCashFlow) {
       <QueryClientProvider client={queryClient}>
         <EditCashFlowDialog
           cashFlow={cashFlow}
-          cashFlows={[cashFlow]}
+          cashFlows={cashFlows}
           open
           onOpenChange={() => {}}
           onSuccess={() => {}}
@@ -121,7 +122,7 @@ describe("EditCashFlowDialog", () => {
   it("shows hero net USD input with deposit amount label for deposits", () => {
     renderEditDialog()
 
-    const netInput = screen.getByLabelText(/Deposit amount/i)
+    const netInput = screen.getByRole("spinbutton", { name: /^Deposit amount$/i })
     expect(netInput).toHaveClass("font-mono")
     expect(netInput).toHaveClass("text-base")
     expect(netInput).not.toHaveClass("text-3xl")
@@ -154,13 +155,53 @@ describe("EditCashFlowDialog", () => {
     expect(optionValues).not.toContain("cash_adjustment")
   })
 
-  it("shows Total (USD) hero for transfers", () => {
+  it("shows Subtotal (USD) hero and local COP amount for transfers", () => {
     renderEditDialog()
 
-    expect(screen.getByText(/Total \(USD\)/i)).toBeInTheDocument()
-    // Total hero shows a dollar amount (broker auto-fee may adjust from base net)
-    expect(screen.getByText(/^\$\d+\.\d{2}$/, { selector: ".font-mono.font-bold" })).toBeInTheDocument()
+    expect(screen.getByText(/Subtotal \(USD\)/i)).toBeInTheDocument()
+    expect(screen.getByText(/Local amount \(COP\)/i)).toBeInTheDocument()
+    expect(screen.getByText("$100.00")).toBeInTheDocument()
+    expect(screen.getByText("400000.00")).toBeInTheDocument()
+    expect(screen.queryByText("Total (USD)")).not.toBeInTheDocument()
     expect(screen.queryByText(/Subtotal USD \(net \+ fee\)/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/COP to wire/i)).not.toBeInTheDocument()
+  })
+
+  it("does not auto-fill a broker fee over an empty stored fee", () => {
+    renderEditDialog()
+
+    expect(screen.getByLabelText(/Deposit fee USD/i)).toHaveValue(null)
+  })
+
+  it("defaults the fee toggle to dollars and prefills the stored USD fee", () => {
+    const linkedFee: CashFlow = {
+      ...depositCashFlow,
+      id: "fee-1",
+      type: "fee",
+      currency: "USD",
+      amount: "1.99",
+      usd_amount: "1.99",
+      fx_rate: null,
+      related_cash_flow_id: depositCashFlow.id,
+      related_type: "deposit",
+      fee_type: "deposit",
+    }
+    renderEditDialog(depositCashFlow, [depositCashFlow, linkedFee])
+
+    expect(screen.getByLabelText(/Deposit fee USD/i)).toHaveValue(1.99)
+    expect(screen.getByRole("radio", { name: /fee in dollars/i })).toHaveAttribute("data-state", "on")
+    expect(screen.getByRole("radiogroup", { name: /fee unit/i })).toBeInTheDocument()
+    expect(screen.getByText("$101.99")).toBeInTheDocument()
+    expect(screen.getByText("407960.00")).toBeInTheDocument()
+  })
+
+  it("shows a tooltip explaining deposit amount is USD credited at the broker", async () => {
+    const user = userEvent.setup()
+    renderEditDialog()
+
+    const helpButton = screen.getByRole("button", { name: /about deposit amount/i })
+    await user.hover(helpButton)
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent(/USD credited at the broker/i)
   })
 })

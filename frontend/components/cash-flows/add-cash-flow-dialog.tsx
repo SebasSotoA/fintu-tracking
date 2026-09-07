@@ -2,7 +2,7 @@
 
 import type { FormEvent } from "react"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQueryClient } from "@tanstack/react-query"
 import { invalidateAfterCashFlowMutation } from "@/lib/api/query-keys"
@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
 import { ResponsiveFormGrid } from "@/components/ui/responsive-form-grid"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Plus } from "lucide-react"
 import { createCashFlow } from "@/lib/api/cash-flows"
 import {
@@ -32,9 +33,10 @@ import {
 import {
   computeCopFromNetUsd,
   computeDepositBreakdown,
+  feeInputToUsd,
+  type FeeUnit,
 } from "@/lib/cash-flows/deposit-calculator"
 import { BrokerSelect } from "@/components/brokers/broker-select"
-import { computeCashFlowBrokerFeeUSD } from "@/lib/brokers/broker-presets"
 import { MARKET_CONFIG, formatCurrencyPair } from "@/lib/market-config/market-config"
 import { useLocale } from "@/components/locale-provider"
 import { showToast } from "@/lib/toast"
@@ -65,34 +67,35 @@ export function AddCashFlowDialog({
   const [open, setOpen] = useState(autoOpen)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState(emptyForm)
+  const [feeUnit, setFeeUnit] = useState<FeeUnit>("usd")
 
   const isTransfer = formData.type === "deposit" || formData.type === "withdrawal"
+  const feeUsd = feeInputToUsd(formData.net_usd, formData.deposit_fee_usd, feeUnit)
   const transferBreakdown = computeDepositBreakdown({
     netUsd: formData.net_usd,
-    feeUsd: formData.deposit_fee_usd,
+    feeUsd,
     fxRate: formData.fx_rate,
   })
+  const feeAmountCurrency = feeUnit === "percent" ? "%" : MARKET_CONFIG.baseCurrency
   const feeLabel =
     formData.type === "withdrawal"
-      ? t("cash.withdrawalFee", { currency: MARKET_CONFIG.baseCurrency })
-      : t("cash.depositFee", { currency: MARKET_CONFIG.baseCurrency })
+      ? t("cash.withdrawalFee", { currency: feeAmountCurrency })
+      : t("cash.depositFee", { currency: feeAmountCurrency })
   const netUsdLabel =
     formData.type === "withdrawal"
       ? t("cash.usdDebited", { currency: MARKET_CONFIG.baseCurrency })
       : t("cash.depositAmount")
+  const netUsdHelp =
+    formData.type === "withdrawal" ? t("cash.usdDebitedHelp") : t("cash.depositAmountHelp")
+  const netUsdHelpLabel =
+    formData.type === "withdrawal" ? t("cash.aboutUsdDebited") : t("cash.aboutDepositAmount")
   const transferAmount = computeCopFromNetUsd({
     netUsd: formData.net_usd,
-    feeUsd: formData.deposit_fee_usd,
+    feeUsd,
     fxRate: formData.fx_rate,
   })
-
-  useEffect(() => {
-    if (!isTransfer) return
-    const fee = computeCashFlowBrokerFeeUSD(formData.type, formData.broker_id, formData.net_usd)
-    if (fee !== null) {
-      setFormData((prev) => ({ ...prev, deposit_fee_usd: fee }))
-    }
-  }, [formData.broker_id, formData.type, formData.net_usd])
+  const showFeeUsdEquivalent =
+    feeUnit === "percent" && Boolean(formData.net_usd.trim()) && Boolean(formData.deposit_fee_usd.trim())
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -110,7 +113,7 @@ export function AddCashFlowDialog({
         notes: formData.notes || null,
       })
 
-      const feeAmount = isTransfer ? parsePositiveFee(formData.deposit_fee_usd) : null
+      const feeAmount = isTransfer ? parsePositiveFee(feeUsd) : null
       if (feeAmount && (formData.type === "deposit" || formData.type === "withdrawal")) {
         const transferType = formData.type
         try {
@@ -138,6 +141,7 @@ export function AddCashFlowDialog({
       showToast.success(t("cash.added"))
       setOpen(false)
       setFormData(emptyForm())
+      setFeeUnit("usd")
       await invalidateAfterCashFlowMutation(queryClient)
       router.refresh()
     } catch (err) {
@@ -169,14 +173,15 @@ export function AddCashFlowDialog({
               <Label htmlFor="cf-type">{t("cash.type")}</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value: "deposit" | "withdrawal") =>
+                onValueChange={(value: "deposit" | "withdrawal") => {
+                  setFeeUnit("usd")
                   setFormData({
                     ...formData,
                     type: value,
                     deposit_fee_usd: "",
                     net_usd: "",
                   })
-                }
+                }}
               >
                 <SelectTrigger id="cf-type" className="w-full">
                   <SelectValue />
@@ -208,6 +213,8 @@ export function AddCashFlowDialog({
               label={netUsdLabel}
               value={formData.net_usd}
               onChange={(net_usd) => setFormData({ ...formData, net_usd })}
+              help={netUsdHelp}
+              helpLabel={netUsdHelpLabel}
               required
             />
           )}
@@ -219,15 +226,41 @@ export function AddCashFlowDialog({
                   {feeLabel}{" "}
                   <span className="text-xs font-normal text-muted-foreground">{t("cash.optional")}</span>
                 </Label>
-                <Input
-                  id="cf-deposit-fee"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="1.99"
-                  value={formData.deposit_fee_usd}
-                  onChange={(e) => setFormData({ ...formData, deposit_fee_usd: e.target.value })}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="cf-deposit-fee"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={feeUnit === "percent" ? "0.9" : "1.99"}
+                    value={formData.deposit_fee_usd}
+                    onChange={(e) => setFormData({ ...formData, deposit_fee_usd: e.target.value })}
+                    className="min-w-0 flex-1"
+                  />
+                  <ToggleGroup
+                    type="single"
+                    role="radiogroup"
+                    aria-label={t("cash.feeUnit")}
+                    value={feeUnit}
+                    onValueChange={(value) => {
+                      if (value === "usd" || value === "percent") setFeeUnit(value)
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <ToggleGroupItem value="usd" aria-label={t("cash.feeInUsd")}>
+                      $
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="percent" aria-label={t("cash.feeAsPercent")}>
+                      %
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                {showFeeUsdEquivalent ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("cash.feeUsdEquivalent", { amount: feeUsd })}
+                  </p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="cf-fx-rate">{t("cash.fxRate", { pair: formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency) })}</Label>
@@ -246,9 +279,26 @@ export function AddCashFlowDialog({
           )}
 
           {isTransfer && (
-            <div className="space-y-2">
-              <Label>{t("cash.totalLabel", { currency: MARKET_CONFIG.baseCurrency })}</Label>
-              <div className="text-2xl font-bold font-mono">${transferBreakdown.subtotalUsd}</div>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p id="cf-subtotal-label" className="text-sm leading-none font-medium">
+                  {t("cash.totalLabel", { currency: MARKET_CONFIG.baseCurrency })}
+                </p>
+                <p className="text-2xl font-bold font-mono" aria-labelledby="cf-subtotal-label">
+                  ${transferBreakdown.subtotalUsd}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p id="cf-local-amount-label" className="text-sm leading-none font-medium">
+                  {t("cash.localAmountLabel", { currency: MARKET_CONFIG.localCurrency })}
+                </p>
+                <p
+                  className="text-xl font-semibold font-mono text-muted-foreground"
+                  aria-labelledby="cf-local-amount-label"
+                >
+                  {transferBreakdown.localAmount}
+                </p>
+              </div>
             </div>
           )}
 

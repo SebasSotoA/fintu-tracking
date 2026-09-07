@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   computeCopFromNetUsd,
   computeDepositBreakdown,
+  feeInputToUsd,
 } from "./deposit-calculator"
 
 describe("computeDepositBreakdown", () => {
@@ -55,5 +56,24 @@ describe("computeCopFromNetUsd", () => {
         fxRate: "3532.531",
       }),
     ).toBe("0.00")
+  })
+})
+
+describe("feeInputToUsd", () => {
+  it("returns the typed USD fee for usd unit", () => {
+    expect(feeInputToUsd("100", "1.99", "usd")).toBe("1.99")
+  })
+
+  it("converts percent of net usd to a two-decimal USD fee", () => {
+    expect(feeInputToUsd("100", "0.9", "percent")).toBe("0.90")
+  })
+
+  it("treats empty fee as zero", () => {
+    expect(feeInputToUsd("100", "", "usd")).toBe("0.00")
+    expect(feeInputToUsd("100", "", "percent")).toBe("0.00")
+  })
+
+  it("returns zero percent fee when net usd is missing", () => {
+    expect(feeInputToUsd("", "0.9", "percent")).toBe("0.00")
   })
 })

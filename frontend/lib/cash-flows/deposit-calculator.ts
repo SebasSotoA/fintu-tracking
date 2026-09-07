@@ -48,6 +48,19 @@ export function computeCopFromNetUsd(input: DepositBreakdownInput): string {
   return netUsd.add(feeUsd).mul(fxRate).toFixed(2)
 }
 
+export type FeeUnit = "usd" | "percent"
+
+export function feeInputToUsd(netUsd: string, feeInput: string, unit: FeeUnit): string {
+  if (unit === "percent") {
+    const net = safeDecimal(netUsd)
+    const pct = nonNegativeDecimal(feeInput)
+    if (!net || !pct || net.lte(0)) return "0.00"
+    return net.mul(pct).div(100).toFixed(2)
+  }
+
+  return (nonNegativeDecimal(feeInput) ?? new Decimal(0)).toFixed(2)
+}
+
 function safeDecimal(value: string): Decimal | null {
   const trimmed = value.trim()
   if (!trimmed) return null

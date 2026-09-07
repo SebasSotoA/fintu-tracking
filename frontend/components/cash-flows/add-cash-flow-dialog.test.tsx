@@ -1,8 +1,10 @@
 import { describe, expect, it, vi, beforeEach, beforeAll } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
+import type { CashFlow } from "@/lib/types"
+import { createCashFlow } from "@/lib/api/cash-flows"
 import { AddCashFlowDialog } from "./add-cash-flow-dialog"
 
 vi.mock("next/navigation", () => ({
@@ -58,6 +60,32 @@ async function selectCashFlowType(user: ReturnType<typeof userEvent.setup>, type
   await user.selectOptions(hiddenSelect, type)
 }
 
+function depositAmountInput() {
+  return screen.getByRole("spinbutton", { name: /^Deposit amount$/i })
+}
+
+function createdCashFlow(overrides: Partial<CashFlow> = {}): CashFlow {
+  return {
+    id: "cf-new",
+    user_id: "user-1",
+    date: "2024-06-15",
+    type: "deposit",
+    currency: "COP",
+    amount: "403600.00",
+    usd_amount: "100.90",
+    fx_rate: "4000",
+    broker_id: "hapi-colombia",
+    fee_type: null,
+    notes: null,
+    related_trade_id: null,
+    related_cash_flow_id: null,
+    related_type: null,
+    created_at: "2024-06-15T00:00:00Z",
+    updated_at: "2024-06-15T00:00:00Z",
+    ...overrides,
+  }
+}
+
 describe("AddCashFlowDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -108,9 +136,9 @@ describe("AddCashFlowDialog", () => {
   it("shows hero net USD input first for deposits with deposit amount label", () => {
     renderDialog()
 
-    expect(screen.getAllByText(/Deposit amount/i)).toHaveLength(1)
+    expect(screen.getAllByText(/^Deposit amount$/i)).toHaveLength(1)
 
-    const netInput = screen.getByLabelText(/Deposit amount/i)
+    const netInput = depositAmountInput()
     expect(netInput).toHaveClass("font-mono")
     expect(netInput).toHaveClass("text-base")
     expect(netInput).not.toHaveClass("text-3xl")
@@ -147,20 +175,101 @@ describe("AddCashFlowDialog", () => {
     expect(within(feeRow as HTMLElement).getByLabelText(/FX rate COP\/USD/i)).toBe(fxInput)
   })
 
-  it("shows Total (USD) hero for transfers", async () => {
+  it("shows Subtotal (USD) hero and local COP amount for transfers", async () => {
     const user = userEvent.setup()
     renderDialog()
 
-    expect(screen.getByText(/Total \(USD\)/i)).toBeInTheDocument()
+    expect(screen.getByText(/Subtotal \(USD\)/i)).toBeInTheDocument()
+    expect(screen.getByText(/Local amount \(COP\)/i)).toBeInTheDocument()
+    expect(screen.queryByText("Total (USD)")).not.toBeInTheDocument()
     expect(screen.queryByText(/Subtotal USD \(net \+ fee\)/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/COP to wire/i)).not.toBeInTheDocument()
 
-    await user.type(screen.getByLabelText(/Deposit amount/i), "100")
-    await user.clear(screen.getByLabelText(/Deposit fee USD/i))
+    await user.type(depositAmountInput(), "100")
     await user.type(screen.getByLabelText(/Deposit fee USD/i), "1.99")
     await user.type(screen.getByLabelText(/FX rate COP\/USD/i), "4000")
 
     expect(screen.getByText("$101.99")).toBeInTheDocument()
+    expect(screen.getByText("407960.00")).toBeInTheDocument()
+  })
+
+  it("keeps local COP amount at 0.00 until FX is valid", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(depositAmountInput(), "100")
+    expect(screen.getByText("0.00")).toBeInTheDocument()
+  })
+
+  it("shows a tooltip explaining deposit amount is USD credited at the broker", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    const helpButton = screen.getByRole("button", { name: /about deposit amount/i })
+    await user.hover(helpButton)
+    const tooltip = await screen.findByRole("tooltip")
+    expect(tooltip).toHaveTextContent(/USD credited at the broker/i)
+    expect(tooltip).toHaveTextContent(/COP is not typed/i)
+  })
+
+  it("does not auto-fill the fee when typing a deposit amount", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(depositAmountInput(), "100")
+    expect(screen.getByLabelText(/Deposit fee USD/i)).toHaveValue(null)
+  })
+
+  it("converts a 0.9% fee of 100 USD to a 0.90 USD subtotal", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    await user.type(depositAmountInput(), "100")
+    await user.click(screen.getByRole("radio", { name: /fee as percent/i }))
+    await user.type(screen.getByLabelText(/Deposit fee %/i), "0.9")
+    await user.type(screen.getByLabelText(/FX rate COP\/USD/i), "4000")
+
+    expect(screen.getByText("$100.90")).toBeInTheDocument()
+    expect(screen.getByText("403600.00")).toBeInTheDocument()
+    expect(screen.getByText("≈ $0.90")).toBeInTheDocument()
+  })
+
+  it("names the fee unit group and relabels the fee field in percent mode", async () => {
+    const user = userEvent.setup()
+    renderDialog()
+
+    expect(screen.getByRole("radiogroup", { name: /fee unit/i })).toBeInTheDocument()
+    expect(screen.getByRole("radio", { name: /fee in dollars/i })).toHaveAttribute("data-state", "on")
+
+    await user.click(screen.getByRole("radio", { name: /fee as percent/i }))
+    expect(screen.getByLabelText(/Deposit fee %/i)).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Deposit fee USD/i)).not.toBeInTheDocument()
+  })
+
+  it("submits a percent fee as a USD fee cash flow", async () => {
+    const user = userEvent.setup()
+    vi.mocked(createCashFlow).mockResolvedValue(createdCashFlow())
+    renderDialog()
+
+    await user.type(depositAmountInput(), "100")
+    await user.click(screen.getByRole("radio", { name: /fee as percent/i }))
+    await user.type(screen.getByLabelText(/Deposit fee %/i), "0.9")
+    await user.type(screen.getByLabelText(/FX rate COP\/USD/i), "4000")
+
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: /^Add Cash Flow$/i }))
+
+    await waitFor(() => {
+      expect(createCashFlow).toHaveBeenCalledTimes(2)
+    })
+
+    expect(createCashFlow).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        type: "fee",
+        currency: "USD",
+        amount: "0.90",
+      }),
+    )
   })
 
   it("type select does not include Cash adjustment option", () => {
