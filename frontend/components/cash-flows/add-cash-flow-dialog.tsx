@@ -16,6 +16,7 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "@/components/ui/responsive-dialog"
+import { FeeAmountInput } from "@/components/cash-flows/fee-amount-input"
 import { MoneyHeroInput } from "@/components/cash-flows/money-hero-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,7 +24,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DialogScrollBody } from "@/components/ui/dialog-scroll-body"
 import { ResponsiveFormGrid } from "@/components/ui/responsive-form-grid"
 import { NotesTextarea } from "@/components/ui/notes-textarea"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Plus } from "lucide-react"
 import { createCashFlow } from "@/lib/api/cash-flows"
 import {
@@ -221,47 +221,17 @@ export function AddCashFlowDialog({
 
           {isTransfer && (
             <ResponsiveFormGrid>
-              <div className="space-y-2">
-                <Label htmlFor="cf-deposit-fee">
-                  {feeLabel}{" "}
-                  <span className="text-xs font-normal text-muted-foreground">{t("cash.optional")}</span>
-                </Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="cf-deposit-fee"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={feeUnit === "percent" ? "0.9" : "1.99"}
-                    value={formData.deposit_fee_usd}
-                    onChange={(e) => setFormData({ ...formData, deposit_fee_usd: e.target.value })}
-                    className="min-w-0 flex-1"
-                  />
-                  <ToggleGroup
-                    type="single"
-                    role="radiogroup"
-                    aria-label={t("cash.feeUnit")}
-                    value={feeUnit}
-                    onValueChange={(value) => {
-                      if (value === "usd" || value === "percent") setFeeUnit(value)
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <ToggleGroupItem value="usd" aria-label={t("cash.feeInUsd")}>
-                      $
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="percent" aria-label={t("cash.feeAsPercent")}>
-                      %
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                </div>
-                {showFeeUsdEquivalent ? (
-                  <p className="text-xs text-muted-foreground">
-                    {t("cash.feeUsdEquivalent", { amount: feeUsd })}
-                  </p>
-                ) : null}
-              </div>
+              <FeeAmountInput
+                id="cf-deposit-fee"
+                label={feeLabel}
+                value={formData.deposit_fee_usd}
+                onChange={(deposit_fee_usd) => setFormData({ ...formData, deposit_fee_usd })}
+                feeUnit={feeUnit}
+                onFeeUnitChange={setFeeUnit}
+                equivalentHint={
+                  showFeeUsdEquivalent ? t("cash.feeUsdEquivalent", { amount: feeUsd }) : undefined
+                }
+              />
               <div className="space-y-2">
                 <Label htmlFor="cf-fx-rate">{t("cash.fxRate", { pair: formatCurrencyPair(MARKET_CONFIG.localCurrency, MARKET_CONFIG.baseCurrency) })}</Label>
                 <Input
@@ -279,26 +249,13 @@ export function AddCashFlowDialog({
           )}
 
           {isTransfer && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p id="cf-subtotal-label" className="text-sm leading-none font-medium">
-                  {t("cash.totalLabel", { currency: MARKET_CONFIG.baseCurrency })}
-                </p>
-                <p className="text-2xl font-bold font-mono" aria-labelledby="cf-subtotal-label">
-                  ${transferBreakdown.subtotalUsd}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p id="cf-local-amount-label" className="text-sm leading-none font-medium">
-                  {t("cash.localAmountLabel", { currency: MARKET_CONFIG.localCurrency })}
-                </p>
-                <p
-                  className="text-xl font-semibold font-mono text-muted-foreground"
-                  aria-labelledby="cf-local-amount-label"
-                >
-                  {transferBreakdown.localAmount}
-                </p>
-              </div>
+            <div className="space-y-2">
+              <p id="cf-subtotal-label" className="text-sm leading-none font-medium">
+                {t("cash.totalLabel", { currency: MARKET_CONFIG.baseCurrency })}
+              </p>
+              <p className="text-2xl font-bold font-mono" aria-labelledby="cf-subtotal-label">
+                ${transferBreakdown.subtotalUsd}
+              </p>
             </div>
           )}
 

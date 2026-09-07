@@ -370,7 +370,6 @@ export const en = {
     adjustmentHint: "Adjust buy power without changing deposit history.",
     fxRate: "FX rate {pair}",
     totalLabel: "Subtotal ({currency})",
-    localAmountLabel: "Local amount ({currency})",
     amountLabel: "Amount ({currency})",
     feeSavedFailed: "Deposit saved but fee entry failed",
     adjustmentRequiresNotes: "Cash adjustment requires notes",

@@ -372,7 +372,6 @@ export const es = {
     adjustmentHint: "Ajusta el poder de compra sin cambiar el historial de depósitos.",
     fxRate: "Tasa FX {pair}",
     totalLabel: "Subtotal ({currency})",
-    localAmountLabel: "Monto local ({currency})",
     amountLabel: "Monto ({currency})",
     feeSavedFailed: "El depósito se guardó, pero falló el registro de la comisión",
     adjustmentRequiresNotes: "El ajuste de efectivo requiere notas",

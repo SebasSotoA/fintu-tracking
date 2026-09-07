@@ -155,16 +155,25 @@ describe("EditCashFlowDialog", () => {
     expect(optionValues).not.toContain("cash_adjustment")
   })
 
-  it("shows Subtotal (USD) hero and local COP amount for transfers", () => {
+  it("shows Subtotal (USD) for transfers without a local COP readout", () => {
     renderEditDialog()
 
     expect(screen.getByText(/Subtotal \(USD\)/i)).toBeInTheDocument()
-    expect(screen.getByText(/Local amount \(COP\)/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Local amount \(COP\)/i)).not.toBeInTheDocument()
     expect(screen.getByText("$100.00")).toBeInTheDocument()
-    expect(screen.getByText("400000.00")).toBeInTheDocument()
+    expect(screen.queryByText("400000.00")).not.toBeInTheDocument()
     expect(screen.queryByText("Total (USD)")).not.toBeInTheDocument()
     expect(screen.queryByText(/Subtotal USD \(net \+ fee\)/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/COP to wire/i)).not.toBeInTheDocument()
+
+    const feeInput = screen.getByLabelText(/Deposit fee USD/i)
+    const usdToggle = screen.getByRole("radio", { name: /fee in dollars/i })
+    const percentToggle = screen.getByRole("radio", { name: /fee as percent/i })
+    const feeWrapper = feeInput.closest(".border")
+    expect(feeWrapper).toBeTruthy()
+    expect(feeWrapper!.contains(feeInput)).toBe(true)
+    expect(feeWrapper!.contains(usdToggle)).toBe(true)
+    expect(feeWrapper!.contains(percentToggle)).toBe(true)
   })
 
   it("does not auto-fill a broker fee over an empty stored fee", () => {
@@ -192,7 +201,7 @@ describe("EditCashFlowDialog", () => {
     expect(screen.getByRole("radio", { name: /fee in dollars/i })).toHaveAttribute("data-state", "on")
     expect(screen.getByRole("radiogroup", { name: /fee unit/i })).toBeInTheDocument()
     expect(screen.getByText("$101.99")).toBeInTheDocument()
-    expect(screen.getByText("407960.00")).toBeInTheDocument()
+    expect(screen.queryByText("407960.00")).not.toBeInTheDocument()
   })
 
   it("shows a tooltip explaining deposit amount is USD credited at the broker", async () => {

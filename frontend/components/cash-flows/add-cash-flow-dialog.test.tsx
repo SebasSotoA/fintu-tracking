@@ -175,30 +175,31 @@ describe("AddCashFlowDialog", () => {
     expect(within(feeRow as HTMLElement).getByLabelText(/FX rate COP\/USD/i)).toBe(fxInput)
   })
 
-  it("shows Subtotal (USD) hero and local COP amount for transfers", async () => {
+  it("shows Subtotal (USD) for transfers without a local COP readout", async () => {
     const user = userEvent.setup()
     renderDialog()
 
     expect(screen.getByText(/Subtotal \(USD\)/i)).toBeInTheDocument()
-    expect(screen.getByText(/Local amount \(COP\)/i)).toBeInTheDocument()
+    expect(screen.queryByText(/Local amount \(COP\)/i)).not.toBeInTheDocument()
     expect(screen.queryByText("Total (USD)")).not.toBeInTheDocument()
     expect(screen.queryByText(/Subtotal USD \(net \+ fee\)/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/COP to wire/i)).not.toBeInTheDocument()
 
+    const feeInput = screen.getByLabelText(/Deposit fee USD/i)
+    const usdToggle = screen.getByRole("radio", { name: /fee in dollars/i })
+    const percentToggle = screen.getByRole("radio", { name: /fee as percent/i })
+    const feeWrapper = feeInput.closest(".border")
+    expect(feeWrapper).toBeTruthy()
+    expect(feeWrapper!.contains(feeInput)).toBe(true)
+    expect(feeWrapper!.contains(usdToggle)).toBe(true)
+    expect(feeWrapper!.contains(percentToggle)).toBe(true)
+
     await user.type(depositAmountInput(), "100")
-    await user.type(screen.getByLabelText(/Deposit fee USD/i), "1.99")
+    await user.type(feeInput, "1.99")
     await user.type(screen.getByLabelText(/FX rate COP\/USD/i), "4000")
 
     expect(screen.getByText("$101.99")).toBeInTheDocument()
-    expect(screen.getByText("407960.00")).toBeInTheDocument()
-  })
-
-  it("keeps local COP amount at 0.00 until FX is valid", async () => {
-    const user = userEvent.setup()
-    renderDialog()
-
-    await user.type(depositAmountInput(), "100")
-    expect(screen.getByText("0.00")).toBeInTheDocument()
+    expect(screen.queryByText("407960.00")).not.toBeInTheDocument()
   })
 
   it("shows a tooltip explaining deposit amount is USD credited at the broker", async () => {
@@ -230,7 +231,7 @@ describe("AddCashFlowDialog", () => {
     await user.type(screen.getByLabelText(/FX rate COP\/USD/i), "4000")
 
     expect(screen.getByText("$100.90")).toBeInTheDocument()
-    expect(screen.getByText("403600.00")).toBeInTheDocument()
+    expect(screen.queryByText("403600.00")).not.toBeInTheDocument()
     expect(screen.getByText("≈ $0.90")).toBeInTheDocument()
   })
 
@@ -262,6 +263,15 @@ describe("AddCashFlowDialog", () => {
       expect(createCashFlow).toHaveBeenCalledTimes(2)
     })
 
+    expect(createCashFlow).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        type: "deposit",
+        currency: "COP",
+        amount: "403600.00",
+        fx_rate: "4000",
+      }),
+    )
     expect(createCashFlow).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
