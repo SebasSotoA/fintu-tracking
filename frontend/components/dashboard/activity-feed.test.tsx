@@ -71,7 +71,10 @@ describe("ActivityFeed", () => {
       "data-tour",
       "add-cash",
     )
-    expect(screen.getByTestId("add-trade-dialog-trigger")).not.toHaveAttribute("data-tour")
+    expect(screen.getByTestId("add-trade-dialog-trigger")).toHaveAttribute(
+      "data-tour",
+      "add-trade",
+    )
   })
 
   it("renders activity items when data exists", async () => {

@@ -23,10 +23,10 @@ import {
   setProductTourStep,
 } from "@/components/onboarding/product-intro-storage"
 
-const HOLE_PAD = 8
+const HOLE_PAD = 12
 
 const OVERLAY_PANE_CLASS =
-  "fixed z-40 pointer-events-auto bg-foreground/20 dark:bg-background/50 motion-reduce:bg-foreground/40 dark:motion-reduce:bg-background/75"
+  "fixed z-40 pointer-events-auto bg-foreground/45 dark:bg-background/70 motion-reduce:bg-foreground/60 dark:motion-reduce:bg-background/80"
 
 type StepId = 1 | 2 | 3 | 4
 
@@ -222,7 +222,7 @@ export function ProductTour({ open, userId, onSkip, onComplete }: ProductTourPro
   }, [open, stepId, bump])
 
   useEffect(() => {
-    if (!placement || placement.step.id !== 4) return
+    if (!placement) return
     const el = placement.anchor
     el.setAttribute("data-tour-current", "")
     return () => {
@@ -292,8 +292,9 @@ export function ProductTour({ open, userId, onSkip, onComplete }: ProductTourPro
           onClick={finishSkip}
         />
         <div
+          data-tour-hole
           aria-hidden
-          className="pointer-events-none fixed rounded-xl ring-1 ring-white/10"
+          className="pointer-events-none fixed rounded-xl ring-2 ring-primary/70 shadow-[0_0_0_6px_color-mix(in_oklch,var(--primary)_28%,transparent)]"
           style={{
             top: hole.top,
             left: hole.left,
@@ -336,68 +337,79 @@ export function ProductTour({ open, userId, onSkip, onComplete }: ProductTourPro
           }}
           className={cn(
             elevatedGlassClass,
-            "z-40 w-72 overflow-hidden rounded-xl border p-0 text-card-foreground outline-hidden",
+            "z-40 w-72 overflow-visible rounded-xl border p-0 text-card-foreground outline-hidden",
             "motion-reduce:animate-none motion-reduce:duration-0",
           )}
         >
-          <div
-            data-tour-rail
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl bg-primary"
-          />
-          <div className="flex items-start justify-between gap-2 px-4 pt-4">
-            <div>
-              <p className="font-mono text-xs font-medium tabular-nums tracking-widest text-muted-foreground">
-                {t("onboarding.intro.kicker", { step: paddedStep, total: paddedTotal })}
-              </p>
-              <span className="sr-only" aria-live="polite">
-                {t("onboarding.intro.stepOf", {
-                  step: placement.displayIndex,
-                  total: placement.total,
-                })}
-              </span>
+          <div className="relative z-10 overflow-hidden rounded-xl">
+            <div
+              data-tour-rail
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl bg-primary"
+            />
+            <div className="flex items-start justify-between gap-2 px-4 pt-4">
+              <div>
+                <p className="font-mono text-xs font-medium tabular-nums tracking-widest text-muted-foreground">
+                  {t("onboarding.intro.kicker", { step: paddedStep, total: paddedTotal })}
+                </p>
+                <span className="sr-only" aria-live="polite">
+                  {t("onboarding.intro.stepOf", {
+                    step: placement.displayIndex,
+                    total: placement.total,
+                  })}
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t("onboarding.intro.skipAria")}
+                onClick={finishSkip}
+              >
+                <XIcon />
+              </Button>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              aria-label={t("onboarding.intro.skipAria")}
-              onClick={finishSkip}
-            >
-              <XIcon />
-            </Button>
-          </div>
-          <div className="flex flex-col gap-2 px-4 pt-2 text-left">
-            <h2
-              id={titleId}
-              className="font-sans text-base font-semibold leading-tight tracking-tight text-foreground"
-            >
-              {t(placement.step.titleKey)}
-            </h2>
-            <p
-              id={bodyId}
-              className="max-w-prose font-sans text-sm leading-relaxed text-muted-foreground"
-            >
-              {t(placement.step.bodyKey)}
-            </p>
-          </div>
-          <div className="flex justify-end px-4 pt-4 pb-4">
-            <Button
-              key={placement.step.id}
-              ref={primaryRef}
-              type="button"
-              variant="default"
-              autoFocus
-              onClick={handleNext}
-            >
-              {placement.isLast
-                ? t("onboarding.intro.getStarted")
-                : t("onboarding.intro.next")}
-            </Button>
+            <div className="flex flex-col gap-2 px-4 pt-2 text-left">
+              <h2
+                id={titleId}
+                className="font-sans text-base font-semibold leading-tight tracking-tight text-foreground"
+              >
+                {t(placement.step.titleKey)}
+              </h2>
+              <p
+                id={bodyId}
+                className="max-w-prose font-sans text-sm leading-relaxed text-muted-foreground"
+              >
+                {t(placement.step.bodyKey)}
+              </p>
+            </div>
+            <div className="flex justify-end px-4 pt-4 pb-4">
+              <Button
+                key={placement.step.id}
+                ref={primaryRef}
+                type="button"
+                variant="default"
+                autoFocus
+                onClick={handleNext}
+              >
+                {placement.isLast
+                  ? t("onboarding.intro.getStarted")
+                  : t("onboarding.intro.next")}
+              </Button>
+            </div>
           </div>
           <PopoverPrimitive.Arrow
+            data-tour-arrow
             aria-hidden
-            className="size-2.5 rotate-45 rounded-[2px] border border-white/10 bg-card fill-card"
+            width={12}
+            height={12}
+            className={cn(
+              "size-3 rotate-45 rounded-[2px] border border-white/10 bg-card fill-card",
+              "in-data-[side=top]:translate-y-[calc(-50%-2px)]",
+              "in-data-[side=bottom]:translate-y-[calc(50%+2px)]",
+              "in-data-[side=right]:translate-x-[calc(50%+2px)]",
+              "in-data-[side=left]:translate-x-[calc(-50%-2px)]",
+            )}
           />
         </PopoverContent>
       </Popover>
@@ -500,5 +512,5 @@ function popoverPlacement(
   }
   if (stepId === 1) return { side: "right", align: "start" }
   if (stepId === 4) return { side: "right", align: "center" }
-  return { side: "top", align: "center" }
+  return { side: "left", align: "center" }
 }

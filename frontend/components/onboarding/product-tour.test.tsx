@@ -278,8 +278,13 @@ describe("ProductTour", () => {
       expect(pane).toHaveClass("z-40")
       expect(pane).toHaveClass("pointer-events-auto")
       expect(pane.className).not.toMatch(/backdrop-blur/)
-      expect(pane).toHaveClass("bg-foreground/20")
+      expect(pane).toHaveClass("bg-foreground/45")
     })
+
+    const hole = document.querySelector("[data-tour-hole]")
+    expect(hole).toHaveClass("rounded-xl")
+    expect(hole).toHaveClass("ring-2")
+    expect(hole).toHaveClass("ring-primary/70")
   })
 
   it("uses elevated glass, a 3px primary rail, and z-40 on this popover only", async () => {
@@ -290,11 +295,25 @@ describe("ProductTour", () => {
     expect(card.className).toContain("from-white/[0.07]")
     expect(card.className).toContain("backdrop-blur-[12px]")
     expect(card).toHaveAttribute("aria-modal", "false")
+    expect(card).toHaveClass("overflow-visible")
+    expect(card).not.toHaveClass("overflow-hidden")
 
     const rail = card.querySelector("[data-tour-rail]")
     expect(rail).toHaveClass("w-[3px]")
     expect(rail).toHaveClass("bg-primary")
     expect(rail).toHaveAttribute("aria-hidden", "true")
+
+    const clip = rail?.parentElement
+    expect(clip).toHaveClass("overflow-hidden")
+    expect(clip).toHaveClass("z-10")
+
+    const arrow = document.querySelector("[data-tour-arrow]")
+    expect(arrow).toBeTruthy()
+    expect(arrow).toHaveAttribute("aria-hidden", "true")
+    expect(card.contains(arrow)).toBe(true)
+    expect(clip?.contains(arrow)).toBe(false)
+    expect(arrow).toHaveClass("in-data-[side=top]:translate-y-[calc(-50%-2px)]")
+    expect(arrow).toHaveClass("in-data-[side=left]:translate-x-[calc(-50%-2px)]")
   })
 
   it("renders Spanish performance copy on the last placeable step", async () => {
@@ -313,19 +332,36 @@ describe("ProductTour", () => {
     expect(screen.getByRole("button", { name: "Empezar" })).toBeInTheDocument()
   })
 
-  it("marks the Performance anchor while it is the current step", async () => {
+  it("marks the current step's anchor with data-tour-current", async () => {
     const user = userEvent.setup()
     renderTour()
 
+    const netWorth = document.querySelector('[data-tour="net-worth"]')
+    const cash = screen.getByRole("button", { name: "cash" })
+    const trade = screen.getByRole("button", { name: "trade" })
     const performance = screen.getByRole("link", { name: "Performance" })
+
     await screen.findByRole("heading", { name: "The question" })
+    expect(netWorth).toHaveAttribute("data-tour-current", "")
+    expect(cash).not.toHaveAttribute("data-tour-current")
+    expect(trade).not.toHaveAttribute("data-tour-current")
     expect(performance).not.toHaveAttribute("data-tour-current")
 
     await user.click(screen.getByRole("button", { name: "Next" }))
+    await screen.findByRole("heading", { name: "Record cash" })
+    expect(netWorth).not.toHaveAttribute("data-tour-current")
+    expect(cash).toHaveAttribute("data-tour-current", "")
+    expect(trade).not.toHaveAttribute("data-tour-current")
+
     await user.click(screen.getByRole("button", { name: "Next" }))
+    await screen.findByRole("heading", { name: "Record trades" })
+    expect(cash).not.toHaveAttribute("data-tour-current")
+    expect(trade).toHaveAttribute("data-tour-current", "")
+    expect(performance).not.toHaveAttribute("data-tour-current")
+
     await user.click(screen.getByRole("button", { name: "Next" }))
     await screen.findByRole("heading", { name: "Then read" })
-
+    expect(trade).not.toHaveAttribute("data-tour-current")
     expect(performance).toHaveAttribute("data-tour-current", "")
   })
 })

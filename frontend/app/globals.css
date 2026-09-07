@@ -26,6 +26,10 @@
 }
 
 @layer utilities {
+  [data-tour-current] {
+    @apply ring-2 ring-primary/40;
+  }
+
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }

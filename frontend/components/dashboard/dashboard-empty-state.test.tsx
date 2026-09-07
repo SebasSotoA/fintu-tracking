@@ -55,9 +55,6 @@ describe("DashboardEmptyState", () => {
     const action = screen.getByTestId("empty-state-action")
     expect(action).toBeInTheDocument()
     expect(screen.getByTestId("add-trade-dialog-trigger")).toBeInTheDocument()
-    expect(screen.getByTestId("add-trade-dialog-trigger")).toHaveAttribute(
-      "data-tour",
-      "add-trade",
-    )
+    expect(screen.getByTestId("add-trade-dialog-trigger")).not.toHaveAttribute("data-tour")
   })
 })

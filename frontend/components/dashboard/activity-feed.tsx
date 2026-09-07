@@ -51,7 +51,7 @@ export function ActivityFeed() {
             className="border-0 px-2 py-6 md:px-4 md:py-8"
             action={
               <EmptyStateActions>
-                <AddTradeDialog>
+                <AddTradeDialog data-tour="add-trade">
                   <EmptyStateAction>{t("trades.add")}</EmptyStateAction>
                 </AddTradeDialog>
                 <AddCashFlowDialog data-tour="add-cash">
