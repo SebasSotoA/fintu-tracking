@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useState, type ReactNode } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { AppShell } from "@/components/layout/app-shell"
 import { AppShellSkeleton } from "@/components/layout/app-shell-skeleton"
-import { TablePageSkeleton } from "@/components/ui/table-page-skeleton"
+import { ProtectedPageSkeleton } from "@/components/layout/protected-page-skeleton"
 import { useLocale } from "@/components/locale-provider"
 import { useMe } from "@/hooks/use-me"
 import { isApiError, isSubscriptionRequiredError, isUnauthorizedError } from "@/lib/api/errors"
@@ -20,6 +20,7 @@ export function ProtectedLayout({
   requireActiveSubscription = true,
 }: ProtectedLayoutProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { t } = useLocale()
   const { data: profile, error, isLoading, isError, isFetched } = useMe()
   const [authChecked, setAuthChecked] = useState(false)
@@ -80,7 +81,7 @@ export function ProtectedLayout({
   if (!authChecked || !hasSession || isLoading) {
     return (
       <AppShellSkeleton label={t("table.loading")}>
-        <TablePageSkeleton nested />
+        <ProtectedPageSkeleton pathname={pathname} nested />
       </AppShellSkeleton>
     )
   }

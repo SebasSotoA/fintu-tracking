@@ -10,9 +10,11 @@ import { ProtectedLayout } from "./protected-layout"
 const mockReplace = vi.fn()
 const mockGetUser = vi.fn()
 const mockGetMe = vi.fn()
+let mockPathname = "/trades"
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
+  usePathname: () => mockPathname,
 }))
 
 vi.mock("@/lib/supabase/client", () => ({
@@ -62,22 +64,53 @@ function renderProtectedLayout(requireActiveSubscription = true) {
   )
 }
 
+function renderLoadingAt(pathname: string) {
+  mockPathname = pathname
+  mockGetUser.mockReturnValue(new Promise(() => {}))
+  renderProtectedLayout()
+}
+
 describe("ProtectedLayout", () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    mockPathname = "/trades"
     mockGetUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null })
     mockGetMe.mockResolvedValue(baseProfile)
   })
 
-  it("shows app shell and table skeletons while session is loading", () => {
-    mockGetUser.mockReturnValue(new Promise(() => {}))
-
-    renderProtectedLayout()
+  it("shows app shell and table skeletons while session is loading on /trades", () => {
+    renderLoadingAt("/trades")
 
     const status = screen.getByRole("status", { name: "Loading" })
     expect(status.querySelector("[data-slot='skeleton']")).not.toBeNull()
     expect(screen.getByTestId("table-page-skeleton")).toBeInTheDocument()
+    expect(screen.queryByTestId("dashboard-page-skeleton")).not.toBeInTheDocument()
     expect(document.querySelector(".animate-spin")).toBeNull()
+    expect(screen.queryByTestId("child")).not.toBeInTheDocument()
+  })
+
+  it("shows DashboardPageSkeleton while session is loading on /dashboard", () => {
+    renderLoadingAt("/dashboard")
+
+    expect(screen.getByTestId("dashboard-page-skeleton")).toBeInTheDocument()
+    expect(screen.queryByTestId("table-page-skeleton")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("child")).not.toBeInTheDocument()
+  })
+
+  it("shows PerformancePageSkeleton while session is loading on /performance", () => {
+    renderLoadingAt("/performance")
+
+    expect(screen.getByTestId("kpi-strip-skeleton")).toHaveClass("sm:grid-cols-4")
+    expect(screen.queryByTestId("dashboard-page-skeleton")).not.toBeInTheDocument()
+    expect(screen.queryByTestId("child")).not.toBeInTheDocument()
+  })
+
+  it("shows CashFlowsPageSkeleton while session is loading on /cash-flows", () => {
+    renderLoadingAt("/cash-flows")
+
+    expect(screen.getAllByTestId("table-page-skeleton-filter")).toHaveLength(3)
+    expect(screen.getByTestId("chart-panel-skeleton-plot")).toBeInTheDocument()
+    expect(screen.queryByTestId("dashboard-page-skeleton")).not.toBeInTheDocument()
     expect(screen.queryByTestId("child")).not.toBeInTheDocument()
   })
 
