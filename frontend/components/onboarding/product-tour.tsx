@@ -294,7 +294,7 @@ export function ProductTour({ open, userId, onSkip, onComplete }: ProductTourPro
         <div
           data-tour-hole
           aria-hidden
-          className="pointer-events-none fixed rounded-xl ring-2 ring-primary/70 shadow-[0_0_0_6px_color-mix(in_oklch,var(--primary)_28%,transparent)]"
+          className="pointer-events-none fixed rounded-xl ring-1 ring-primary/40"
           style={{
             top: hole.top,
             left: hole.left,
@@ -324,7 +324,7 @@ export function ProductTour({ open, userId, onSkip, onComplete }: ProductTourPro
           aria-describedby={bodyId}
           side={popoverSide.side}
           align={popoverSide.align}
-          sideOffset={12}
+          sideOffset={8}
           onInteractOutside={(event) => event.preventDefault()}
           onOpenAutoFocus={(event) => {
             event.preventDefault()
@@ -401,15 +401,9 @@ export function ProductTour({ open, userId, onSkip, onComplete }: ProductTourPro
           <PopoverPrimitive.Arrow
             data-tour-arrow
             aria-hidden
-            width={12}
-            height={12}
-            className={cn(
-              "size-3 rotate-45 rounded-[2px] border border-white/10 bg-card fill-card",
-              "in-data-[side=top]:translate-y-[calc(-50%-2px)]",
-              "in-data-[side=bottom]:translate-y-[calc(50%+2px)]",
-              "in-data-[side=right]:translate-x-[calc(50%+2px)]",
-              "in-data-[side=left]:translate-x-[calc(-50%-2px)]",
-            )}
+            width={16}
+            height={8}
+            className="fill-card"
           />
         </PopoverContent>
       </Popover>
@@ -510,7 +504,7 @@ function popoverPlacement(
     if (stepId === 1) return { side: "bottom", align: "center" }
     return { side: "top", align: "center" }
   }
-  if (stepId === 1) return { side: "right", align: "start" }
+  if (stepId === 1) return { side: "right", align: "center" }
   if (stepId === 4) return { side: "right", align: "center" }
   return { side: "left", align: "center" }
 }

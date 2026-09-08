@@ -283,8 +283,11 @@ describe("ProductTour", () => {
 
     const hole = document.querySelector("[data-tour-hole]")
     expect(hole).toHaveClass("rounded-xl")
-    expect(hole).toHaveClass("ring-2")
-    expect(hole).toHaveClass("ring-primary/70")
+    expect(hole).toHaveClass("ring-1")
+    expect(hole).toHaveClass("ring-primary/40")
+    expect(hole).not.toHaveClass("ring-2")
+    expect(hole).not.toHaveClass("ring-primary/70")
+    expect(hole?.className).not.toMatch(/shadow-\[0_0_0_6px/)
   })
 
   it("uses elevated glass, a 3px primary rail, and z-40 on this popover only", async () => {
@@ -292,6 +295,7 @@ describe("ProductTour", () => {
     const card = await screen.findByRole("dialog")
     expect(card).toHaveClass("z-40")
     expect(card).toHaveClass("w-72")
+    expect(card).toHaveAttribute("data-align", "center")
     expect(card.className).toContain("from-white/[0.07]")
     expect(card.className).toContain("backdrop-blur-[12px]")
     expect(card).toHaveAttribute("aria-modal", "false")
@@ -312,8 +316,9 @@ describe("ProductTour", () => {
     expect(arrow).toHaveAttribute("aria-hidden", "true")
     expect(card.contains(arrow)).toBe(true)
     expect(clip?.contains(arrow)).toBe(false)
-    expect(arrow).toHaveClass("in-data-[side=top]:translate-y-[calc(-50%-2px)]")
-    expect(arrow).toHaveClass("in-data-[side=left]:translate-x-[calc(-50%-2px)]")
+    expect(arrow).toHaveClass("fill-card")
+    expect(arrow).not.toHaveClass("rotate-45")
+    expect(arrow).not.toHaveClass("rounded-[2px]")
   })
 
   it("renders Spanish performance copy on the last placeable step", async () => {
