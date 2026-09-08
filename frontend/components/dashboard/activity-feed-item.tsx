@@ -64,7 +64,7 @@ function getBadge(kind: ActivityItem["kind"], t: Translate): BadgeStyle {
   if (kind === "fee") {
     return {
       label: t("dashboard.badgeFee"),
-      classes: "bg-primary/15 text-primary ring-1 ring-inset ring-primary/20",
+      classes: "bg-destructive/15 text-destructive ring-1 ring-inset ring-destructive/20",
     }
   }
   if (kind === "cash_adjustment") {
