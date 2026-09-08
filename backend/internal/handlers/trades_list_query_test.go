@@ -54,9 +54,91 @@ func TestBuildListTradesQuery_AllFilters(t *testing.T) {
 func TestParseTradeListFilters_InvalidSide(t *testing.T) {
 	t.Parallel()
 
-	_, err := parseTradeListFilters("", "", "hold", "", "")
+	_, err := parseTradeListFilters("", "", "hold", "", "", "", "")
 	if err == nil {
 		t.Fatal("expected error for invalid side")
+	}
+}
+
+func TestBuildListTradesQuery_DefaultSortIsDateDescWithTieBreak(t *testing.T) {
+	t.Parallel()
+
+	filters, err := parseTradeListFilters("", "", "", "", "", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	query, args := buildListTradesQuery("user-1", filters, 0, 0)
+	if !strings.Contains(query, "ORDER BY date DESC, created_at DESC, id DESC") {
+		t.Fatalf("query missing default order: %s", query)
+	}
+	if len(args) != 1 {
+		t.Fatalf("args = %v, want only user_id", args)
+	}
+}
+
+func TestBuildListTradesQuery_ValidSortAndDir(t *testing.T) {
+	t.Parallel()
+
+	filters, err := parseTradeListFilters("", "", "", "", "", "ticker", "asc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	query, args := buildListTradesQuery("user-1", filters, 0, 0)
+	if !strings.Contains(query, "ORDER BY ticker ASC, created_at DESC, id DESC") {
+		t.Fatalf("query missing ticker sort: %s", query)
+	}
+	if len(args) != 1 {
+		t.Fatalf("args = %v, want only user_id (sort is identifier, not bind arg)", args)
+	}
+}
+
+func TestBuildListTradesQuery_UnknownSortFallsBackToDateDesc(t *testing.T) {
+	t.Parallel()
+
+	filters, err := parseTradeListFilters("", "", "", "", "", "realized_pl", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	query, _ := buildListTradesQuery("user-1", filters, 0, 0)
+	if !strings.Contains(query, "ORDER BY date DESC, created_at DESC, id DESC") {
+		t.Fatalf("unknown sort should fall back to date DESC: %s", query)
+	}
+	if strings.Contains(query, "realized_pl") {
+		t.Fatalf("query must not interpolate unknown sort key: %s", query)
+	}
+}
+
+func TestBuildListTradesQuery_InvalidDirFallsBackToDesc(t *testing.T) {
+	t.Parallel()
+
+	filters, err := parseTradeListFilters("", "", "", "", "", "ticker", "sideways")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	query, _ := buildListTradesQuery("user-1", filters, 0, 0)
+	if !strings.Contains(query, "ORDER BY ticker DESC, created_at DESC, id DESC") {
+		t.Fatalf("invalid dir should fall back to DESC: %s", query)
+	}
+}
+
+func TestBuildListTradesQuery_RejectsSQLInjectionSort(t *testing.T) {
+	t.Parallel()
+
+	filters, err := parseTradeListFilters("", "", "", "", "", "date;DROP", "desc")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	query, _ := buildListTradesQuery("user-1", filters, 0, 0)
+	if !strings.Contains(query, "ORDER BY date DESC, created_at DESC, id DESC") {
+		t.Fatalf("injection sort should fall back to date DESC: %s", query)
+	}
+	if strings.Contains(query, "DROP") {
+		t.Fatalf("query must not interpolate raw sort string: %s", query)
 	}
 }
 

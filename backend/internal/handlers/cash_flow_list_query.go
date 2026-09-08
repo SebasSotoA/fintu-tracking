@@ -7,12 +7,21 @@ import (
 	"time"
 )
 
+var cashFlowSortColumns = map[string]string{
+	"date":       "date",
+	"type":       "type",
+	"amount":     "amount",
+	"fx_rate":    "fx_rate",
+	"usd_amount": "usd_amount",
+}
+
 type cashFlowListFilters struct {
 	from            *time.Time
 	to              *time.Time
 	flowType        string
 	currency        string
 	excludeMirrored bool
+	sort            listSort
 }
 
 func appendCashFlowListFilters(query string, args []interface{}, filters cashFlowListFilters) (string, []interface{}) {
@@ -59,7 +68,7 @@ func buildListCashFlowsQuery(userID string, filters cashFlowListFilters, limit, 
 		WHERE user_id = $1`
 	args := []interface{}{userID}
 	query, args = appendCashFlowListFilters(query, args, filters)
-	query += " ORDER BY date DESC"
+	query += filters.sort.orderByClause()
 
 	if limit > 0 {
 		argN := len(args) + 1
@@ -73,11 +82,12 @@ func buildListCashFlowsQuery(userID string, filters cashFlowListFilters, limit, 
 	return query, args
 }
 
-func parseCashFlowListFilters(fromStr, toStr, flowType, currency, excludeMirroredStr string) (cashFlowListFilters, error) {
+func parseCashFlowListFilters(fromStr, toStr, flowType, currency, excludeMirroredStr, sort, dir string) (cashFlowListFilters, error) {
 	filters := cashFlowListFilters{
 		flowType:        strings.ToLower(strings.TrimSpace(flowType)),
 		currency:        strings.ToUpper(strings.TrimSpace(currency)),
 		excludeMirrored: true,
+		sort:            parseListSort(sort, dir, cashFlowSortColumns),
 	}
 
 	if filters.flowType != "" && filters.flowType != "deposit" && filters.flowType != "withdrawal" && filters.flowType != "fee" && filters.flowType != "cash_adjustment" {

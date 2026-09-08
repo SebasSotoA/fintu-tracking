@@ -6,12 +6,24 @@ import (
 	"time"
 )
 
+var tradeSortColumns = map[string]string{
+	"date":       "date",
+	"ticker":     "ticker",
+	"side":       "side",
+	"asset_type": "asset_type",
+	"quantity":   "quantity",
+	"price":      "price",
+	"total_fees": "total_fees",
+	"total":      "total",
+}
+
 type tradeListFilters struct {
 	from      *time.Time
 	to        *time.Time
 	side      string
 	assetType string
 	ticker    string
+	sort      listSort
 }
 
 func appendTradeListFilters(query string, args []interface{}, filters tradeListFilters) (string, []interface{}) {
@@ -60,7 +72,7 @@ func buildListTradesQuery(userID string, filters tradeListFilters, limit, offset
 		WHERE user_id = $1`
 	args := []interface{}{userID}
 	query, args = appendTradeListFilters(query, args, filters)
-	query += " ORDER BY date DESC"
+	query += filters.sort.orderByClause()
 
 	if limit > 0 {
 		argN := len(args) + 1
@@ -74,11 +86,12 @@ func buildListTradesQuery(userID string, filters tradeListFilters, limit, offset
 	return query, args
 }
 
-func parseTradeListFilters(fromStr, toStr, side, assetType, ticker string) (tradeListFilters, error) {
+func parseTradeListFilters(fromStr, toStr, side, assetType, ticker, sort, dir string) (tradeListFilters, error) {
 	filters := tradeListFilters{
 		side:      strings.ToLower(strings.TrimSpace(side)),
 		assetType: strings.ToLower(strings.TrimSpace(assetType)),
 		ticker:    strings.ToUpper(strings.TrimSpace(ticker)),
+		sort:      parseListSort(sort, dir, tradeSortColumns),
 	}
 
 	if filters.side != "" && filters.side != "buy" && filters.side != "sell" {

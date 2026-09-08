@@ -35,20 +35,23 @@ func ListTrades(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	q := r.URL.Query()
 	filters, err := parseTradeListFilters(
-		r.URL.Query().Get("from"),
-		r.URL.Query().Get("to"),
-		r.URL.Query().Get("side"),
-		r.URL.Query().Get("asset_type"),
-		r.URL.Query().Get("ticker"),
+		q.Get("from"),
+		q.Get("to"),
+		q.Get("side"),
+		q.Get("asset_type"),
+		q.Get("ticker"),
+		q.Get("sort"),
+		q.Get("dir"),
 	)
 	if err != nil {
 		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	pageStr := r.URL.Query().Get("page")
-	pageSizeStr := r.URL.Query().Get("page_size")
+	pageStr := q.Get("page")
+	pageSizeStr := q.Get("page_size")
 
 	limit := 0
 	offset := 0

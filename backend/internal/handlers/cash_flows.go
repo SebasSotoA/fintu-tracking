@@ -36,20 +36,23 @@ func ListCashFlows(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	q := r.URL.Query()
 	filters, err := parseCashFlowListFilters(
-		r.URL.Query().Get("from"),
-		r.URL.Query().Get("to"),
-		r.URL.Query().Get("type"),
-		r.URL.Query().Get("currency"),
-		r.URL.Query().Get("exclude_mirrored"),
+		q.Get("from"),
+		q.Get("to"),
+		q.Get("type"),
+		q.Get("currency"),
+		q.Get("exclude_mirrored"),
+		q.Get("sort"),
+		q.Get("dir"),
 	)
 	if err != nil {
 		httpx.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	pageStr := r.URL.Query().Get("page")
-	pageSizeStr := r.URL.Query().Get("page_size")
+	pageStr := q.Get("page")
+	pageSizeStr := q.Get("page_size")
 
 	limit := 0
 	offset := 0
