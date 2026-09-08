@@ -94,8 +94,17 @@ describe("SettingsShell", () => {
     renderShell({ isMobile: false })
 
     expect(screen.getByTestId("settings-rail")).toBeInTheDocument()
-    expect(screen.getByTestId("settings-rail")).toHaveClass("w-56")
+    expect(screen.getByTestId("settings-rail")).toHaveClass("w-56", "bg-transparent")
+    expect(screen.getByTestId("settings-rail")).not.toHaveClass("bg-background/40")
     expect(screen.queryByTestId("settings-nav-chips")).not.toBeInTheDocument()
+  })
+
+  it("uses one transparent shell so the dialog frost shows through", () => {
+    renderShell({ isMobile: false })
+
+    expect(screen.getByTestId("settings-shell")).toHaveClass("bg-transparent", "text-foreground")
+    expect(screen.getByTestId("settings-rail")).toHaveClass("bg-transparent")
+    expect(screen.getByTestId("settings-content")).toHaveClass("bg-transparent")
   })
 
   it("shows mobile chips and no rail", () => {

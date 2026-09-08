@@ -4,6 +4,10 @@ import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "@/lib/utils"
+import {
+  elevatedSurfaceClass,
+  type ElevatedSurface,
+} from "@/components/ui/elevated-glass"
 
 function Drawer({
   ...props
@@ -52,9 +56,11 @@ function DrawerContent({
   className,
   children,
   overlayClassName,
+  surface = "glass",
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Content> & {
   overlayClassName?: string
+  surface?: ElevatedSurface
 }) {
   return (
     <DrawerPortal data-slot="drawer-portal">
@@ -62,7 +68,8 @@ function DrawerContent({
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
-          "bg-background fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[100dvh] flex-col rounded-t-xl border px-6 pt-6 pb-safe outline-none",
+          elevatedSurfaceClass(surface),
+          "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[100dvh] flex-col rounded-t-xl border px-6 pt-6 pb-safe outline-none",
           className,
         )}
         {...props}

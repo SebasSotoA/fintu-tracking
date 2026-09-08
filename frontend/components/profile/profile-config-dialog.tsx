@@ -146,7 +146,10 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
 
   return (
     <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
-      <ResponsiveDialogContent className="flex max-h-[100dvh] flex-col gap-0 overflow-hidden p-0 pb-0! md:pb-0 md:max-h-[90vh] md:min-h-[36rem] sm:max-w-3xl">
+      <ResponsiveDialogContent
+        surface="frost"
+        className="flex max-h-[100dvh] flex-col gap-0 overflow-hidden p-0 pb-0! md:pb-0 md:max-h-[90vh] md:min-h-[36rem] sm:max-w-3xl"
+      >
         <SettingsShell
           header={
             <>
@@ -177,7 +180,7 @@ export function ProfileConfigDialog({ profile, open, onOpenChange }: ProfileConf
           onQueryChange={setQuery}
           footer={
             showFooter ? (
-              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-background/40 px-6 py-4 pb-safe md:pb-4">
+              <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-transparent px-6 py-4 pb-safe md:pb-4">
                 <Button type="button" variant="outline" onClick={resetToProfile}>
                   {t("settings.cancel")}
                 </Button>

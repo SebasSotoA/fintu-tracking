@@ -155,6 +155,8 @@ describe("ProfileConfigDialog", () => {
     expect(dialog).toHaveClass("p-0")
     expect(dialog).toHaveClass("md:pb-0")
     expect(dialog.className).toContain("pb-0!")
+    expect(dialog).toHaveClass("bg-background/88", "backdrop-blur-[16px]", "text-foreground")
+    expect(dialog).not.toHaveClass("bg-gradient-to-b", "to-card/90")
   })
 
   it("shows Save after changing country and submits the profile update", async () => {
