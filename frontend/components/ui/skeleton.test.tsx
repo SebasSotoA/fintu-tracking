@@ -3,10 +3,11 @@ import { render } from "@testing-library/react"
 import { Skeleton } from "./skeleton"
 
 describe("Skeleton", () => {
-  it("uses muted gray fill and disables animation under reduced motion", () => {
+  it("uses a low-contrast foreground wash and disables animation under reduced motion", () => {
     const { container } = render(<Skeleton />)
     const el = container.querySelector('[data-slot="skeleton"]')
-    expect(el).toHaveClass("bg-muted")
+    expect(el).toHaveClass("bg-foreground/10")
+    expect(el).not.toHaveClass("bg-muted")
     expect(el).not.toHaveClass("bg-accent")
     expect(el).toHaveClass("animate-pulse")
     expect(el).toHaveClass("rounded-md")
