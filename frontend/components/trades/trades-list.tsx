@@ -37,11 +37,13 @@ import {
   DEFAULT_TRADE_FILTERS,
   hasActiveFilters,
   parseTradeFiltersFromSearchParams,
+  TRADE_SORT_FIELDS,
   tradeFiltersToApiParams,
   tradeFiltersToSearchParams,
   type TradeAssetTypeFilter,
   type TradeFilters,
   type TradeSideFilter,
+  type TradeSortField,
 } from "@/lib/trades/trade-filters"
 import { TablePagination } from "@/components/ui/table-pagination"
 import {
@@ -73,7 +75,7 @@ function getAssetBadgeClasses(assetType: Trade["asset_type"]): string {
   if (assetType === "etf") {
     return cn(BADGE_BASE, "bg-violet-500/15 text-violet-700 dark:text-violet-300 ring-1 ring-inset ring-violet-400/20")
   }
-  return cn(BADGE_BASE, "bg-primary/15 text-primary ring-1 ring-inset ring-primary/20")
+  return cn(BADGE_BASE, "bg-chart-3/20 text-chart-3 ring-1 ring-inset ring-chart-3/40")
 }
 
 function getSideBadgeClasses(side: Trade["side"]): string {
@@ -273,6 +275,16 @@ export function TradesList({
     [filters, replaceQuery],
   )
 
+  const handleSort = useCallback(
+    (sortKey: string) => {
+      if (!(TRADE_SORT_FIELDS as readonly string[]).includes(sortKey)) return
+      const sort = sortKey as TradeSortField
+      const dir = filters.sort === sort ? (filters.dir === "asc" ? "desc" : "asc") : "desc"
+      setFilters({ ...filters, sort, dir })
+    },
+    [filters, setFilters],
+  )
+
   const [editingTrade, setEditingTrade] = useState<Trade | null>(null)
   const [deletingTrade, setDeletingTrade] = useState<Trade | null>(null)
   const [exporting, setExporting] = useState(false)
@@ -363,11 +375,13 @@ export function TradesList({
       {
         key: "date",
         header: t("trades.date"),
+        sortable: true,
         cell: (trade) => formatCalendarDate(trade.date, dateLocale),
       },
       {
         key: "ticker",
         header: t("trades.ticker"),
+        sortable: true,
         cell: (trade) => (
           <span className="font-mono font-semibold">{trade.ticker}</span>
         ),
@@ -375,6 +389,8 @@ export function TradesList({
       {
         key: "assetType",
         header: t("trades.asset"),
+        sortable: true,
+        sortKey: "asset_type",
         cell: (trade) => (
           <span className={getAssetBadgeClasses(trade.asset_type)}>
             {trade.asset_type.toUpperCase()}
@@ -384,6 +400,7 @@ export function TradesList({
       {
         key: "side",
         header: t("trades.side"),
+        sortable: true,
         cell: (trade) => (
           <span className={getSideBadgeClasses(trade.side)}>
             {trade.side === "sell" ? t("trades.sell") : t("trades.buy")}
@@ -393,6 +410,7 @@ export function TradesList({
       {
         key: "quantity",
         header: t("trades.quantity"),
+        sortable: true,
         cell: (trade) => format(trade.quantity, 4),
         align: "right",
         className: "font-mono",
@@ -400,6 +418,7 @@ export function TradesList({
       {
         key: "price",
         header: t("trades.price"),
+        sortable: true,
         cell: (trade) => formatCurrency(trade.price, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
@@ -407,6 +426,8 @@ export function TradesList({
       {
         key: "fees",
         header: t("trades.fees"),
+        sortable: true,
+        sortKey: "total_fees",
         cell: (trade) => formatCurrency(trade.total_fees, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono",
@@ -414,6 +435,7 @@ export function TradesList({
       {
         key: "total",
         header: t("trades.total"),
+        sortable: true,
         cell: (trade) => formatCurrency(trade.total, MARKET_CONFIG.baseCurrency),
         align: "right",
         className: "font-mono font-semibold",
@@ -534,6 +556,8 @@ export function TradesList({
               data={trades}
               columns={visibleColumns}
               keyExtractor={(trade) => trade.id}
+              sort={{ key: filters.sort, dir: filters.dir }}
+              onSort={handleSort}
               emptyState={emptyState}
               renderMobileCard={renderMobileCard}
             />

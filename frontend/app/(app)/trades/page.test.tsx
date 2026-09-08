@@ -97,4 +97,42 @@ describe("TradesPage", () => {
     })
     expect(screen.queryByTestId("table-page-skeleton")).not.toBeInTheDocument()
   })
+
+  it("calls listTradesPaginated with sort and dir from search params", async () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams("sort=ticker&dir=asc"))
+    mockListTradesPaginated.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+    })
+    mockListTradeTickers.mockResolvedValue([])
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(mockListTradesPaginated).toHaveBeenCalledWith(
+        expect.objectContaining({ sort: "ticker", dir: "asc", page: 1, page_size: 10 }),
+      )
+    })
+  })
+
+  it("omits sort and dir from the API call when search params are empty", async () => {
+    mockListTradesPaginated.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+    })
+    mockListTradeTickers.mockResolvedValue([])
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(mockListTradesPaginated).toHaveBeenCalled()
+    })
+    const arg = mockListTradesPaginated.mock.calls[0][0] as Record<string, unknown>
+    expect(arg).not.toHaveProperty("sort")
+    expect(arg).not.toHaveProperty("dir")
+  })
 })

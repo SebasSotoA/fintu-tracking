@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
+  DEFAULT_CASH_FLOW_FILTERS,
   cashFlowFiltersToApiParams,
   cashFlowFiltersToSearchParams,
   hasActiveCashFlowFilters,
@@ -47,5 +48,52 @@ describe("cash-flow-filters", () => {
     const filters = parseCashFlowFiltersFromSearchParams({ type: "fee" })
     expect(filters.type).toBe("all")
     expect(cashFlowFiltersToApiParams(filters)).toEqual({})
+  })
+
+  it("parses sort and dir from search params", () => {
+    const filters = parseCashFlowFiltersFromSearchParams({
+      sort: "amount",
+      dir: "asc",
+    })
+    expect(filters.sort).toBe("amount")
+    expect(filters.dir).toBe("asc")
+  })
+
+  it("defaults unknown sort and dir to date descending", () => {
+    const filters = parseCashFlowFiltersFromSearchParams({
+      sort: "not_a_column",
+      dir: "sideways",
+    })
+    expect(filters.sort).toBe("date")
+    expect(filters.dir).toBe("desc")
+  })
+
+  it("omits default sort and dir from URL and API params", () => {
+    const filters = parseCashFlowFiltersFromSearchParams({})
+    expect(filters).toEqual(DEFAULT_CASH_FLOW_FILTERS)
+    expect(cashFlowFiltersToSearchParams(filters).toString()).toBe("")
+    expect(cashFlowFiltersToApiParams(filters)).toEqual({})
+  })
+
+  it("serializes and maps non-default sort to URL and API params", () => {
+    const filters = parseCashFlowFiltersFromSearchParams({
+      sort: "fx_rate",
+      dir: "asc",
+    })
+    const search = cashFlowFiltersToSearchParams(filters)
+    expect(search.get("sort")).toBe("fx_rate")
+    expect(search.get("dir")).toBe("asc")
+    expect(cashFlowFiltersToApiParams(filters)).toEqual({ sort: "fx_rate", dir: "asc" })
+  })
+
+  it("does not treat sort as an active filter", () => {
+    expect(hasActiveCashFlowFilters(DEFAULT_CASH_FLOW_FILTERS)).toBe(false)
+    expect(
+      hasActiveCashFlowFilters({
+        ...DEFAULT_CASH_FLOW_FILTERS,
+        sort: "amount",
+        dir: "asc",
+      }),
+    ).toBe(false)
   })
 })

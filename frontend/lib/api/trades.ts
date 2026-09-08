@@ -10,6 +10,8 @@ export interface TradeListQueryParams {
   side?: "buy" | "sell"
   asset_type?: "stock" | "etf" | "crypto"
   ticker?: string
+  sort?: string
+  dir?: "asc" | "desc"
   page?: number
   page_size?: PageSize | typeof EXPORT_PAGE_SIZE
 }
@@ -23,6 +25,8 @@ function buildTradesQuery(params: TradeListQueryParams): string {
   if (params.ticker) search.set("ticker", params.ticker)
   if (params.page != null) search.set("page", String(params.page))
   if (params.page_size != null) search.set("page_size", String(params.page_size))
+  if (params.sort) search.set("sort", params.sort)
+  if (params.dir) search.set("dir", params.dir)
   const query = search.toString()
   return query ? `?${query}` : ""
 }
@@ -93,7 +97,15 @@ export async function listTradesForExport(
   params: Omit<TradeListQueryParams, "page" | "page_size">,
 ): Promise<Trade[]> {
   const result = await apiClient.get<PaginatedResult<Trade>>(
-    `/api/trades${buildTradesQuery({ ...params, page: 1, page_size: EXPORT_PAGE_SIZE })}`,
+    `/api/trades${buildTradesQuery({
+      from: params.from,
+      to: params.to,
+      side: params.side,
+      asset_type: params.asset_type,
+      ticker: params.ticker,
+      page: 1,
+      page_size: EXPORT_PAGE_SIZE,
+    })}`,
   )
   return result.items
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -20,6 +21,13 @@ export interface DataTableColumn<T> {
   className?: string
   defaultVisible?: boolean       // default true
   toggleable?: boolean           // default true; set false for action columns
+  sortable?: boolean             // default false
+  sortKey?: string               // API sort field when it differs from `key`
+}
+
+export interface DataTableSort {
+  key: string
+  dir: "asc" | "desc"
 }
 
 interface DataTableProps<T> {
@@ -30,6 +38,14 @@ interface DataTableProps<T> {
   emptyState?: React.ReactNode
   className?: string
   renderMobileCard?: (row: T) => React.ReactNode
+  sort?: DataTableSort
+  /**
+   * Called with the column's `sortKey` (or `key`). Parents should:
+   * click a different column → that column, dir `desc`;
+   * click the active column → flip `asc`/`desc`.
+   * Clicking sort should also reset page to 1.
+   */
+  onSort?: (sortKey: string) => void
 }
 
 function getCellClassName<T>(column: DataTableColumn<T>): string {
@@ -40,6 +56,30 @@ function getCellClassName<T>(column: DataTableColumn<T>): string {
   )
 }
 
+function columnSortKey<T>(column: DataTableColumn<T>): string {
+  return column.sortKey ?? column.key
+}
+
+function columnAriaSort<T>(
+  column: DataTableColumn<T>,
+  sort: DataTableSort | undefined,
+): "ascending" | "descending" | "none" | undefined {
+  if (!column.sortable) return undefined
+  if (!sort || sort.key !== columnSortKey(column)) return "none"
+  return sort.dir === "asc" ? "ascending" : "descending"
+}
+
+function SortChevron({
+  active,
+  dir,
+}: {
+  active: boolean
+  dir: "asc" | "desc" | undefined
+}): React.ReactElement {
+  const Icon = !active ? ChevronsUpDown : dir === "asc" ? ChevronUp : ChevronDown
+  return <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+}
+
 export function DataTable<T>({
   data,
   columns,
@@ -48,6 +88,8 @@ export function DataTable<T>({
   emptyState,
   className,
   renderMobileCard,
+  sort,
+  onSort,
 }: DataTableProps<T>) {
   const hasMobileCards = typeof renderMobileCard === "function"
 
@@ -64,14 +106,33 @@ export function DataTable<T>({
         <Table className="table-fixed w-full">
           <TableHeader>
             <TableRow>
-              {columns.map((column) => (
-                <TableHead
-                  key={column.key}
-                  className={getCellClassName(column)}
-                >
-                  {column.header}
-                </TableHead>
-              ))}
+              {columns.map((column) => {
+                const sortKey = columnSortKey(column)
+                const isActive = Boolean(sort && sort.key === sortKey)
+                return (
+                  <TableHead
+                    key={column.key}
+                    className={getCellClassName(column)}
+                    aria-sort={columnAriaSort(column, sort)}
+                  >
+                    {column.sortable ? (
+                      <button
+                        type="button"
+                        className={cn(
+                          "inline-flex w-full cursor-pointer items-center gap-1 rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          column.align === "right" && "flex-row-reverse",
+                        )}
+                        onClick={() => onSort?.(sortKey)}
+                      >
+                        {column.header}
+                        <SortChevron active={isActive} dir={sort?.dir} />
+                      </button>
+                    ) : (
+                      column.header
+                    )}
+                  </TableHead>
+                )
+              })}
             </TableRow>
           </TableHeader>
           <TableBody>

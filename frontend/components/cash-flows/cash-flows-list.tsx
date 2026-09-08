@@ -18,12 +18,14 @@ import {
   type PageSize,
 } from "@/lib/pagination/table-pagination"
 import {
+  CASH_FLOW_SORT_FIELDS,
   DEFAULT_CASH_FLOW_FILTERS,
   cashFlowFiltersToSearchParams,
   hasActiveCashFlowFilters,
   parseCashFlowFiltersFromSearchParams,
   type CashFlowCurrencyFilter,
   type CashFlowFilters,
+  type CashFlowSortField,
   type CashFlowTypeFilter,
 } from "@/lib/cash-flows/cash-flow-filters"
 import { formatTradeDateRangeLabel } from "@/lib/trades/trade-filters"
@@ -171,7 +173,7 @@ export function CashFlowsList({
       return cn(base, "bg-amber-500/15 text-amber-800 dark:text-amber-300 ring-1 ring-inset ring-amber-400/20")
     }
     if (type === "fee") {
-      return cn(base, "bg-primary/15 text-primary ring-1 ring-inset ring-primary/20")
+      return cn(base, "bg-destructive/15 text-destructive ring-1 ring-inset ring-destructive/20")
     }
     return cn(base, "bg-muted text-muted-foreground")
   }, [])
@@ -328,6 +330,16 @@ export function CashFlowsList({
     [replaceQuery, searchParams],
   )
 
+  const handleSort = useCallback(
+    (sortKey: string) => {
+      if (!(CASH_FLOW_SORT_FIELDS as readonly string[]).includes(sortKey)) return
+      const sort = sortKey as CashFlowSortField
+      const dir = filters.sort === sort ? (filters.dir === "asc" ? "desc" : "asc") : "desc"
+      patchFilters({ sort, dir })
+    },
+    [filters.dir, filters.sort, patchFilters],
+  )
+
   const handleUpdated = async () => {
     await invalidateAfterCashFlowMutation(queryClient)
     router.refresh()
@@ -355,11 +367,13 @@ export function CashFlowsList({
       {
         key: "date",
         header: t("cash.date"),
+        sortable: true,
         cell: (cf) => formatCalendarDate(cf.date, dateLocale),
       },
       {
         key: "type",
         header: t("cash.type"),
+        sortable: true,
         cell: (cf) => (
           <span className={getTypeBadgeClasses(cf.type)}>
             {getCashFlowTypeLabel(cf.type, t)}
@@ -369,6 +383,8 @@ export function CashFlowsList({
       {
         key: "copWired",
         header: t("cash.copWired", { currency: MARKET_CONFIG.localCurrency }),
+        sortable: true,
+        sortKey: "amount",
         cell: (cf) => {
           const value =
             cf.type === "deposit" || cf.type === "withdrawal"
@@ -381,6 +397,8 @@ export function CashFlowsList({
       {
         key: "fxRate",
         header: t("cash.fx"),
+        sortable: true,
+        sortKey: "fx_rate",
         cell: (cf) => {
           const value =
             cf.type === "deposit" || cf.type === "withdrawal" ? (cf.fx_rate ?? "-") : "-"
@@ -407,6 +425,8 @@ export function CashFlowsList({
       {
         key: "usdCredited",
         header: t("cash.usdNet", { currency: MARKET_CONFIG.baseCurrency }),
+        sortable: true,
+        sortKey: "usd_amount",
         cell: (cf) => {
           const value =
             cf.type === "withdrawal"
@@ -466,6 +486,7 @@ export function CashFlowsList({
         key: "notes",
         header: t("cash.notes"),
         className: "w-[15%] min-w-[8rem] max-w-[12rem]",
+        defaultVisible: false,
         cell: (cf) => (
           <span className="text-muted-foreground text-sm truncate block max-w-full">{cf.notes || "-"}</span>
         ),
@@ -568,6 +589,8 @@ export function CashFlowsList({
               data={rows}
               columns={visibleColumns}
               keyExtractor={(cf) => cf.id}
+              sort={{ key: filters.sort, dir: filters.dir }}
+              onSort={handleSort}
               rowClassName={(cf) =>
                 cf.id === highlightId ? "bg-accent/40 ring-1 ring-inset ring-border" : undefined
               }

@@ -132,6 +132,7 @@ describe("filterTrades", () => {
 
   it("combines filters with AND", () => {
     const result = filterTrades(trades, {
+      ...DEFAULT_TRADE_FILTERS,
       side: "buy",
       assetType: "etf",
       dateRange: { from: "2024-01-01", to: "2024-12-31" },
@@ -173,7 +174,23 @@ describe("parseTradeFiltersFromSearchParams", () => {
       assetType: "etf",
       dateRange: { from: "2026-01-01", to: "2026-01-31" },
       ticker: "AAPL",
+      sort: "date",
+      dir: "desc",
     })
+  })
+
+  it("parses sort and dir from search params", () => {
+    expect(parseTradeFiltersFromSearchParams({ sort: "ticker", dir: "asc" })).toEqual({
+      ...DEFAULT_TRADE_FILTERS,
+      sort: "ticker",
+      dir: "asc",
+    })
+  })
+
+  it("defaults unknown sort and dir to date descending", () => {
+    expect(
+      parseTradeFiltersFromSearchParams({ sort: "not_a_column", dir: "up" }),
+    ).toEqual(DEFAULT_TRADE_FILTERS)
   })
 
   it("returns defaults for missing params", () => {
@@ -184,6 +201,7 @@ describe("parseTradeFiltersFromSearchParams", () => {
 describe("tradeFiltersToSearchParams", () => {
   it("serializes active filters", () => {
     const params = tradeFiltersToSearchParams({
+      ...DEFAULT_TRADE_FILTERS,
       side: "sell",
       assetType: "stock",
       dateRange: { from: "2026-03-01", to: null },
@@ -193,6 +211,22 @@ describe("tradeFiltersToSearchParams", () => {
     expect(params.get("asset")).toBe("stock")
     expect(params.get("from")).toBe("2026-03-01")
     expect(params.get("ticker")).toBe("MSFT")
+    expect(params.get("sort")).toBeNull()
+    expect(params.get("dir")).toBeNull()
+  })
+
+  it("serializes non-default sort and dir", () => {
+    const params = tradeFiltersToSearchParams({
+      ...DEFAULT_TRADE_FILTERS,
+      sort: "ticker",
+      dir: "asc",
+    })
+    expect(params.get("sort")).toBe("ticker")
+    expect(params.get("dir")).toBe("asc")
+  })
+
+  it("omits default sort and dir from URL params", () => {
+    expect(tradeFiltersToSearchParams(DEFAULT_TRADE_FILTERS).toString()).toBe("")
   })
 })
 
@@ -200,6 +234,7 @@ describe("tradeFiltersToApiParams", () => {
   it("maps filters to API query fields", () => {
     expect(
       tradeFiltersToApiParams({
+        ...DEFAULT_TRADE_FILTERS,
         side: "buy",
         assetType: "crypto",
         dateRange: { from: "2026-01-01", to: null },
@@ -212,6 +247,17 @@ describe("tradeFiltersToApiParams", () => {
       to: "2026-01-01",
       ticker: "BTC",
     })
+  })
+
+  it("maps non-default sort to API params and omits the default", () => {
+    expect(
+      tradeFiltersToApiParams({
+        ...DEFAULT_TRADE_FILTERS,
+        sort: "total_fees",
+        dir: "asc",
+      }),
+    ).toEqual({ sort: "total_fees", dir: "asc" })
+    expect(tradeFiltersToApiParams(DEFAULT_TRADE_FILTERS)).toEqual({})
   })
 })
 
@@ -235,5 +281,11 @@ describe("hasActiveFilters", () => {
 
   it("is true when ticker is set", () => {
     expect(hasActiveFilters({ ...DEFAULT_TRADE_FILTERS, ticker: "AAPL" })).toBe(true)
+  })
+
+  it("does not treat sort as an active filter", () => {
+    expect(
+      hasActiveFilters({ ...DEFAULT_TRADE_FILTERS, sort: "ticker", dir: "asc" }),
+    ).toBe(false)
   })
 })

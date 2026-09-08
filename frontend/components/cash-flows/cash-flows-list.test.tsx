@@ -6,7 +6,10 @@ import { EnglishLocaleWrapper } from "@/lib/i18n/test-utils"
 import type { CashFlow } from "@/lib/types"
 import { CashFlowsList } from "./cash-flows-list"
 
-const mockReplace = vi.fn()
+const { mockReplace, mockUseSearchParams } = vi.hoisted(() => ({
+  mockReplace: vi.fn(),
+  mockUseSearchParams: vi.fn(() => new URLSearchParams()),
+}))
 
 vi.mock("@/lib/api/cash-flows", () => ({
   listCashFlowsForExport: () => Promise.resolve([]),
@@ -15,7 +18,7 @@ vi.mock("@/lib/api/cash-flows", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
   usePathname: () => "/cash-flows",
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockUseSearchParams(),
 }))
 
 const sampleCashFlow: CashFlow = {
@@ -50,6 +53,8 @@ function renderWithProviders(ui: ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  localStorage.clear()
+  mockUseSearchParams.mockReturnValue(new URLSearchParams())
 })
 
 describe("CashFlowsList", () => {
@@ -73,7 +78,7 @@ describe("CashFlowsList", () => {
     expect(within(cards).getByText("Initial deposit")).toBeInTheDocument()
   })
 
-  it("styles the fee type badge with primary tokens", () => {
+  it("styles the fee type badge with destructive tokens, not primary green", () => {
     const feeFlow: CashFlow = {
       ...sampleCashFlow,
       id: "cf-fee",
@@ -92,9 +97,10 @@ describe("CashFlowsList", () => {
     const badge = within(screen.getByTestId("data-table-cards")).getByText((_, element) => {
       return element?.tagName === "SPAN" && element.textContent === "Fee"
     })
-    expect(badge).toHaveClass("bg-primary/15", "text-primary")
+    expect(badge).toHaveClass("bg-destructive/15", "text-destructive")
     expect(badge.className).toContain("ring-inset")
-    expect(badge.className).toContain("ring-primary")
+    expect(badge.className).toContain("ring-destructive")
+    expect(badge).not.toHaveClass("text-primary")
   })
 
   it("renders edit and delete actions with mobile tap targets in the card", () => {
@@ -249,5 +255,70 @@ describe("CashFlowsList", () => {
     expect(viewIndex).toBeGreaterThanOrEqual(0)
     expect(addIndex).toBeGreaterThanOrEqual(0)
     expect(viewIndex).toBeLessThan(addIndex)
+  })
+
+  it("hides the Notes table column by default and shows it from View", () => {
+    renderWithProviders(
+      <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={1} pageSize={10} />,
+    )
+
+    const table = screen.getByTestId("data-table-table")
+    expect(within(table).queryByRole("columnheader", { name: "Notes" })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: /View/i }))
+    fireEvent.click(screen.getByRole("option", { name: /Notes/i }))
+
+    expect(within(table).getByRole("columnheader", { name: "Notes" })).toBeInTheDocument()
+    expect(within(table).getByText("Initial deposit")).toBeInTheDocument()
+  })
+
+  it("clicking the Date header updates the URL sort and resets page to 1", () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams("page=3&page_size=10"))
+    renderWithProviders(
+      <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={3} pageSize={10} />,
+    )
+
+    const table = screen.getByTestId("data-table-table")
+    fireEvent.click(within(table).getByRole("button", { name: "Date" }))
+
+    expect(mockReplace).toHaveBeenCalled()
+    const url = String(mockReplace.mock.calls[0][0])
+    expect(url).toContain("sort=date")
+    expect(url).toContain("dir=asc")
+    expect(url).toContain("page=1")
+  })
+
+  it("maps COP wired, FX, and USD net headers to API sort fields", () => {
+    renderWithProviders(
+      <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={1} pageSize={10} />,
+    )
+
+    const table = screen.getByTestId("data-table-table")
+    fireEvent.click(within(table).getByRole("button", { name: "COP wired" }))
+    expect(String(mockReplace.mock.calls[0][0])).toContain("sort=amount")
+
+    mockReplace.mockClear()
+    fireEvent.click(within(table).getByRole("button", { name: "FX" }))
+    expect(String(mockReplace.mock.calls[0][0])).toContain("sort=fx_rate")
+
+    mockReplace.mockClear()
+    fireEvent.click(within(table).getByRole("button", { name: "USD (net)" }))
+    expect(String(mockReplace.mock.calls[0][0])).toContain("sort=usd_amount")
+  })
+
+  it("does not make fee, attribution, notes, or actions headers sortable", () => {
+    renderWithProviders(
+      <CashFlowsList cashFlows={[sampleCashFlow]} total={1} page={1} pageSize={10} />,
+    )
+
+    const table = screen.getByTestId("data-table-table")
+    expect(within(table).queryByRole("button", { name: "Fee" })).not.toBeInTheDocument()
+    expect(within(table).queryByRole("button", { name: "Attribution" })).not.toBeInTheDocument()
+    expect(within(table).queryByRole("button", { name: "Actions" })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole("button", { name: /View/i }))
+    fireEvent.click(screen.getByRole("option", { name: /Notes/i }))
+    expect(within(table).queryByRole("button", { name: "Notes" })).not.toBeInTheDocument()
+    expect(within(table).getByRole("columnheader", { name: "Notes" })).toBeInTheDocument()
   })
 })

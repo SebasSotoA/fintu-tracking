@@ -20,6 +20,8 @@ function buildCashFlowsQuery(
   if (params.currency) search.set("currency", params.currency)
   if (params.from) search.set("from", params.from)
   if (params.to) search.set("to", params.to)
+  if (params.sort) search.set("sort", params.sort)
+  if (params.dir) search.set("dir", params.dir)
   const query = search.toString()
   return query ? `?${query}` : ""
 }

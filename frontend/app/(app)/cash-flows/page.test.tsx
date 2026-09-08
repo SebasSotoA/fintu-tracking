@@ -101,4 +101,40 @@ describe("CashFlowsPage", () => {
     expect(screen.getByTestId("lazy-reconciliation-dashboard")).toBeInTheDocument()
     expect(screen.queryByTestId("table-page-skeleton")).not.toBeInTheDocument()
   })
+
+  it("calls listCashFlowsPaginated with sort and dir from search params", async () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams("sort=amount&dir=asc"))
+    mockListCashFlowsPaginated.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+    })
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(mockListCashFlowsPaginated).toHaveBeenCalledWith(
+        expect.objectContaining({ sort: "amount", dir: "asc", page: 1, page_size: 10 }),
+      )
+    })
+  })
+
+  it("omits sort and dir from the API call when search params are empty", async () => {
+    mockListCashFlowsPaginated.mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 10,
+    })
+
+    renderPage()
+
+    await waitFor(() => {
+      expect(mockListCashFlowsPaginated).toHaveBeenCalled()
+    })
+    const arg = mockListCashFlowsPaginated.mock.calls[0][0] as Record<string, unknown>
+    expect(arg).not.toHaveProperty("sort")
+    expect(arg).not.toHaveProperty("dir")
+  })
 })

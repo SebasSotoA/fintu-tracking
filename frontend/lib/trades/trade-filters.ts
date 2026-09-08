@@ -6,6 +6,22 @@ import { startOfYear, subDays, subMonths } from "date-fns"
 export type TradeSideFilter = "all" | "buy" | "sell"
 export type TradeAssetTypeFilter = "all" | "stock" | "etf" | "crypto"
 export type TradeDatePreset = "last30d" | "ytd" | "12m"
+export type SortDir = "asc" | "desc"
+
+export const TRADE_SORT_FIELDS = [
+  "date",
+  "ticker",
+  "side",
+  "asset_type",
+  "quantity",
+  "price",
+  "total_fees",
+  "total",
+] as const
+export type TradeSortField = (typeof TRADE_SORT_FIELDS)[number]
+
+export const DEFAULT_TRADE_SORT: TradeSortField = "date"
+export const DEFAULT_SORT_DIR: SortDir = "desc"
 
 export interface TradeDateRange {
   from: string | null
@@ -17,6 +33,8 @@ export interface TradeFilters {
   assetType: TradeAssetTypeFilter
   dateRange: TradeDateRange
   ticker: string | null
+  sort: TradeSortField
+  dir: SortDir
 }
 
 export const EMPTY_TRADE_DATE_RANGE: TradeDateRange = { from: null, to: null }
@@ -26,11 +44,29 @@ export const DEFAULT_TRADE_FILTERS: TradeFilters = {
   assetType: "all",
   dateRange: EMPTY_TRADE_DATE_RANGE,
   ticker: null,
+  sort: DEFAULT_TRADE_SORT,
+  dir: DEFAULT_SORT_DIR,
 }
 
 function firstSearchParam(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0]
   return value
+}
+
+function isTradeSortField(value: string): value is TradeSortField {
+  return (TRADE_SORT_FIELDS as readonly string[]).includes(value)
+}
+
+function parseSortDir(value: string | undefined): SortDir {
+  return value === "asc" || value === "desc" ? value : DEFAULT_SORT_DIR
+}
+
+function parseTradeSort(value: string | undefined): TradeSortField {
+  return value && isTradeSortField(value) ? value : DEFAULT_TRADE_SORT
+}
+
+function isDefaultSort(sort: TradeSortField, dir: SortDir): boolean {
+  return sort === DEFAULT_TRADE_SORT && dir === DEFAULT_SORT_DIR
 }
 
 function tradeCalendarDay(trade: Trade): string {
@@ -134,7 +170,10 @@ export function parseTradeFiltersFromSearchParams(
   const tickerRaw = firstSearchParam(params.ticker)?.trim()
   const ticker = tickerRaw ? tickerRaw.toUpperCase() : null
 
-  return { side, assetType, dateRange, ticker }
+  const sort = parseTradeSort(firstSearchParam(params.sort))
+  const dir = parseSortDir(firstSearchParam(params.dir))
+
+  return { side, assetType, dateRange, ticker, sort, dir }
 }
 
 export function tradeFiltersToSearchParams(filters: TradeFilters): URLSearchParams {
@@ -147,6 +186,10 @@ export function tradeFiltersToSearchParams(filters: TradeFilters): URLSearchPara
     if (normalizedRange.to) params.set("to", normalizedRange.to)
   }
   if (filters.ticker) params.set("ticker", filters.ticker)
+  if (!isDefaultSort(filters.sort, filters.dir)) {
+    params.set("sort", filters.sort)
+    params.set("dir", filters.dir)
+  }
   return params
 }
 
@@ -160,5 +203,9 @@ export function tradeFiltersToApiParams(filters: TradeFilters): TradeListQueryPa
     params.to = normalizedRange.to ?? normalizedRange.from
   }
   if (filters.ticker) params.ticker = filters.ticker
+  if (!isDefaultSort(filters.sort, filters.dir)) {
+    params.sort = filters.sort
+    params.dir = filters.dir
+  }
   return params
 }

@@ -6,7 +6,10 @@ import { EnglishLocaleWrapper, renderWithLocale } from "@/lib/i18n/test-utils"
 import type { Trade } from "@/lib/types"
 import { TradesList } from "./trades-list"
 
-const mockReplace = vi.fn()
+const { mockReplace, mockUseSearchParams } = vi.hoisted(() => ({
+  mockReplace: vi.fn(),
+  mockUseSearchParams: vi.fn(() => new URLSearchParams()),
+}))
 
 vi.mock("@/lib/api/trades", () => ({
   listTradesForExport: () => Promise.resolve([]),
@@ -15,7 +18,7 @@ vi.mock("@/lib/api/trades", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace }),
   usePathname: () => "/trades",
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mockUseSearchParams(),
 }))
 
 const sampleTrade: Trade = {
@@ -51,6 +54,7 @@ function renderWithProviders(ui: ReactElement) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockUseSearchParams.mockReturnValue(new URLSearchParams())
 })
 
 describe("TradesList", () => {
@@ -74,15 +78,16 @@ describe("TradesList", () => {
     expect(within(cards).getByText("STOCK")).toBeInTheDocument()
   })
 
-  it("styles the stock asset badge with primary tokens", () => {
+  it("styles the stock asset badge with chart-3 tokens, not buy green", () => {
     renderWithProviders(
       <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,
     )
 
     const badge = within(screen.getByTestId("data-table-cards")).getByText("STOCK")
-    expect(badge).toHaveClass("bg-primary/15", "text-primary")
+    expect(badge).toHaveClass("bg-chart-3/20", "text-chart-3")
     expect(badge.className).toContain("ring-inset")
-    expect(badge.className).toContain("ring-primary")
+    expect(badge.className).toContain("ring-chart-3")
+    expect(badge).not.toHaveClass("text-primary")
   })
 
   it("renders edit and delete actions with mobile tap targets in the card", () => {
@@ -310,5 +315,45 @@ describe("TradesList", () => {
     expect(screen.getAllByText("Tipo").length).toBeGreaterThan(0)
     expect(screen.queryByText("Lado")).not.toBeInTheDocument()
     expect(screen.getByLabelText(/filtrar operaciones por tipo/i)).toBeInTheDocument()
+  })
+
+  it("clicking the Date header updates the URL sort and resets page to 1", () => {
+    mockUseSearchParams.mockReturnValue(new URLSearchParams("page=3&page_size=10"))
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={3} pageSize={10} tickers={["AAPL"]} />,
+    )
+
+    const table = screen.getByTestId("data-table-table")
+    fireEvent.click(within(table).getByRole("button", { name: "Date" }))
+
+    expect(mockReplace).toHaveBeenCalled()
+    const url = String(mockReplace.mock.calls[0][0])
+    expect(url).toContain("sort=date")
+    expect(url).toContain("dir=asc")
+    expect(url).toContain("page=1")
+  })
+
+  it("maps Asset and Fees headers to API sort fields", () => {
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,
+    )
+
+    const table = screen.getByTestId("data-table-table")
+    fireEvent.click(within(table).getByRole("button", { name: "Asset" }))
+    expect(String(mockReplace.mock.calls[0][0])).toContain("sort=asset_type")
+
+    mockReplace.mockClear()
+    fireEvent.click(within(table).getByRole("button", { name: "Fees" }))
+    expect(String(mockReplace.mock.calls[0][0])).toContain("sort=total_fees")
+  })
+
+  it("does not make realized P/L or actions headers sortable", () => {
+    renderWithProviders(
+      <TradesList trades={[sampleTrade]} total={1} page={1} pageSize={10} tickers={["AAPL"]} />,
+    )
+
+    const table = screen.getByTestId("data-table-table")
+    expect(within(table).queryByRole("button", { name: "Realized P/L" })).not.toBeInTheDocument()
+    expect(within(table).queryByRole("button", { name: "Actions" })).not.toBeInTheDocument()
   })
 })
