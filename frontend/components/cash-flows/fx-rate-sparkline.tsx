@@ -48,7 +48,7 @@ export function formatAxisDateKey(dateKey: string, locale: string = "en-US"): st
   return formatShortMonthDay(dateKey, locale)
 }
 
-/** Recharts calls this per point; only the last (current) point is marked. */
+/** Recharts calls this per point; only the last (current) point is marked live. */
 function CurrentRateDot(
   props: { cx?: number; cy?: number; index?: number },
   lastIndex: number,
@@ -58,7 +58,18 @@ function CurrentRateDot(
   if (index !== lastIndex) return <g key={index} />
 
   return (
-    <g key={index} aria-hidden="true">
+    <g key={index} data-testid="fx-live-dot" aria-hidden="true">
+      <circle
+        cx={cx}
+        cy={cy}
+        r={4}
+        fill="var(--primary)"
+        opacity={0.4}
+        className="motion-reduce:hidden"
+      >
+        <animate attributeName="r" values="4;7.5;4" dur="1.8s" repeatCount="indefinite" />
+        <animate attributeName="opacity" values="0.4;0;0.4" dur="1.8s" repeatCount="indefinite" />
+      </circle>
       <circle cx={cx} cy={cy} r={3} fill="var(--primary)" />
     </g>
   )
@@ -139,7 +150,7 @@ export function FxRateSparkline({ points, isLoading = false }: FxRateSparklinePr
   return (
     <div className="h-[140px] w-full [&_.recharts-wrapper]:overflow-visible [&_.recharts-surface]:overflow-visible [&_svg]:overflow-visible">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 16 }}>
+        <AreaChart data={data} margin={{ top: 12, right: 16, left: 4, bottom: 16 }}>
           <defs>
             <linearGradient id="fxRateGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.32} />

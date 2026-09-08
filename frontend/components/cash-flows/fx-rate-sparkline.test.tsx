@@ -60,7 +60,7 @@ describe("FxRateSparkline series theme", () => {
     expect(document.querySelector(".animate-spin")).toBeNull()
   })
 
-  it("renders the USD/COP series in primary without a pulsing halo", () => {
+  it("renders the USD/COP series in primary with a live ping on the current rate", () => {
     const { container } = render(
       <EnglishLocaleWrapper>
         <FxRateSparkline points={[{ date: "2026-04-26", rate: "4100" }]} />
@@ -74,14 +74,21 @@ describe("FxRateSparkline series theme", () => {
     expect(series?.getAttribute("data-fill")).toBe("url(#fxRateGradient)")
     expect(series?.getAttribute("data-fill-opacity")).toBeNull()
 
-    const lastDot = series?.querySelector("circle")
-    expect(lastDot?.getAttribute("fill")).toBe("var(--primary)")
+    const liveDot = series?.querySelector("[data-testid='fx-live-dot']")
+    expect(liveDot).toBeTruthy()
+    const circles = [...(liveDot?.querySelectorAll("circle") ?? [])]
+    expect(circles).toHaveLength(2)
+    expect(circles[0].querySelectorAll("animate")).toHaveLength(2)
+    expect(circles[0].querySelector('animate[attributeName="r"]')?.getAttribute("dur")).toBe("1.8s")
+    expect(circles[0].querySelector('animate[attributeName="opacity"]')?.getAttribute("dur")).toBe("1.8s")
+    expect(circles[1].getAttribute("fill")).toBe("var(--primary)")
+    expect(circles[1].getAttribute("r")).toBe("3")
 
     const seriesAndDot = series?.outerHTML ?? ""
     expect(seriesAndDot).not.toContain("--chart-3")
     expect(seriesAndDot).not.toContain("--success")
     expect(seriesAndDot).not.toContain("--destructive")
-    expect(container.querySelectorAll("animate")).toHaveLength(0)
+    expect(container.querySelectorAll("animate")).toHaveLength(2)
 
     const gradient = container.querySelector("#fxRateGradient")
     expect(gradient).toBeTruthy()
